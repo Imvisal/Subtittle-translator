@@ -14,3 +14,25 @@ fileInput.addEventListener("change", () => {
 
     reader.readAsText(file);
 });
+
+const translateBtn = document.getElementById("translateBtn");
+
+translateBtn.addEventListener("click", async () => {
+    const text = preview.value;
+
+    const response = await fetch("https://YOUR-BACKEND-URL/translate", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            text: text,
+            source: "en",
+            target: "si"
+        })
+    });
+
+    const data = await response.json();
+
+    preview.value = data.translation;
+});
