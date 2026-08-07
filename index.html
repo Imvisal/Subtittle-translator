@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SubLanka AI</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+
+    <h1>SubLanka AI</h1>
+    <p>Translate English Subtitles to Sinhala</p>
+
+    <div class="upload-box">
+        <input type="file" id="subtitleFile" accept=".srt">
+    </div>
+
+    <select id="language">
+        <option value="si">Sinhala</option>
+        <option value="ta">Tamil</option>
+    </select>
+
+    <button id="translateBtn">
+        Translate Subtitle
+    </button>
+
+    <textarea id="preview" placeholder="Subtitle Preview"></textarea>
+
+    <button id="downloadBtn">
+        Download Subtitle
+    </button>
+
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
