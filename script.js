@@ -146,3 +146,28 @@ downloadBtn.addEventListener("click", () => {
     URL.revokeObjectURL(url);
 
 });
+
+const progressContainer =
+    document.getElementById("progressContainer");
+
+const progressFill =
+    document.getElementById("progressFill");
+
+const progressText =
+    document.getElementById("progressText");
+
+const progressPercent =
+    document.getElementById("progressPercent");
+
+
+function updateProgress(percent, text) {
+
+    progressContainer.style.display = "block";
+
+    progressFill.style.width = percent + "%";
+
+    progressPercent.textContent =
+        Math.round(percent) + "%";
+
+    progressText.textContent = text;
+}
