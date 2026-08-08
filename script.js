@@ -312,3 +312,86 @@ downloadBtn.addEventListener("click", () => {
 
     URL.revokeObjectURL(url);
 });
+async function translateChunk(chunk) {
+
+    const maxRetries = 4;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+
+        try {
+
+            const response = await fetch("/api/translate", {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+                    subtitles: chunk
+                })
+            });
+
+            const raw = await response.text();
+
+            let data;
+
+            try {
+                data = JSON.parse(raw);
+            } catch {
+                throw new Error(raw);
+            }
+
+            if (response.ok) {
+                return data.subtitles;
+            }
+
+            const errorMessage =
+                data.error || "Translation failed";
+
+            // Retry temporary errors
+            if (
+                response.status === 429 ||
+                response.status === 500 ||
+                response.status === 502 ||
+                response.status === 503 ||
+                response.status === 504
+            ) {
+
+                if (attempt < maxRetries) {
+
+                    const delay =
+                        Math.pow(2, attempt) * 1000;
+
+                    updateProgress(
+                        0,
+                        `Temporary error. Retrying (${attempt}/${maxRetries})...`
+                    );
+
+                    await new Promise(resolve =>
+                        setTimeout(resolve, delay)
+                    );
+
+                    continue;
+                }
+            }
+
+            throw new Error(errorMessage);
+
+        } catch (error) {
+
+            if (attempt === maxRetries) {
+                throw error;
+            }
+
+            const delay =
+                Math.pow(2, attempt) * 1000;
+
+            await new Promise(resolve =>
+                setTimeout(resolve, delay)
+            );
+        }
+    }
+
+    throw new Error("Translation failed");
+}
