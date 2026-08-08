@@ -1,270 +1,851 @@
+// ============================================================
+// SUBLANKA AI
+// API TRANSLATOR
+// Gemini Subtitle Translation
+// ============================================================
+
 module.exports = async function handler(req, res) {
+
     try {
+
+        // ======================================================
+        // METHOD CHECK
+        // ======================================================
+
         if (req.method !== "POST") {
+
             return res.status(405).json({
                 error: "Method not allowed"
             });
+
         }
+
+
+        // ======================================================
+        // REQUEST DATA
+        // ======================================================
 
         const {
             subtitles,
             language = "si",
-            memory = ""
+            memory = "",
+            glossary = ""
         } = req.body || {};
 
-        if (!Array.isArray(subtitles) || subtitles.length === 0) {
+
+        // ======================================================
+        // SUBTITLE CHECK
+        // ======================================================
+
+        if (
+            !Array.isArray(subtitles) ||
+            subtitles.length === 0
+        ) {
+
             return res.status(400).json({
                 error: "No subtitles received"
             });
+
         }
 
-        const apiKey = process.env.GEMINI_API_KEY;
+
+        // ======================================================
+        // API KEY
+        // ======================================================
+
+        const apiKey =
+            process.env.GEMINI_API_KEY;
+
 
         if (!apiKey) {
+
             return res.status(500).json({
                 error: "GEMINI_API_KEY is missing"
             });
+
         }
+
+
+        // ======================================================
+        // TARGET LANGUAGE
+        // ======================================================
 
         const targetLanguage =
             language === "ta"
                 ? "natural Sri Lankan Tamil"
                 : "natural Sri Lankan Sinhala";
 
-        const dialogue = subtitles
-            .map((sub, index) => {
-                return `[${index}] ${sub.text}`;
-            })
-            .join("\n");
+
+        // ======================================================
+        // PREPARE SUBTITLES
+        // ======================================================
+
+        const dialogue =
+            subtitles
+                .map((sub, index) => {
+
+                    const lines =
+                        String(sub.text || "")
+                            .split(/\r?\n/)
+                            .filter(
+                                line =>
+                                    line.trim() !== ""
+                            );
+
+
+                    return (
+                        `[${index}|${lines.length}]\n` +
+                        lines
+                            .map(
+                                line =>
+                                    `- ${line}`
+                            )
+                            .join("\n")
+                    );
+
+                })
+                .join("\n\n");
+
+
+        // ======================================================
+        // MEMORY
+        // ======================================================
 
         const memorySection =
-            memory && memory.trim()
+            memory &&
+            memory.trim()
                 ? `
 PREVIOUS TRANSLATION CONTEXT:
 
 ${memory}
 
-Use this only to maintain consistency in:
-- character speech style
-- repeated phrases
-- slang
-- names
-- terminology
-
+Use this only to maintain consistency.
 Do not return these previous lines.
-
-END PREVIOUS CONTEXT.
 `
                 : "";
+
+
+        // ======================================================
+        // GLOSSARY
+        // ======================================================
+
+        const glossarySection =
+            glossary &&
+            glossary.trim()
+                ? `
+TERMINOLOGY / CHARACTER GLOSSARY:
+
+${glossary}
+
+Keep names and terminology consistent.
+`
+                : "";
+
+
+        // ======================================================
+        // PROMPT
+        // ======================================================
 
         const prompt = `
 You are a professional movie and TV subtitle translator.
 
-Translate the following English dialogue into ${targetLanguage}.
+Translate the English subtitles into ${targetLanguage}.
 
-The result must sound like natural spoken Sri Lankan Sinhala,
-not a word-for-word machine translation.
+The translation must sound natural and conversational,
+like subtitles used in Sri Lankan movies and TV series.
+
+============================================================
+MOST IMPORTANT RULE
+============================================================
+
+NEVER lose dialogue.
+
+Every subtitle contains a number and an exact dialogue
+line count.
+
+Example input:
+
+[27|2]
+- It doesn't look like him.
+- It's him.
+
+The "2" means there are EXACTLY TWO dialogue lines.
+
+You MUST return:
+
+[27|2]
+- මූව දකිද්දී එයා වගේ නැහැ.
+- එයා තමයි.
+
+NOT:
+
+[27|2]
+- මූව දකිද්දී එයා වගේ නැහැ.
+
+The second line MUST NOT disappear.
+
+============================================================
+STRICT RULES
+============================================================
+
+1. Keep every [number|LINE_COUNT] exactly.
+
+2. Do not remove subtitles.
+
+3. Do not skip subtitles.
+
+4. Do not add subtitles.
+
+5. Keep the exact subtitle order.
+
+6. Keep EXACTLY the same number of dialogue lines.
+
+7. Never merge two dialogue lines.
+
+8. Never split one dialogue line.
+
+9. Translate every dialogue line.
+
+10. Preserve the meaning.
+
+11. Preserve jokes.
+
+12. Preserve sarcasm.
+
+13. Preserve emotion.
+
+14. Preserve character personality.
+
+15. Preserve important names.
+
+16. Do not translate character names unnecessarily.
+
+17. Do not invent dialogue.
+
+18. Do not add explanations.
+
+19. Do not add comments.
+
+20. Do not add Markdown.
+
+21. Do not add quotation marks unless they exist
+    in the original dialogue.
+
+22. Return ONLY the requested subtitle format.
+
+============================================================
+LINE COUNT EXAMPLES
+============================================================
+
+Input:
+
+[0|1]
+- Hello.
+
+Output:
+
+[0|1]
+- හෙලෝ.
+
+------------------------------------------------------------
+
+Input:
+
+[1|2]
+- How are you?
+- I'm fine.
+
+Output:
+
+[1|2]
+- ඔයාට කොහොමද?
+- මම හොඳින්.
+
+------------------------------------------------------------
+
+Input:
+
+[2|3]
+- First line.
+- Second line.
+- Third line.
+
+Output:
+
+[2|3]
+- පළවෙනි පේළිය.
+- දෙවැනි පේළිය.
+- තුන්වැනි පේළිය.
+
+============================================================
+OUTPUT FORMAT
+============================================================
+
+Return ONLY this format:
+
+[number|LINE_COUNT]
+- translated dialogue line
+- translated dialogue line
+
+Do NOT return anything before or after the subtitles.
 
 ${memorySection}
 
-RULES:
+${glossarySection}
 
-1. Translate the meaning and context naturally.
-2. Preserve emotion, humor, sarcasm and tone.
-3. Preserve character personality and speaking style.
-4. Use natural conversational Sinhala.
-5. Do not unnecessarily make dialogue formal.
-6. Preserve slang naturally.
-7. Do not unnecessarily sanitize strong language.
-8. Keep character names consistent.
-9. Keep fictional names, places, brands and organizations consistent.
-10. Do not invent names or information.
-11. Do not add information that is not present.
-12. Do not remove important meaning.
-13. Keep jokes and wordplay as close to the original meaning as possible.
-14. Keep repeated phrases consistent with previous context.
-15. Do not add explanations.
-16. Do not add translator notes.
-17. Do not use Markdown.
-18. Do not use quotation marks unless they are part of the dialogue.
-19. Do not merge lines.
-20. Do not split lines.
-21. Do not skip any line.
-22. Return exactly one output line for every input [number].
-23. Keep every [number] exactly.
-24. Return the lines in exactly the same order.
-
-OUTPUT FORMAT:
-
-[0] translated dialogue
-[1] translated dialogue
-[2] translated dialogue
-
-IMPORTANT:
-Return ONLY the [number] + translated dialogue.
-Nothing else.
-
-SUBTITLES:
+============================================================
+SUBTITLES TO TRANSLATE
+============================================================
 
 ${dialogue}
 `;
 
-        const response = await fetch(
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent",
-            {
-                method: "POST",
 
-                headers: {
-                    "Content-Type": "application/json",
-                    "x-goog-api-key": apiKey
-                },
+        // ======================================================
+        // GEMINI API
+        // ======================================================
 
-                body: JSON.stringify({
-                    contents: [
-                        {
-                            parts: [
+        const response =
+            await fetch(
+
+                "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent",
+
+                {
+
+                    method: "POST",
+
+                    headers: {
+
+                        "Content-Type":
+                            "application/json",
+
+                        "x-goog-api-key":
+                            apiKey
+
+                    },
+
+                    body:
+                        JSON.stringify({
+
+                            contents: [
+
                                 {
-                                    text: prompt
-                                }
-                            ]
-                        }
-                    ]
-                })
-            }
-        );
 
-        const raw = await response.text();
+                                    parts: [
+
+                                        {
+
+                                            text:
+                                                prompt
+
+                                        }
+
+                                    ]
+
+                                }
+
+                            ],
+
+                            generationConfig: {
+
+                                temperature: 0.2,
+
+                                topP: 0.8,
+
+                                maxOutputTokens: 8192
+
+                            }
+
+                        })
+
+                }
+
+            );
+
+
+        // ======================================================
+        // READ RESPONSE
+        // ======================================================
+
+        const raw =
+            await response.text();
+
 
         let data;
 
+
         try {
-            data = JSON.parse(raw);
+
+            data =
+                JSON.parse(raw);
+
         } catch {
-            return res.status(response.status || 500).json({
-                error: "Gemini returned invalid JSON."
+
+            console.error(
+                "Gemini raw response:",
+                raw
+            );
+
+
+            return res.status(
+                response.status || 500
+            ).json({
+
+                error:
+                    "Gemini returned invalid JSON."
+
             });
+
         }
 
+
+        // ======================================================
+        // GEMINI ERROR
+        // ======================================================
+
         if (!response.ok) {
+
             const message =
                 data?.error?.message ||
                 "Gemini API error";
 
-            return res.status(response.status).json({
-                error: message,
-                status: response.status
+
+            console.error(
+                "Gemini API error:",
+                message
+            );
+
+
+            return res.status(
+                response.status
+            ).json({
+
+                error:
+                    message
+
             });
+
         }
+
+
+        // ======================================================
+        // GET GENERATED TEXT
+        // ======================================================
 
         const result =
-            data?.candidates?.[0]
-                ?.content?.parts?.[0]
-                ?.text;
+            data
+                ?.candidates?.[0]
+                ?.content?.parts
+                ?.map(part => part.text || "")
+                .join("")
+                .trim();
+
 
         if (!result) {
+
             return res.status(500).json({
-                error: "Gemini returned no translation"
+
+                error:
+                    "Gemini returned no translation"
+
             });
+
         }
 
-        // =========================================
-        // PARSE AI OUTPUT
-        // =========================================
 
-        const translations = {};
+        console.log(
+            "Gemini response received."
+        );
 
-        result
-            .split(/\r?\n/)
-            .forEach(line => {
 
-                const match =
-                    line.match(
-                        /^\[(\d+)\]\s*(.*)$/
+        // ======================================================
+        // PARSER
+        // ======================================================
+
+        const translatedMap = {};
+
+
+        const lines =
+            result
+                .replace(
+                    /```(?:text|txt|srt)?/gi,
+                    ""
+                )
+                .replace(
+                    /```/g,
+                    ""
+                )
+                .split(/\r?\n/)
+                .map(
+                    line =>
+                        line.trim()
+                )
+                .filter(
+                    line =>
+                        line.length > 0
+                );
+
+
+        let currentIndex =
+            null;
+
+        let expectedLineCount =
+            0;
+
+        let currentLines =
+            [];
+
+
+        function saveCurrentSubtitle() {
+
+            if (
+                currentIndex === null
+            ) {
+
+                return;
+
+            }
+
+
+            translatedMap[
+                currentIndex
+            ] = {
+
+                lineCount:
+                    expectedLineCount,
+
+                lines:
+                    [
+                        ...currentLines
+                    ]
+
+            };
+
+
+            currentIndex =
+                null;
+
+            expectedLineCount =
+                0;
+
+            currentLines =
+                [];
+
+        }
+
+
+        // ======================================================
+        // READ GEMINI LINES
+        // ======================================================
+
+        for (
+            const line of lines
+        ) {
+
+
+            // --------------------------------------------------
+            // HEADER
+            // --------------------------------------------------
+
+            const header =
+                line.match(
+                    /^\[(\d+)\|(\d+)\]$/
+                );
+
+
+            if (header) {
+
+                saveCurrentSubtitle();
+
+
+                currentIndex =
+                    Number(
+                        header[1]
                     );
 
-                if (!match) {
-                    return;
-                }
 
-                const index =
-                    Number(match[1]);
-
-                const text =
-                    match[2].trim();
-
-                if (!Number.isInteger(index)) {
-                    return;
-                }
-
-                if (!text) {
-                    return;
-                }
-
-                translations[index] =
-                    text;
-            });
+                expectedLineCount =
+                    Number(
+                        header[2]
+                    );
 
 
-        // =========================================
-        // STRICT VALIDATION
-        // =========================================
+                currentLines =
+                    [];
+
+
+                continue;
+
+            }
+
+
+            // --------------------------------------------------
+            // IGNORE TEXT BEFORE FIRST HEADER
+            // --------------------------------------------------
+
+            if (
+                currentIndex === null
+            ) {
+
+                continue;
+
+            }
+
+
+            // --------------------------------------------------
+            // DIALOGUE
+            // --------------------------------------------------
+
+            let dialogueLine =
+                line
+                    .replace(
+                        /^[-•]\s*/,
+                        ""
+                    )
+                    .trim();
+
+
+            if (
+                !dialogueLine
+            ) {
+
+                continue;
+
+            }
+
+
+            currentLines.push(
+                dialogueLine
+            );
+
+        }
+
+
+        // ======================================================
+        // SAVE LAST
+        // ======================================================
+
+        saveCurrentSubtitle();
+
+
+        // ======================================================
+        // VALIDATION
+        // ======================================================
 
         const missing = [];
+
+        const invalidLineCount = [];
+
+        const emptyTranslations = [];
+
 
         for (
             let i = 0;
             i < subtitles.length;
             i++
         ) {
-            if (
-                !Object.prototype.hasOwnProperty.call(
-                    translations,
+
+            const source =
+                subtitles[i];
+
+
+            const translated =
+                translatedMap[i];
+
+
+            // --------------------------------------------------
+            // MISSING
+            // --------------------------------------------------
+
+            if (!translated) {
+
+                missing.push(
                     i
+                );
+
+                continue;
+
+            }
+
+
+            // --------------------------------------------------
+            // SOURCE LINE COUNT
+            // --------------------------------------------------
+
+            const sourceLines =
+                String(
+                    source.text || ""
+                )
+                    .split(/\r?\n/)
+                    .filter(
+                        line =>
+                            line.trim() !== ""
+                    );
+
+
+            const expected =
+                sourceLines.length;
+
+
+            // --------------------------------------------------
+            // LINE COUNT HEADER
+            // --------------------------------------------------
+
+            if (
+                translated.lineCount !==
+                expected
+            ) {
+
+                invalidLineCount.push({
+
+                    index:
+                        i,
+
+                    subtitle:
+                        source.number,
+
+                    expected:
+                        expected,
+
+                    received:
+                        translated.lineCount
+
+                });
+
+                continue;
+
+            }
+
+
+            // --------------------------------------------------
+            // ACTUAL LINES
+            // --------------------------------------------------
+
+            if (
+                translated.lines.length !==
+                expected
+            ) {
+
+                invalidLineCount.push({
+
+                    index:
+                        i,
+
+                    subtitle:
+                        source.number,
+
+                    expected:
+                        expected,
+
+                    received:
+                        translated.lines.length
+
+                });
+
+                continue;
+
+            }
+
+
+            // --------------------------------------------------
+            // EMPTY
+            // --------------------------------------------------
+
+            if (
+                translated.lines.some(
+                    line =>
+                        !line ||
+                        !line.trim()
                 )
             ) {
-                missing.push(i);
+
+                emptyTranslations.push(
+                    i
+                );
+
             }
+
         }
 
-        if (missing.length > 0) {
+
+        // ======================================================
+        // INVALID RESPONSE
+        // ======================================================
+
+        if (
+            missing.length > 0 ||
+            invalidLineCount.length > 0 ||
+            emptyTranslations.length > 0
+        ) {
 
             console.error(
-                "Missing translations:",
-                missing
+                "Subtitle validation failed:",
+                {
+
+                    missing,
+
+                    invalidLineCount,
+
+                    emptyTranslations
+
+                }
             );
 
+
             return res.status(422).json({
+
                 error:
-                    `Translation incomplete. Missing ${missing.length} subtitle(s).`,
-                missing
+                    "Subtitle validation failed.",
+
+                missing,
+
+                invalidLineCount,
+
+                emptyTranslations
+
             });
+
         }
 
 
-        // =========================================
-        // IMPORTANT:
-        // ORIGINAL NUMBER + TIMESTAMP ARE ALWAYS
-        // TAKEN FROM THE SOURCE SRT.
-        // =========================================
+        // ======================================================
+        // BUILD FINAL OUTPUT
+        // ======================================================
 
         const output =
             subtitles.map(
                 (sub, index) => {
 
-                    return {
-                        ...sub,
+                    const translated =
+                        translatedMap[
+                            index
+                        ];
 
+
+                    return {
+
+                        // ORIGINAL NUMBER
+                        number:
+                            sub.number,
+
+                        // ORIGINAL TIMESTAMP
+                        timestamp:
+                            sub.timestamp,
+
+                        // TRANSLATED DIALOGUE
                         text:
-                            translations[index]
+                            translated.lines
+                                .join("\n")
+
                     };
 
                 }
             );
 
 
-        // =========================================
-        // FINAL SERVER VALIDATION
-        // =========================================
+        // ======================================================
+        // FINAL SAFETY CHECK
+        // ======================================================
 
         if (
             output.length !==
@@ -272,11 +853,14 @@ ${dialogue}
         ) {
 
             return res.status(422).json({
+
                 error:
-                    "Subtitle count validation failed."
+                    "Subtitle count changed."
+
             });
 
         }
+
 
         for (
             let i = 0;
@@ -284,38 +868,91 @@ ${dialogue}
             i++
         ) {
 
+            const original =
+                subtitles[i];
+
+            const translated =
+                output[i];
+
+
+            // --------------------------------------------------
+            // NUMBER
+            // --------------------------------------------------
+
             if (
-                output[i].number !==
-                subtitles[i].number
+                String(
+                    original.number
+                ) !==
+                String(
+                    translated.number
+                )
             ) {
 
                 return res.status(422).json({
+
                     error:
-                        `Subtitle number mismatch at ${i}`
+                        `Subtitle number changed at ${original.number}`
+
                 });
 
             }
 
+
+            // --------------------------------------------------
+            // TIMESTAMP
+            // --------------------------------------------------
+
             if (
-                output[i].timestamp !==
-                subtitles[i].timestamp
+                original.timestamp !==
+                translated.timestamp
             ) {
 
                 return res.status(422).json({
+
                     error:
-                        `Timestamp mismatch at ${i}`
+                        `Timestamp changed at ${original.number}`
+
                 });
 
             }
 
+
+            // --------------------------------------------------
+            // LINE COUNT
+            // --------------------------------------------------
+
+            const originalLines =
+                String(
+                    original.text || ""
+                )
+                    .split(/\r?\n/)
+                    .filter(
+                        line =>
+                            line.trim() !== ""
+                    );
+
+
+            const translatedLines =
+                String(
+                    translated.text || ""
+                )
+                    .split(/\r?\n/)
+                    .filter(
+                        line =>
+                            line.trim() !== ""
+                    );
+
+
             if (
-                !output[i].text ||
-                !output[i].text.trim()
+                originalLines.length !==
+                translatedLines.length
             ) {
 
                 return res.status(422).json({
+
                     error:
-                        `Empty translation at ${i}`
+                        `Dialogue line count changed at subtitle ${original.number}`
+
                 });
 
             }
@@ -323,21 +960,34 @@ ${dialogue}
         }
 
 
+        // ======================================================
+        // SUCCESS
+        // ======================================================
+
         return res.status(200).json({
-            subtitles: output
+
+            subtitles:
+                output
+
         });
+
 
     } catch (error) {
 
         console.error(
-            "Server error:",
+            "Translation server error:",
             error
         );
 
+
         return res.status(500).json({
+
             error:
                 error.message ||
                 "Server error"
+
         });
+
     }
+
 };
