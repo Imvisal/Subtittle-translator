@@ -3,150 +3,6 @@ const preview = document.getElementById("preview");
 const translateBtn = document.getElementById("translateBtn");
 const downloadBtn = document.getElementById("downloadBtn");
 
-let translatedSubtitle = "";
-
-// ===============================
-// READ SRT FILE
-// ===============================
-
-fileInput.addEventListener("change", () => {
-
-    const file = fileInput.files[0];
-
-    if (!file) return;
-
-    if (!file.name.toLowerCase().endsWith(".srt")) {
-        alert("Please select an SRT file.");
-        return;
-    }
-
-    const reader = new FileReader();
-
-    reader.onload = function(event) {
-        preview.value = event.target.result;
-    };
-
-    reader.onerror = function() {
-        alert("Could not read the subtitle file.");
-    };
-
-    reader.readAsText(file, "UTF-8");
-});
-
-
-// ===============================
-// TRANSLATE
-// ===============================
-
-translateBtn.addEventListener("click", async () => {
-
-    const text = preview.value.trim();
-
-    if (!text) {
-        alert("Please upload an SRT file first.");
-        return;
-    }
-
-    translateBtn.disabled = true;
-    translateBtn.textContent = "Translating...";
-
-    try {
-
-        const response = await fetch("/api/translate", {
-
-            method: "POST",
-
-            headers: {
-                "Content-Type": "application/json"
-            },
-
-            body: JSON.stringify({
-                text: text
-            })
-
-        });
-
-        const raw = await response.text();
-
-        console.log("Server response:", raw);
-
-        let data;
-
-        try {
-            data = JSON.parse(raw);
-        } catch {
-            throw new Error(
-                "Server returned an invalid response: " +
-                raw.substring(0, 300)
-            );
-        }
-
-        if (!response.ok) {
-            throw new Error(
-                data.error || "Translation failed"
-            );
-        }
-
-        translatedSubtitle = data.translation;
-
-        preview.value = translatedSubtitle;
-
-        alert("Subtitle translated successfully!");
-
-
-    } catch (error) {
-
-        console.error(error);
-
-        alert(error.message);
-
-    } finally {
-
-        translateBtn.disabled = false;
-        translateBtn.textContent = "Translate Subtitle";
-
-    }
-
-});
-
-
-// ===============================
-// DOWNLOAD SRT
-// ===============================
-
-downloadBtn.addEventListener("click", () => {
-
-    const text = preview.value.trim();
-
-    if (!text) {
-        alert("There is no subtitle to download.");
-        return;
-    }
-
-    const blob = new Blob(
-        [text],
-        {
-            type: "text/plain;charset=utf-8"
-        }
-    );
-
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-
-    a.href = url;
-    a.download = "Sinhala-Subtitle.srt";
-
-    document.body.appendChild(a);
-
-    a.click();
-
-    document.body.removeChild(a);
-
-    URL.revokeObjectURL(url);
-
-});
-
 const progressContainer =
     document.getElementById("progressContainer");
 
@@ -160,7 +16,92 @@ const progressPercent =
     document.getElementById("progressPercent");
 
 
-function updateProgress(percent, text) {
+// =====================================
+// CURRENT SUBTITLE DATA
+// =====================================
+
+let subtitles = [];
+
+
+// =====================================
+// READ SRT
+// =====================================
+
+fileInput.addEventListener("change", () => {
+
+    const file = fileInput.files[0];
+
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = function(event) {
+
+        const text = event.target.result;
+
+        preview.value = text;
+
+        subtitles = parseSRT(text);
+
+        console.log("Subtitles:", subtitles.length);
+    };
+
+    reader.readAsText(file, "UTF-8");
+});
+
+
+// =====================================
+// PARSE SRT
+// =====================================
+
+function parseSRT(srt) {
+
+    const blocks = srt
+        .replace(/\r\n/g, "\n")
+        .trim()
+        .split(/\n\s*\n/);
+
+    return blocks.map(block => {
+
+        const lines = block.split("\n");
+
+        const number = lines[0];
+        const timestamp = lines[1];
+
+        const text = lines
+            .slice(2)
+            .join("\n");
+
+        return {
+            number,
+            timestamp,
+            text
+        };
+    });
+}
+
+
+// =====================================
+// BUILD SRT
+// =====================================
+
+function buildSRT(data) {
+
+    return data.map(sub => {
+
+        return `${sub.number}
+${sub.timestamp}
+${sub.text}`;
+
+    }).join("\n\n");
+}
+
+
+// =====================================
+// PROGRESS
+// =====================================
+
+function updateProgress(percent, message) {
 
     progressContainer.style.display = "block";
 
@@ -169,5 +110,205 @@ function updateProgress(percent, text) {
     progressPercent.textContent =
         Math.round(percent) + "%";
 
-    progressText.textContent = text;
+    progressText.textContent = message;
 }
+
+
+// =====================================
+// TRANSLATE
+// =====================================
+
+translateBtn.addEventListener("click", async () => {
+
+    if (!subtitles.length) {
+
+        alert("Please upload an SRT file first.");
+
+        return;
+    }
+
+    translateBtn.disabled = true;
+
+    translateBtn.textContent = "Translating...";
+
+    progressContainer.style.display = "block";
+
+    const chunkSize = 50;
+
+    const totalChunks =
+        Math.ceil(subtitles.length / chunkSize);
+
+    let translated = [];
+
+    try {
+
+        for (let i = 0; i < subtitles.length; i += chunkSize) {
+
+            const chunk =
+                subtitles.slice(i, i + chunkSize);
+
+            const chunkNumber =
+                Math.floor(i / chunkSize) + 1;
+
+            updateProgress(
+                (i / subtitles.length) * 100,
+                `Translating ${chunkNumber}/${totalChunks}...`
+            );
+
+
+            const response = await fetch(
+                "/api/translate",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        subtitles: chunk
+                    })
+                }
+            );
+
+
+            const raw =
+                await response.text();
+
+
+            let data;
+
+            try {
+
+                data = JSON.parse(raw);
+
+            } catch {
+
+                throw new Error(
+                    "Server returned invalid response: " +
+                    raw.substring(0, 300)
+                );
+            }
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    data.error ||
+                    "Translation failed"
+                );
+            }
+
+
+            translated =
+                translated.concat(data.subtitles);
+
+
+            // Show progress
+            const percent =
+                ((i + chunk.length) /
+                subtitles.length) * 100;
+
+
+            updateProgress(
+                percent,
+                `Translated ${i + chunk.length} / ${subtitles.length}`
+            );
+
+
+            // Small delay to avoid hammering the API
+            await new Promise(resolve =>
+                setTimeout(resolve, 300)
+            );
+        }
+
+
+        subtitles = translated;
+
+        preview.value =
+            buildSRT(subtitles);
+
+
+        updateProgress(
+            100,
+            "Translation complete!"
+        );
+
+
+        alert(
+            "Sinhala subtitle translation completed!"
+        );
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        updateProgress(
+            0,
+            "Translation failed"
+        );
+
+        alert(error.message);
+
+    } finally {
+
+        translateBtn.disabled = false;
+
+        translateBtn.textContent =
+            "Translate Subtitle";
+    }
+});
+
+
+// =====================================
+// DOWNLOAD
+// =====================================
+
+downloadBtn.addEventListener("click", () => {
+
+    if (!subtitles.length) {
+
+        alert(
+            "Please upload and translate an SRT file first."
+        );
+
+        return;
+    }
+
+
+    const srt =
+        buildSRT(subtitles);
+
+
+    const blob =
+        new Blob(
+            [srt],
+            {
+                type: "text/plain;charset=utf-8"
+            }
+        );
+
+
+    const url =
+        URL.createObjectURL(blob);
+
+
+    const link =
+        document.createElement("a");
+
+
+    link.href = url;
+
+    link.download =
+        "Sinhala-Subtitle.srt";
+
+
+    document.body.appendChild(link);
+
+    link.click();
+
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
+});
