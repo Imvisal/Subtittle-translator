@@ -74,3 +74,52 @@ translateBtn.addEventListener("click", async () => {
 
     preview.value = data.translation;
 });
+
+translateBtn.addEventListener("click", async () => {
+
+    const text = preview.value;
+
+    if (!text.trim()) {
+        alert("Please upload an SRT file first.");
+        return;
+    }
+
+    translateBtn.disabled = true;
+    translateBtn.textContent = "Translating...";
+
+    try {
+
+        const response = await fetch("/api/translate", {
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+                text: text
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || "Translation failed");
+        }
+
+        preview.value = data.translation;
+
+        alert("Subtitle translated successfully!");
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(error.message);
+
+    } finally {
+
+        translateBtn.disabled = false;
+        translateBtn.textContent = "Translate Subtitle";
+    }
+});
