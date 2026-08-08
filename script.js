@@ -1,25 +1,16 @@
 // ============================================
-// SubLanka AI
-// Advanced Subtitle Translator
-// ============================================
-
-
-// ============================================
-// ELEMENTS
+// SubLanka AI - Subtitle Translator
+// Resume + Auto Save + Validation + Memory
 // ============================================
 
 const fileInput = document.getElementById("subtitleFile");
 const fileName = document.getElementById("fileName");
 const preview = document.getElementById("preview");
 
-const translateBtn =
-    document.getElementById("translateBtn");
+const translateBtn = document.getElementById("translateBtn");
+const downloadBtn = document.getElementById("downloadBtn");
 
-const downloadBtn =
-    document.getElementById("downloadBtn");
-
-const languageSelect =
-    document.getElementById("language");
+const languageSelect = document.getElementById("language");
 
 const progressContainer =
     document.getElementById("progressContainer");
@@ -39,22 +30,11 @@ const progressPercent =
 // ============================================
 
 const CHUNK_SIZE = 30;
-
-const CONCURRENCY = 1;
-
 const MAX_RETRIES = 10;
-
 const QUOTA_WAIT = 60000;
-
 const REQUEST_DELAY = 1500;
 
-
-// ============================================
-// STORAGE
-// ============================================
-
-const STORAGE_KEY =
-    "sublanka_translation_state";
+const STORAGE_KEY = "sublanka_ai_translation";
 
 
 // ============================================
@@ -80,37 +60,32 @@ let currentFileName = "";
 // PROGRESS
 // ============================================
 
-function updateProgress(
-    percent,
-    message
-) {
+function updateProgress(percent, message) {
 
-    progressContainer.style.display =
-        "block";
+    if (progressContainer) {
+        progressContainer.style.display = "block";
+    }
 
-
-    const safePercent =
+    const safe =
         Math.max(
             0,
-            Math.min(
-                100,
-                percent
-            )
+            Math.min(100, percent)
         );
 
+    if (progressFill) {
+        progressFill.style.width =
+            safe + "%";
+    }
 
-    progressFill.style.width =
-        safePercent + "%";
+    if (progressPercent) {
+        progressPercent.textContent =
+            Math.round(safe) + "%";
+    }
 
-
-    progressPercent.textContent =
-        Math.round(
-            safePercent
-        ) + "%";
-
-
-    progressText.textContent =
-        message;
+    if (progressText) {
+        progressText.textContent =
+            message;
+    }
 }
 
 
@@ -121,13 +96,9 @@ function updateProgress(
 function wait(ms) {
 
     return new Promise(resolve => {
-
-        setTimeout(
-            resolve,
-            ms
-        );
-
+        setTimeout(resolve, ms);
     });
+
 }
 
 
@@ -135,47 +106,37 @@ function wait(ms) {
 // PARSE SRT
 // ============================================
 
-function parseSRT(srt) {
+function parseSRT(content) {
 
     const clean =
-        srt
+        content
             .replace(/\r\n/g, "\n")
             .replace(/\r/g, "\n")
             .trim();
-
 
     if (!clean) {
         return [];
     }
 
-
     const blocks =
-        clean.split(
-            /\n\s*\n/
-        );
-
+        clean.split(/\n\s*\n/);
 
     const result = [];
-
 
     blocks.forEach(block => {
 
         const lines =
             block.split("\n");
 
-
         if (lines.length < 3) {
             return;
         }
 
-
         const number =
             lines[0].trim();
 
-
         const timestamp =
             lines[1].trim();
-
 
         const text =
             lines
@@ -183,35 +144,21 @@ function parseSRT(srt) {
                 .join("\n")
                 .trim();
 
-
-        if (
-            !number ||
-            !timestamp ||
-            !text
-        ) {
+        if (!number || !timestamp || !text) {
             return;
         }
 
-
-        if (
-            !timestamp.includes("-->")
-        ) {
+        if (!timestamp.includes("-->")) {
             return;
         }
-
 
         result.push({
-
             number,
-
             timestamp,
-
             text
-
         });
 
     });
-
 
     return result;
 }
@@ -236,6 +183,7 @@ function buildSRT(data) {
 
         })
         .join("\n\n");
+
 }
 
 
@@ -246,7 +194,6 @@ function buildSRT(data) {
 function createChunks() {
 
     const chunks = [];
-
 
     for (
         let i = 0;
@@ -263,31 +210,19 @@ function createChunks() {
 
     }
 
-
     return chunks;
 }
 
 
 // ============================================
-// VALIDATE CHUNK
+// VALIDATE TRANSLATION
 // ============================================
 
-function validateChunk(
-    original,
-    translated
-) {
+function validateChunk(original, translated) {
 
-    if (
-        !Array.isArray(
-            translated
-        )
-    ) {
-
+    if (!Array.isArray(translated)) {
         return false;
     }
-
-
-    // Number of subtitles must match
 
     if (
         translated.length !==
@@ -296,20 +231,12 @@ function validateChunk(
 
         console.warn(
             "Subtitle count mismatch",
-            {
-                expected:
-                    original.length,
-
-                received:
-                    translated.length
-            }
+            original.length,
+            translated.length
         );
 
         return false;
     }
-
-
-    // Check every subtitle
 
     for (
         let i = 0;
@@ -317,35 +244,50 @@ function validateChunk(
         i++
     ) {
 
+        const source =
+            original[i];
+
+        const result =
+            translated[i];
+
+        if (!result) {
+            return false;
+        }
+
+        // Number must stay the same
         if (
-            !translated[i]
+            String(result.number) !==
+            String(source.number)
         ) {
+
+            console.warn(
+                "Number mismatch:",
+                source.number,
+                result.number
+            );
 
             return false;
         }
 
-
+        // Timestamp must stay the same
         if (
-            translated[i].number !==
-            original[i].number
+            result.timestamp !==
+            source.timestamp
         ) {
+
+            console.warn(
+                "Timestamp changed:",
+                source.timestamp,
+                result.timestamp
+            );
 
             return false;
         }
 
-
+        // Translation cannot be empty
         if (
-            translated[i].timestamp !==
-            original[i].timestamp
-        ) {
-
-            return false;
-        }
-
-
-        if (
-            !translated[i].text ||
-            !translated[i].text.trim()
+            !result.text ||
+            !result.text.trim()
         ) {
 
             return false;
@@ -353,13 +295,55 @@ function validateChunk(
 
     }
 
-
     return true;
 }
 
 
 // ============================================
-// SAVE STATE
+// MERGE CHUNKS
+// ============================================
+
+function mergeTranslated() {
+
+    const result = [];
+
+    for (
+        let i = 0;
+        i < subtitles.length;
+        i += CHUNK_SIZE
+    ) {
+
+        const chunkIndex =
+            Math.floor(
+                i / CHUNK_SIZE
+            );
+
+        const chunk =
+            translatedChunks[chunkIndex];
+
+        if (chunk) {
+
+            result.push(...chunk);
+
+        } else {
+
+            result.push(
+                ...subtitles.slice(
+                    i,
+                    i + CHUNK_SIZE
+                )
+            );
+
+        }
+
+    }
+
+    return result;
+}
+
+
+// ============================================
+// SAVE PROGRESS
 // ============================================
 
 function saveState() {
@@ -368,7 +352,7 @@ function saveState() {
 
         const state = {
 
-            version: 1,
+            version: 2,
 
             fileName:
                 currentFileName,
@@ -393,12 +377,10 @@ function saveState() {
 
         };
 
-
         localStorage.setItem(
             STORAGE_KEY,
             JSON.stringify(state)
         );
-
 
         console.log(
             "Progress saved:",
@@ -410,7 +392,7 @@ function saveState() {
     } catch (error) {
 
         console.error(
-            "Could not save progress:",
+            "Save error:",
             error
         );
 
@@ -419,7 +401,7 @@ function saveState() {
 
 
 // ============================================
-// LOAD SAVED STATE
+// LOAD SAVED PROGRESS
 // ============================================
 
 function loadState() {
@@ -431,45 +413,32 @@ function loadState() {
                 STORAGE_KEY
             );
 
-
         if (!saved) {
             return false;
         }
 
-
         const state =
             JSON.parse(saved);
 
-
         if (
             !state.subtitles ||
-            !Array.isArray(
-                state.subtitles
-            )
+            !Array.isArray(state.subtitles)
         ) {
 
             return false;
         }
 
-
         subtitles =
             state.subtitles;
 
-
         translatedChunks =
-            state.translatedChunks ||
-            [];
-
+            state.translatedChunks || [];
 
         translationMemory =
-            state.translationMemory ||
-            [];
-
+            state.translationMemory || [];
 
         currentChunk =
-            state.currentChunk ||
-            0;
-
+            state.currentChunk || 0;
 
         totalChunks =
             state.totalChunks ||
@@ -478,20 +447,17 @@ function loadState() {
                 CHUNK_SIZE
             );
 
-
         currentFileName =
             state.fileName ||
             "Saved subtitle";
-
 
         if (fileName) {
 
             fileName.textContent =
                 currentFileName +
-                " • Saved progress";
+                " • Saved";
 
         }
-
 
         if (languageSelect) {
 
@@ -501,115 +467,46 @@ function loadState() {
 
         }
 
+        const existing =
+            mergeTranslated();
 
-        // Show current result
-
-        const completed =
-            translatedChunks
-                .filter(Boolean)
-                .flat();
-
-
-        if (completed.length > 0) {
+        if (preview) {
 
             preview.value =
-                buildSRT(
-                    mergeTranslated()
-                );
+                buildSRT(existing);
 
         }
 
-
-        const completedCount =
+        const completed =
             Math.min(
-                currentChunk *
-                CHUNK_SIZE,
-
+                currentChunk * CHUNK_SIZE,
                 subtitles.length
             );
 
-
         const percent =
-            totalChunks > 0
+            totalChunks
                 ? (
                     currentChunk /
                     totalChunks
                 ) * 100
                 : 0;
 
-
         updateProgress(
-
             percent,
-
-            `Saved progress: ${completedCount} / ${subtitles.length} subtitles`
-
+            `Saved: ${completed} / ${subtitles.length} subtitles`
         );
-
 
         return true;
 
     } catch (error) {
 
         console.error(
-            "Could not load saved state:",
+            "Load state error:",
             error
         );
 
-
         return false;
     }
-}
-
-
-// ============================================
-// MERGE TRANSLATED CHUNKS
-// ============================================
-
-function mergeTranslated() {
-
-    const result = [];
-
-
-    for (
-        let i = 0;
-        i < subtitles.length;
-        i += CHUNK_SIZE
-    ) {
-
-        const chunkIndex =
-            Math.floor(
-                i / CHUNK_SIZE
-            );
-
-
-        const chunk =
-            translatedChunks[
-                chunkIndex
-            ];
-
-
-        if (chunk) {
-
-            result.push(
-                ...chunk
-            );
-
-        } else {
-
-            result.push(
-                ...subtitles.slice(
-                    i,
-                    i + CHUNK_SIZE
-                )
-            );
-
-        }
-
-    }
-
-
-    return result;
 }
 
 
@@ -630,140 +527,121 @@ function clearSavedState() {
 // FILE UPLOAD
 // ============================================
 
-fileInput.addEventListener(
-    "change",
-    function () {
+if (fileInput) {
 
-        const file =
-            this.files[0];
+    fileInput.addEventListener(
+        "change",
+        function () {
 
+            const file =
+                this.files[0];
 
-        if (!file) {
+            if (!file) {
+                return;
+            }
 
-            fileName.textContent =
-                "No file selected";
-
-            preview.value = "";
-
-            subtitles = [];
-
-            return;
-        }
-
-
-        if (
-            !file.name
-                .toLowerCase()
-                .endsWith(".srt")
-        ) {
-
-            alert(
-                "Please select an SRT (.srt) file."
-            );
-
-            fileInput.value = "";
-
-            return;
-        }
-
-
-        currentFileName =
-            file.name;
-
-
-        fileName.textContent =
-            file.name;
-
-
-        const reader =
-            new FileReader();
-
-
-        reader.onload =
-            function (event) {
-
-                const content =
-                    event.target.result;
-
-
-                subtitles =
-                    parseSRT(
-                        content
-                    );
-
-
-                if (
-                    subtitles.length === 0
-                ) {
-
-                    alert(
-                        "No valid subtitles found."
-                    );
-
-                    return;
-                }
-
-
-                preview.value =
-                    content;
-
-
-                // New file = new translation
-
-                translatedChunks = [];
-
-                translationMemory = [];
-
-                currentChunk = 0;
-
-                totalChunks =
-                    Math.ceil(
-                        subtitles.length /
-                        CHUNK_SIZE
-                    );
-
-
-                // Remove old saved job
-
-                clearSavedState();
-
-
-                updateProgress(
-                    0,
-                    `Ready: ${subtitles.length} subtitles`
-                );
-
-
-                console.log(
-                    "Loaded:",
-                    subtitles.length,
-                    "subtitles"
-                );
-
-            };
-
-
-        reader.onerror =
-            function () {
+            if (
+                !file.name
+                    .toLowerCase()
+                    .endsWith(".srt")
+            ) {
 
                 alert(
-                    "Could not read the subtitle file."
+                    "Please select an SRT file."
                 );
 
-            };
+                fileInput.value = "";
 
+                return;
+            }
 
-        reader.readAsText(
-            file,
-            "UTF-8"
-        );
+            currentFileName =
+                file.name;
 
-    }
-);
+            if (fileName) {
+
+                fileName.textContent =
+                    file.name;
+
+            }
+
+            const reader =
+                new FileReader();
+
+            reader.onload =
+                function (event) {
+
+                    const content =
+                        event.target.result;
+
+                    subtitles =
+                        parseSRT(content);
+
+                    if (
+                        subtitles.length === 0
+                    ) {
+
+                        alert(
+                            "No valid subtitles found."
+                        );
+
+                        return;
+                    }
+
+                    // New file = new job
+                    translatedChunks = [];
+                    translationMemory = [];
+                    currentChunk = 0;
+
+                    totalChunks =
+                        Math.ceil(
+                            subtitles.length /
+                            CHUNK_SIZE
+                        );
+
+                    clearSavedState();
+
+                    if (preview) {
+
+                        preview.value =
+                            content;
+
+                    }
+
+                    updateProgress(
+                        0,
+                        `Ready: ${subtitles.length} subtitles`
+                    );
+
+                    if (translateBtn) {
+
+                        translateBtn.textContent =
+                            "Translate Subtitle";
+
+                    }
+
+                    if (downloadBtn) {
+
+                        downloadBtn.disabled =
+                            false;
+
+                    }
+
+                };
+
+            reader.readAsText(
+                file,
+                "UTF-8"
+            );
+
+        }
+    );
+
+}
 
 
 // ============================================
-// TRANSLATE CHUNK
+// TRANSLATE ONE CHUNK
 // ============================================
 
 async function translateChunk(
@@ -780,9 +658,9 @@ async function translateChunk(
         try {
 
             console.log(
-                `Chunk ${chunkNumber}/${totalChunks} - attempt ${attempt}`
+                `Translating chunk ${chunkNumber}/${totalChunks}`,
+                `Attempt ${attempt}`
             );
-
 
             const response =
                 await fetch(
@@ -792,42 +670,41 @@ async function translateChunk(
                         method: "POST",
 
                         headers: {
-
                             "Content-Type":
                                 "application/json"
-
                         },
 
-                        body: JSON.stringify({
+                        body:
+                            JSON.stringify({
 
-                            subtitles:
-                                chunk,
+                                subtitles:
+                                    chunk,
 
-                            language:
-                                languageSelect
-                                    ? languageSelect.value
-                                    : "si",
+                                language:
+                                    languageSelect
+                                        ? languageSelect.value
+                                        : "si",
 
-                            memory:
-                                translationMemory
-                                    .map(
-                                        sub =>
-                                            `[${sub.number}] ${sub.text}`
-                                    )
-                                    .join("\n")
+                                memory:
+                                    translationMemory
+                                        .map(sub => {
 
-                        })
+                                            return (
+                                                `[${sub.number}] ${sub.text}`
+                                            );
+
+                                        })
+                                        .join("\n")
+
+                            })
 
                     }
                 );
 
-
             const raw =
                 await response.text();
 
-
             let data;
-
 
             try {
 
@@ -837,19 +714,15 @@ async function translateChunk(
             } catch {
 
                 throw new Error(
-                    "Invalid server response: " +
-                    raw.substring(
-                        0,
-                        300
-                    )
+                    "Invalid server response."
                 );
 
             }
 
 
-            // =================================
+            // ==================================
             // SUCCESS
-            // =================================
+            // ==================================
 
             if (
                 response.ok &&
@@ -857,8 +730,6 @@ async function translateChunk(
                     data.subtitles
                 )
             ) {
-
-                // Validate result
 
                 if (
                     !validateChunk(
@@ -868,11 +739,10 @@ async function translateChunk(
                 ) {
 
                     throw new Error(
-                        "Subtitle validation failed. Retrying chunk."
+                        "Subtitle validation failed."
                     );
 
                 }
-
 
                 return data.subtitles;
 
@@ -884,9 +754,9 @@ async function translateChunk(
                 "Translation failed";
 
 
-            // =================================
-            // QUOTA
-            // =================================
+            // ==================================
+            // QUOTA / RATE LIMIT
+            // ==================================
 
             if (
                 response.status === 429 ||
@@ -902,30 +772,25 @@ async function translateChunk(
             ) {
 
                 updateProgress(
-
                     (
                         currentChunk /
                         totalChunks
                     ) * 100,
 
-                    `Quota reached — waiting 60 seconds...`
-
+                    "Quota limit reached — waiting 60 seconds..."
                 );
-
 
                 await wait(
                     QUOTA_WAIT
                 );
 
-
                 continue;
-
             }
 
 
-            // =================================
-            // TEMPORARY ERROR
-            // =================================
+            // ==================================
+            // SERVER TEMPORARY ERROR
+            // ==================================
 
             if (
                 response.status === 500 ||
@@ -940,26 +805,18 @@ async function translateChunk(
                         attempt * 3000
                     );
 
-
                 updateProgress(
-
                     (
                         currentChunk /
                         totalChunks
                     ) * 100,
 
-                    `Temporary error — retry ${attempt}/${MAX_RETRIES}...`
-
+                    `Temporary error — retry ${attempt}/${MAX_RETRIES}`
                 );
 
-
-                await wait(
-                    delay
-                );
-
+                await wait(delay);
 
                 continue;
-
             }
 
 
@@ -967,14 +824,12 @@ async function translateChunk(
                 errorMessage
             );
 
-
         } catch (error) {
 
             console.error(
-                `Chunk ${chunkNumber} error:`,
+                "Chunk error:",
                 error
             );
-
 
             if (
                 attempt >=
@@ -985,31 +840,25 @@ async function translateChunk(
 
             }
 
-
             updateProgress(
-
                 (
                     currentChunk /
                     totalChunks
                 ) * 100,
 
-                `Retrying chunk ${chunkNumber}... ${attempt}/${MAX_RETRIES}`
-
+                `Retrying chunk ${chunkNumber}...`
             );
 
-
-            await wait(
-                3000
-            );
+            await wait(3000);
 
         }
 
     }
 
-
     throw new Error(
         `Chunk ${chunkNumber} failed.`
     );
+
 }
 
 
@@ -1017,440 +866,446 @@ async function translateChunk(
 // TRANSLATE BUTTON
 // ============================================
 
-translateBtn.addEventListener(
-    "click",
-    async function () {
+if (translateBtn) {
 
-        if (translating) {
-            return;
-        }
+    translateBtn.addEventListener(
+        "click",
+        async function () {
 
+            if (translating) {
+                return;
+            }
 
-        if (
-            !subtitles ||
-            subtitles.length === 0
-        ) {
-
-            alert(
-                "Please upload an SRT file first."
-            );
-
-            return;
-        }
-
-
-        translating = true;
-
-
-        translateBtn.disabled =
-            true;
-
-        downloadBtn.disabled =
-            true;
-
-
-        translateBtn.textContent =
-            "Translating...";
-
-
-        const chunks =
-            createChunks();
-
-
-        totalChunks =
-            chunks.length;
-
-
-        // =====================================
-        // DETERMINE START POINT
-        // =====================================
-
-        let startChunk =
-            currentChunk;
-
-
-        // If no saved progress,
-        // start from beginning
-
-        if (
-            !translatedChunks.length
-        ) {
-
-            startChunk = 0;
-
-        }
-
-
-        updateProgress(
-
-            (
-                startChunk /
-                totalChunks
-            ) * 100,
-
-            startChunk > 0
-
-                ? `Resuming from part ${startChunk + 1}/${totalChunks}...`
-
-                : `Starting translation...`
-
-        );
-
-
-        try {
-
-
-            // =================================
-            // PROCESS ONE CHUNK AT A TIME
-            // =================================
-
-            for (
-                let i = startChunk;
-                i < totalChunks;
-                i++
+            if (
+                !subtitles ||
+                subtitles.length === 0
             ) {
 
+                alert(
+                    "Please upload an SRT file first."
+                );
 
-                currentChunk =
-                    i;
+                return;
+            }
+
+            translating = true;
+
+            translateBtn.disabled = true;
+
+            if (downloadBtn) {
+                downloadBtn.disabled = true;
+            }
+
+            translateBtn.textContent =
+                "Translating...";
 
 
-                const chunk =
-                    chunks[i];
+            const chunks =
+                createChunks();
 
+            totalChunks =
+                chunks.length;
+
+
+            // =================================
+            // RESUME
+            // =================================
+
+            let startChunk =
+                currentChunk;
+
+            if (
+                !translatedChunks.length
+            ) {
+
+                startChunk = 0;
+
+            }
+
+
+            if (startChunk > 0) {
 
                 updateProgress(
 
                     (
-                        i /
+                        startChunk /
                         totalChunks
                     ) * 100,
 
-                    `Translating part ${i + 1}/${totalChunks}...`
+                    `Resuming from chunk ${startChunk + 1}...`
 
                 );
 
+            } else {
+
+                updateProgress(
+                    0,
+                    "Starting translation..."
+                );
+
+            }
+
+
+            try {
 
                 // =================================
-                // TRANSLATE
+                // CHUNK LOOP
                 // =================================
 
-                const result =
-                    await translateChunk(
-                        chunk,
-                        i + 1
-                    );
-
-
-                // =================================
-                // VALIDATION
-                // =================================
-
-                if (
-                    !validateChunk(
-                        chunk,
-                        result
-                    )
+                for (
+                    let i = startChunk;
+                    i < totalChunks;
+                    i++
                 ) {
 
-                    throw new Error(
-                        `Validation failed for chunk ${i + 1}.`
+                    currentChunk =
+                        i;
+
+
+                    const chunk =
+                        chunks[i];
+
+
+                    updateProgress(
+
+                        (
+                            i /
+                            totalChunks
+                        ) * 100,
+
+                        `Translating ${i + 1}/${totalChunks}...`
+
                     );
+
+
+                    // =================================
+                    // API
+                    // =================================
+
+                    const result =
+                        await translateChunk(
+                            chunk,
+                            i + 1
+                        );
+
+
+                    // =================================
+                    // VALIDATE
+                    // =================================
+
+                    if (
+                        !validateChunk(
+                            chunk,
+                            result
+                        )
+                    ) {
+
+                        throw new Error(
+                            `Validation failed at chunk ${i + 1}.`
+                        );
+
+                    }
+
+
+                    // =================================
+                    // SAVE TRANSLATED CHUNK
+                    // =================================
+
+                    translatedChunks[i] =
+                        result;
+
+
+                    // =================================
+                    // MEMORY
+                    // =================================
+
+                    translationMemory =
+                        result.slice(-15);
+
+
+                    // =================================
+                    // MARK COMPLETE
+                    // =================================
+
+                    currentChunk =
+                        i + 1;
+
+
+                    // =================================
+                    // SAVE
+                    // =================================
+
+                    saveState();
+
+
+                    // =================================
+                    // UPDATE PREVIEW
+                    // =================================
+
+                    if (preview) {
+
+                        preview.value =
+                            buildSRT(
+                                mergeTranslated()
+                            );
+
+                    }
+
+
+                    // =================================
+                    // PROGRESS
+                    // =================================
+
+                    const percent =
+                        (
+                            currentChunk /
+                            totalChunks
+                        ) * 100;
+
+
+                    const translatedCount =
+                        Math.min(
+                            currentChunk *
+                            CHUNK_SIZE,
+                            subtitles.length
+                        );
+
+
+                    updateProgress(
+
+                        percent,
+
+                        `Translated ${translatedCount} / ${subtitles.length} subtitles`
+
+                    );
+
+
+                    // =================================
+                    // DELAY
+                    // =================================
+
+                    if (
+                        currentChunk <
+                        totalChunks
+                    ) {
+
+                        await wait(
+                            REQUEST_DELAY
+                        );
+
+                    }
 
                 }
 
 
                 // =================================
-                // SAVE CHUNK
+                // FINAL OUTPUT
                 // =================================
 
-                translatedChunks[i] =
-                    result;
+                const finalSubtitle =
+                    mergeTranslated();
 
 
-                // =================================
-                // UPDATE MEMORY
-                // =================================
+                if (
+                    finalSubtitle.length !==
+                    subtitles.length
+                ) {
 
-                translationMemory =
-                    result.slice(
-                        -15
+                    throw new Error(
+                        "Final subtitle validation failed."
                     );
 
-
-                // =================================
-                // MARK COMPLETE
-                // =================================
-
-                currentChunk =
-                    i + 1;
+                }
 
 
-                // =================================
-                // AUTO SAVE
-                // =================================
+                if (preview) {
+
+                    preview.value =
+                        buildSRT(
+                            finalSubtitle
+                        );
+
+                }
+
+
+                updateProgress(
+                    100,
+                    "Translation complete!"
+                );
+
+
+                translateBtn.textContent =
+                    "Translation Complete ✓";
+
 
                 saveState();
 
 
-                // =================================
-                // PROGRESS
-                // =================================
+                alert(
+                    "Translation completed successfully!"
+                );
+
+
+            } catch (error) {
+
+                console.error(
+                    "Translation stopped:",
+                    error
+                );
+
 
                 const percent =
-                    (
-                        currentChunk /
-                        totalChunks
-                    ) * 100;
-
-
-                const translatedCount =
-                    Math.min(
-
-                        currentChunk *
-                        CHUNK_SIZE,
-
-                        subtitles.length
-
-                    );
+                    totalChunks
+                        ? (
+                            currentChunk /
+                            totalChunks
+                        ) * 100
+                        : 0;
 
 
                 updateProgress(
 
                     percent,
 
-                    `Translated ${translatedCount} / ${subtitles.length} subtitles`
+                    `Stopped at ${currentChunk}/${totalChunks}. Progress saved.`
 
                 );
 
 
-                // =================================
-                // DELAY
-                // =================================
+                alert(
+
+                    "Translation stopped.\n\n" +
+                    error.message +
+                    "\n\n" +
+                    "Your progress is saved. " +
+                    "Click Resume Translation to continue."
+
+                );
+
+
+            } finally {
+
+                translating = false;
+
+                translateBtn.disabled = false;
+
+                if (downloadBtn) {
+                    downloadBtn.disabled = false;
+                }
+
 
                 if (
-                    currentChunk <
-                    totalChunks
+                    currentChunk >=
+                    totalChunks &&
+                    totalChunks > 0
                 ) {
 
-                    await wait(
-                        REQUEST_DELAY
-                    );
+                    translateBtn.textContent =
+                        "Translation Complete ✓";
+
+                } else {
+
+                    translateBtn.textContent =
+                        "Resume Translation";
 
                 }
 
             }
 
+        }
+    );
 
-            // =====================================
-            // COMPLETE
-            // =====================================
+}
 
-            const finalSubtitle =
+
+// ============================================
+// DOWNLOAD SRT
+// ============================================
+
+if (downloadBtn) {
+
+    downloadBtn.addEventListener(
+        "click",
+        function () {
+
+            if (
+                !subtitles ||
+                subtitles.length === 0
+            ) {
+
+                alert(
+                    "Please upload an SRT file first."
+                );
+
+                return;
+            }
+
+
+            const finalData =
                 mergeTranslated();
 
 
-            // Final validation
-
-            if (
-                finalSubtitle.length !==
-                subtitles.length
-            ) {
-
-                throw new Error(
-                    "Final subtitle count validation failed."
-                );
-
-            }
-
-
-            preview.value =
+            const srt =
                 buildSRT(
-                    finalSubtitle
+                    finalData
                 );
 
 
-            updateProgress(
-                100,
-                "Translation complete!"
+            const blob =
+                new Blob(
+                    [srt],
+                    {
+                        type:
+                            "application/x-subrip;charset=utf-8"
+                    }
+                );
+
+
+            const url =
+                URL.createObjectURL(
+                    blob
+                );
+
+
+            const link =
+                document.createElement(
+                    "a"
+                );
+
+
+            link.href =
+                url;
+
+
+            link.download =
+                "Sinhala-Subtitle.srt";
+
+
+            document.body.appendChild(
+                link
             );
 
 
-            translateBtn.textContent =
-                "Translation Complete ✓";
+            link.click();
 
 
-            // Save final state
-
-            saveState();
-
-
-            alert(
-                "Translation completed successfully!"
+            document.body.removeChild(
+                link
             );
 
 
-        } catch (error) {
-
-            console.error(
-                "Translation stopped:",
-                error
+            URL.revokeObjectURL(
+                url
             );
-
-
-            const percent =
-                totalChunks > 0
-                    ? (
-                        currentChunk /
-                        totalChunks
-                    ) * 100
-                    : 0;
-
-
-            updateProgress(
-
-                percent,
-
-                `Stopped at ${currentChunk}/${totalChunks}. Progress saved.`
-
-            );
-
-
-            alert(
-
-                "Translation stopped.\n\n" +
-
-                error.message +
-
-                "\n\nYour progress has been saved. " +
-
-                "Click Translate again to resume."
-
-            );
-
-
-        } finally {
-
-            translating =
-                false;
-
-
-            translateBtn.disabled =
-                false;
-
-
-            downloadBtn.disabled =
-                false;
-
-
-            if (
-                currentChunk >=
-                totalChunks &&
-                totalChunks > 0
-            ) {
-
-                translateBtn.textContent =
-                    "Translation Complete ✓";
-
-            } else {
-
-                translateBtn.textContent =
-                    "Resume Translation";
-
-            }
 
         }
+    );
 
-    }
-);
-
-
-// ============================================
-// DOWNLOAD
-// ============================================
-
-downloadBtn.addEventListener(
-    "click",
-    function () {
-
-        if (
-            !subtitles ||
-            subtitles.length === 0
-        ) {
-
-            alert(
-                "Please upload an SRT file first."
-            );
-
-            return;
-        }
-
-
-        const finalData =
-            mergeTranslated();
-
-
-        const srt =
-            buildSRT(
-                finalData
-            );
-
-
-        const blob =
-            new Blob(
-                [srt],
-                {
-
-                    type:
-                        "application/x-subrip;charset=utf-8"
-
-                }
-            );
-
-
-        const url =
-            URL.createObjectURL(
-                blob
-            );
-
-
-        const link =
-            document.createElement(
-                "a"
-            );
-
-
-        link.href =
-            url;
-
-
-        link.download =
-            "Sinhala-Subtitle.srt";
-
-
-        document.body.appendChild(
-            link
-        );
-
-
-        link.click();
-
-
-        document.body.removeChild(
-            link
-        );
-
-
-        URL.revokeObjectURL(
-            url
-        );
-
-    }
-);
+}
 
 
 // ============================================
-// LOAD SAVED PROGRESS ON PAGE LOAD
+// RESTORE SAVED JOB
 // ============================================
 
 window.addEventListener(
@@ -1463,8 +1318,12 @@ window.addEventListener(
 
         if (restored) {
 
-            translateBtn.textContent =
-                "Resume Translation";
+            if (translateBtn) {
+
+                translateBtn.textContent =
+                    "Resume Translation";
+
+            }
 
             console.log(
                 "Saved translation restored."
