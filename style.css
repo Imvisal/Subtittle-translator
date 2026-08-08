@@ -361,3 +361,142 @@ footer span {
     }
 
 }
+
+/* SEARCH SECTION */
+
+.search-section {
+    margin: 30px 0;
+    text-align: center;
+}
+
+.search-section h2 {
+    margin-bottom: 8px;
+}
+
+.search-section p {
+    opacity: 0.7;
+    margin-bottom: 18px;
+}
+
+.search-box {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+}
+
+.search-box input {
+    flex: 1;
+    padding: 14px 16px;
+    border: 1px solid #3b4260;
+    border-radius: 10px;
+    background: #111827;
+    color: white;
+    font-size: 15px;
+    outline: none;
+}
+
+.search-box input:focus {
+    border-color: #5b4df5;
+}
+
+.search-box button {
+    padding: 14px 20px;
+    border: none;
+    border-radius: 10px;
+    background: #5848e8;
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.search-box button:hover {
+    background: #6959f5;
+}
+
+.search-box button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+#searchStatus {
+    text-align: center;
+    margin: 15px 0;
+    opacity: 0.8;
+}
+
+#searchResults {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.search-result-card {
+    display: flex;
+    gap: 15px;
+    padding: 14px;
+    border-radius: 12px;
+    background: #20283a;
+    border: 1px solid #303a55;
+}
+
+.search-result-card img {
+    width: 80px;
+    height: 115px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.result-info {
+    flex: 1;
+}
+
+.result-info h3 {
+    margin: 0 0 7px;
+}
+
+.result-info p {
+    font-size: 13px;
+    opacity: 0.7;
+    margin: 8px 0;
+}
+
+.result-meta {
+    display: flex;
+    gap: 10px;
+    font-size: 13px;
+    opacity: 0.7;
+}
+
+.select-title-btn {
+    margin-top: 8px;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 7px;
+    background: #5848e8;
+    color: white;
+    cursor: pointer;
+}
+
+.search-divider {
+    margin: 30px 0;
+    text-align: center;
+    opacity: 0.5;
+}
+
+@media (max-width: 600px) {
+
+    .search-box {
+        flex-direction: column;
+    }
+
+    .search-box button {
+        width: 100%;
+    }
+
+    .search-result-card img {
+        width: 65px;
+        height: 95px;
+    }
+
+}
