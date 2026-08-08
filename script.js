@@ -1277,9 +1277,15 @@ if (downloadBtn) {
                 url;
 
 
-            link.download =
-                "Sinhala-Subtitle.srt";
+            const originalName =
+    currentFileName
+        .replace(/\.srt$/i, "");
 
+const downloadName =
+    `${originalName} - Sinhala Sub - SubLanka AI.srt`;
+
+link.download =
+    downloadName;
 
             document.body.appendChild(
                 link
