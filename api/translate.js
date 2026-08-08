@@ -6,11 +6,11 @@ module.exports = async function handler(req, res) {
             });
         }
 
-        const { text } = req.body || {};
+        const { subtitles } = req.body || {};
 
-        if (!text || !text.trim()) {
+        if (!Array.isArray(subtitles) || subtitles.length === 0) {
             return res.status(400).json({
-                error: "Subtitle text is required"
+                error: "No subtitles received"
             });
         }
 
@@ -18,25 +18,42 @@ module.exports = async function handler(req, res) {
 
         if (!apiKey) {
             return res.status(500).json({
-                error: "GEMINI_API_KEY is missing in Vercel."
+                error: "GEMINI_API_KEY is missing"
             });
         }
 
-        const prompt = `
-Translate this English movie subtitle into natural Sri Lankan Sinhala.
+        // Send only the dialogue to Gemini
+        const dialogue = subtitles.map((sub, index) => {
+            return `[${index}] ${sub.text}`;
+        }).join("\n");
 
-Rules:
-- Translate only the dialogue.
-- Keep the meaning accurate and natural.
-- Use conversational Sinhala.
+        const prompt = `
+Translate these English movie subtitles into natural Sri Lankan Sinhala.
+
+IMPORTANT:
+- Translate ONLY the dialogue.
+- Keep every [number] exactly.
+- Do not remove any number.
+- Do not add any number.
+- Keep the same order.
 - Do not add explanations.
 - Do not add quotation marks.
-- Preserve line breaks.
-- Return ONLY the translation.
+- Use natural conversational Sinhala.
+- Return ONLY the translated lines.
 
-Subtitle:
+Example:
 
-${text}
+[0] Hello, how are you?
+[1] I am fine.
+
+Return:
+
+[0] හෙලෝ, ඔයාට කොහොමද?
+[1] මම හොඳින්.
+
+Subtitles:
+
+${dialogue}
 `;
 
         const response = await fetch(
@@ -65,46 +82,57 @@ ${text}
 
         const raw = await response.text();
 
-        console.log("Gemini HTTP:", response.status);
-        console.log("Gemini response:", raw);
-
         if (!response.ok) {
-            let errorMessage = "Gemini API request failed.";
+            let message = "Gemini API error";
 
             try {
                 const errorData = JSON.parse(raw);
-
-                errorMessage =
-                    errorData?.error?.message ||
-                    errorMessage;
-
-            } catch {
-                errorMessage = raw || errorMessage;
-            }
+                message = errorData?.error?.message || message;
+            } catch {}
 
             return res.status(500).json({
-                error: errorMessage
+                error: message
             });
         }
 
         const data = JSON.parse(raw);
 
-        const translation =
+        const result =
             data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-        if (!translation) {
+        if (!result) {
             return res.status(500).json({
-                error: "Gemini returned an empty translation."
+                error: "Gemini returned no translation"
             });
         }
 
+        const translations = {};
+
+        result.split("\n").forEach(line => {
+
+            const match = line.match(
+                /^\[(\d+)\]\s*(.*)$/
+            );
+
+            if (!match) return;
+
+            const index = Number(match[1]);
+
+            translations[index] = match[2].trim();
+        });
+
+        const output = subtitles.map((sub, index) => ({
+            ...sub,
+            text: translations[index] || sub.text
+        }));
+
         return res.status(200).json({
-            translation: translation.trim()
+            subtitles: output
         });
 
     } catch (error) {
 
-        console.error("SERVER ERROR:", error);
+        console.error(error);
 
         return res.status(500).json({
             error: error.message || "Server error"
