@@ -3,7 +3,7 @@ module.exports = async function handler(req, res) {
     try {
 
         // ========================================
-        // METHOD CHECK
+        // METHOD
         // ========================================
 
         if (req.method !== "POST") {
@@ -16,12 +16,13 @@ module.exports = async function handler(req, res) {
 
 
         // ========================================
-        // GET DATA
+        // REQUEST DATA
         // ========================================
 
         const {
             subtitles,
-            language = "si"
+            language = "si",
+            memory = ""
         } = req.body || {};
 
 
@@ -48,8 +49,7 @@ module.exports = async function handler(req, res) {
         if (!apiKey) {
 
             return res.status(500).json({
-                error:
-                    "GEMINI_API_KEY is missing"
+                error: "GEMINI_API_KEY is missing"
             });
 
         }
@@ -59,15 +59,19 @@ module.exports = async function handler(req, res) {
         // LANGUAGE
         // ========================================
 
-        let targetLanguage = "Sri Lankan Sinhala";
+        let targetLanguage =
+            "natural Sri Lankan Sinhala";
 
         if (language === "ta") {
-            targetLanguage = "Sri Lankan Tamil";
+
+            targetLanguage =
+                "natural Sri Lankan Tamil";
+
         }
 
 
         // ========================================
-        // PREPARE DIALOGUE
+        // DIALOGUE
         // ========================================
 
         const dialogue =
@@ -81,100 +85,127 @@ module.exports = async function handler(req, res) {
 
 
         // ========================================
+        // MEMORY
+        // ========================================
+
+        let memorySection = "";
+
+        if (
+            memory &&
+            memory.trim()
+        ) {
+
+            memorySection = `
+
+PREVIOUS TRANSLATION CONTEXT:
+
+The following subtitles were translated immediately
+before this chunk.
+
+Use them ONLY as context to maintain consistency
+in names, slang, character speech style and repeated
+phrases.
+
+Do NOT translate or return these previous subtitles.
+
+${memory}
+
+END PREVIOUS TRANSLATION CONTEXT.
+
+`;
+
+        }
+
+
+        // ========================================
         // PROMPT
         // ========================================
 
-const prompt = `
+        const prompt = `
 
-You are a professional movie subtitle translator.
+You are a professional movie and TV subtitle translator.
 
-Translate the following English movie/TV subtitles into
-natural, conversational Sri Lankan Sinhala.
+Translate the following English subtitles into
+${targetLanguage}.
 
-The goal is NOT a word-for-word translation.
+Your translation must sound like natural dialogue
+spoken by real Sri Lankan people.
 
-The translation should sound like real Sinhala dialogue
-spoken by characters in a movie or TV series.
+Do NOT translate word-for-word.
 
-IMPORTANT TRANSLATION RULES:
+Translate the meaning, emotion and context.
 
-1. Translate the meaning and context, not individual words.
+${memorySection}
 
-2. Use natural Sri Lankan Sinhala.
+TRANSLATION RULES:
 
-3. Make dialogue conversational and easy to understand.
+1. Use natural conversational Sinhala.
 
-4. Preserve the emotion and tone of the original dialogue.
+2. Preserve the original meaning.
 
-5. Preserve humor, sarcasm, anger, fear, sadness, excitement,
-   romance and other emotions.
+3. Preserve emotion and tone.
 
-6. Preserve slang when appropriate. Translate slang into
-   natural Sinhala slang when possible.
+4. Preserve humor and sarcasm.
 
-7. Do not make strong language unnecessarily polite.
-   Preserve the intensity of the original dialogue naturally.
+5. Preserve anger, fear, sadness, romance and excitement.
 
-8. Preserve character names exactly unless the name is clearly
-   intended to be translated.
+6. Use natural Sri Lankan expressions where appropriate.
 
-9. Preserve place names, company names, product names,
-   organizations and important fictional terms.
+7. Preserve slang naturally.
 
-10. Do not translate proper nouns unnecessarily.
+8. Do not make strong language unnecessarily polite.
 
-11. Keep the meaning accurate even when changing the sentence
-    structure to make the Sinhala sound natural.
+9. Preserve the intensity of the original dialogue.
 
-12. Avoid robotic or literal Sinhala.
+10. Keep character names consistent.
 
-13. Avoid overly formal Sinhala unless the character's dialogue
-    is clearly formal.
+11. Keep place names consistent.
 
-14. Do not add explanations.
+12. Keep company, product and organization names
+    when they should remain in English.
 
-15. Do not add translator notes.
+13. Do not unnecessarily translate proper nouns.
 
-16. Do not add quotation marks unless they are part of the
-    original dialogue.
+14. Keep repeated phrases consistent with previous
+    translations.
 
-17. Do not add markdown.
+15. Keep the speaking style of characters consistent.
 
-18. Do not merge different subtitle lines.
+16. Do not add explanations.
 
-19. Do not remove subtitle lines.
+17. Do not add translator notes.
 
-20. Do not create new subtitle lines.
+18. Do not add markdown.
 
-21. Keep every [number] exactly as provided.
+19. Do not add quotation marks unless they belong
+    to the original dialogue.
 
-22. Keep the exact same order.
+20. Do not merge subtitle lines.
 
-23. Return ONLY the translated subtitle lines.
+21. Do not remove subtitle lines.
 
-IMPORTANT OUTPUT FORMAT:
+22. Do not create extra subtitle lines.
 
-Input:
+23. Keep every [number] exactly.
 
-[0] Hey, what are you doing?
-[1] You can't be serious.
-[2] Get out of here!
+24. Keep the exact same order.
 
-Output:
+25. Return ONLY the translated subtitle lines.
 
-[0] හේයි, ඔයා මොකද කරන්නේ?
-[1] ඔයා මේක ඇත්තටම කියනවා නෙවෙයි නේද?
-[2] මෙතනින් පලයන්!
+OUTPUT FORMAT:
 
-DO NOT return anything except lines in this format:
+[0] translated dialogue
+[1] translated dialogue
+[2] translated dialogue
 
-[number] translated dialogue
+Nothing else.
 
-Subtitles to translate:
+SUBTITLES:
 
 ${dialogue}
 
 `;
+
 
         // ========================================
         // GEMINI API
@@ -225,7 +256,7 @@ ${dialogue}
 
 
         // ========================================
-        // READ RESPONSE
+        // RESPONSE
         // ========================================
 
         const raw =
@@ -266,15 +297,11 @@ ${dialogue}
 
 
             console.error(
-                "Gemini API:",
+                "Gemini API error:",
                 response.status,
                 message
             );
 
-
-            // IMPORTANT:
-            // Keep original status code.
-            // This allows script.js to detect 429.
 
             return res.status(
                 response.status
@@ -291,7 +318,7 @@ ${dialogue}
 
 
         // ========================================
-        // GET MODEL OUTPUT
+        // GET TEXT
         // ========================================
 
         const result =
@@ -314,7 +341,7 @@ ${dialogue}
 
 
         // ========================================
-        // PARSE TRANSLATIONS
+        // PARSE
         // ========================================
 
         const translations = {};
@@ -339,19 +366,18 @@ ${dialogue}
                     Number(match[1]);
 
 
-                const text =
-                    match[2]
-                        .trim();
+                const translatedText =
+                    match[2].trim();
 
 
                 translations[index] =
-                    text;
+                    translatedText;
 
             });
 
 
         // ========================================
-        // CREATE OUTPUT
+        // OUTPUT
         // ========================================
 
         const output =
