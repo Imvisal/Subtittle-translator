@@ -307,7 +307,55 @@ async function translateChunk(chunk) {
 
     const maxRetries = 4;
 
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    const chunkSize = 50;
+const concurrency = 3;
+
+const chunks = [];
+
+for (let i = 0; i < subtitles.length; i += chunkSize) {
+    chunks.push(subtitles.slice(i, i + chunkSize));
+}
+
+let translatedChunks = new Array(chunks.length);
+let completed = 0;
+
+async function processChunk(index) {
+
+    translatedChunks[index] = await translateChunk(chunks[index]);
+
+    completed++;
+
+    const percent =
+        (completed / chunks.length) * 100;
+
+    updateProgress(
+        percent,
+        `Translated ${completed} / ${chunks.length} parts`
+    );
+}
+
+for (let i = 0; i < chunks.length; i += concurrency) {
+
+    const batch = [];
+
+    for (
+        let j = i;
+        j < Math.min(i + concurrency, chunks.length);
+        j++
+    ) {
+        batch.push(processChunk(j));
+    }
+
+    await Promise.all(batch);
+}
+
+translated = translatedChunks.flat();
+
+subtitles = translated;
+
+preview.value = buildSRT(subtitles);
+
+updateProgress(100, "Translation complete!");
 
         try {
 
@@ -386,3 +434,25 @@ async function translateChunk(chunk) {
 
     throw new Error("Translation failed");
 }
+const fileName = document.getElementById("fileName");
+
+fileInput.addEventListener("change", () => {
+
+    const file = fileInput.files[0];
+
+    if (!file) {
+        fileName.textContent = "No file selected";
+        return;
+    }
+
+    fileName.textContent = file.name;
+
+    const reader = new FileReader();
+
+    reader.onload = function(event) {
+        preview.value = event.target.result;
+        subtitles = parseSRT(event.target.result);
+    };
+
+    reader.readAsText(file, "UTF-8");
+});
