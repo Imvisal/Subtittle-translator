@@ -18,19 +18,21 @@ module.exports = async function handler(req, res) {
 
         if (!apiKey) {
             return res.status(500).json({
-                error: "GEMINI_API_KEY is not configured in Vercel."
+                error: "GEMINI_API_KEY is missing in Vercel."
             });
         }
 
         const prompt = `
-Translate the following English movie subtitle into natural Sri Lankan Sinhala.
+Translate this English movie subtitle into natural Sri Lankan Sinhala.
 
 Rules:
 - Translate only the dialogue.
-- Keep the meaning natural and conversational.
+- Keep the meaning accurate and natural.
+- Use conversational Sinhala.
 - Do not add explanations.
-- Return only the translated subtitle.
-- Preserve the original line breaks.
+- Do not add quotation marks.
+- Preserve line breaks.
+- Return ONLY the translation.
 
 Subtitle:
 
@@ -38,13 +40,13 @@ ${text}
 `;
 
         const response = await fetch(
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" +
-            encodeURIComponent(apiKey),
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
             {
                 method: "POST",
 
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "x-goog-api-key": apiKey
                 },
 
                 body: JSON.stringify({
@@ -63,30 +65,41 @@ ${text}
 
         const raw = await response.text();
 
-        console.log("Gemini status:", response.status);
-        console.log("Gemini response:", raw.substring(0, 1000));
+        console.log("Gemini HTTP:", response.status);
+        console.log("Gemini response:", raw);
 
         if (!response.ok) {
-            return res.status(response.status).json({
-                error: "Gemini API error",
-                details: raw
+            let errorMessage = "Gemini API request failed.";
+
+            try {
+                const errorData = JSON.parse(raw);
+
+                errorMessage =
+                    errorData?.error?.message ||
+                    errorMessage;
+
+            } catch {
+                errorMessage = raw || errorMessage;
+            }
+
+            return res.status(500).json({
+                error: errorMessage
             });
         }
 
         const data = JSON.parse(raw);
 
-        const translated =
+        const translation =
             data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-        if (!translated) {
+        if (!translation) {
             return res.status(500).json({
-                error: "Gemini returned no translation.",
-                details: data
+                error: "Gemini returned an empty translation."
             });
         }
 
         return res.status(200).json({
-            translation: translated
+            translation: translation.trim()
         });
 
     } catch (error) {
