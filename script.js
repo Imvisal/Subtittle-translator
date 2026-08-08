@@ -1,2111 +1,643 @@
-// ============================================================
-// SUBLANKA AI
-// Advanced Subtitle Translator
-// ============================================================
-
-
-// ============================================================
-// ELEMENTS
-// ============================================================
-
-const fileInput =
-    document.getElementById("subtitleFile");
-
-const fileName =
-    document.getElementById("fileName");
-
-const preview =
-    document.getElementById("preview");
-
-const translateBtn =
-    document.getElementById("translateBtn");
-
-const downloadBtn =
-    document.getElementById("downloadBtn");
-
-const languageSelect =
-    document.getElementById("language");
-
-const progressContainer =
-    document.getElementById("progressContainer");
-
-const progressFill =
-    document.getElementById("progressFill");
-
-const progressText =
-    document.getElementById("progressText");
-
-const progressPercent =
-    document.getElementById("progressPercent");
-
-
-// ============================================================
-// SETTINGS
-// ============================================================
-
-const CHUNK_SIZE = 30;
-
-const MAX_RETRIES = 10;
-
-const QUOTA_WAIT = 60000;
-
-const REQUEST_DELAY = 1500;
-
-const STORAGE_KEY =
-    "sublanka_ai_translation_v3";
-
-
-// ============================================================
-// VARIABLES
-// ============================================================
-
-let subtitles = [];
-
-let translatedChunks = [];
-
-let translationMemory = [];
-
-let glossary = {};
-
-let currentChunk = 0;
-
-let totalChunks = 0;
-
-let translating = false;
-
-let currentFileName = "";
-
-
-// ============================================================
-// WAIT
-// ============================================================
-
-function wait(ms) {
-
-    return new Promise(resolve => {
-
-        setTimeout(resolve, ms);
-
-    });
-
-}
-
-
-// ============================================================
-// PROGRESS
-// ============================================================
-
-function updateProgress(percent, message) {
-
-    if (progressContainer) {
-
-        progressContainer.style.display =
-            "block";
-
-    }
-
-    const safePercent =
-        Math.max(
-            0,
-            Math.min(
-                100,
-                percent
-            )
-        );
-
-    if (progressFill) {
-
-        progressFill.style.width =
-            safePercent + "%";
-
-    }
-
-    if (progressPercent) {
-
-        progressPercent.textContent =
-            Math.round(
-                safePercent
-            ) + "%";
-
-    }
-
-    if (progressText) {
-
-        progressText.textContent =
-            message;
-
-    }
-
-}
-
-
-// ============================================================
-// TIME CONVERSION
-// ============================================================
-
-function timestampToMs(timestamp) {
-
-    const match =
-        timestamp.match(
-            /(\d{2}):(\d{2}):(\d{2}),(\d{3})/
-        );
-
-    if (!match) {
-
-        return null;
-
-    }
-
-    const hours =
-        Number(match[1]);
-
-    const minutes =
-        Number(match[2]);
-
-    const seconds =
-        Number(match[3]);
-
-    const milliseconds =
-        Number(match[4]);
-
-    return (
-        hours * 3600000 +
-        minutes * 60000 +
-        seconds * 1000 +
-        milliseconds
-    );
-
-}
-
-
-// ============================================================
-// PARSE SRT
-// ============================================================
-
-function parseSRT(content) {
-
-    const clean =
-        content
-            .replace(/\r\n/g, "\n")
-            .replace(/\r/g, "\n")
-            .trim();
-
-    if (!clean) {
-
-        return [];
-
-    }
-
-    const blocks =
-        clean.split(
-            /\n\s*\n/
-        );
-
-    const result = [];
-
-    blocks.forEach(block => {
-
-        const lines =
-            block.split("\n");
-
-        if (lines.length < 3) {
-
-            return;
-
-        }
-
-        const number =
-            lines[0].trim();
-
-        const timestamp =
-            lines[1].trim();
-
-        const text =
-            lines
-                .slice(2)
-                .join("\n")
-                .trim();
-
-        if (
-            !number ||
-            !timestamp ||
-            !text
-        ) {
-
-            return;
-
-        }
-
-        if (
-            !timestamp.includes("-->")
-        ) {
-
-            return;
-
-        }
-
-        result.push({
-
-            number,
-
-            timestamp,
-
-            text
-
-        });
-
-    });
-
-    return result;
-
-}
-
-
-// ============================================================
-// BUILD SRT
-// ============================================================
-
-function buildSRT(data) {
-
-    return data
-        .map(sub => {
-
-            return (
-                sub.number +
-                "\n" +
-                sub.timestamp +
-                "\n" +
-                sub.text
-            );
-
-        })
-        .join("\n\n");
-
-}
-
-
-// ============================================================
-// CREATE CHUNKS
-// ============================================================
-
-function createChunks() {
-
-    const chunks = [];
-
-    for (
-        let i = 0;
-        i < subtitles.length;
-        i += CHUNK_SIZE
-    ) {
-
-        chunks.push(
-            subtitles.slice(
-                i,
-                i + CHUNK_SIZE
-            )
-        );
-
-    }
-
-    return chunks;
-
-}
-
-
-// ============================================================
-// CHECK SOURCE SRT
-// ============================================================
-
-function analyzeSourceSRT(data) {
-
-    const warnings = [];
-
-    const numbers = new Set();
-
-    let previousEnd = null;
-
-    for (
-        let i = 0;
-        i < data.length;
-        i++
-    ) {
-
-        const sub =
-            data[i];
-
-        const number =
-            Number(sub.number);
-
-        // ----------------------------------------
-        // Duplicate number
-        // ----------------------------------------
-
-        if (
-            numbers.has(number)
-        ) {
-
-            warnings.push(
-                `Duplicate subtitle number: ${sub.number}`
-            );
-
-        }
-
-        numbers.add(number);
-
-
-        // ----------------------------------------
-        // Timestamp
-        // ----------------------------------------
-
-        const parts =
-            sub.timestamp.split("-->");
-
-        if (
-            parts.length !== 2
-        ) {
-
-            warnings.push(
-                `Invalid timestamp at subtitle ${sub.number}`
-            );
-
-            continue;
-
-        }
-
-        const start =
-            timestampToMs(
-                parts[0].trim()
-            );
-
-        const end =
-            timestampToMs(
-                parts[1].trim()
-            );
-
-        if (
-            start === null ||
-            end === null
-        ) {
-
-            warnings.push(
-                `Invalid timestamp at subtitle ${sub.number}`
-            );
-
-            continue;
-
-        }
-
-        if (
-            end < start
-        ) {
-
-            warnings.push(
-                `End time before start time at subtitle ${sub.number}`
-            );
-
-        }
-
-        // ----------------------------------------
-        // Overlap warning
-        // ----------------------------------------
-
-        if (
-            previousEnd !== null &&
-            start < previousEnd
-        ) {
-
-            warnings.push(
-                `Timestamp overlap near subtitle ${sub.number}`
-            );
-
-        }
-
-        previousEnd =
-            end;
-
-    }
-
-    return warnings;
-
-}
-
-
-// ============================================================
-// CHECK NUMBER SEQUENCE
-// ============================================================
-
-function checkNumberSequence(data) {
-
-    const missing = [];
-
-    const duplicates = [];
-
-    const seen = new Set();
-
-    const numericNumbers =
-        data
-            .map(sub => Number(sub.number))
-            .filter(Number.isFinite);
-
-    if (
-        numericNumbers.length === 0
-    ) {
-
-        return {
-            missing,
-            duplicates
-        };
-
-    }
-
-    const min =
-        Math.min(
-            ...numericNumbers
-        );
-
-    const max =
-        Math.max(
-            ...numericNumbers
-        );
-
-    for (
-        let i = min;
-        i <= max;
-        i++
-    ) {
-
-        const count =
-            numericNumbers.filter(
-                number =>
-                    number === i
-            ).length;
-
-        if (count === 0) {
-
-            missing.push(i);
-
-        }
-
-        if (count > 1) {
-
-            duplicates.push(i);
-
-        }
-
-    }
-
-    return {
-        missing,
-        duplicates
-    };
-
-}
-
-
-// ============================================================
-// VALIDATE TRANSLATED CHUNK
-// ============================================================
-
-function validateChunk(
-    original,
-    translated
-) {
-
-    if (
-        !Array.isArray(translated)
-    ) {
-
-        return false;
-
-    }
-
-    if (
-        translated.length !==
-        original.length
-    ) {
-
-        return false;
-
-    }
-
-    for (
-        let i = 0;
-        i < original.length;
-        i++
-    ) {
-
-        const source =
-            original[i];
-
-        const result =
-            translated[i];
-
-        if (!result) {
-
-            return false;
-
-        }
-
-        // ----------------------------------------
-        // NUMBER
-        // ----------------------------------------
-
-        if (
-            String(result.number) !==
-            String(source.number)
-        ) {
-
-            console.warn(
-                "Number mismatch:",
-                source.number,
-                result.number
-            );
-
-            return false;
-
-        }
-
-        // ----------------------------------------
-        // TIMESTAMP
-        // ----------------------------------------
-
-        if (
-            result.timestamp !==
-            source.timestamp
-        ) {
-
-            console.warn(
-                "Timestamp mismatch:",
-                source.timestamp,
-                result.timestamp
-            );
-
-            return false;
-
-        }
-
-        // ----------------------------------------
-        // TEXT
-        // ----------------------------------------
-
-        if (
-            !result.text ||
-            !result.text.trim()
-        ) {
-
-            return false;
-
-        }
-
-    }
-
-    return true;
-
-}
-
-
-// ============================================================
-// BUILD GLOSSARY
-// ============================================================
-
-function buildGlossary(data) {
-
-    const text =
-        data
-            .map(sub => sub.text)
-            .join("\n")
-            .toLowerCase();
-
-    const result = {};
-
-
-    // ========================================================
-    // IMPORTANT NAMES
-    // ========================================================
-
-    const names = [
-
-        "Michael Scott",
-        "Jim Halpert",
-        "Pam Beesly",
-        "Dwight Schrute",
-        "Ryan Howard",
-        "Stanley Hudson",
-        "Angela Martin",
-        "Kevin Malone",
-        "Oscar Martinez",
-        "Jan Levinson",
-        "Dunder Mifflin",
-        "David Wallace",
-        "Todd Packer"
-
-    ];
-
-
-    names.forEach(name => {
-
-        if (
-            text.includes(
-                name.toLowerCase()
-            )
-        ) {
-
-            result[name] =
-                name;
-
-        }
-
-    });
-
-
-    // ========================================================
-    // OFFICE TERMS
-    // ========================================================
-
-    const terms = {
-
-        "Regional Manager":
-            "ප්‍රාදේශීය කළමනාකරු",
-
-        "Assistant Regional Manager":
-            "සහකාර ප්‍රාදේශීය කළමනාකරු",
-
-        "Assistant to the Regional Manager":
-            "ප්‍රාදේශීය කළමනාකරුගේ සහයක",
-
-        "Dunder Mifflin":
-            "ඩන්ඩර් මිෆ්ලින්",
-
-        "office":
-            "ඔෆිස් එක",
-
-        "boss":
-            "බොස්",
-
-        "prank":
-            "ප්‍රෑන්ක්",
-
-        "downsizing":
-            "සේවක අඩු කිරීම"
-
-    };
-
-
-    Object.keys(terms)
-        .forEach(term => {
-
-            if (
-                text.includes(
-                    term.toLowerCase()
-                )
-            ) {
-
-                result[term] =
-                    terms[term];
-
-            }
-
-        });
-
-
-    return result;
-
-}
-
-
-// ============================================================
-// GLOSSARY TEXT
-// ============================================================
-
-function glossaryToText() {
-
-    const entries =
-        Object.entries(
-            glossary
-        );
-
-    if (
-        entries.length === 0
-    ) {
-
-        return "";
-
-    }
-
-    return entries
-        .map(
-            ([english, sinhala]) =>
-                `${english} = ${sinhala}`
-        )
-        .join("\n");
-
-}
-
-
-// ============================================================
-// MERGE TRANSLATED CHUNKS
-// ============================================================
-
-function mergeTranslated() {
-
-    const result = [];
-
-    for (
-        let i = 0;
-        i < subtitles.length;
-        i += CHUNK_SIZE
-    ) {
-
-        const chunkIndex =
-            Math.floor(
-                i / CHUNK_SIZE
-            );
-
-        const chunk =
-            translatedChunks[
-                chunkIndex
-            ];
-
-        if (chunk) {
-
-            result.push(
-                ...chunk
-            );
-
-        } else {
-
-            result.push(
-                ...subtitles.slice(
-                    i,
-                    i + CHUNK_SIZE
-                )
-            );
-
-        }
-
-    }
-
-    return result;
-
-}
-
-
-// ============================================================
-// FINAL VALIDATION
-// ============================================================
-
-function finalValidation() {
-
-    const result =
-        mergeTranslated();
-
-    const errors = [];
-
-    if (
-        result.length !==
-        subtitles.length
-    ) {
-
-        errors.push(
-            "Subtitle count changed."
-        );
-
-    }
-
-    for (
-        let i = 0;
-        i < subtitles.length;
-        i++
-    ) {
-
-        const source =
-            subtitles[i];
-
-        const translated =
-            result[i];
-
-        if (!translated) {
-
-            errors.push(
-                `Missing subtitle ${source.number}`
-            );
-
-            continue;
-
-        }
-
-        if (
-            String(
-                translated.number
-            ) !==
-            String(
-                source.number
-            )
-        ) {
-
-            errors.push(
-                `Number changed at ${source.number}`
-            );
-
-        }
-
-        if (
-            translated.timestamp !==
-            source.timestamp
-        ) {
-
-            errors.push(
-                `Timestamp changed at ${source.number}`
-            );
-
-        }
-
-        if (
-            !translated.text ||
-            !translated.text.trim()
-        ) {
-
-            errors.push(
-                `Empty translation at ${source.number}`
-            );
-
-        }
-
-    }
-
-    return {
-        valid:
-            errors.length === 0,
-
-        errors
-
-    };
-
-}
-
-
-// ============================================================
-// SAVE STATE
-// ============================================================
-
-function saveState() {
-
+module.exports = async function handler(req, res) {
     try {
+        if (req.method !== "POST") {
+            return res.status(405).json({
+                error: "Method not allowed"
+            });
+        }
 
-        const state = {
-
-            version: 3,
-
-            fileName:
-                currentFileName,
-
+        const {
             subtitles,
+            language = "si",
+            memory = "",
+            glossary = ""
+        } = req.body || {};
 
-            translatedChunks,
-
-            translationMemory,
-
-            glossary,
-
-            currentChunk,
-
-            totalChunks,
-
-            language:
-                languageSelect
-                    ? languageSelect.value
-                    : "si",
-
-            savedAt:
-                Date.now()
-
-        };
-
-        localStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify(state)
-        );
-
-        console.log(
-            "Progress saved:",
-            currentChunk,
-            "/",
-            totalChunks
-        );
-
-    } catch (error) {
-
-        console.error(
-            "Could not save progress:",
-            error
-        );
-
-    }
-
-}
-
-
-// ============================================================
-// LOAD STATE
-// ============================================================
-
-function loadState() {
-
-    try {
-
-        const saved =
-            localStorage.getItem(
-                STORAGE_KEY
-            );
-
-        if (!saved) {
-
-            return false;
-
+        if (!Array.isArray(subtitles) || subtitles.length === 0) {
+            return res.status(400).json({
+                error: "No subtitles received"
+            });
         }
 
-        const state =
-            JSON.parse(saved);
+        const apiKey = process.env.GEMINI_API_KEY;
 
-        if (
-            !Array.isArray(
-                state.subtitles
-            )
-        ) {
-
-            return false;
-
+        if (!apiKey) {
+            return res.status(500).json({
+                error: "GEMINI_API_KEY is missing"
+            });
         }
 
-        subtitles =
-            state.subtitles;
-
-        translatedChunks =
-            state.translatedChunks || [];
-
-        translationMemory =
-            state.translationMemory || [];
-
-        glossary =
-            state.glossary || {};
-
-        currentChunk =
-            state.currentChunk || 0;
-
-        totalChunks =
-            state.totalChunks ||
-            Math.ceil(
-                subtitles.length /
-                CHUNK_SIZE
-            );
-
-        currentFileName =
-            state.fileName ||
-            "Saved subtitle";
-
-
-        if (fileName) {
-
-            fileName.textContent =
-                currentFileName +
-                " • Saved";
-
-        }
-
-
-        if (languageSelect) {
-
-            languageSelect.value =
-                state.language ||
-                "si";
-
-        }
-
-
-        if (preview) {
-
-            preview.value =
-                buildSRT(
-                    mergeTranslated()
-                );
-
-        }
-
-
-        const completed =
-            Math.min(
-                currentChunk *
-                CHUNK_SIZE,
-                subtitles.length
-            );
-
-
-        const percent =
-            totalChunks
-                ? (
-                    currentChunk /
-                    totalChunks
-                ) * 100
-                : 0;
-
-
-        updateProgress(
-
-            percent,
-
-            `Saved: ${completed} / ${subtitles.length} subtitles`
-
-        );
-
-
-        return true;
-
-    } catch (error) {
-
-        console.error(
-            "Could not load state:",
-            error
-        );
-
-        return false;
-
-    }
-
-}
-
-
-// ============================================================
-// CLEAR STATE
-// ============================================================
-
-function clearSavedState() {
-
-    localStorage.removeItem(
-        STORAGE_KEY
-    );
-
-}
-
-
-// ============================================================
-// FILE UPLOAD
-// ============================================================
-
-if (fileInput) {
-
-    fileInput.addEventListener(
-        "change",
-        function () {
-
-            const file =
-                this.files[0];
-
-            if (!file) {
-
-                return;
-
-            }
-
-
-            if (
-                !file.name
-                    .toLowerCase()
-                    .endsWith(".srt")
-            ) {
-
-                alert(
-                    "Please select an SRT file."
-                );
-
-                fileInput.value =
-                    "";
-
-                return;
-
-            }
-
-
-            currentFileName =
-                file.name;
-
-
-            if (fileName) {
-
-                fileName.textContent =
-                    file.name;
-
-            }
-
-
-            const reader =
-                new FileReader();
-
-
-            reader.onload =
-                function (event) {
-
-                    const content =
-                        event.target.result;
-
-
-                    subtitles =
-                        parseSRT(
-                            content
-                        );
-
-
-                    if (
-                        subtitles.length === 0
-                    ) {
-
-                        alert(
-                            "No valid subtitles found."
-                        );
-
-                        return;
-
-                    }
-
-
-                    // ========================================
-                    // NEW JOB
-                    // ========================================
-
-                    translatedChunks =
-                        [];
-
-                    translationMemory =
-                        [];
-
-                    currentChunk =
-                        0;
-
-
-                    totalChunks =
-                        Math.ceil(
-                            subtitles.length /
-                            CHUNK_SIZE
-                        );
-
-
-                    // ========================================
-                    // GLOSSARY
-                    // ========================================
-
-                    glossary =
-                        buildGlossary(
-                            subtitles
-                        );
-
-
-                    // ========================================
-                    // SOURCE CHECK
-                    // ========================================
-
-                    const sourceWarnings =
-                        analyzeSourceSRT(
-                            subtitles
-                        );
-
-
-                    const numberCheck =
-                        checkNumberSequence(
-                            subtitles
-                        );
-
-
-                    clearSavedState();
-
-
-                    if (preview) {
-
-                        preview.value =
-                            content;
-
-                    }
-
-
-                    updateProgress(
-
-                        0,
-
-                        `Ready: ${subtitles.length} subtitles`
-
-                    );
-
-
-                    if (
-                        sourceWarnings.length > 0 ||
-                        numberCheck.missing.length > 0 ||
-                        numberCheck.duplicates.length > 0
-                    ) {
-
-                        console.warn(
-                            "Source SRT warnings:",
-                            {
-                                sourceWarnings,
-                                missing:
-                                    numberCheck.missing,
-                                duplicates:
-                                    numberCheck.duplicates
-                            }
-                        );
-
-                    }
-
-
-                    if (translateBtn) {
-
-                        translateBtn.textContent =
-                            "Translate Subtitle";
-
-                    }
-
-                };
-
-
-            reader.onerror =
-                function () {
-
-                    alert(
-                        "Could not read subtitle file."
-                    );
-
-                };
-
-
-            reader.readAsText(
-                file,
-                "UTF-8"
-            );
-
-        }
-    );
-
-}
-
-
-// ============================================================
-// TRANSLATE ONE CHUNK
-// ============================================================
-
-async function translateChunk(
-    chunk,
-    chunkNumber
-) {
-
-    for (
-        let attempt = 1;
-        attempt <= MAX_RETRIES;
-        attempt++
-    ) {
-
-        try {
-
-            console.log(
-                `Chunk ${chunkNumber}/${totalChunks}`,
-                `Attempt ${attempt}`
-            );
-
-
-            // ==================================================
-            // CONTEXT
-            // ==================================================
-
-            const memoryText =
-                translationMemory
-                    .map(sub => {
-
-                        return (
-                            `[${sub.number}] ${sub.text}`
-                        );
-
-                    })
-                    .join("\n");
-
-
-            const glossaryText =
-                glossaryToText();
-
-
-            // ==================================================
-            // API
-            // ==================================================
-
-            const response =
-                await fetch(
-                    "/api/translate",
-                    {
-
-                        method: "POST",
-
-                        headers: {
-
-                            "Content-Type":
-                                "application/json"
-
-                        },
-
-                        body: JSON.stringify({
-
-                            subtitles:
-                                chunk,
-
-                            language:
-                                languageSelect
-                                    ? languageSelect.value
-                                    : "si",
-
-                            memory:
-                                memoryText,
-
-                            glossary:
-                                glossaryText
-
-                        })
-
-                    }
-                );
-
-
-            const raw =
-                await response.text();
-
-
-            let data;
-
-
-            try {
-
-                data =
-                    JSON.parse(
-                        raw
-                    );
-
-            } catch {
-
-                throw new Error(
-                    "Invalid server response."
-                );
-
-            }
-
-
-            // ==================================================
-            // SUCCESS
-            // ==================================================
-
-            if (
-                response.ok &&
-                Array.isArray(
-                    data.subtitles
-                )
-            ) {
-
-                if (
-                    !validateChunk(
-                        chunk,
-                        data.subtitles
-                    )
-                ) {
-
-                    throw new Error(
-                        "Subtitle validation failed."
-                    );
-
-                }
-
-
-                return data.subtitles;
-
-            }
-
-
-            const errorMessage =
-                data.error ||
-                "Translation failed";
-
-
-            // ==================================================
-            // INCOMPLETE
-            // ==================================================
-
-            if (
-                response.status === 422
-            ) {
-
-                updateProgress(
-
-                    (
-                        currentChunk /
-                        totalChunks
-                    ) * 100,
-
-                    `Incomplete translation — retry ${attempt}/${MAX_RETRIES}`
-
-                );
-
-
-                await wait(
-
-                    Math.min(
-                        10000,
-                        attempt * 1500
-                    )
-
-                );
-
-
-                continue;
-
-            }
-
-
-            // ==================================================
-            // QUOTA
-            // ==================================================
-
-            if (
-                response.status === 429 ||
-                errorMessage
-                    .toLowerCase()
-                    .includes("quota") ||
-                errorMessage
-                    .toLowerCase()
-                    .includes("rate limit") ||
-                errorMessage
-                    .toLowerCase()
-                    .includes("too many requests")
-            ) {
-
-                updateProgress(
-
-                    (
-                        currentChunk /
-                        totalChunks
-                    ) * 100,
-
-                    "Quota limit reached — waiting 60 seconds..."
-
-                );
-
-
-                await wait(
-                    QUOTA_WAIT
-                );
-
-
-                continue;
-
-            }
-
-
-            // ==================================================
-            // TEMPORARY ERROR
-            // ==================================================
-
-            if (
-                response.status === 500 ||
-                response.status === 502 ||
-                response.status === 503 ||
-                response.status === 504
-            ) {
-
-                const delay =
-                    Math.min(
-                        15000,
-                        attempt * 3000
-                    );
-
-
-                updateProgress(
-
-                    (
-                        currentChunk /
-                        totalChunks
-                    ) * 100,
-
-                    `Server error — retry ${attempt}/${MAX_RETRIES}`
-
-                );
-
-
-                await wait(
-                    delay
-                );
-
-
-                continue;
-
-            }
-
-
-            throw new Error(
-                errorMessage
-            );
-
-        } catch (error) {
-
-            console.error(
-                `Chunk ${chunkNumber} error:`,
-                error
-            );
-
-
-            if (
-                attempt >=
-                MAX_RETRIES
-            ) {
-
-                throw error;
-
-            }
-
-
-            updateProgress(
-
-                (
-                    currentChunk /
-                    totalChunks
-                ) * 100,
-
-                `Retrying chunk ${chunkNumber}...`
-
-            );
-
-
-            await wait(
-                3000
-            );
-
-        }
-
-    }
-
-
-    throw new Error(
-        `Chunk ${chunkNumber} failed after ${MAX_RETRIES} attempts.`
-    );
-
-}
-
-
-// ============================================================
-// TRANSLATE BUTTON
-// ============================================================
-
-if (translateBtn) {
-
-    translateBtn.addEventListener(
-        "click",
-        async function () {
-
-            if (translating) {
-
-                return;
-
-            }
-
-
-            if (
-                !subtitles ||
-                subtitles.length === 0
-            ) {
-
-                alert(
-                    "Please upload an SRT file first."
-                );
-
-                return;
-
-            }
-
-
-            translating =
-                true;
-
-
-            translateBtn.disabled =
-                true;
-
-
-            if (downloadBtn) {
-
-                downloadBtn.disabled =
-                    true;
-
-            }
-
-
-            translateBtn.textContent =
-                "Translating...";
-
-
-            const chunks =
-                createChunks();
-
-
-            totalChunks =
-                chunks.length;
-
-
-            let startChunk =
-                currentChunk;
-
-
-            if (
-                !translatedChunks.length
-            ) {
-
-                startChunk =
-                    0;
-
-            }
-
-
-            try {
-
-                // =================================================
-                // CHUNK LOOP
-                // =================================================
-
-                for (
-                    let i = startChunk;
-                    i < totalChunks;
-                    i++
-                ) {
-
-                    currentChunk =
-                        i;
-
-
-                    const chunk =
-                        chunks[i];
-
-
-                    updateProgress(
-
-                        (
-                            i /
-                            totalChunks
-                        ) * 100,
-
-                        `Translating ${i + 1}/${totalChunks}...`
-
-                    );
-
-
-                    // =============================================
-                    // TRANSLATE
-                    // =============================================
-
-                    const result =
-                        await translateChunk(
-                            chunk,
-                            i + 1
-                        );
-
-
-                    // =============================================
-                    // VALIDATE
-                    // =============================================
-
-                    if (
-                        !validateChunk(
-                            chunk,
-                            result
-                        )
-                    ) {
-
-                        throw new Error(
-                            `Validation failed at chunk ${i + 1}.`
-                        );
-
-                    }
-
-
-                    // =============================================
-                    // SAVE CHUNK
-                    // =============================================
-
-                    translatedChunks[i] =
-                        result;
-
-
-                    // =============================================
-                    // MEMORY
-                    // =============================================
-
-                    translationMemory =
-                        result.slice(
-                            -20
-                        );
-
-
-                    // =============================================
-                    // CURRENT CHUNK
-                    // =============================================
-
-                    currentChunk =
-                        i + 1;
-
-
-                    // =============================================
-                    // AUTO SAVE
-                    // =============================================
-
-                    saveState();
-
-
-                    // =============================================
-                    // LIVE PREVIEW
-                    // =============================================
-
-                    if (preview) {
-
-                        preview.value =
-                            buildSRT(
-                                mergeTranslated()
-                            );
-
-                    }
-
-
-                    // =============================================
-                    // PROGRESS
-                    // =============================================
-
-                    const percent =
-                        (
-                            currentChunk /
-                            totalChunks
-                        ) * 100;
-
-
-                    const translatedCount =
-                        Math.min(
-
-                            currentChunk *
-                            CHUNK_SIZE,
-
-                            subtitles.length
-
-                        );
-
-
-                    updateProgress(
-
-                        percent,
-
-                        `Translated ${translatedCount} / ${subtitles.length} subtitles`
-
-                    );
-
-
-                    // =============================================
-                    // DELAY
-                    // =============================================
-
-                    if (
-                        currentChunk <
-                        totalChunks
-                    ) {
-
-                        await wait(
-                            REQUEST_DELAY
-                        );
-
-                    }
-
-                }
-
-
-                // =================================================
-                // FINAL VALIDATION
-                // =================================================
-
-                const finalCheck =
-                    finalValidation();
-
-
-                if (
-                    !finalCheck.valid
-                ) {
-
-                    console.error(
-                        "Final validation errors:",
-                        finalCheck.errors
-                    );
-
-
-                    throw new Error(
-                        "Final subtitle validation failed:\n" +
-                        finalCheck.errors
-                            .slice(0, 10)
-                            .join("\n")
-                    );
-
-                }
-
-
-                const finalSubtitle =
-                    mergeTranslated();
-
-
-                if (preview) {
-
-                    preview.value =
-                        buildSRT(
-                            finalSubtitle
-                        );
-
-                }
-
-
-                updateProgress(
-
-                    100,
-
-                    "Translation complete!"
-
-                );
-
-
-                translateBtn.textContent =
-                    "Translation Complete ✓";
-
-
-                saveState();
-
-
-                alert(
-                    "Translation completed successfully!"
-                );
-
-
-            } catch (error) {
-
-                console.error(
-                    "Translation stopped:",
-                    error
-                );
-
-
-                const percent =
-                    totalChunks
-                        ? (
-                            currentChunk /
-                            totalChunks
-                        ) * 100
-                        : 0;
-
-
-                updateProgress(
-
-                    percent,
-
-                    `Stopped at ${currentChunk}/${totalChunks}. Progress saved.`
-
-                );
-
-
-                alert(
-
-                    "Translation stopped.\n\n" +
-                    error.message +
-                    "\n\n" +
-                    "Progress has been saved. " +
-                    "Click Resume Translation to continue."
-
-                );
-
-            } finally {
-
-                translating =
-                    false;
-
-
-                translateBtn.disabled =
-                    false;
-
-
-                if (downloadBtn) {
-
-                    downloadBtn.disabled =
-                        false;
-
-                }
-
-
-                if (
-                    currentChunk >=
-                    totalChunks &&
-                    totalChunks > 0
-                ) {
-
-                    translateBtn.textContent =
-                        "Translation Complete ✓";
-
-                } else {
-
-                    translateBtn.textContent =
-                        "Resume Translation";
-
-                }
-
-            }
-
-        }
-    );
-
-}
-
-
-// ============================================================
-// DOWNLOAD SRT
-// ============================================================
-
-if (downloadBtn) {
-
-    downloadBtn.addEventListener(
-        "click",
-        function () {
-
-            if (
-                !subtitles ||
-                subtitles.length === 0
-            ) {
-
-                alert(
-                    "Please upload an SRT file first."
-                );
-
-                return;
-
-            }
-
-
-            const finalCheck =
-                finalValidation();
-
-
-            if (
-                !finalCheck.valid
-            ) {
-
-                alert(
-                    "Subtitle validation failed.\n\n" +
-                    finalCheck.errors
-                        .slice(0, 10)
+        const targetLanguage =
+            language === "ta"
+                ? "natural Sri Lankan Tamil"
+                : "natural Sri Lankan Sinhala";
+
+
+        // =====================================================
+        // IMPORTANT:
+        // SEND EACH SUBTITLE WITH ITS EXACT LINE COUNT
+        // =====================================================
+
+        const dialogue = subtitles
+            .map((sub, index) => {
+
+                const lines =
+                    sub.text
+                        .split(/\r?\n/)
+                        .filter(line => line.trim() !== "");
+
+                return (
+                    `[${index}|${lines.length}]\n` +
+                    lines
+                        .map(line => `- ${line}`)
                         .join("\n")
                 );
 
-                return;
+            })
+            .join("\n\n");
 
+
+        const memorySection =
+            memory && memory.trim()
+                ? `
+PREVIOUS TRANSLATION CONTEXT:
+
+${memory}
+
+Use this only to maintain consistency.
+Do not return these previous lines.
+`
+                : "";
+
+
+        const glossarySection =
+            glossary && glossary.trim()
+                ? `
+TERMINOLOGY / CHARACTER GLOSSARY:
+
+${glossary}
+
+Keep these names and terms consistent.
+`
+                : "";
+
+
+        // =====================================================
+        // PROMPT
+        // =====================================================
+
+        const prompt = `
+You are a professional movie and TV subtitle translator.
+
+Translate the English subtitles into ${targetLanguage}.
+
+Your priority is:
+
+1. Preserve ALL subtitle content.
+2. Preserve the exact number of dialogue lines inside every subtitle.
+3. Preserve the exact subtitle order.
+4. Translate naturally for Sri Lankan viewers.
+5. Preserve emotion, humor, sarcasm and character personality.
+6. Never invent information.
+7. Never remove dialogue.
+8. Never merge separate dialogue lines.
+9. Never split one dialogue line into multiple lines.
+
+${memorySection}
+
+${glossarySection}
+
+====================================================
+VERY IMPORTANT LINE PRESERVATION RULE
+====================================================
+
+Every subtitle has this format:
+
+[number|LINE_COUNT]
+
+For example:
+
+[27|2]
+- It doesn't look like him.
+- It's him.
+
+The "2" means this subtitle contains EXACTLY 2 dialogue lines.
+
+Your response MUST also contain EXACTLY 2 translated lines:
+
+[27|2]
+- මූව දකිද්දී එයා වගේ නැහැ.
+- එයා තමයි.
+
+If the input is:
+
+[10|1]
+- Hello.
+
+Return:
+
+[10|1]
+- හෙලෝ.
+
+If the input is:
+
+[20|3]
+- First line.
+- Second line.
+- Third line.
+
+Return exactly 3 translated lines.
+
+====================================================
+STRICT RULES
+====================================================
+
+- Keep every [number|LINE_COUNT] exactly.
+- Do not remove any subtitle.
+- Do not add any subtitle.
+- Do not skip any subtitle.
+- Do not change the order.
+- Do not merge dialogue lines.
+- Do not split dialogue lines.
+- Keep EXACTLY the same number of dialogue lines.
+- Do not add explanations.
+- Do not add notes.
+- Do not add Markdown.
+- Do not add quotation marks unless they exist in the original dialogue.
+- Keep character names consistent.
+- Keep proper nouns consistent.
+- Preserve jokes and sarcasm.
+- Preserve strong language when it is part of the original.
+- Use natural conversational Sinhala.
+- Do not translate names unnecessarily.
+- Do not invent names.
+- Do not invent dialogue.
+
+====================================================
+OUTPUT FORMAT
+====================================================
+
+Return ONLY:
+
+[number|LINE_COUNT]
+- translated line
+- translated line
+
+Nothing else.
+
+====================================================
+SUBTITLES
+====================================================
+
+${dialogue}
+`;
+
+
+        // =====================================================
+        // GEMINI REQUEST
+        // =====================================================
+
+        const response = await fetch(
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent",
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-goog-api-key": apiKey
+                },
+
+                body: JSON.stringify({
+                    contents: [
+                        {
+                            parts: [
+                                {
+                                    text: prompt
+                                }
+                            ]
+                        }
+                    ]
+                })
+            }
+        );
+
+
+        const raw =
+            await response.text();
+
+
+        let data;
+
+        try {
+
+            data =
+                JSON.parse(raw);
+
+        } catch {
+
+            return res.status(
+                response.status || 500
+            ).json({
+                error:
+                    "Gemini returned invalid JSON."
+            });
+
+        }
+
+
+        if (!response.ok) {
+
+            const message =
+                data?.error?.message ||
+                "Gemini API error";
+
+            return res.status(
+                response.status
+            ).json({
+                error: message
+            });
+
+        }
+
+
+        const result =
+            data?.candidates?.[0]
+                ?.content?.parts?.[0]
+                ?.text;
+
+
+        if (!result) {
+
+            return res.status(500).json({
+                error:
+                    "Gemini returned no translation"
+            });
+
+        }
+
+
+        // =====================================================
+        // PARSE AI RESPONSE
+        // =====================================================
+
+        const translatedMap = {};
+
+        const blocks =
+            result
+                .trim()
+                .split(/\n\s*\n/);
+
+
+        blocks.forEach(block => {
+
+            const lines =
+                block
+                    .split(/\r?\n/)
+                    .map(line => line.trim())
+                    .filter(Boolean);
+
+
+            if (lines.length === 0) {
+                return;
             }
 
 
-            const finalData =
-                mergeTranslated();
+            // -----------------------------------------------
+            // Header
+            // -----------------------------------------------
 
-
-            const srt =
-                buildSRT(
-                    finalData
+            const header =
+                lines[0].match(
+                    /^\[(\d+)\|(\d+)\]$/
                 );
 
 
-            const blob =
-                new Blob(
-                    [srt],
-                    {
-                        type:
-                            "application/x-subrip;charset=utf-8"
-                    }
-                );
+            if (!header) {
+                return;
+            }
 
 
-            const url =
-                URL.createObjectURL(
-                    blob
-                );
+            const index =
+                Number(header[1]);
 
 
-            const link =
-                document.createElement(
-                    "a"
-                );
+            const lineCount =
+                Number(header[2]);
 
 
-            link.href =
-                url;
+            // -----------------------------------------------
+            // Translation lines
+            // -----------------------------------------------
+
+            const translatedLines =
+                lines
+                    .slice(1)
+                    .map(line => {
+
+                        return line
+                            .replace(
+                                /^-\s?/,
+                                ""
+                            )
+                            .trim();
+
+                    });
 
 
-            // =====================================================
-            // FILENAME
-            // =====================================================
+            translatedMap[index] = {
 
-            const originalName =
-                currentFileName
-                    .replace(
-                        /\.srt$/i,
-                        ""
+                lineCount,
+
+                lines:
+                    translatedLines
+
+            };
+
+        });
+
+
+        // =====================================================
+        // STRICT VALIDATION
+        // =====================================================
+
+        const missing = [];
+
+        const invalidLineCount = [];
+
+
+        for (
+            let i = 0;
+            i < subtitles.length;
+            i++
+        ) {
+
+            const source =
+                subtitles[i];
+
+
+            const sourceLines =
+                source.text
+                    .split(/\r?\n/)
+                    .filter(
+                        line =>
+                            line.trim() !== ""
                     );
 
 
-            link.download =
-                `${originalName} - Sinhala Sub - SubLanka AI.srt`;
+            const translated =
+                translatedMap[i];
 
 
-            document.body.appendChild(
-                link
-            );
+            // -----------------------------------------------
+            // Missing subtitle
+            // -----------------------------------------------
 
+            if (!translated) {
 
-            link.click();
+                missing.push(i);
 
-
-            document.body.removeChild(
-                link
-            );
-
-
-            URL.revokeObjectURL(
-                url
-            );
-
-        }
-    );
-
-}
-
-
-// ============================================================
-// RESTORE SAVED TRANSLATION
-// ============================================================
-
-window.addEventListener(
-    "DOMContentLoaded",
-    function () {
-
-        const restored =
-            loadState();
-
-
-        if (restored) {
-
-            if (translateBtn) {
-
-                translateBtn.textContent =
-                    "Resume Translation";
+                continue;
 
             }
 
-            console.log(
-                "Saved translation restored."
-            );
+
+            // -----------------------------------------------
+            // LINE COUNT
+            // -----------------------------------------------
+
+            if (
+                translated.lineCount !==
+                sourceLines.length
+            ) {
+
+                invalidLineCount.push({
+                    index: i,
+                    expected:
+                        sourceLines.length,
+                    received:
+                        translated.lineCount
+                });
+
+                continue;
+
+            }
+
+
+            // -----------------------------------------------
+            // ACTUAL RETURNED LINES
+            // -----------------------------------------------
+
+            if (
+                translated.lines.length !==
+                sourceLines.length
+            ) {
+
+                invalidLineCount.push({
+                    index: i,
+                    expected:
+                        sourceLines.length,
+                    received:
+                        translated.lines.length
+                });
+
+                continue;
+
+            }
+
+
+            // -----------------------------------------------
+            // EMPTY LINE
+            // -----------------------------------------------
+
+            if (
+                translated.lines.some(
+                    line =>
+                        !line ||
+                        !line.trim()
+                )
+            ) {
+
+                invalidLineCount.push({
+                    index: i,
+                    expected:
+                        sourceLines.length,
+                    received:
+                        translated.lines.length
+                });
+
+            }
 
         }
 
+
+        // =====================================================
+        // REJECT BAD RESPONSE
+        // =====================================================
+
+        if (
+            missing.length > 0 ||
+            invalidLineCount.length > 0
+        ) {
+
+            console.error(
+                "Translation validation failed",
+                {
+                    missing,
+                    invalidLineCount
+                }
+            );
+
+
+            return res.status(422).json({
+
+                error:
+                    "Translation incomplete or dialogue line count changed.",
+
+                missing,
+
+                invalidLineCount
+
+            });
+
+        }
+
+
+        // =====================================================
+        // BUILD OUTPUT
+        // =====================================================
+
+        const output =
+            subtitles.map(
+                (sub, index) => {
+
+                    const translated =
+                        translatedMap[index];
+
+
+                    // IMPORTANT:
+                    // ORIGINAL NUMBER + TIMESTAMP
+                    // ARE ALWAYS PRESERVED.
+
+                    return {
+
+                        ...sub,
+
+                        text:
+                            translated.lines
+                                .join("\n")
+
+                    };
+
+                }
+            );
+
+
+        // =====================================================
+        // FINAL VALIDATION
+        // =====================================================
+
+        if (
+            output.length !==
+            subtitles.length
+        ) {
+
+            return res.status(422).json({
+                error:
+                    "Subtitle count changed."
+            });
+
+        }
+
+
+        for (
+            let i = 0;
+            i < subtitles.length;
+            i++
+        ) {
+
+            if (
+                output[i].number !==
+                subtitles[i].number
+            ) {
+
+                return res.status(422).json({
+                    error:
+                        `Subtitle number changed at ${i}`
+                });
+
+            }
+
+
+            if (
+                output[i].timestamp !==
+                subtitles[i].timestamp
+            ) {
+
+                return res.status(422).json({
+                    error:
+                        `Timestamp changed at ${i}`
+                });
+
+            }
+
+
+            const originalLines =
+                subtitles[i]
+                    .text
+                    .split(/\r?\n/)
+                    .filter(
+                        line =>
+                            line.trim()
+                    );
+
+
+            const outputLines =
+                output[i]
+                    .text
+                    .split(/\r?\n/)
+                    .filter(
+                        line =>
+                            line.trim()
+                    );
+
+
+            if (
+                originalLines.length !==
+                outputLines.length
+            ) {
+
+                return res.status(422).json({
+                    error:
+                        `Dialogue line count changed at subtitle ${i}`
+                });
+
+            }
+
+        }
+
+
+        // =====================================================
+        // SUCCESS
+        // =====================================================
+
+        return res.status(200).json({
+            subtitles: output
+        });
+
+
+    } catch (error) {
+
+        console.error(
+            "Translation API error:",
+            error
+        );
+
+
+        return res.status(500).json({
+            error:
+                error.message ||
+                "Server error"
+        });
+
     }
-);
+};
