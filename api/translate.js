@@ -1,23 +1,10 @@
 module.exports = async function handler(req, res) {
-
     try {
-
-        // ========================================
-        // METHOD
-        // ========================================
-
         if (req.method !== "POST") {
-
             return res.status(405).json({
                 error: "Method not allowed"
             });
-
         }
-
-
-        // ========================================
-        // REQUEST DATA
-        // ========================================
 
         const {
             subtitles,
@@ -25,172 +12,87 @@ module.exports = async function handler(req, res) {
             memory = ""
         } = req.body || {};
 
-
-        if (
-            !Array.isArray(subtitles) ||
-            subtitles.length === 0
-        ) {
-
+        if (!Array.isArray(subtitles) || subtitles.length === 0) {
             return res.status(400).json({
                 error: "No subtitles received"
             });
-
         }
 
-
-        // ========================================
-        // API KEY
-        // ========================================
-
-        const apiKey =
-            process.env.GEMINI_API_KEY;
-
+        const apiKey = process.env.GEMINI_API_KEY;
 
         if (!apiKey) {
-
             return res.status(500).json({
                 error: "GEMINI_API_KEY is missing"
             });
-
         }
 
+        const targetLanguage =
+            language === "ta"
+                ? "natural Sri Lankan Tamil"
+                : "natural Sri Lankan Sinhala";
 
-        // ========================================
-        // LANGUAGE
-        // ========================================
+        const dialogue = subtitles
+            .map((sub, index) => {
+                return `[${index}] ${sub.text}`;
+            })
+            .join("\n");
 
-        let targetLanguage =
-            "natural Sri Lankan Sinhala";
-
-        if (language === "ta") {
-
-            targetLanguage =
-                "natural Sri Lankan Tamil";
-
-        }
-
-
-        // ========================================
-        // DIALOGUE
-        // ========================================
-
-        const dialogue =
-            subtitles
-                .map((sub, index) => {
-
-                    return `[${index}] ${sub.text}`;
-
-                })
-                .join("\n");
-
-
-        // ========================================
-        // MEMORY
-        // ========================================
-
-        let memorySection = "";
-
-        if (
-            memory &&
-            memory.trim()
-        ) {
-
-            memorySection = `
-
+        const memorySection =
+            memory && memory.trim()
+                ? `
 PREVIOUS TRANSLATION CONTEXT:
-
-The following subtitles were translated immediately
-before this chunk.
-
-Use them ONLY as context to maintain consistency
-in names, slang, character speech style and repeated
-phrases.
-
-Do NOT translate or return these previous subtitles.
 
 ${memory}
 
-END PREVIOUS TRANSLATION CONTEXT.
+Use this only to maintain consistency in:
+- character speech style
+- repeated phrases
+- slang
+- names
+- terminology
 
-`;
+Do not return these previous lines.
 
-        }
-
-
-        // ========================================
-        // PROMPT
-        // ========================================
+END PREVIOUS CONTEXT.
+`
+                : "";
 
         const prompt = `
-
 You are a professional movie and TV subtitle translator.
 
-Translate the following English subtitles into
-${targetLanguage}.
+Translate the following English dialogue into ${targetLanguage}.
 
-Your translation must sound like natural dialogue
-spoken by real Sri Lankan people.
-
-Do NOT translate word-for-word.
-
-Translate the meaning, emotion and context.
+The result must sound like natural spoken Sri Lankan Sinhala,
+not a word-for-word machine translation.
 
 ${memorySection}
 
-TRANSLATION RULES:
+RULES:
 
-1. Use natural conversational Sinhala.
-
-2. Preserve the original meaning.
-
-3. Preserve emotion and tone.
-
-4. Preserve humor and sarcasm.
-
-5. Preserve anger, fear, sadness, romance and excitement.
-
-6. Use natural Sri Lankan expressions where appropriate.
-
-7. Preserve slang naturally.
-
-8. Do not make strong language unnecessarily polite.
-
-9. Preserve the intensity of the original dialogue.
-
-10. Keep character names consistent.
-
-11. Keep place names consistent.
-
-12. Keep company, product and organization names
-    when they should remain in English.
-
-13. Do not unnecessarily translate proper nouns.
-
-14. Keep repeated phrases consistent with previous
-    translations.
-
-15. Keep the speaking style of characters consistent.
-
-16. Do not add explanations.
-
-17. Do not add translator notes.
-
-18. Do not add markdown.
-
-19. Do not add quotation marks unless they belong
-    to the original dialogue.
-
-20. Do not merge subtitle lines.
-
-21. Do not remove subtitle lines.
-
-22. Do not create extra subtitle lines.
-
+1. Translate the meaning and context naturally.
+2. Preserve emotion, humor, sarcasm and tone.
+3. Preserve character personality and speaking style.
+4. Use natural conversational Sinhala.
+5. Do not unnecessarily make dialogue formal.
+6. Preserve slang naturally.
+7. Do not unnecessarily sanitize strong language.
+8. Keep character names consistent.
+9. Keep fictional names, places, brands and organizations consistent.
+10. Do not invent names or information.
+11. Do not add information that is not present.
+12. Do not remove important meaning.
+13. Keep jokes and wordplay as close to the original meaning as possible.
+14. Keep repeated phrases consistent with previous context.
+15. Do not add explanations.
+16. Do not add translator notes.
+17. Do not use Markdown.
+18. Do not use quotation marks unless they are part of the dialogue.
+19. Do not merge lines.
+20. Do not split lines.
+21. Do not skip any line.
+22. Return exactly one output line for every input [number].
 23. Keep every [number] exactly.
-
-24. Keep the exact same order.
-
-25. Return ONLY the translated subtitle lines.
+24. Return the lines in exactly the same order.
 
 OUTPUT FORMAT:
 
@@ -198,157 +100,81 @@ OUTPUT FORMAT:
 [1] translated dialogue
 [2] translated dialogue
 
+IMPORTANT:
+Return ONLY the [number] + translated dialogue.
 Nothing else.
 
 SUBTITLES:
 
 ${dialogue}
-
 `;
 
+        const response = await fetch(
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent",
+            {
+                method: "POST",
 
-        // ========================================
-        // GEMINI API
-        // ========================================
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-goog-api-key": apiKey
+                },
 
-        const response =
-            await fetch(
+                body: JSON.stringify({
+                    contents: [
+                        {
+                            parts: [
+                                {
+                                    text: prompt
+                                }
+                            ]
+                        }
+                    ]
+                })
+            }
+        );
 
-                "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent",
-
-                {
-
-                    method: "POST",
-
-                    headers: {
-
-                        "Content-Type":
-                            "application/json",
-
-                        "x-goog-api-key":
-                            apiKey
-
-                    },
-
-                    body: JSON.stringify({
-
-                        contents: [
-
-                            {
-
-                                parts: [
-
-                                    {
-                                        text: prompt
-                                    }
-
-                                ]
-
-                            }
-
-                        ]
-
-                    })
-
-                }
-
-            );
-
-
-        // ========================================
-        // RESPONSE
-        // ========================================
-
-        const raw =
-            await response.text();
-
+        const raw = await response.text();
 
         let data;
 
-
         try {
-
-            data =
-                JSON.parse(raw);
-
+            data = JSON.parse(raw);
         } catch {
-
-            return res.status(
-                response.status || 500
-            ).json({
-
-                error:
-                    "Gemini returned invalid JSON."
-
+            return res.status(response.status || 500).json({
+                error: "Gemini returned invalid JSON."
             });
-
         }
 
-
-        // ========================================
-        // GEMINI ERROR
-        // ========================================
-
         if (!response.ok) {
-
             const message =
                 data?.error?.message ||
                 "Gemini API error";
 
-
-            console.error(
-                "Gemini API error:",
-                response.status,
-                message
-            );
-
-
-            return res.status(
-                response.status
-            ).json({
-
+            return res.status(response.status).json({
                 error: message,
-
-                status:
-                    response.status
-
+                status: response.status
             });
-
         }
 
-
-        // ========================================
-        // GET TEXT
-        // ========================================
-
         const result =
-            data
-                ?.candidates?.[0]
+            data?.candidates?.[0]
                 ?.content?.parts?.[0]
                 ?.text;
 
-
         if (!result) {
-
             return res.status(500).json({
-
-                error:
-                    "Gemini returned no translation."
-
+                error: "Gemini returned no translation"
             });
-
         }
 
-
-        // ========================================
-        // PARSE
-        // ========================================
+        // =========================================
+        // PARSE AI OUTPUT
+        // =========================================
 
         const translations = {};
 
-
         result
-            .split("\n")
+            .split(/\r?\n/)
             .forEach(line => {
 
                 const match =
@@ -356,58 +182,150 @@ ${dialogue}
                         /^\[(\d+)\]\s*(.*)$/
                     );
 
-
                 if (!match) {
                     return;
                 }
 
-
                 const index =
                     Number(match[1]);
 
-
-                const translatedText =
+                const text =
                     match[2].trim();
 
+                if (!Number.isInteger(index)) {
+                    return;
+                }
+
+                if (!text) {
+                    return;
+                }
 
                 translations[index] =
-                    translatedText;
-
+                    text;
             });
 
 
-        // ========================================
-        // OUTPUT
-        // ========================================
+        // =========================================
+        // STRICT VALIDATION
+        // =========================================
+
+        const missing = [];
+
+        for (
+            let i = 0;
+            i < subtitles.length;
+            i++
+        ) {
+            if (
+                !Object.prototype.hasOwnProperty.call(
+                    translations,
+                    i
+                )
+            ) {
+                missing.push(i);
+            }
+        }
+
+        if (missing.length > 0) {
+
+            console.error(
+                "Missing translations:",
+                missing
+            );
+
+            return res.status(422).json({
+                error:
+                    `Translation incomplete. Missing ${missing.length} subtitle(s).`,
+                missing
+            });
+        }
+
+
+        // =========================================
+        // IMPORTANT:
+        // ORIGINAL NUMBER + TIMESTAMP ARE ALWAYS
+        // TAKEN FROM THE SOURCE SRT.
+        // =========================================
 
         const output =
             subtitles.map(
                 (sub, index) => {
 
                     return {
-
                         ...sub,
 
                         text:
-                            translations[index] ||
-                            sub.text
-
+                            translations[index]
                     };
 
                 }
             );
 
 
-        // ========================================
-        // RETURN
-        // ========================================
+        // =========================================
+        // FINAL SERVER VALIDATION
+        // =========================================
+
+        if (
+            output.length !==
+            subtitles.length
+        ) {
+
+            return res.status(422).json({
+                error:
+                    "Subtitle count validation failed."
+            });
+
+        }
+
+        for (
+            let i = 0;
+            i < subtitles.length;
+            i++
+        ) {
+
+            if (
+                output[i].number !==
+                subtitles[i].number
+            ) {
+
+                return res.status(422).json({
+                    error:
+                        `Subtitle number mismatch at ${i}`
+                });
+
+            }
+
+            if (
+                output[i].timestamp !==
+                subtitles[i].timestamp
+            ) {
+
+                return res.status(422).json({
+                    error:
+                        `Timestamp mismatch at ${i}`
+                });
+
+            }
+
+            if (
+                !output[i].text ||
+                !output[i].text.trim()
+            ) {
+
+                return res.status(422).json({
+                    error:
+                        `Empty translation at ${i}`
+                });
+
+            }
+
+        }
+
 
         return res.status(200).json({
-
             subtitles: output
-
         });
-
 
     } catch (error) {
 
@@ -416,15 +334,10 @@ ${dialogue}
             error
         );
 
-
         return res.status(500).json({
-
             error:
                 error.message ||
                 "Server error"
-
         });
-
     }
-
 };
