@@ -84,43 +84,97 @@ module.exports = async function handler(req, res) {
         // PROMPT
         // ========================================
 
-        const prompt = `
+const prompt = `
 
-Translate these English movie subtitles into natural ${targetLanguage}.
+You are a professional movie subtitle translator.
 
-IMPORTANT RULES:
+Translate the following English movie/TV subtitles into
+natural, conversational Sri Lankan Sinhala.
 
-1. Translate ONLY the dialogue.
-2. Keep every [number] exactly.
-3. Do not remove any [number].
-4. Do not add any [number].
-5. Keep the exact same order.
-6. Return every subtitle line.
-7. Do not add explanations.
-8. Do not add quotation marks.
-9. Do not add markdown.
-10. Do not add comments.
-11. Use natural conversational ${targetLanguage}.
-12. Preserve names, places and important movie terms naturally.
-13. Do not translate the [number] markers.
-14. Return ONLY the translated lines.
+The goal is NOT a word-for-word translation.
 
-Example:
+The translation should sound like real Sinhala dialogue
+spoken by characters in a movie or TV series.
 
-[0] Hello, how are you?
-[1] I am fine.
+IMPORTANT TRANSLATION RULES:
 
-Return:
+1. Translate the meaning and context, not individual words.
 
-[0] හෙලෝ, ඔයාට කොහොමද?
-[1] මම හොඳින්.
+2. Use natural Sri Lankan Sinhala.
 
-Subtitles:
+3. Make dialogue conversational and easy to understand.
+
+4. Preserve the emotion and tone of the original dialogue.
+
+5. Preserve humor, sarcasm, anger, fear, sadness, excitement,
+   romance and other emotions.
+
+6. Preserve slang when appropriate. Translate slang into
+   natural Sinhala slang when possible.
+
+7. Do not make strong language unnecessarily polite.
+   Preserve the intensity of the original dialogue naturally.
+
+8. Preserve character names exactly unless the name is clearly
+   intended to be translated.
+
+9. Preserve place names, company names, product names,
+   organizations and important fictional terms.
+
+10. Do not translate proper nouns unnecessarily.
+
+11. Keep the meaning accurate even when changing the sentence
+    structure to make the Sinhala sound natural.
+
+12. Avoid robotic or literal Sinhala.
+
+13. Avoid overly formal Sinhala unless the character's dialogue
+    is clearly formal.
+
+14. Do not add explanations.
+
+15. Do not add translator notes.
+
+16. Do not add quotation marks unless they are part of the
+    original dialogue.
+
+17. Do not add markdown.
+
+18. Do not merge different subtitle lines.
+
+19. Do not remove subtitle lines.
+
+20. Do not create new subtitle lines.
+
+21. Keep every [number] exactly as provided.
+
+22. Keep the exact same order.
+
+23. Return ONLY the translated subtitle lines.
+
+IMPORTANT OUTPUT FORMAT:
+
+Input:
+
+[0] Hey, what are you doing?
+[1] You can't be serious.
+[2] Get out of here!
+
+Output:
+
+[0] හේයි, ඔයා මොකද කරන්නේ?
+[1] ඔයා මේක ඇත්තටම කියනවා නෙවෙයි නේද?
+[2] මෙතනින් පලයන්!
+
+DO NOT return anything except lines in this format:
+
+[number] translated dialogue
+
+Subtitles to translate:
 
 ${dialogue}
 
 `;
-
 
         // ========================================
         // GEMINI API
