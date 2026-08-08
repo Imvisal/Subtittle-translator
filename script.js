@@ -156,20 +156,11 @@ translateBtn.addEventListener("click", async () => {
             );
 
 
-            const response = await fetch(
-                "/api/translate",
-                {
-                    method: "POST",
+           const translatedChunk =
+    await translateChunk(chunk);
 
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-
-                    body: JSON.stringify({
-                        subtitles: chunk
-                    })
-                }
-            );
+translated =
+    translated.concat(translatedChunk);
 
 
             const raw =
