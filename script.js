@@ -54,7 +54,36 @@ translateBtn.addEventListener("click", async () => {
             })
         });
 
-        const data = await response.json();
+       const response = await fetch("/api/translate", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+        text: text
+    })
+});
+
+const raw = await response.text();
+
+console.log("STATUS:", response.status);
+console.log("SERVER RESPONSE:", raw);
+
+let data;
+
+try {
+    data = JSON.parse(raw);
+} catch {
+    throw new Error(
+        `Server error (${response.status}): ${raw.substring(0, 300)}`
+    );
+}
+
+if (!response.ok) {
+    throw new Error(data.error || "Translation failed");
+}
+
+preview.value = data.translation;
 
         if (!response.ok) {
             throw new Error(data.error || "Translation failed");
