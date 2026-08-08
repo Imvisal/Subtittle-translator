@@ -1821,3 +1821,177 @@ window.addEventListener(
 
     }
 );
+
+const searchInput = document.getElementById("searchInput");
+const searchBtn = document.getElementById("searchBtn");
+const searchResults = document.getElementById("searchResults");
+const searchStatus = document.getElementById("searchStatus");
+
+searchBtn?.addEventListener("click", searchMovies);
+
+searchInput?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+        searchMovies();
+    }
+});
+
+async function searchMovies() {
+
+    const query = searchInput.value.trim();
+
+    if (!query) {
+        searchStatus.textContent =
+            "Enter a movie or TV series name.";
+        return;
+    }
+
+    searchBtn.disabled = true;
+    searchBtn.textContent = "Searching...";
+    searchStatus.textContent = "";
+    searchResults.innerHTML = "";
+
+    try {
+
+        const response = await fetch(
+            `/api/search?query=${encodeURIComponent(query)}`
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.error || "Search failed"
+            );
+        }
+
+        const results = data.results || [];
+
+        if (!results.length) {
+            searchStatus.textContent =
+                "No results found.";
+            return;
+        }
+
+        searchStatus.textContent =
+            `${results.length} results found`;
+
+        results.forEach(item => {
+
+            const card =
+                document.createElement("div");
+
+            card.className =
+                "search-result-card";
+
+            const poster =
+                item.poster && item.poster !== "N/A"
+                    ? `<img src="${item.poster}" alt="">`
+                    : `<div style="
+                        width:80px;
+                        height:115px;
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                        background:#111827;
+                        border-radius:8px;
+                      ">🎬</div>`;
+
+            card.innerHTML = `
+
+                ${poster}
+
+                <div class="result-info">
+
+                    <h3>
+                        ${escapeHTML(item.title)}
+                    </h3>
+
+                    <div class="result-meta">
+
+                        <span>
+                            ${item.type === "series"
+                                ? "📺 TV Series"
+                                : "🎬 Movie"}
+                        </span>
+
+                        <span>
+                            ${item.year || ""}
+                        </span>
+
+                    </div>
+
+                    <button
+                        class="select-title-btn"
+                    >
+                        Select
+                    </button>
+
+                </div>
+            `;
+
+            card
+                .querySelector(".select-title-btn")
+                .addEventListener("click", () => {
+
+                    selectSearchResult(item);
+
+                });
+
+            searchResults.appendChild(card);
+
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        searchStatus.textContent =
+            error.message;
+
+    } finally {
+
+        searchBtn.disabled = false;
+        searchBtn.textContent = "🔍 Search";
+
+    }
+}
+
+
+function selectSearchResult(item) {
+
+    console.log("Selected:", item);
+
+    searchStatus.textContent =
+        `Selected: ${item.title}`;
+
+    if (item.type === "series") {
+
+        alert(
+            `${item.title}\n\n` +
+            "TV Series selected.\n" +
+            "Season / Episode selection will be added next."
+        );
+
+    } else {
+
+        alert(
+            `${item.title}\n\n` +
+            "Movie selected.\n" +
+            "English subtitle search will be added next."
+        );
+
+    }
+
+}
+
+
+function escapeHTML(text) {
+
+    return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+}
