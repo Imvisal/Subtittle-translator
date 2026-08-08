@@ -10,3 +10,8 @@
     "express": "^4.18.2"
   }
 }
+{
+  "dependencies": {
+    "@google/genai": "latest"
+  }
+}
