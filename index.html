@@ -1,49 +1,204 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SubLanka AI</title>
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="description"
+        content="SubLanka AI - Translate English subtitles to Sinhala"
+    >
+
+    <title>SubLanka AI</title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
 </head>
+
 <body>
 
-<div class="container">
+    <main class="container">
 
-    <h1>SubLanka AI</h1>
-    <p>Translate English Subtitles to Sinhala</p>
+        <!-- Header -->
+        <header class="header">
 
-    <div class="upload-box">
-        <input type="file" id="subtitleFile" accept=".srt">
-    </div>
+            <div class="logo">
+                <span class="logo-icon">S</span>
+                <span>SubLanka AI</span>
+            </div>
 
-    <select id="language">
-        <option value="si">Sinhala</option>
-        <option value="ta">Tamil</option>
-    </select>
+            <h1>
+                Translate Subtitles
+            </h1>
 
-    <button id="translateBtn">
-        Translate Subtitle
-    </button>
+            <p class="subtitle">
+                Translate English subtitles into natural Sinhala
+            </p>
 
-    <textarea id="preview" placeholder="Subtitle Preview"></textarea>
+        </header>
 
-    <button id="downloadBtn">
-        Download Subtitle
-    </button>
 
-</div>
+        <!-- Upload Section -->
+        <section class="upload-section">
 
-<script src="script.js"></script>
-<div class="progress-container" id="progressContainer">
-    <div class="progress-info">
-        <span id="progressText">Ready</span>
-        <span id="progressPercent">0%</span>
-    </div>
+            <div class="upload-box">
 
-    <div class="progress-bar">
-        <div class="progress-fill" id="progressFill"></div>
-    </div>
-</div>
+                <div class="upload-icon">
+                    ↑
+                </div>
+
+                <h2>
+                    Upload Subtitle
+                </h2>
+
+                <p>
+                    Select an English .srt subtitle file
+                </p>
+
+                <label
+                    for="subtitleFile"
+                    class="file-label"
+                >
+                    Choose SRT File
+                </label>
+
+                <input
+                    type="file"
+                    id="subtitleFile"
+                    accept=".srt"
+                >
+
+                <div
+                    id="fileName"
+                    class="file-name"
+                >
+                    No file selected
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- Language -->
+        <section class="settings">
+
+            <label for="language">
+                Translation Language
+            </label>
+
+            <select id="language">
+
+                <option value="si">
+                    🇱🇰 Sinhala
+                </option>
+
+                <option value="ta">
+                    🇱🇰 Tamil
+                </option>
+
+            </select>
+
+        </section>
+
+
+        <!-- Translate Button -->
+        <button
+            id="translateBtn"
+            class="translate-btn"
+            type="button"
+        >
+            <span>Translate Subtitle</span>
+        </button>
+
+
+        <!-- Progress -->
+        <section
+            class="progress-container"
+            id="progressContainer"
+        >
+
+            <div class="progress-info">
+
+                <span id="progressText">
+                    Ready
+                </span>
+
+                <span id="progressPercent">
+                    0%
+                </span>
+
+            </div>
+
+            <div class="progress-bar">
+
+                <div
+                    class="progress-fill"
+                    id="progressFill"
+                ></div>
+
+            </div>
+
+        </section>
+
+
+        <!-- Subtitle Preview -->
+        <section class="preview-section">
+
+            <div class="section-header">
+
+                <h2>
+                    Subtitle Preview
+                </h2>
+
+                <span class="format-badge">
+                    .SRT
+                </span>
+
+            </div>
+
+            <textarea
+                id="preview"
+                placeholder="Your subtitle content will appear here..."
+                spellcheck="false"
+            ></textarea>
+
+        </section>
+
+
+        <!-- Download -->
+        <button
+            id="downloadBtn"
+            class="download-btn"
+            type="button"
+        >
+            ↓ &nbsp; Download Sinhala Subtitle
+        </button>
+
+
+        <!-- Footer -->
+        <footer>
+
+            <p>
+                SubLanka AI
+                <span>•</span>
+                English → Sinhala
+            </p>
+
+        </footer>
+
+    </main>
+
+
+    <script src="script.js"></script>
+
 </body>
+
 </html>
