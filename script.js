@@ -60,6 +60,8 @@ let subtitles = [];
 
 let translating = false;
 
+let translationMemory = [];
+
 
 // ============================================
 // FILE UPLOAD
