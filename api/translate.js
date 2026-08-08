@@ -1,45 +1,109 @@
 module.exports = async function handler(req, res) {
+
     try {
+
+        // ========================================
+        // METHOD CHECK
+        // ========================================
+
         if (req.method !== "POST") {
+
             return res.status(405).json({
                 error: "Method not allowed"
             });
+
         }
 
-        const { subtitles } = req.body || {};
 
-        if (!Array.isArray(subtitles) || subtitles.length === 0) {
+        // ========================================
+        // GET DATA
+        // ========================================
+
+        const {
+            subtitles,
+            language = "si"
+        } = req.body || {};
+
+
+        if (
+            !Array.isArray(subtitles) ||
+            subtitles.length === 0
+        ) {
+
             return res.status(400).json({
                 error: "No subtitles received"
             });
+
         }
 
-        const apiKey = process.env.GEMINI_API_KEY;
+
+        // ========================================
+        // API KEY
+        // ========================================
+
+        const apiKey =
+            process.env.GEMINI_API_KEY;
+
 
         if (!apiKey) {
+
             return res.status(500).json({
-                error: "GEMINI_API_KEY is missing"
+                error:
+                    "GEMINI_API_KEY is missing"
             });
+
         }
 
-        // Send only the dialogue to Gemini
-        const dialogue = subtitles.map((sub, index) => {
-            return `[${index}] ${sub.text}`;
-        }).join("\n");
+
+        // ========================================
+        // LANGUAGE
+        // ========================================
+
+        let targetLanguage = "Sri Lankan Sinhala";
+
+        if (language === "ta") {
+            targetLanguage = "Sri Lankan Tamil";
+        }
+
+
+        // ========================================
+        // PREPARE DIALOGUE
+        // ========================================
+
+        const dialogue =
+            subtitles
+                .map((sub, index) => {
+
+                    return `[${index}] ${sub.text}`;
+
+                })
+                .join("\n");
+
+
+        // ========================================
+        // PROMPT
+        // ========================================
 
         const prompt = `
-Translate these English movie subtitles into natural Sri Lankan Sinhala.
 
-IMPORTANT:
-- Translate ONLY the dialogue.
-- Keep every [number] exactly.
-- Do not remove any number.
-- Do not add any number.
-- Keep the same order.
-- Do not add explanations.
-- Do not add quotation marks.
-- Use natural conversational Sinhala.
-- Return ONLY the translated lines.
+Translate these English movie subtitles into natural ${targetLanguage}.
+
+IMPORTANT RULES:
+
+1. Translate ONLY the dialogue.
+2. Keep every [number] exactly.
+3. Do not remove any [number].
+4. Do not add any [number].
+5. Keep the exact same order.
+6. Return every subtitle line.
+7. Do not add explanations.
+8. Do not add quotation marks.
+9. Do not add markdown.
+10. Do not add comments.
+11. Use natural conversational ${targetLanguage}.
+12. Preserve names, places and important movie terms naturally.
+13. Do not translate the [number] markers.
+14. Return ONLY the translated lines.
 
 Example:
 
@@ -54,88 +118,233 @@ Return:
 Subtitles:
 
 ${dialogue}
+
 `;
 
-        const response = await fetch(
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent",
-            {
-                method: "POST",
 
-                headers: {
-                    "Content-Type": "application/json",
-                    "x-goog-api-key": apiKey
-                },
+        // ========================================
+        // GEMINI API
+        // ========================================
 
-                body: JSON.stringify({
-                    contents: [
-                        {
-                            parts: [
-                                {
-                                    text: prompt
-                                }
-                            ]
-                        }
-                    ]
-                })
-            }
-        );
+        const response =
+            await fetch(
 
-        const raw = await response.text();
+                "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent",
+
+                {
+
+                    method: "POST",
+
+                    headers: {
+
+                        "Content-Type":
+                            "application/json",
+
+                        "x-goog-api-key":
+                            apiKey
+
+                    },
+
+                    body: JSON.stringify({
+
+                        contents: [
+
+                            {
+
+                                parts: [
+
+                                    {
+                                        text: prompt
+                                    }
+
+                                ]
+
+                            }
+
+                        ]
+
+                    })
+
+                }
+
+            );
+
+
+        // ========================================
+        // READ RESPONSE
+        // ========================================
+
+        const raw =
+            await response.text();
+
+
+        let data;
+
+
+        try {
+
+            data =
+                JSON.parse(raw);
+
+        } catch {
+
+            return res.status(
+                response.status || 500
+            ).json({
+
+                error:
+                    "Gemini returned invalid JSON."
+
+            });
+
+        }
+
+
+        // ========================================
+        // GEMINI ERROR
+        // ========================================
 
         if (!response.ok) {
-            let message = "Gemini API error";
 
-            try {
-                const errorData = JSON.parse(raw);
-                message = errorData?.error?.message || message;
-            } catch {}
+            const message =
+                data?.error?.message ||
+                "Gemini API error";
 
-            return res.status(500).json({
-                error: message
+
+            console.error(
+                "Gemini API:",
+                response.status,
+                message
+            );
+
+
+            // IMPORTANT:
+            // Keep original status code.
+            // This allows script.js to detect 429.
+
+            return res.status(
+                response.status
+            ).json({
+
+                error: message,
+
+                status:
+                    response.status
+
             });
+
         }
 
-        const data = JSON.parse(raw);
+
+        // ========================================
+        // GET MODEL OUTPUT
+        // ========================================
 
         const result =
-            data?.candidates?.[0]?.content?.parts?.[0]?.text;
+            data
+                ?.candidates?.[0]
+                ?.content?.parts?.[0]
+                ?.text;
+
 
         if (!result) {
+
             return res.status(500).json({
-                error: "Gemini returned no translation"
+
+                error:
+                    "Gemini returned no translation."
+
             });
+
         }
+
+
+        // ========================================
+        // PARSE TRANSLATIONS
+        // ========================================
 
         const translations = {};
 
-        result.split("\n").forEach(line => {
 
-            const match = line.match(
-                /^\[(\d+)\]\s*(.*)$/
+        result
+            .split("\n")
+            .forEach(line => {
+
+                const match =
+                    line.match(
+                        /^\[(\d+)\]\s*(.*)$/
+                    );
+
+
+                if (!match) {
+                    return;
+                }
+
+
+                const index =
+                    Number(match[1]);
+
+
+                const text =
+                    match[2]
+                        .trim();
+
+
+                translations[index] =
+                    text;
+
+            });
+
+
+        // ========================================
+        // CREATE OUTPUT
+        // ========================================
+
+        const output =
+            subtitles.map(
+                (sub, index) => {
+
+                    return {
+
+                        ...sub,
+
+                        text:
+                            translations[index] ||
+                            sub.text
+
+                    };
+
+                }
             );
 
-            if (!match) return;
 
-            const index = Number(match[1]);
-
-            translations[index] = match[2].trim();
-        });
-
-        const output = subtitles.map((sub, index) => ({
-            ...sub,
-            text: translations[index] || sub.text
-        }));
+        // ========================================
+        // RETURN
+        // ========================================
 
         return res.status(200).json({
+
             subtitles: output
+
         });
+
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            "Server error:",
+            error
+        );
+
 
         return res.status(500).json({
-            error: error.message || "Server error"
+
+            error:
+                error.message ||
+                "Server error"
+
         });
+
     }
+
 };
