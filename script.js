@@ -392,16 +392,23 @@ async function translateChunk(
 
                         },
 
-                        body: JSON.stringify({
+                       body: JSON.stringify({
 
-                            subtitles: chunk,
+    subtitles: chunk,
 
-                            language:
-                                languageSelect
-                                    ? languageSelect.value
-                                    : "si"
+    language:
+        languageSelect
+            ? languageSelect.value
+            : "si",
 
-                        })
+    memory:
+        translationMemory
+            .map(sub => {
+                return `[${sub.number}] ${sub.text}`;
+            })
+            .join("\n")
+
+})
 
                     }
                 );
