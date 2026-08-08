@@ -1,11 +1,12 @@
 // ============================================
-// SubLanka AI - Subtitle Translator
+// SubLanka AI
+// Reliable Subtitle Translator
 // ============================================
 
 
-// --------------------------------------------
+// ============================================
 // ELEMENTS
-// --------------------------------------------
+// ============================================
 
 const fileInput = document.getElementById("subtitleFile");
 const fileName = document.getElementById("fileName");
@@ -29,33 +30,40 @@ const progressPercent =
     document.getElementById("progressPercent");
 
 
-// --------------------------------------------
+// ============================================
+// SETTINGS
+// ============================================
+
+// Number of subtitle blocks per Gemini request
+const CHUNK_SIZE = 30;
+
+// IMPORTANT:
+// Only one request at a time.
+// This avoids hitting the Gemini quota too quickly.
+const CONCURRENCY = 1;
+
+// Maximum retries for temporary errors
+const MAX_RETRIES = 10;
+
+// Wait 60 seconds after quota/rate-limit error
+const QUOTA_WAIT = 60000;
+
+// Small delay between successful requests
+const REQUEST_DELAY = 1500;
+
+
+// ============================================
 // DATA
-// --------------------------------------------
+// ============================================
 
 let subtitles = [];
 
-let isTranslating = false;
+let translating = false;
 
 
-// --------------------------------------------
-// SETTINGS
-// --------------------------------------------
-
-// Smaller chunks = safer
-const CHUNK_SIZE = 30;
-
-// Start with 1 request at a time.
-// After everything works reliably, change to 2.
-const CONCURRENCY = 1;
-
-// Maximum retries for temporary Gemini errors
-const MAX_RETRIES = 4;
-
-
-// --------------------------------------------
+// ============================================
 // FILE UPLOAD
-// --------------------------------------------
+// ============================================
 
 fileInput.addEventListener("change", function () {
 
@@ -74,12 +82,16 @@ fileInput.addEventListener("change", function () {
     }
 
 
-    // Check file type
+    // Check extension
 
-    if (!file.name.toLowerCase().endsWith(".srt")) {
+    if (
+        !file.name
+            .toLowerCase()
+            .endsWith(".srt")
+    ) {
 
         alert(
-            "Please select an SRT (.srt) subtitle file."
+            "Please select an .srt subtitle file."
         );
 
         fileInput.value = "";
@@ -119,14 +131,14 @@ fileInput.addEventListener("change", function () {
             content;
 
 
-        // Parse SRT
+        // Parse subtitle
 
         subtitles =
             parseSRT(content);
 
 
         console.log(
-            "Subtitle blocks:",
+            "Loaded subtitles:",
             subtitles.length
         );
 
@@ -134,7 +146,7 @@ fileInput.addEventListener("change", function () {
         if (subtitles.length === 0) {
 
             alert(
-                "Could not detect subtitle blocks in this SRT file."
+                "No valid subtitle blocks were found."
             );
 
             return;
@@ -173,26 +185,26 @@ fileInput.addEventListener("change", function () {
 });
 
 
-// --------------------------------------------
+// ============================================
 // PARSE SRT
-// --------------------------------------------
+// ============================================
 
 function parseSRT(srt) {
 
-    const cleanSRT =
+    const cleanText =
         srt
             .replace(/\r\n/g, "\n")
             .replace(/\r/g, "\n")
             .trim();
 
 
-    if (!cleanSRT) {
+    if (!cleanText) {
         return [];
     }
 
 
     const blocks =
-        cleanSRT.split(
+        cleanText.split(
             /\n\s*\n/
         );
 
@@ -225,8 +237,6 @@ function parseSRT(srt) {
                 .join("\n")
                 .trim();
 
-
-        // Validate timestamp
 
         if (
             !number ||
@@ -261,9 +271,9 @@ function parseSRT(srt) {
 }
 
 
-// --------------------------------------------
+// ============================================
 // BUILD SRT
-// --------------------------------------------
+// ============================================
 
 function buildSRT(data) {
 
@@ -283,9 +293,9 @@ function buildSRT(data) {
 }
 
 
-// --------------------------------------------
-// PROGRESS BAR
-// --------------------------------------------
+// ============================================
+// PROGRESS
+// ============================================
 
 function updateProgress(
     percent,
@@ -321,25 +331,26 @@ function updateProgress(
 }
 
 
-// --------------------------------------------
-// WAIT FUNCTION
-// --------------------------------------------
+// ============================================
+// WAIT
+// ============================================
 
 function wait(ms) {
 
-    return new Promise(
-        resolve =>
-            setTimeout(
-                resolve,
-                ms
-            )
-    );
+    return new Promise(resolve => {
+
+        setTimeout(
+            resolve,
+            ms
+        );
+
+    });
 }
 
 
-// --------------------------------------------
+// ============================================
 // TRANSLATE ONE CHUNK
-// --------------------------------------------
+// ============================================
 
 async function translateChunk(
     chunk,
@@ -348,16 +359,20 @@ async function translateChunk(
     completedChunks
 ) {
 
-    for (
-        let attempt = 1;
-        attempt <= MAX_RETRIES;
-        attempt++
+    let attempt = 0;
+
+
+    while (
+        attempt < MAX_RETRIES
     ) {
+
+        attempt++;
+
 
         try {
 
             console.log(
-                `Chunk ${chunkNumber}/${totalChunks} - Attempt ${attempt}`
+                `Translating chunk ${chunkNumber}/${totalChunks}, attempt ${attempt}`
             );
 
 
@@ -369,8 +384,10 @@ async function translateChunk(
                         method: "POST",
 
                         headers: {
+
                             "Content-Type":
                                 "application/json"
+
                         },
 
                         body: JSON.stringify({
@@ -400,19 +417,18 @@ async function translateChunk(
                 data =
                     JSON.parse(raw);
 
-            } catch (error) {
+            } catch {
 
                 throw new Error(
-                    "Invalid server response: " +
-                    raw.substring(
-                        0,
-                        300
-                    )
+                    "Server returned invalid JSON:\n" +
+                    raw.substring(0, 300)
                 );
             }
 
 
+            // ====================================
             // SUCCESS
+            // ====================================
 
             if (
                 response.ok &&
@@ -425,53 +441,91 @@ async function translateChunk(
             }
 
 
-            // ERROR
+            // ====================================
+            // ERROR MESSAGE
+            // ====================================
 
             const errorMessage =
                 data.error ||
-                "Translation failed.";
+                "Unknown translation error";
 
 
-            // Temporary errors
-            // 429 = rate limit
-            // 500 = server error
-            // 502/503/504 = temporary server problem
+            // ====================================
+            // QUOTA / RATE LIMIT
+            // ====================================
+
+            if (
+                response.status === 429 ||
+                errorMessage
+                    .toLowerCase()
+                    .includes("quota") ||
+                errorMessage
+                    .toLowerCase()
+                    .includes("rate limit") ||
+                errorMessage
+                    .toLowerCase()
+                    .includes("too many requests")
+            ) {
+
+                updateProgress(
+
+                    (
+                        completedChunks /
+                        totalChunks
+                    ) * 100,
+
+                    `Quota limit reached — waiting 60 seconds...`
+
+                );
+
+
+                console.log(
+                    "Gemini quota reached. Waiting 60 seconds."
+                );
+
+
+                // Wait a full minute
+
+                await wait(
+                    QUOTA_WAIT
+                );
+
+
+                // Try same chunk again
+
+                continue;
+            }
+
+
+            // ====================================
+            // TEMPORARY SERVER ERRORS
+            // ====================================
 
             const temporaryError =
-                response.status === 429 ||
                 response.status === 500 ||
                 response.status === 502 ||
                 response.status === 503 ||
                 response.status === 504;
 
 
-            if (
-                temporaryError &&
-                attempt < MAX_RETRIES
-            ) {
+            if (temporaryError) {
 
                 const delay =
-                    Math.pow(
-                        2,
-                        attempt
-                    ) * 1000;
-
-
-                const currentPercent =
-                    (
-                        completedChunks /
-                        totalChunks
-                    ) * 100;
+                    Math.min(
+                        10000,
+                        2000 * attempt
+                    );
 
 
                 updateProgress(
-                    currentPercent,
-                    `Chunk ${chunkNumber}/${totalChunks} busy — retrying ${attempt}/${MAX_RETRIES}...`
-                );
 
+                    (
+                        completedChunks /
+                        totalChunks
+                    ) * 100,
 
-                console.log(
-                    `Retrying chunk ${chunkNumber} in ${delay}ms`
+                    `Temporary server error — retry ${attempt}/${MAX_RETRIES}...`
+
                 );
 
 
@@ -484,47 +538,43 @@ async function translateChunk(
             }
 
 
+            // ====================================
+            // OTHER ERROR
+            // ====================================
+
             throw new Error(
                 errorMessage
             );
 
         } catch (error) {
 
-
             console.error(
-                `Chunk ${chunkNumber} error:`,
+                "Chunk error:",
                 error
             );
 
 
-            // Retry network errors
+            // If it is a normal network error,
+            // retry it.
 
             if (
                 attempt < MAX_RETRIES
             ) {
 
-                const delay =
-                    Math.pow(
-                        2,
-                        attempt
-                    ) * 1000;
+                updateProgress(
 
-
-                const currentPercent =
                     (
                         completedChunks /
                         totalChunks
-                    ) * 100;
+                    ) * 100,
 
+                    `Connection error — retry ${attempt}/${MAX_RETRIES}...`
 
-                updateProgress(
-                    currentPercent,
-                    `Connection problem — retrying ${attempt}/${MAX_RETRIES}...`
                 );
 
 
                 await wait(
-                    delay
+                    3000
                 );
 
 
@@ -543,23 +593,22 @@ async function translateChunk(
 }
 
 
-// --------------------------------------------
-// TRANSLATE BUTTON
-// --------------------------------------------
+// ============================================
+// TRANSLATE ALL
+// ============================================
 
 translateBtn.addEventListener(
     "click",
     async function () {
 
+        // Prevent duplicate translation
 
-        // Prevent double click
-
-        if (isTranslating) {
+        if (translating) {
             return;
         }
 
 
-        // Check subtitle
+        // Check subtitles
 
         if (
             !subtitles ||
@@ -567,14 +616,14 @@ translateBtn.addEventListener(
         ) {
 
             alert(
-                "Please upload an SRT subtitle first."
+                "Please upload an SRT file first."
             );
 
             return;
         }
 
 
-        isTranslating = true;
+        translating = true;
 
 
         translateBtn.disabled =
@@ -587,9 +636,9 @@ translateBtn.addEventListener(
             "Translating...";
 
 
-        // ------------------------------------
+        // ====================================
         // CREATE CHUNKS
-        // ------------------------------------
+        // ====================================
 
         const chunks = [];
 
@@ -613,7 +662,7 @@ translateBtn.addEventListener(
             chunks.length;
 
 
-        let translatedChunks =
+        const translatedChunks =
             new Array(
                 totalChunks
             );
@@ -624,16 +673,16 @@ translateBtn.addEventListener(
 
         updateProgress(
             0,
-            `Preparing ${totalChunks} translation parts...`
+            `Preparing ${totalChunks} parts...`
         );
 
 
         try {
 
 
-            // --------------------------------
-            // PROCESS CHUNKS
-            // --------------------------------
+            // =================================
+            // SEQUENTIAL TRANSLATION
+            // =================================
 
             for (
                 let i = 0;
@@ -642,11 +691,8 @@ translateBtn.addEventListener(
             ) {
 
 
-                const currentBatch =
-                    [];
+                const batch = [];
 
-
-                // Add requests to current batch
 
                 for (
                     let j = i;
@@ -658,9 +704,10 @@ translateBtn.addEventListener(
                     j++
                 ) {
 
-                    currentBatch.push(
+                    batch.push(
 
                         translateChunk(
+
                             chunks[j],
 
                             j + 1,
@@ -668,54 +715,57 @@ translateBtn.addEventListener(
                             totalChunks,
 
                             completedChunks
-                        )
 
-                        .then(result => {
+                        ).then(
+                            result => {
 
-                            translatedChunks[j] =
-                                result;
+                                translatedChunks[j] =
+                                    result;
 
-                            completedChunks++;
-
-
-                            const percent =
-                                (
-                                    completedChunks /
-                                    totalChunks
-                                ) * 100;
+                                completedChunks++;
 
 
-                            const translatedCount =
-                                Math.min(
-                                    completedChunks *
-                                    CHUNK_SIZE,
+                                const percent =
+                                    (
+                                        completedChunks /
+                                        totalChunks
+                                    ) * 100;
 
-                                    subtitles.length
+
+                                const translatedCount =
+                                    Math.min(
+
+                                        completedChunks *
+                                        CHUNK_SIZE,
+
+                                        subtitles.length
+
+                                    );
+
+
+                                updateProgress(
+
+                                    percent,
+
+                                    `Translated ${translatedCount} / ${subtitles.length} subtitles`
+
                                 );
 
-
-                            updateProgress(
-
-                                percent,
-
-                                `Translated ${translatedCount} / ${subtitles.length} subtitles`
-
-                            );
-
-                        })
+                            }
+                        )
 
                     );
                 }
 
 
-                // Wait for current batch
+                // Wait until current request finishes
 
                 await Promise.all(
-                    currentBatch
+                    batch
                 );
 
 
-                // Small delay between batches
+                // Small delay
 
                 if (
                     i + CONCURRENCY <
@@ -723,23 +773,23 @@ translateBtn.addEventListener(
                 ) {
 
                     await wait(
-                        500
+                        REQUEST_DELAY
                     );
                 }
             }
 
 
-            // --------------------------------
-            // COMBINE TRANSLATIONS
-            // --------------------------------
+            // ====================================
+            // COMBINE
+            // ====================================
 
             subtitles =
                 translatedChunks.flat();
 
 
-            // --------------------------------
-            // UPDATE PREVIEW
-            // --------------------------------
+            // ====================================
+            // SHOW RESULT
+            // ====================================
 
             preview.value =
                 buildSRT(
@@ -747,9 +797,9 @@ translateBtn.addEventListener(
                 );
 
 
-            // --------------------------------
+            // ====================================
             // COMPLETE
-            // --------------------------------
+            // ====================================
 
             updateProgress(
                 100,
@@ -762,12 +812,11 @@ translateBtn.addEventListener(
 
 
             alert(
-                "Sinhala subtitle translation completed!"
+                "Sinhala subtitle translation completed successfully!"
             );
 
 
         } catch (error) {
-
 
             console.error(
                 "Translation failed:",
@@ -776,12 +825,14 @@ translateBtn.addEventListener(
 
 
             updateProgress(
+
                 (
                     completedChunks /
                     totalChunks
                 ) * 100,
 
                 "Translation stopped"
+
             );
 
 
@@ -790,11 +841,9 @@ translateBtn.addEventListener(
                 error.message
             );
 
-
         } finally {
 
-
-            isTranslating =
+            translating =
                 false;
 
 
@@ -806,29 +855,28 @@ translateBtn.addEventListener(
                 false;
 
 
-            // Restore button
+            setTimeout(
+                () => {
 
-            setTimeout(() => {
+                    translateBtn.textContent =
+                        "Translate Subtitle";
 
-                translateBtn.textContent =
-                    "Translate Subtitle";
-
-            }, 1500);
-
+                },
+                2000
+            );
         }
 
     }
 );
 
 
-// --------------------------------------------
-// DOWNLOAD SRT
-// --------------------------------------------
+// ============================================
+// DOWNLOAD
+// ============================================
 
 downloadBtn.addEventListener(
     "click",
     function () {
-
 
         if (
             !subtitles ||
@@ -853,8 +901,10 @@ downloadBtn.addEventListener(
             new Blob(
                 [srt],
                 {
+
                     type:
                         "application/x-subrip;charset=utf-8"
+
                 }
             );
 
