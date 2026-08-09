@@ -1622,3 +1622,27 @@ body {
     }
 
 }
+
+.footer-links {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+    font-size: 10px;
+}
+
+.footer-links a {
+    color: #7f89a6;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.footer-links a:hover {
+    color: #8b7fff;
+}
+
+.footer-links span {
+    color: #4f5975;
+}
