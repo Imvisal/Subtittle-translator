@@ -17,10 +17,17 @@
 
     <meta
         name="theme-color"
-        content="#0b1020"
+        content="#080d1b"
     >
 
     <title>SubLanka AI</title>
+
+    <!-- Favicon -->
+    <link
+        rel="icon"
+        type="image/png"
+        href="sublanka-logo.png"
+    >
 
     <link
         rel="stylesheet"
@@ -29,415 +36,417 @@
 
 </head>
 
-<link
-    rel="icon"
-    type="image/png"
-    href="sublanka-logo.png"
->
-    
+
 <body>
 
-    <main class="container">
-
-        <!-- =========================================
-             HEADER
-        ========================================== -->
-
-        <header class="header">
-
-            <div class="brand">
-
-                <div class="brand-logo">
-                    <span>S</span>
-                </div>
-
-                <div class="brand-name">
-                    <strong>SubLanka</strong>
-                    <span>AI</span>
-                </div>
-
-            </div>
+<main class="container">
 
 
-            <div class="hero">
+    <!-- =========================================
+         HEADER
+    ========================================== -->
 
-                <h1>
-                    Translate Subtitles
-                </h1>
+    <header class="header">
 
-                <p>
-                    English subtitles into natural Sinhala
-                </p>
+        <div class="brand">
 
-            </div>
-
-        </header>
-
-
-        <!-- =========================================
-             SEARCH SECTION
-        ========================================== -->
-
-        <section class="search-section">
-
-            <div class="section-title">
-
-                <span class="section-icon">
-                    🎬
-                </span>
-
-                <div>
-
-                    <h2>
-                        Find Subtitle
-                    </h2>
-
-                    <p>
-                        Search a movie or TV series
-                    </p>
-
-                </div>
-
-            </div>
-
-
-            <div class="search-box">
-
-                <input
-                    type="text"
-                    id="searchInput"
-                    placeholder="Enter movie or TV series name..."
-                    autocomplete="off"
+            <div class="brand-logo">
+                <img
+                    src="sublanka-logo.png"
+                    alt="SubLanka AI"
                 >
-
-                <button
-                    type="button"
-                    id="searchBtn"
-                >
-                    <span>🔍</span>
-                    Search
-                </button>
-
             </div>
 
-
-            <!-- Search status -->
-
-            <div
-                id="searchStatus"
-                class="search-status"
-            ></div>
-
-
-            <!-- Search results -->
-
-            <div
-                id="searchResults"
-                class="search-results"
-            ></div>
-
-        </section>
-
-
-        <!-- =========================================
-             OR DIVIDER
-        ========================================== -->
-
-        <div class="or-divider">
-
-            <span></span>
-
-            <strong>
-                OR
-            </strong>
-
-            <span></span>
+            <div class="brand-name">
+                <strong>SubLanka</strong>
+                <span>AI</span>
+            </div>
 
         </div>
 
 
-        <!-- =========================================
-             UPLOAD SECTION
-        ========================================== -->
+        <div class="hero">
 
-        <section class="upload-section">
+            <h1>
+                Translate Subtitles
+            </h1>
 
-            <div class="upload-card">
+            <p>
+                English subtitles into natural Sinhala
+            </p>
 
-                <div class="upload-icon">
-                    ↑
-                </div>
+        </div>
 
-
-                <h2>
-                    Upload Subtitle
-                </h2>
-
-
-                <p>
-                    Select an English .srt subtitle file
-                </p>
-
-
-                <label
-                    for="subtitleFile"
-                    class="file-label"
-                >
-                    Choose SRT File
-                </label>
-
-
-                <input
-                    type="file"
-                    id="subtitleFile"
-                    accept=".srt"
-                >
-
-
-                <div
-                    id="fileName"
-                    class="file-name"
-                >
-                    No file selected
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- =========================================
-             SETTINGS
-        ========================================== -->
-
-        <section class="settings">
-
-            <label for="language">
-                Translation Language
-            </label>
-
-
-            <select id="language">
-
-                <option value="si">
-                    🇱🇰 Sinhala
-                </option>
-
-                <option value="ta">
-                    🇱🇰 Tamil
-                </option>
-
-            </select>
-
-        </section>
-
-
-        <!-- =========================================
-             TRANSLATE BUTTON
-        ========================================== -->
-
-        <button
-            id="translateBtn"
-            class="translate-btn"
-            type="button"
-        >
-
-            <span class="button-icon">
-                ✨
-            </span>
-
-            <span>
-                Translate Subtitle
-            </span>
-
-        </button>
-
-
-        <!-- =========================================
-             PROGRESS
-        ========================================== -->
-
-        <section
-            class="progress-container"
-            id="progressContainer"
-        >
-
-            <div class="progress-info">
-
-                <span id="progressText">
-                    Ready
-                </span>
-
-                <span id="progressPercent">
-                    0%
-                </span>
-
-            </div>
-
-
-            <div class="progress-bar">
-
-                <div
-                    class="progress-fill"
-                    id="progressFill"
-                ></div>
-
-            </div>
-
-        </section>
-
-
-        <!-- =========================================
-             PREVIEW
-        ========================================== -->
-
-        <section class="preview-section">
-
-            <div class="preview-header">
-
-                <div>
-
-                    <h2>
-                        Subtitle Preview
-                    </h2>
-
-                    <p>
-                        Your translated subtitle will appear here
-                    </p>
-
-                </div>
-
-
-                <span class="format-badge">
-                    .SRT
-                </span>
-
-            </div>
-
-
-            <textarea
-                id="preview"
-                placeholder="Your subtitle content will appear here..."
-                spellcheck="false"
-            ></textarea>
-
-        </section>
-
-
-        <!-- =========================================
-             DOWNLOAD
-        ========================================== -->
-
-        <button
-            id="downloadBtn"
-            class="download-btn"
-            type="button"
-        >
-
-            <span>
-                ↓
-            </span>
-
-            Download Sinhala Subtitle
-
-        </button>
-
-
-        <!-- =========================================
-             FOOTER
-        ========================================== -->
-
-        <footer class="site-footer">
-
-            <div class="footer-brand">
-
-                <div class="footer-logo">
-                    S
-                </div>
-
-                <div>
-
-                    <strong>
-                        SubLanka AI
-                    </strong>
-
-                    <span>
-                        English → Sinhala
-                    </span>
-
-                </div>
-
-            </div>
-
-
-            <div class="footer-social">
-
-                <!-- GitHub -->
-
-                <a
-                    href="https://github.com/Imvisal"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="GitHub"
-                    title="GitHub"
-                >
-
-                    <svg
-                        viewBox="0 0 24 24"
-                        aria-hidden="true"
-                    >
-                        <path
-                            d="M12 .5a12 12 0 0 0-3.79 23.39c.6.11.82-.26.82-.58v-2.02c-3.34.73-4.04-1.42-4.04-1.42-.55-1.4-1.34-1.77-1.34-1.77-1.09-.75.08-.74.08-.74 1.2.08 1.83 1.23 1.83 1.23 1.07 1.83 2.8 1.3 3.48.99.11-.77.42-1.3.76-1.6-2.67-.3-5.47-1.34-5.47-5.93 0-1.31.47-2.38 1.23-3.22-.12-.3-.53-1.52.12-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.3-1.55 3.3-1.23 3.3-1.23.65 1.66.24 2.88.12 3.18.76.84 1.23 1.91 1.23 3.22 0 4.6-2.8 5.62-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.22.69.83.57A12 12 0 0 0 12 .5Z"
-                        />
-                    </svg>
-
-                </a>
-
-
-                <!-- Facebook -->
-
-                <a
-                    href="https://www.facebook.com/share/1EkW6FRkb9/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="Facebook"
-                    title="Facebook"
-                >
-
-                    <svg
-                        viewBox="0 0 24 24"
-                        aria-hidden="true"
-                    >
-                        <path
-                            d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07c0 6.02 4.39 11.02 10.13 11.93v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.69 4.53-4.69 1.31 0 2.68.24 2.68.24v2.97h-1.51c-1.49 0-1.96.93-1.96 1.88v2.26h3.33l-.53 3.49h-2.8V24C19.61 23.09 24 18.09 24 12.07Z"
-                        />
-                    </svg>
-
-                </a>
-
-            </div>
-
-
-            <div class="footer-copy">
-
-                © 2026 SubLanka AI
-
-                <span>•</span>
-
-                Built for Sinhala subtitle lovers
-
-            </div>
-
-        </footer>
-
-    </main>
+    </header>
 
 
     <!-- =========================================
-         JAVASCRIPT
+         SEARCH
     ========================================== -->
 
-    <script src="script.js"></script>
+    <section class="search-section">
+
+        <div class="section-heading">
+
+            <div class="section-icon">
+                🎬
+            </div>
+
+            <div>
+
+                <h2>
+                    Find Subtitle
+                </h2>
+
+                <p>
+                    Search a movie or TV series
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="search-box">
+
+            <input
+                type="text"
+                id="searchInput"
+                placeholder="Enter movie or TV series name..."
+                autocomplete="off"
+            >
+
+            <button
+                type="button"
+                id="searchBtn"
+            >
+                <span>🔍</span>
+                <span>Search</span>
+            </button>
+
+        </div>
+
+
+        <!-- Search status -->
+
+        <div
+            id="searchStatus"
+            class="search-status"
+        ></div>
+
+
+        <!-- Search results -->
+
+        <div
+            id="searchResults"
+            class="search-results"
+        ></div>
+
+    </section>
+
+
+    <!-- =========================================
+         OR
+    ========================================== -->
+
+    <div class="or-divider">
+
+        <span></span>
+
+        <strong>OR</strong>
+
+        <span></span>
+
+    </div>
+
+
+    <!-- =========================================
+         UPLOAD
+    ========================================== -->
+
+    <section class="upload-section">
+
+        <div class="upload-card">
+
+            <div class="upload-icon">
+                ↑
+            </div>
+
+            <h2>
+                Upload Subtitle
+            </h2>
+
+            <p>
+                Select an English .srt subtitle file
+            </p>
+
+
+            <label
+                for="subtitleFile"
+                class="file-label"
+            >
+                Choose SRT File
+            </label>
+
+
+            <input
+                type="file"
+                id="subtitleFile"
+                accept=".srt"
+            >
+
+
+            <div
+                id="fileName"
+                class="file-name"
+            >
+                No file selected
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================================
+         LANGUAGE
+    ========================================== -->
+
+    <section class="settings">
+
+        <label for="language">
+            Translation Language
+        </label>
+
+
+        <select id="language">
+
+            <option value="si">
+                🇱🇰 Sinhala
+            </option>
+
+            <option value="ta">
+                🇱🇰 Tamil
+            </option>
+
+        </select>
+
+    </section>
+
+
+    <!-- =========================================
+         TRANSLATE BUTTON
+    ========================================== -->
+
+    <button
+        id="translateBtn"
+        class="translate-btn"
+        type="button"
+    >
+
+        <span class="translate-icon">
+            ✨
+        </span>
+
+        <span>
+            Translate Subtitle
+        </span>
+
+    </button>
+
+
+    <!-- =========================================
+         PROGRESS
+    ========================================== -->
+
+    <section
+        class="progress-container"
+        id="progressContainer"
+    >
+
+        <div class="progress-info">
+
+            <span id="progressText">
+                Ready
+            </span>
+
+            <span id="progressPercent">
+                0%
+            </span>
+
+        </div>
+
+
+        <div class="progress-bar">
+
+            <div
+                class="progress-fill"
+                id="progressFill"
+            ></div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================================
+         PREVIEW
+    ========================================== -->
+
+    <section class="preview-section">
+
+        <div class="preview-header">
+
+            <div>
+
+                <h2>
+                    Subtitle Preview
+                </h2>
+
+                <p>
+                    Your subtitle content will appear here
+                </p>
+
+            </div>
+
+
+            <span class="format-badge">
+                .SRT
+            </span>
+
+        </div>
+
+
+        <textarea
+            id="preview"
+            placeholder="Your subtitle content will appear here..."
+            spellcheck="false"
+        ></textarea>
+
+    </section>
+
+
+    <!-- =========================================
+         DOWNLOAD
+    ========================================== -->
+
+    <button
+        id="downloadBtn"
+        class="download-btn"
+        type="button"
+    >
+
+        <span class="download-icon">
+            ↓
+        </span>
+
+        Download Sinhala Subtitle
+
+    </button>
+
+
+    <!-- =========================================
+         FOOTER
+    ========================================== -->
+
+    <footer class="site-footer">
+
+        <div class="footer-main">
+
+            <div class="footer-logo">
+
+                <img
+                    src="sublanka-logo.png"
+                    alt="SubLanka AI"
+                >
+
+            </div>
+
+
+            <div class="footer-info">
+
+                <strong>
+                    SubLanka AI
+                </strong>
+
+                <span>
+                    English → Sinhala
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <div class="footer-social">
+
+            <!-- GitHub -->
+
+            <a
+                href="https://github.com/Imvisal"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="GitHub"
+                title="GitHub"
+            >
+
+                <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
+
+                    <path
+                        d="M12 .5a12 12 0 0 0-3.79 23.39c.6.11.82-.26.82-.58v-2.02c-3.34.73-4.04-1.42-4.04-1.42-.55-1.4-1.34-1.77-1.34-1.77-1.09-.75.08-.74.08-.74 1.2.08 1.83 1.23 1.83 1.23 1.07 1.83 2.8 1.3 3.48.99.11-.77.42-1.3.76-1.6-2.67-.3-5.47-1.34-5.47-5.93 0-1.31.47-2.38 1.23-3.22-.12-.3-.53-1.52.12-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.3-1.55 3.3-1.23 3.3-1.23.65 1.66.24 2.88.12 3.18.76.84 1.23 1.91 1.23 3.22 0 4.6-2.8 5.62-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.22.69.83.57A12 12 0 0 0 12 .5Z"
+                    />
+
+                </svg>
+
+            </a>
+
+
+            <!-- Facebook -->
+
+            <a
+                href="https://www.facebook.com/share/1EkW6FRkb9/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Facebook"
+                title="Facebook"
+            >
+
+                <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
+
+                    <path
+                        d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07c0 6.02 4.39 11.02 10.13 11.93v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.69 4.53-4.69 1.31 0 2.68.24 2.68.24v2.97h-1.51c-1.49 0-1.96.93-1.96 1.88v2.26h3.33l-.53 3.49h-2.8V24C19.61 23.09 24 18.09 24 12.07Z"
+                    />
+
+                </svg>
+
+            </a>
+
+        </div>
+
+
+        <div class="footer-copy">
+
+            © 2026 SubLanka AI
+
+            <span>•</span>
+
+            English → Sinhala
+
+        </div>
+
+    </footer>
+
+
+</main>
+
+
+<script src="script.js"></script>
 
 </body>
 
