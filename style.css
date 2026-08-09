@@ -1,12 +1,12 @@
-/* =========================================================
+/* =====================================================
    SUBLANKA AI
-   Modern Dark UI
-========================================================= */
+   MODERN DARK SUBTITLE TRANSLATOR
+===================================================== */
 
 
-/* =========================================================
+/* =====================================================
    RESET
-========================================================= */
+===================================================== */
 
 * {
     margin: 0;
@@ -26,75 +26,73 @@ body {
 
     background:
         radial-gradient(
-            circle at top,
-            rgba(91, 78, 220, 0.14),
-            transparent 35%
+            circle at 50% -10%,
+            rgba(91, 76, 220, 0.20),
+            transparent 38%
         ),
         #080d1b;
 
     color: #ffffff;
 
     font-family:
-        Inter,
         Poppins,
+        Inter,
         Arial,
         sans-serif;
-
-    line-height: 1.5;
 
 }
 
 
-/* =========================================================
-   MAIN CONTAINER
-========================================================= */
+/* =====================================================
+   CONTAINER
+===================================================== */
 
 .container {
 
     width: min(
         760px,
-        calc(100% - 30px)
+        calc(100% - 24px)
     );
 
-    margin: 30px auto;
+    margin: 24px auto;
 
     padding: 38px;
+
+    border-radius: 27px;
 
     background:
         linear-gradient(
             180deg,
-            rgba(24, 32, 56, 0.98),
-            rgba(18, 25, 45, 0.98)
+            #182039,
+            #121a30
         );
 
     border: 1px solid
         rgba(255,255,255,0.08);
 
-    border-radius: 28px;
-
     box-shadow:
         0 30px 80px
-        rgba(0,0,0,0.35);
+        rgba(0,0,0,0.38);
 
 }
 
 
-/* =========================================================
+/* =====================================================
    HEADER
-========================================================= */
+===================================================== */
 
 .header {
 
     text-align: center;
 
-    padding-bottom: 35px;
+    padding-bottom: 30px;
 
 }
 
 
-/* =========================================================
+/* =====================================================
    BRAND
-========================================================= */
+===================================================== */
 
 .brand {
 
@@ -106,66 +104,40 @@ body {
 
     margin-bottom: 25px;
 
-    user-select: none;
-
 }
 
 
 .brand-logo {
 
-    width: 50px;
-    height: 50px;
+    width: 58px;
+    height: 58px;
 
-    display: flex;
+    flex-shrink: 0;
 
-    align-items: center;
-    justify-content: center;
+    overflow: hidden;
 
-    border-radius: 15px;
+    border-radius: 16px;
 
-    background:
-        linear-gradient(
-            135deg,
-            #7365ff,
-            #4c3bdd
-        );
-
-    box-shadow:
-        0 10px 30px
-        rgba(98,84,255,0.25);
-
-    position: relative;
-
-}
-
-
-.brand-logo::after {
-
-    content: "";
-
-    position: absolute;
-
-    inset: 2px;
-
-    border-radius: 13px;
+    background: #090e1c;
 
     border: 1px solid
-        rgba(255,255,255,0.18);
+        rgba(255,255,255,0.10);
+
+    box-shadow:
+        0 8px 25px
+        rgba(98,84,255,0.25);
 
 }
 
 
-.brand-logo span {
+.brand-logo img {
 
-    position: relative;
+    width: 100%;
+    height: 100%;
 
-    z-index: 1;
+    display: block;
 
-    font-size: 25px;
-
-    font-weight: 800;
-
-    color: white;
+    object-fit: cover;
 
 }
 
@@ -192,30 +164,31 @@ body {
 
 .brand-name span {
 
-    margin-left: 3px;
+    color: #7567ff;
 
-    color: #7769ff;
+    margin-left: 3px;
 
     font-weight: 800;
 
 }
 
 
-/* =========================================================
+/* =====================================================
    HERO
-========================================================= */
+===================================================== */
 
 .hero h1 {
 
-    font-size: clamp(
-        32px,
-        6vw,
-        44px
-    );
+    font-size:
+        clamp(
+            32px,
+            6vw,
+            44px
+        );
 
     line-height: 1.1;
 
-    letter-spacing: -1.4px;
+    letter-spacing: -1.5px;
 
     background:
         linear-gradient(
@@ -238,16 +211,16 @@ body {
 
     margin-top: 12px;
 
-    color: #aab2cf;
+    color: #aab2ce;
 
-    font-size: 16px;
+    font-size: 15px;
 
 }
 
 
-/* =========================================================
-   SEARCH SECTION
-========================================================= */
+/* =====================================================
+   SEARCH
+===================================================== */
 
 .search-section {
 
@@ -256,27 +229,25 @@ body {
 }
 
 
-.section-title {
+.section-heading {
 
     display: flex;
 
-    justify-content: center;
-
     align-items: center;
+
+    justify-content: center;
 
     gap: 11px;
 
-    margin-bottom: 18px;
-
-    text-align: left;
+    margin-bottom: 17px;
 
 }
 
 
 .section-icon {
 
-    width: 42px;
-    height: 42px;
+    width: 43px;
+    height: 43px;
 
     display: flex;
 
@@ -293,7 +264,7 @@ body {
 }
 
 
-.section-title h2 {
+.section-heading h2 {
 
     font-size: 25px;
 
@@ -302,28 +273,26 @@ body {
 }
 
 
-.section-title p {
+.section-heading p {
 
     margin-top: 3px;
 
-    color: #9fa7c4;
+    color: #929cb9;
 
-    font-size: 14px;
+    font-size: 13px;
 
 }
 
 
-/* =========================================================
+/* =====================================================
    SEARCH BOX
-========================================================= */
+===================================================== */
 
 .search-box {
 
     display: flex;
 
     gap: 10px;
-
-    width: 100%;
 
 }
 
@@ -334,34 +303,32 @@ body {
 
     min-width: 0;
 
-    height: 50px;
+    height: 49px;
 
     padding: 0 16px;
 
-    border-radius: 12px;
+    border-radius: 11px;
 
     border: 1px solid
-        rgba(255,255,255,0.13);
+        rgba(255,255,255,0.14);
+
+    outline: none;
 
     background: #0d1424;
 
-    color: #ffffff;
-
-    outline: none;
+    color: white;
 
     font-size: 14px;
 
     transition:
-        border-color .2s ease,
-        box-shadow .2s ease,
-        background .2s ease;
+        .2s ease;
 
 }
 
 
 .search-box input::placeholder {
 
-    color: #69728f;
+    color: #65708d;
 
 }
 
@@ -369,8 +336,6 @@ body {
 .search-box input:focus {
 
     border-color: #6254ff;
-
-    background: #0f1729;
 
     box-shadow:
         0 0 0 3px
@@ -381,9 +346,26 @@ body {
 
 .search-box button {
 
-    height: 50px;
+    height: 49px;
 
-    padding: 0 22px;
+    padding: 0 21px;
+
+    border: none;
+
+    border-radius: 11px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #6b5cff,
+            #5140df
+        );
+
+    color: white;
+
+    font-weight: 700;
+
+    font-size: 14px;
 
     display: flex;
 
@@ -393,33 +375,11 @@ body {
 
     gap: 7px;
 
-    border: none;
-
-    border-radius: 12px;
-
-    background:
-        linear-gradient(
-            135deg,
-            #6b5cff,
-            #5141df
-        );
-
-    color: white;
-
-    font-size: 14px;
-
-    font-weight: 700;
-
     cursor: pointer;
-
-    box-shadow:
-        0 8px 22px
-        rgba(81,65,223,0.18);
 
     transition:
         transform .2s ease,
-        box-shadow .2s ease,
-        opacity .2s ease;
+        box-shadow .2s ease;
 
 }
 
@@ -430,47 +390,47 @@ body {
         translateY(-2px);
 
     box-shadow:
-        0 12px 28px
-        rgba(81,65,223,0.28);
+        0 10px 25px
+        rgba(81,64,223,0.25);
 
 }
 
 
 .search-box button:disabled {
 
-    cursor: wait;
+    opacity: .6;
 
-    opacity: .75;
+    cursor: wait;
 
 }
 
 
-/* =========================================================
+/* =====================================================
    SEARCH STATUS
-========================================================= */
+===================================================== */
 
 .search-status {
 
-    min-height: 22px;
+    min-height: 21px;
 
-    margin: 12px 0;
+    margin-top: 12px;
 
     text-align: center;
 
-    color: #aeb6d2;
+    color: #9da6c3;
 
-    font-size: 14px;
+    font-size: 13px;
 
 }
 
 
-/* =========================================================
+/* =====================================================
    SEARCH RESULTS
-========================================================= */
+===================================================== */
 
 .search-results {
 
-    width: 100%;
+    margin-top: 4px;
 
 }
 
@@ -479,11 +439,11 @@ body {
 
     display: flex;
 
-    gap: 15px;
+    gap: 14px;
 
-    padding: 14px;
+    padding: 13px;
 
-    margin-bottom: 12px;
+    margin-bottom: 11px;
 
     border-radius: 15px;
 
@@ -494,12 +454,11 @@ body {
         rgba(255,255,255,0.08);
 
     animation:
-        resultAppear .4s ease both;
+        resultIn .35s ease both;
 
     transition:
-        border-color .2s ease,
         transform .2s ease,
-        background .2s ease;
+        border-color .2s ease;
 
 }
 
@@ -511,9 +470,6 @@ body {
 
     border-color:
         rgba(98,84,255,0.5);
-
-    background:
-        rgba(98,84,255,0.05);
 
 }
 
@@ -529,7 +485,7 @@ body {
 
     border-radius: 9px;
 
-    background: #0c1322;
+    background: #0b1220;
 
 }
 
@@ -572,11 +528,9 @@ body {
 
 .result-info h3 {
 
-    margin-bottom: 5px;
+    margin-bottom: 6px;
 
     font-size: 17px;
-
-    line-height: 1.3;
 
 }
 
@@ -587,9 +541,9 @@ body {
 
     flex-wrap: wrap;
 
-    gap: 7px;
+    gap: 6px;
 
-    margin-bottom: 11px;
+    margin-bottom: 10px;
 
 }
 
@@ -603,69 +557,57 @@ body {
     background:
         rgba(255,255,255,0.06);
 
-    color: #aeb6d1;
+    color: #aab3ce;
 
-    font-size: 11px;
+    font-size: 10px;
 
 }
 
 
 .select-title-btn {
 
+    padding: 7px 13px;
+
     border: none;
 
     border-radius: 8px;
 
-    padding: 8px 14px;
-
-    background:
-        #5d4ff1;
+    background: #5c4ef0;
 
     color: white;
 
-    font-size: 12px;
+    font-size: 11px;
 
     font-weight: 700;
 
     cursor: pointer;
-
-    transition:
-        transform .2s ease,
-        background .2s ease;
 
 }
 
 
 .select-title-btn:hover {
 
-    transform:
-        translateY(-1px);
-
-    background:
-        #6d5fff;
+    background: #7062ff;
 
 }
 
 
-/* =========================================================
+/* =====================================================
    EMPTY SEARCH
-========================================================= */
+===================================================== */
 
 .search-empty {
 
-    padding: 22px 10px;
+    padding: 22px;
 
     text-align: center;
-
-    animation:
-        resultAppear .4s ease;
 
 }
 
 
 .empty-icon {
 
-    font-size: 30px;
+    font-size: 29px;
 
     margin-bottom: 5px;
 
@@ -676,66 +618,43 @@ body {
 
     font-size: 18px;
 
-    margin-bottom: 4px;
-
 }
 
 
 .search-empty p {
 
-    color: #929bb8;
+    margin-top: 3px;
+
+    color: #8d97b5;
 
     font-size: 13px;
 
 }
 
 
-/* =========================================================
-   LOADING
-========================================================= */
-
-.search-spinner {
-
-    width: 16px;
-    height: 16px;
-
-    display: inline-block;
-
-    border: 2px solid
-        rgba(255,255,255,0.3);
-
-    border-top-color:
-        #ffffff;
-
-    border-radius: 50%;
-
-    animation:
-        spin .7s linear infinite;
-
-}
-
+/* =====================================================
+   SUBTITLE LOADING
+===================================================== */
 
 .subtitle-loading {
 
-    padding: 35px 20px;
+    padding: 30px 15px;
 
     text-align: center;
-
-    animation:
-        fadeIn .35s ease;
 
 }
 
 
 .big-spinner {
 
-    width: 45px;
-    height: 45px;
+    width: 43px;
+    height: 43px;
 
-    margin: 0 auto 15px;
+    margin:
+        0 auto 14px;
 
     border: 4px solid
-        rgba(255,255,255,0.1);
+        rgba(255,255,255,0.10);
 
     border-top-color:
         #6254ff;
@@ -750,7 +669,7 @@ body {
 
 .subtitle-loading h3 {
 
-    font-size: 17px;
+    font-size: 16px;
 
 }
 
@@ -759,9 +678,9 @@ body {
 
     margin-top: 4px;
 
-    color: #8e97b5;
+    color: #8993b0;
 
-    font-size: 13px;
+    font-size: 12px;
 
 }
 
@@ -774,7 +693,7 @@ body {
 
     gap: 5px;
 
-    margin-top: 12px;
+    margin-top: 10px;
 
 }
 
@@ -786,7 +705,7 @@ body {
 
     border-radius: 50%;
 
-    background: #6658ff;
+    background: #6759ff;
 
     animation:
         dotPulse 1.2s infinite;
@@ -808,9 +727,9 @@ body {
 }
 
 
-/* =========================================================
-   OR DIVIDER
-========================================================= */
+/* =====================================================
+   OR
+===================================================== */
 
 .or-divider {
 
@@ -818,13 +737,13 @@ body {
 
     align-items: center;
 
-    gap: 14px;
+    gap: 13px;
 
     margin: 27px 0;
 
-    color: #7e87a5;
+    color: #7e88a5;
 
-    font-size: 13px;
+    font-size: 12px;
 
 }
 
@@ -841,20 +760,13 @@ body {
 }
 
 
-/* =========================================================
+/* =====================================================
    UPLOAD
-========================================================= */
-
-.upload-section {
-
-    width: 100%;
-
-}
-
+===================================================== */
 
 .upload-card {
 
-    padding: 38px 20px;
+    padding: 36px 20px;
 
     text-align: center;
 
@@ -867,23 +779,18 @@ body {
         rgba(98,84,255,0.025);
 
     transition:
-        background .2s ease,
-        border-color .2s ease,
-        transform .2s ease;
+        .2s ease;
 
 }
 
 
 .upload-card:hover {
 
-    background:
-        rgba(98,84,255,0.055);
-
     border-color:
-        rgba(98,84,255,0.85);
+        rgba(98,84,255,0.9);
 
-    transform:
-        translateY(-1px);
+    background:
+        rgba(98,84,255,0.05);
 
 }
 
@@ -893,7 +800,8 @@ body {
     width: 55px;
     height: 55px;
 
-    margin: 0 auto 16px;
+    margin:
+        0 auto 15px;
 
     display: flex;
 
@@ -905,17 +813,15 @@ body {
     background:
         linear-gradient(
             135deg,
-            #6657ff,
-            #4e3dde
+            #685aff,
+            #4e3ddd
         );
 
-    color: white;
-
-    font-size: 30px;
+    font-size: 29px;
 
     box-shadow:
         0 10px 25px
-        rgba(98,84,255,0.2);
+        rgba(98,84,255,0.20);
 
 }
 
@@ -931,9 +837,9 @@ body {
 
     margin-top: 5px;
 
-    color: #929bb8;
+    color: #929cb8;
 
-    font-size: 14px;
+    font-size: 13px;
 
 }
 
@@ -943,12 +849,11 @@ body {
     display: inline-flex;
 
     align-items: center;
-
     justify-content: center;
 
-    margin-top: 18px;
+    margin-top: 17px;
 
-    padding: 11px 20px;
+    padding: 10px 20px;
 
     border-radius: 10px;
 
@@ -964,8 +869,7 @@ body {
     cursor: pointer;
 
     transition:
-        transform .2s ease,
-        background .2s ease;
+        transform .2s ease;
 
 }
 
@@ -974,9 +878,6 @@ body {
 
     transform:
         translateY(-2px);
-
-    background:
-        #7164ff;
 
 }
 
@@ -990,9 +891,9 @@ body {
 
 .file-name {
 
-    margin-top: 12px;
+    margin-top: 11px;
 
-    color: #7f89a7;
+    color: #7e89a8;
 
     font-size: 12px;
 
@@ -1001,13 +902,13 @@ body {
 }
 
 
-/* =========================================================
+/* =====================================================
    SETTINGS
-========================================================= */
+===================================================== */
 
 .settings {
 
-    margin-top: 25px;
+    margin-top: 24px;
 
 }
 
@@ -1016,9 +917,9 @@ body {
 
     display: block;
 
-    margin-bottom: 8px;
+    margin-bottom: 7px;
 
-    color: #aeb6d1;
+    color: #aab3ce;
 
     font-size: 13px;
 
@@ -1038,15 +939,13 @@ body {
     border: 1px solid
         rgba(255,255,255,0.12);
 
+    outline: none;
+
     background: #0d1424;
 
     color: white;
 
-    outline: none;
-
     font-size: 14px;
-
-    cursor: pointer;
 
 }
 
@@ -1059,9 +958,9 @@ body {
 }
 
 
-/* =========================================================
-   TRANSLATE BUTTON
-========================================================= */
+/* =====================================================
+   TRANSLATE
+===================================================== */
 
 .translate-btn {
 
@@ -1071,14 +970,6 @@ body {
 
     margin-top: 16px;
 
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    gap: 8px;
-
     border: none;
 
     border-radius: 12px;
@@ -1087,10 +978,18 @@ body {
         linear-gradient(
             135deg,
             #6254ff,
-            #4d3ddd
+            #4e3ddd
         );
 
     color: white;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 8px;
 
     font-size: 14px;
 
@@ -1113,7 +1012,7 @@ body {
 
     box-shadow:
         0 12px 28px
-        rgba(98,84,255,0.24);
+        rgba(98,84,255,0.25);
 
 }
 
@@ -1127,17 +1026,17 @@ body {
 }
 
 
-/* =========================================================
+/* =====================================================
    PROGRESS
-========================================================= */
+===================================================== */
 
 .progress-container {
 
     display: none;
 
-    margin-top: 18px;
+    margin-top: 17px;
 
-    padding: 15px;
+    padding: 14px;
 
     border-radius: 13px;
 
@@ -1156,11 +1055,9 @@ body {
 
     justify-content: space-between;
 
-    gap: 10px;
+    margin-bottom: 8px;
 
-    margin-bottom: 9px;
-
-    color: #aeb6d1;
+    color: #aab3ce;
 
     font-size: 12px;
 
@@ -1177,8 +1074,7 @@ body {
 
     border-radius: 20px;
 
-    background:
-        #0a1120;
+    background: #0a1120;
 
 }
 
@@ -1189,13 +1085,13 @@ body {
 
     height: 100%;
 
-    border-radius: inherit;
+    border-radius: 20px;
 
     background:
         linear-gradient(
             90deg,
-            #4e40df,
-            #776aff
+            #4f40df,
+            #786aff
         );
 
     transition:
@@ -1204,13 +1100,13 @@ body {
 }
 
 
-/* =========================================================
+/* =====================================================
    PREVIEW
-========================================================= */
+===================================================== */
 
 .preview-section {
 
-    margin-top: 28px;
+    margin-top: 27px;
 
 }
 
@@ -1223,7 +1119,7 @@ body {
 
     justify-content: space-between;
 
-    gap: 15px;
+    gap: 12px;
 
     margin-bottom: 10px;
 
@@ -1241,16 +1137,14 @@ body {
 
     margin-top: 2px;
 
-    color: #747e9e;
+    color: #727d9d;
 
-    font-size: 11px;
+    font-size: 10px;
 
 }
 
 
 .format-badge {
-
-    flex-shrink: 0;
 
     padding: 5px 9px;
 
@@ -1274,21 +1168,20 @@ body {
 
     min-height: 360px;
 
+    padding: 17px;
+
     resize: vertical;
 
-    padding: 18px;
+    outline: none;
 
     border-radius: 15px;
 
     border: 1px solid
-        rgba(255,255,255,0.1);
+        rgba(255,255,255,0.10);
 
-    background:
-        #0b1221;
+    background: #0b1221;
 
-    color: #d7dcf0;
-
-    outline: none;
+    color: #dce1f0;
 
     font-family:
         Consolas,
@@ -1304,7 +1197,7 @@ body {
 
 #preview::placeholder {
 
-    color: #52607d;
+    color: #52607c;
 
 }
 
@@ -1314,16 +1207,12 @@ body {
     border-color:
         rgba(98,84,255,0.55);
 
-    box-shadow:
-        0 0 0 3px
-        rgba(98,84,255,0.08);
-
 }
 
 
-/* =========================================================
+/* =====================================================
    DOWNLOAD
-========================================================= */
+===================================================== */
 
 .download-btn {
 
@@ -1331,14 +1220,13 @@ body {
 
     height: 50px;
 
-    margin-top: 18px;
+    margin-top: 17px;
 
     border: none;
 
     border-radius: 12px;
 
-    background:
-        #202d49;
+    background: #202d49;
 
     color: white;
 
@@ -1361,8 +1249,7 @@ body {
     transform:
         translateY(-2px);
 
-    background:
-        #29395c;
+    background: #2b3a5c;
 
 }
 
@@ -1376,15 +1263,15 @@ body {
 }
 
 
-/* =========================================================
+/* =====================================================
    FOOTER
-========================================================= */
+===================================================== */
 
 .site-footer {
 
-    margin-top: 32px;
+    margin-top: 30px;
 
-    padding-top: 22px;
+    padding-top: 21px;
 
     border-top: 1px solid
         rgba(255,255,255,0.07);
@@ -1394,7 +1281,7 @@ body {
 }
 
 
-.footer-brand {
+.footer-main {
 
     display: inline-flex;
 
@@ -1407,33 +1294,32 @@ body {
 
 .footer-logo {
 
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
 
-    display: flex;
-
-    align-items: center;
-    justify-content: center;
+    overflow: hidden;
 
     border-radius: 9px;
 
-    background:
-        linear-gradient(
-            135deg,
-            #6658ff,
-            #4e3dde
-        );
-
-    color: white;
-
-    font-size: 15px;
-
-    font-weight: 800;
+    border: 1px solid
+        rgba(255,255,255,0.08);
 
 }
 
 
-.footer-brand div:last-child {
+.footer-logo img {
+
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    object-fit: cover;
+
+}
+
+
+.footer-info {
 
     display: flex;
 
@@ -1444,25 +1330,27 @@ body {
 }
 
 
-.footer-brand strong {
+.footer-info strong {
+
+    color: #dce1f2;
 
     font-size: 13px;
 
-    color: #dce1f3;
-
 }
 
 
-.footer-brand span {
+.footer-info span {
+
+    color: #707b99;
 
     font-size: 10px;
 
-    color: #707a99;
-
 }
 
 
-/* SOCIAL */
+/* =====================================================
+   SOCIAL
+===================================================== */
 
 .footer-social {
 
@@ -1472,7 +1360,7 @@ body {
 
     gap: 9px;
 
-    margin-top: 15px;
+    margin-top: 14px;
 
 }
 
@@ -1497,8 +1385,7 @@ body {
 
     transition:
         transform .2s ease,
-        background .2s ease,
-        border-color .2s ease;
+        background .2s ease;
 
 }
 
@@ -1511,21 +1398,15 @@ body {
     background:
         #6254ff;
 
-    border-color:
-        #6254ff;
-
 }
 
 
 .footer-social svg {
 
-    width: 17px;
-    height: 17px;
+    width: 16px;
+    height: 16px;
 
-    fill: #aeb6d1;
-
-    transition:
-        fill .2s ease;
+    fill: #aeb7d0;
 
 }
 
@@ -1537,13 +1418,15 @@ body {
 }
 
 
-/* COPYRIGHT */
+/* =====================================================
+   COPYRIGHT
+===================================================== */
 
 .footer-copy {
 
-    margin-top: 14px;
+    margin-top: 12px;
 
-    color: #626d8d;
+    color: #626d8b;
 
     font-size: 10px;
 
@@ -1559,42 +1442,27 @@ body {
 }
 
 
-/* =========================================================
+/* =====================================================
    ANIMATIONS
-========================================================= */
+===================================================== */
 
 @keyframes spin {
 
     to {
-        transform:
-            rotate(360deg);
+        transform: rotate(360deg);
     }
 
 }
 
 
-@keyframes fadeIn {
-
-    from {
-        opacity: 0;
-    }
-
-    to {
-        opacity: 1;
-    }
-
-}
-
-
-@keyframes resultAppear {
+@keyframes resultIn {
 
     from {
 
         opacity: 0;
 
         transform:
-            translateY(12px)
-            scale(.98);
+            translateY(10px);
 
     }
 
@@ -1603,8 +1471,7 @@ body {
         opacity: 1;
 
         transform:
-            translateY(0)
-            scale(1);
+            translateY(0);
 
     }
 
@@ -1619,8 +1486,7 @@ body {
 
         opacity: .25;
 
-        transform:
-            scale(.7);
+        transform: scale(.7);
 
     }
 
@@ -1628,55 +1494,47 @@ body {
 
         opacity: 1;
 
-        transform:
-            scale(1);
+        transform: scale(1);
 
     }
 
 }
 
 
-/* =========================================================
+/* =====================================================
    MOBILE
-========================================================= */
+===================================================== */
 
 @media (max-width: 600px) {
 
     .container {
 
         width:
-            calc(100% - 16px);
+            calc(100% - 12px);
 
-        margin: 8px auto;
+        margin: 6px auto;
 
         padding:
-            28px 18px;
+            27px 16px;
 
-        border-radius: 22px;
+        border-radius: 21px;
 
     }
 
 
     .header {
 
-        padding-bottom: 27px;
-
-    }
-
-
-    .brand {
-
-        margin-bottom: 20px;
+        padding-bottom: 26px;
 
     }
 
 
     .brand-logo {
 
-        width: 44px;
-        height: 44px;
+        width: 50px;
+        height: 50px;
 
-        border-radius: 13px;
+        border-radius: 14px;
 
     }
 
@@ -1697,12 +1555,12 @@ body {
 
     .hero p {
 
-        font-size: 14px;
+        font-size: 13px;
 
     }
 
 
-    .section-title {
+    .section-heading {
 
         justify-content: flex-start;
 
@@ -1750,7 +1608,7 @@ body {
     .upload-card {
 
         padding:
-            32px 15px;
+            31px 14px;
 
     }
 
@@ -1760,13 +1618,6 @@ body {
         min-height: 300px;
 
         font-size: 12px;
-
-    }
-
-
-    .footer-copy {
-
-        font-size: 9px;
 
     }
 
