@@ -1294,17 +1294,7 @@ async function selectSubtitle(
             isZipFile(bytes)
         ) {
 
-            throw new Error(
-                "SubDL returned a ZIP file. ZIP extraction is needed."
-            );
-
-        }
-
-
-        const englishSRT =
-            decodeSubtitleBytes(
-                bytes
-            );
+     
 
 
         const subtitles =
