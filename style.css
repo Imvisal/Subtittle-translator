@@ -2141,3 +2141,136 @@ body {
     }
 
 }
+
+/* =========================================
+   SEO INFORMATION SECTION
+========================================= */
+
+.seo-info {
+    margin-top: 45px;
+    padding: 28px;
+    border: 1px solid #293452;
+    border-radius: 18px;
+    background: rgba(20, 29, 52, 0.65);
+}
+
+.seo-info h2 {
+    margin: 0 0 12px;
+    font-size: 24px;
+    text-align: center;
+}
+
+.seo-info > p {
+    margin: 0 auto 25px;
+    max-width: 750px;
+    text-align: center;
+    line-height: 1.7;
+    color: #aeb9d4;
+}
+
+
+/* Feature cards */
+
+.seo-features {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+}
+
+.seo-features > div {
+    padding: 18px;
+    border-radius: 14px;
+    background: #18223b;
+    border: 1px solid #293452;
+    transition: 0.25s ease;
+}
+
+.seo-features > div:hover {
+    transform: translateY(-3px);
+    border-color: #6251f5;
+}
+
+.seo-features strong {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 16px;
+}
+
+.seo-features p {
+    margin: 0;
+    color: #9da9c4;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+
+/* =========================================
+   FOOTER LINKS
+========================================= */
+
+.footer-links {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 22px;
+    font-size: 13px;
+}
+
+.footer-links a {
+    color: #9da9c4;
+    text-decoration: none;
+    transition: 0.2s ease;
+}
+
+.footer-links a:hover {
+    color: #ffffff;
+}
+
+
+/* =========================================
+   AD CONTAINER
+========================================= */
+
+.ad-container {
+    width: 100%;
+    min-height: 90px;
+    margin: 25px 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 650px) {
+
+    .seo-info {
+        padding: 20px 15px;
+        margin-top: 30px;
+    }
+
+    .seo-info h2 {
+        font-size: 20px;
+    }
+
+    .seo-features {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .seo-features > div {
+        padding: 15px;
+    }
+
+    .footer-links {
+        gap: 7px;
+        font-size: 12px;
+    }
+
+}
