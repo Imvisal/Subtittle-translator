@@ -953,34 +953,31 @@ async function searchSubtitles(
 
         if (results.length === 0) {
 
-            setSearchStatus(
-                "No English subtitles found."
-            );
+    // Don't show duplicate status message
+    setSearchStatus("");
 
+    searchResults.innerHTML = `
 
-            searchResults.innerHTML = `
+        <div class="search-empty">
 
-                <div class="search-empty">
+            <div class="empty-icon">
+                😕
+            </div>
 
-                    <div class="empty-icon">
-                        😕
-                    </div>
+            <h3>
+                No English subtitles found
+            </h3>
 
-                    <h3>
-                        No English subtitles found
-                    </h3>
+            <p>
+                Try another release or episode.
+            </p>
 
-                    <p>
-                        Try another release or episode.
-                    </p>
+        </div>
 
-                </div>
+    `;
 
-            `;
-
-            return;
-
-        }
+    return;
+}
 
 
         setSearchStatus(
