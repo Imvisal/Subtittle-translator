@@ -1202,16 +1202,25 @@ async function selectSubtitle(
     episode
 ) {
 
-    if (
-        !subtitle.downloadUrl
-    ) {
+    const subtitleUrl =
+    subtitle.downloadUrl ||
+    subtitle.url ||
+    subtitle.download_url;
 
-        alert(
-            "Subtitle download link is missing."
-        );
+if (!subtitleUrl) {
+    throw new Error("Subtitle download URL is missing.");
+}
 
-        return;
-    }
+let fullSubtitleUrl = subtitleUrl;
+
+if (subtitleUrl.startsWith("/")) {
+    fullSubtitleUrl =
+        "https://dl.subdl.com" + subtitleUrl;
+}
+
+if (!fullSubtitleUrl.startsWith("http")) {
+    throw new Error("Invalid subtitle URL: " + fullSubtitleUrl);
+}
 
 
     if (searchStatus) {
@@ -1258,9 +1267,8 @@ async function selectSubtitle(
         const response =
             await fetch(
                 `/api/subtitle-download?url=${encodeURIComponent(
-                    subtitle.downloadUrl
-                )}`
-            );
+    fullSubtitleUrl
+)}`
 
 
         const data =
