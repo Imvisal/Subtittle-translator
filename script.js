@@ -1,27 +1,13 @@
 "use strict";
 
-/*
-========================================================
-SubLanka AI - Complete script.js
-========================================================
-
-Features:
-1. SRT file upload
-2. SRT preview
-3. Existing SRT -> Sinhala translation
-4. Movie / TV search using OMDb
-5. TV Season / Episode selection
-6. English subtitle search using SubDL
-7. English subtitle download
-8. Automatic Sinhala translation
-9. Automatic Sinhala SRT download
-========================================================
-*/
+// ============================================================
+// SubLanka AI - Complete script.js
+// ============================================================
 
 
-// ========================================================
-// DOM ELEMENTS
-// ========================================================
+// ============================================================
+// DOM
+// ============================================================
 
 const searchInput =
     document.getElementById("searchInput");
@@ -29,86 +15,138 @@ const searchInput =
 const searchBtn =
     document.getElementById("searchBtn");
 
-const searchResults =
-    document.getElementById("searchResults");
-
-const searchStatus =
-    document.getElementById("searchStatus");
-
-
-// Existing upload elements.
-// These selectors support the IDs we've used in the project.
-
-const fileInput =
-    document.getElementById("fileInput") ||
-    document.getElementById("srtFile");
+const subtitleFile =
+    document.getElementById("subtitleFile");
 
 const fileName =
-    document.getElementById("fileName") ||
-    document.getElementById("fileNameDisplay");
+    document.getElementById("fileName");
 
-const translateBtn =
-    document.getElementById("translateBtn") ||
-    document.getElementById("translateButton");
-
-const languageSelect =
-    document.getElementById("languageSelect") ||
+const language =
     document.getElementById("language");
 
-const subtitlePreview =
-    document.getElementById("subtitlePreview") ||
+const translateBtn =
+    document.getElementById("translateBtn");
+
+const preview =
     document.getElementById("preview");
 
+const downloadBtn =
+    document.getElementById("downloadBtn");
 
-// ========================================================
-// GLOBAL STATE
-// ========================================================
+const progressContainer =
+    document.getElementById("progressContainer");
+
+const progressText =
+    document.getElementById("progressText");
+
+const progressPercent =
+    document.getElementById("progressPercent");
+
+const progressFill =
+    document.getElementById("progressFill");
+
+
+// ============================================================
+// STATE
+// ============================================================
 
 let uploadedSubtitles = [];
 
-let uploadedFileName =
-    "subtitle";
+let uploadedFileName = "subtitle";
+
+let translatedSRT = "";
+
+let selectedMovie = null;
 
 let isTranslating = false;
 
 
-// ========================================================
-// SEARCH EVENTS
-// ========================================================
+// ============================================================
+// CREATE SEARCH UI
+// ============================================================
 
-if (searchBtn) {
+const searchBox =
+    document.querySelector(".search-box");
 
-    searchBtn.addEventListener(
-        "click",
-        searchMovies
+let searchStatus =
+    document.getElementById("searchStatus");
+
+let searchResults =
+    document.getElementById("searchResults");
+
+
+// Status එක HTML එකේ නැත්නම් create කරන්න
+if (!searchStatus && searchBox) {
+
+    searchStatus =
+        document.createElement("div");
+
+    searchStatus.id =
+        "searchStatus";
+
+    searchStatus.className =
+        "search-status";
+
+    searchStatus.style.marginTop =
+        "15px";
+
+    searchBox.after(
+        searchStatus
     );
+}
+
+
+// Results container එක HTML එකේ නැත්නම් create කරන්න
+if (!searchResults && searchBox) {
+
+    searchResults =
+        document.createElement("div");
+
+    searchResults.id =
+        "searchResults";
+
+    searchResults.className =
+        "search-results";
+
+    searchBox.after(
+        searchResults
+    );
+}
+
+
+// ============================================================
+// INITIAL STATE
+// ============================================================
+
+if (progressContainer) {
+
+    progressContainer.style.display =
+        "none";
+
+}
+
+if (translateBtn) {
+
+    translateBtn.disabled =
+        true;
+
+}
+
+if (downloadBtn) {
+
+    downloadBtn.disabled =
+        true;
 
 }
 
 
-if (searchInput) {
-
-    searchInput.addEventListener(
-        "keydown",
-        function (event) {
-
-            if (event.key === "Enter") {
-                searchMovies();
-            }
-
-        }
-    );
-
-}
-
-
-// ========================================================
+// ============================================================
 // FILE UPLOAD
-// ========================================================
+// ============================================================
 
-if (fileInput) {
+if (subtitleFile) {
 
-    fileInput.addEventListener(
+    subtitleFile.addEventListener(
         "change",
         handleFileUpload
     );
@@ -116,34 +154,30 @@ if (fileInput) {
 }
 
 
-// ========================================================
-// TRANSLATE BUTTON
-// ========================================================
-
-if (translateBtn) {
-
-    translateBtn.addEventListener(
-        "click",
-        translateUploadedSubtitle
-    );
-
-}
-
-
-// ========================================================
-// HANDLE SRT FILE
-// ========================================================
-
 async function handleFileUpload(event) {
 
     const file =
         event.target.files?.[0];
 
+
     if (!file) {
+
+        uploadedSubtitles = [];
+
+        if (fileName) {
+            fileName.textContent =
+                "No file selected";
+        }
+
+        if (preview) {
+            preview.value = "";
+        }
+
         return;
     }
 
 
+    // Only SRT
     if (
         !file.name
             .toLowerCase()
@@ -151,19 +185,20 @@ async function handleFileUpload(event) {
     ) {
 
         alert(
-            "Please select an SRT subtitle file."
+            "Please select an .srt subtitle file."
         );
+
+        subtitleFile.value = "";
 
         return;
     }
 
 
     uploadedFileName =
-        file.name
-            .replace(
-                /\.srt$/i,
-                ""
-            );
+        file.name.replace(
+            /\.srt$/i,
+            ""
+        );
 
 
     if (fileName) {
@@ -184,7 +219,9 @@ async function handleFileUpload(event) {
             parseSRT(text);
 
 
-        if (!uploadedSubtitles.length) {
+        if (
+            uploadedSubtitles.length === 0
+        ) {
 
             alert(
                 "This SRT file could not be read."
@@ -194,16 +231,37 @@ async function handleFileUpload(event) {
         }
 
 
-        showSRTPreview(
-            uploadedSubtitles
-        );
+        // Show original SRT
+        if (preview) {
 
+            preview.value =
+                text;
 
-        // Enable translate button
-
-        if (translateBtn) {
-            translateBtn.disabled = false;
         }
+
+
+        // Enable translate
+        if (translateBtn) {
+
+            translateBtn.disabled =
+                false;
+
+        }
+
+
+        if (downloadBtn) {
+
+            downloadBtn.disabled =
+                true;
+
+        }
+
+
+        console.log(
+            "SRT loaded:",
+            uploadedSubtitles.length,
+            "entries"
+        );
 
 
     } catch (error) {
@@ -222,141 +280,41 @@ async function handleFileUpload(event) {
 }
 
 
-// ========================================================
-// SHOW SRT PREVIEW
-// ========================================================
+// ============================================================
+// SEARCH
+// ============================================================
 
-function showSRTPreview(subtitles) {
+if (searchBtn) {
 
-    if (!subtitlePreview) {
-        return;
-    }
-
-
-    const previewText =
-        buildSRT(
-            subtitles
-        );
-
-
-    subtitlePreview.textContent =
-        previewText;
+    searchBtn.addEventListener(
+        "click",
+        searchMovies
+    );
 
 }
 
 
-// ========================================================
-// TRANSLATE UPLOADED SRT
-// ========================================================
+if (searchInput) {
 
-async function translateUploadedSubtitle() {
+    searchInput.addEventListener(
+        "keydown",
+        function (event) {
 
-    if (isTranslating) {
-        return;
-    }
+            if (event.key === "Enter") {
 
+                event.preventDefault();
 
-    if (
-        !uploadedSubtitles ||
-        !uploadedSubtitles.length
-    ) {
+                searchMovies();
 
-        alert(
-            "Please select an SRT file first."
-        );
-
-        return;
-    }
-
-
-    isTranslating = true;
-
-
-    if (translateBtn) {
-
-        translateBtn.disabled =
-            true;
-
-        translateBtn.textContent =
-            "Translating...";
-
-    }
-
-
-    try {
-
-        const translated =
-            await translateSubtitleChunks(
-                uploadedSubtitles,
-                null
-            );
-
-
-        const sinhalaSRT =
-            buildSRT(
-                translated
-            );
-
-
-        const filename =
-            `${uploadedFileName}.Sinhala.SubLankaAI.srt`;
-
-
-        downloadTextFile(
-            sinhalaSRT,
-            filename
-        );
-
-
-        alert(
-            "Translation completed!\n\n" +
-            filename
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "UPLOAD TRANSLATION ERROR:",
-            error
-        );
-
-
-        alert(
-            "Translation failed:\n\n" +
-            error.message
-        );
-
-    } finally {
-
-        isTranslating = false;
-
-
-        if (translateBtn) {
-
-            translateBtn.disabled =
-                false;
-
-            translateBtn.textContent =
-                "Translate Subtitle";
+            }
 
         }
-
-    }
+    );
 
 }
 
 
-// ========================================================
-// MOVIE / TV SEARCH
-// ========================================================
-
 async function searchMovies() {
-
-    if (!searchInput) {
-        return;
-    }
-
 
     const query =
         searchInput.value.trim();
@@ -364,44 +322,41 @@ async function searchMovies() {
 
     if (!query) {
 
-        if (searchStatus) {
-
-            searchStatus.textContent =
-                "Enter a movie or TV series name.";
-
-        }
+        setSearchStatus(
+            "Enter a movie or TV series name."
+        );
 
         return;
     }
 
 
-    if (searchBtn) {
-
-        searchBtn.disabled =
-            true;
-
-        searchBtn.textContent =
-            "Searching...";
-
-    }
+    setSearchStatus(
+        "Searching OMDb..."
+    );
 
 
-    if (searchStatus) {
-
-        searchStatus.textContent =
-            "Searching OMDb...";
-
-    }
+    searchResults.innerHTML = "";
 
 
-    if (searchResults) {
+    searchBtn.disabled =
+        true;
 
-        searchResults.innerHTML = "";
-
-    }
+    searchBtn.textContent =
+        "Searching...";
 
 
     try {
+
+        /*
+        ----------------------------------------------------
+        IMPORTANT
+
+        Your existing backend is expected to be:
+
+        /api/search?query=movie-name
+
+        ----------------------------------------------------
+        */
 
         const response =
             await fetch(
@@ -426,64 +381,24 @@ async function searchMovies() {
 
 
         const results =
-            Array.isArray(
-                data.results
-            )
+            Array.isArray(data.results)
                 ? data.results
                 : [];
 
 
-        if (!results.length) {
+        if (results.length === 0) {
 
-            if (searchStatus) {
-
-                searchStatus.textContent =
-                    "No movies or TV series found.";
-
-            }
+            setSearchStatus(
+                "No movies or TV series found."
+            );
 
             return;
         }
 
 
-        /*
-        ----------------------------------------------------
-        IMPORTANT:
-        Put TV series before movies when titles are similar.
-        This prevents "The Office" 2011 movie from appearing
-        before the TV series.
-        ----------------------------------------------------
-        */
-
-        results.sort(
-            function (a, b) {
-
-                if (
-                    a.type === "series" &&
-                    b.type !== "series"
-                ) {
-                    return -1;
-                }
-
-                if (
-                    a.type !== "series" &&
-                    b.type === "series"
-                ) {
-                    return 1;
-                }
-
-                return 0;
-
-            }
+        setSearchStatus(
+            `${results.length} results found`
         );
-
-
-        if (searchStatus) {
-
-            searchStatus.textContent =
-                `${results.length} results found`;
-
-        }
 
 
         displaySearchResults(
@@ -499,46 +414,34 @@ async function searchMovies() {
         );
 
 
-        if (searchStatus) {
+        setSearchStatus(
+            error.message ||
+            "Search failed."
+        );
 
-            searchStatus.textContent =
-                error.message ||
-                "Search failed.";
-
-        }
 
     } finally {
 
-        if (searchBtn) {
+        searchBtn.disabled =
+            false;
 
-            searchBtn.disabled =
-                false;
-
-            searchBtn.textContent =
-                "🔍 Search";
-
-        }
+        searchBtn.textContent =
+            "🔍 Search";
 
     }
 
 }
 
 
-// ========================================================
-// DISPLAY OMDb RESULTS
-// ========================================================
+// ============================================================
+// SEARCH RESULTS
+// ============================================================
 
 function displaySearchResults(
     results
 ) {
 
-    if (!searchResults) {
-        return;
-    }
-
-
-    searchResults.innerHTML =
-        "";
+    searchResults.innerHTML = "";
 
 
     results
@@ -559,35 +462,24 @@ function displaySearchResults(
                 const poster =
                     item.poster &&
                     item.poster !== "N/A"
-
                         ? `
                             <img
-                                src="${escapeAttribute(
+                                src="${escapeHTML(
                                     item.poster
                                 )}"
                                 alt=""
                             >
                           `
-
                         : `
                             <div
-                                style="
-                                    width:80px;
-                                    height:115px;
-                                    display:flex;
-                                    align-items:center;
-                                    justify-content:center;
-                                    background:#111827;
-                                    border-radius:8px;
-                                    font-size:28px;
-                                "
+                                class="no-poster"
                             >
                                 🎬
                             </div>
                           `;
 
 
-                const typeText =
+                const type =
                     item.type === "series"
                         ? "📺 TV Series"
                         : "🎬 Movie";
@@ -601,14 +493,15 @@ function displaySearchResults(
 
                         <h3>
                             ${escapeHTML(
-                                item.title
+                                item.title ||
+                                ""
                             )}
                         </h3>
 
                         <div class="result-meta">
 
                             <span>
-                                ${typeText}
+                                ${type}
                             </span>
 
                             <span>
@@ -632,17 +525,17 @@ function displaySearchResults(
                 `;
 
 
-                const selectButton =
+                const button =
                     card.querySelector(
                         ".select-title-btn"
                     );
 
 
-                selectButton.addEventListener(
+                button.addEventListener(
                     "click",
                     function () {
 
-                        selectSearchResult(
+                        selectMovie(
                             item
                         );
 
@@ -660,15 +553,19 @@ function displaySearchResults(
 }
 
 
-// ========================================================
-// SELECT MOVIE / TV
-// ========================================================
+// ============================================================
+// SELECT MOVIE
+// ============================================================
 
-async function selectSearchResult(
+function selectMovie(
     item
 ) {
 
-    if (!item || !item.imdbID) {
+    selectedMovie =
+        item;
+
+
+    if (!item.imdbID) {
 
         alert(
             "IMDb ID is missing."
@@ -678,25 +575,17 @@ async function selectSearchResult(
     }
 
 
-    if (searchStatus) {
-
-        searchStatus.textContent =
-            `Selected: ${item.title}`;
-
-    }
+    setSearchStatus(
+        `Selected: ${item.title}`
+    );
 
 
-    /*
-    --------------------------------------------------------
-    MOVIE
-    --------------------------------------------------------
-    */
-
+    // Movie
     if (
         item.type === "movie"
     ) {
 
-        await searchSubtitles(
+        searchSubtitles(
             item,
             "movie"
         );
@@ -705,12 +594,7 @@ async function selectSearchResult(
     }
 
 
-    /*
-    --------------------------------------------------------
-    TV SERIES
-    --------------------------------------------------------
-    */
-
+    // TV Series
     if (
         item.type === "series"
     ) {
@@ -724,18 +608,13 @@ async function selectSearchResult(
 }
 
 
-// ========================================================
-// TV SEASON / EPISODE SELECTOR
-// ========================================================
+// ============================================================
+// TV SEASON / EPISODE
+// ============================================================
 
 function showEpisodeSelector(
     item
 ) {
-
-    if (!searchResults) {
-        return;
-    }
-
 
     searchResults.innerHTML = `
 
@@ -768,6 +647,7 @@ function showEpisodeSelector(
 
                 </div>
 
+
                 <div>
 
                     <label>
@@ -784,6 +664,7 @@ function showEpisodeSelector(
                 </div>
 
             </div>
+
 
             <button
                 type="button"
@@ -825,18 +706,13 @@ function showEpisodeSelector(
 
 
             if (
-                !season ||
                 season < 1 ||
-                !episode ||
                 episode < 1
             ) {
 
-                if (searchStatus) {
-
-                    searchStatus.textContent =
-                        "Enter a valid season and episode.";
-
-                }
+                setSearchStatus(
+                    "Enter a valid season and episode."
+                );
 
                 return;
             }
@@ -855,9 +731,9 @@ function showEpisodeSelector(
 }
 
 
-// ========================================================
-// SUBDL SUBTITLE SEARCH
-// ========================================================
+// ============================================================
+// SUBDL SEARCH
+// ============================================================
 
 async function searchSubtitles(
     item,
@@ -866,35 +742,28 @@ async function searchSubtitles(
     episode = null
 ) {
 
-    if (searchStatus) {
-
-        searchStatus.textContent =
-            "Searching English subtitles...";
-
-    }
+    setSearchStatus(
+        "Searching English subtitles..."
+    );
 
 
-    if (searchResults) {
+    searchResults.innerHTML = `
 
-        searchResults.innerHTML = `
+        <div class="translation-status">
 
-            <div class="translation-status">
+            <div class="status-spinner"></div>
 
-                <div class="status-spinner"></div>
+            <h3>
+                🔎 Searching SubDL...
+            </h3>
 
-                <h3>
-                    🔎 Searching SubDL...
-                </h3>
+            <p>
+                Please wait...
+            </p>
 
-                <p>
-                    Looking for English subtitles
-                </p>
+        </div>
 
-            </div>
-
-        `;
-
-    }
+    `;
 
 
     try {
@@ -953,49 +822,35 @@ async function searchSubtitles(
 
 
         const results =
-            Array.isArray(
-                data.results
-            )
+            Array.isArray(data.results)
                 ? data.results
                 : [];
 
 
-        if (!results.length) {
+        if (results.length === 0) {
 
-            if (searchStatus) {
-
-                searchStatus.textContent =
-                    "No English subtitles found.";
-
-            }
+            setSearchStatus(
+                "No English subtitles found."
+            );
 
 
-            if (searchResults) {
+            searchResults.innerHTML = `
 
-                searchResults.innerHTML = `
+                <div class="translation-status">
 
-                    <div
-                        class="translation-status"
-                    >
+                    ❌ No English subtitle found.
 
-                        ❌ No English subtitle found.
+                </div>
 
-                    </div>
-
-                `;
-
-            }
+            `;
 
             return;
         }
 
 
-        if (searchStatus) {
-
-            searchStatus.textContent =
-                `${results.length} English subtitles found`;
-
-        }
+        setSearchStatus(
+            `${results.length} English subtitles found`
+        );
 
 
         displaySubtitleResults(
@@ -1014,40 +869,32 @@ async function searchSubtitles(
         );
 
 
-        if (searchStatus) {
-
-            searchStatus.textContent =
-                "Subtitle search failed.";
-
-        }
+        setSearchStatus(
+            error.message ||
+            "Subtitle search failed."
+        );
 
 
-        if (searchResults) {
+        searchResults.innerHTML = `
 
-            searchResults.innerHTML = `
+            <div class="translation-status error">
 
-                <div
-                    class="translation-status error"
-                >
+                ❌ ${escapeHTML(
+                    error.message
+                )}
 
-                    ❌ ${escapeHTML(
-                        error.message
-                    )}
+            </div>
 
-                </div>
-
-            `;
-
-        }
+        `;
 
     }
 
 }
 
 
-// ========================================================
-// DISPLAY SUBDL RESULTS
-// ========================================================
+// ============================================================
+// SUBTITLE RESULTS
+// ============================================================
 
 function displaySubtitleResults(
     results,
@@ -1056,13 +903,13 @@ function displaySubtitleResults(
     episode
 ) {
 
-    if (!searchResults) {
-        return;
-    }
+    searchResults.innerHTML = `
 
+        <h3>
+            🇬🇧 English Subtitles
+        </h3>
 
-    searchResults.innerHTML =
-        "";
+    `;
 
 
     results
@@ -1080,34 +927,14 @@ function displaySubtitleResults(
                     "search-result-card";
 
 
-                const fileName =
-                    subtitle.fileName ||
-                    "English Subtitle";
-
-
-                const release =
-                    subtitle.release ||
-                    "";
-
-
-                const fps =
-                    subtitle.fps ||
-                    "";
-
-
-                const hi =
-                    subtitle.hearingImpaired
-                        ? "🔊 Hearing Impaired"
-                        : "🎬 Standard";
-
-
                 card.innerHTML = `
 
                     <div class="result-info">
 
                         <h3>
                             ${escapeHTML(
-                                fileName
+                                subtitle.fileName ||
+                                "English Subtitle"
                             )}
                         </h3>
 
@@ -1118,11 +945,11 @@ function displaySubtitleResults(
                             </span>
 
                             ${
-                                release
+                                subtitle.release
                                     ? `
                                         <span>
                                             ${escapeHTML(
-                                                release
+                                                subtitle.release
                                             )}
                                         </span>
                                       `
@@ -1130,22 +957,21 @@ function displaySubtitleResults(
                             }
 
                             ${
-                                fps
+                                subtitle.fps
                                     ? `
                                         <span>
                                             ${escapeHTML(
-                                                String(fps)
-                                            )} FPS
+                                                String(
+                                                    subtitle.fps
+                                                )
+                                            )}
+                                            FPS
                                         </span>
                                       `
                                     : ""
                             }
 
                         </div>
-
-                        <p>
-                            ${hi}
-                        </p>
 
                         <button
                             type="button"
@@ -1190,10 +1016,9 @@ function displaySubtitleResults(
 }
 
 
-// ========================================================
-// DOWNLOAD ENGLISH SUBTITLE
-// THEN TRANSLATE
-// ========================================================
+// ============================================================
+// DOWNLOAD SUBDL SUBTITLE
+// ============================================================
 
 async function selectSubtitle(
     subtitle,
@@ -1202,73 +1027,61 @@ async function selectSubtitle(
     episode
 ) {
 
-    const subtitleUrl =
-    subtitle.downloadUrl ||
-    subtitle.url ||
-    subtitle.download_url;
-
-if (!subtitleUrl) {
-    throw new Error("Subtitle download URL is missing.");
-}
-
-let fullSubtitleUrl = subtitleUrl;
-
-if (subtitleUrl.startsWith("/")) {
-    fullSubtitleUrl =
-        "https://dl.subdl.com" + subtitleUrl;
-}
-
-if (!fullSubtitleUrl.startsWith("http")) {
-    throw new Error("Invalid subtitle URL: " + fullSubtitleUrl);
-}
+    let subtitleUrl =
+        subtitle.downloadUrl ||
+        subtitle.url ||
+        subtitle.download_url;
 
 
-    if (searchStatus) {
+    if (!subtitleUrl) {
 
-        searchStatus.textContent =
-            "Downloading English subtitle...";
+        throw new Error(
+            "Subtitle download URL is missing."
+        );
 
     }
 
 
-    if (searchResults) {
+    // Relative SubDL URL
+    if (
+        subtitleUrl.startsWith("/")
+    ) {
 
-        searchResults.innerHTML = `
-
-            <div
-                class="translation-status"
-            >
-
-                <div class="status-spinner"></div>
-
-                <h3>
-                    Downloading English subtitle...
-                </h3>
-
-                <p>
-                    Please wait...
-                </p>
-
-            </div>
-
-        `;
+        subtitleUrl =
+            "https://dl.subdl.com" +
+            subtitleUrl;
 
     }
+
+
+    setSearchStatus(
+        "Downloading English subtitle..."
+    );
+
+
+    searchResults.innerHTML = `
+
+        <div class="translation-status">
+
+            <div class="status-spinner"></div>
+
+            <h3>
+                Downloading English subtitle...
+            </h3>
+
+        </div>
+
+    `;
 
 
     try {
 
-        /*
-        ----------------------------------------------------
-        DOWNLOAD SRT FROM OUR SERVER
-        ----------------------------------------------------
-        */
-
         const response =
             await fetch(
                 `/api/subtitle-download?url=${encodeURIComponent(
-    fullSubtitleUrl
-)}`
+                    subtitleUrl
+                )}`
+            );
 
 
         const data =
@@ -1294,12 +1107,6 @@ if (!fullSubtitleUrl.startsWith("http")) {
         }
 
 
-        /*
-        ----------------------------------------------------
-        BASE64 -> TEXT
-        ----------------------------------------------------
-        */
-
         const binary =
             atob(data.data);
 
@@ -1322,47 +1129,23 @@ if (!fullSubtitleUrl.startsWith("http")) {
         }
 
 
-        let englishSRT =
-            decodeSubtitleBytes(
-                bytes
-            );
-
-
-        /*
-        ----------------------------------------------------
-        If downloaded file is a ZIP,
-        tell user instead of sending binary to Gemini.
-        ----------------------------------------------------
-        */
-
+        // ZIP check
         if (
             isZipFile(bytes)
         ) {
 
             throw new Error(
-                "SubDL returned a ZIP subtitle package. " +
-                "The download endpoint needs ZIP extraction."
+                "SubDL returned a ZIP file. ZIP extraction is needed before translation."
             );
 
         }
 
 
-        if (
-            !englishSRT.trim()
-        ) {
-
-            throw new Error(
-                "Subtitle file is empty."
+        const englishSRT =
+            decodeSubtitleBytes(
+                bytes
             );
 
-        }
-
-
-        /*
-        ----------------------------------------------------
-        PARSE SRT
-        ----------------------------------------------------
-        */
 
         const subtitles =
             parseSRT(
@@ -1370,224 +1153,283 @@ if (!fullSubtitleUrl.startsWith("http")) {
             );
 
 
-        if (!subtitles.length) {
+        if (
+            subtitles.length === 0
+        ) {
 
             throw new Error(
-                "Downloaded file is not a valid SRT."
+                "Downloaded subtitle is not a valid SRT file."
             );
 
         }
 
 
-        if (searchStatus) {
-
-            searchStatus.textContent =
-                `${subtitles.length} subtitles downloaded. Starting translation...`;
-
-        }
+        preview.value =
+            englishSRT;
 
 
-        /*
-        ----------------------------------------------------
-        TRANSLATION UI
-        ----------------------------------------------------
-        */
+        if (fileName) {
 
-        if (searchResults) {
-
-            searchResults.innerHTML = `
-
-                <div
-                    class="translation-status"
-                >
-
-                    <h3>
-                        🇬🇧 English subtitle downloaded
-                    </h3>
-
-                    <p>
-                        ${subtitles.length}
-                        subtitle entries
-                    </p>
-
-                    <div
-                        class="progress-track"
-                    >
-
-                        <div
-                            id="autoTranslateProgress"
-                            class="progress-fill"
-                        ></div>
-
-                    </div>
-
-                    <p
-                        id="autoTranslateStatus"
-                    >
-                        Preparing translation...
-                    </p>
-
-                </div>
-
-            `;
+            fileName.textContent =
+                subtitle.fileName ||
+                "Downloaded subtitle";
 
         }
 
 
-        /*
-        ----------------------------------------------------
-        TRANSLATE
-        ----------------------------------------------------
-        */
+        uploadedSubtitles =
+            subtitles;
 
-        const translated =
-            await translateSubtitleChunks(
-                subtitles
+
+        uploadedFileName =
+            (
+                subtitle.fileName ||
+                "subtitle.srt"
+            ).replace(
+                /\.srt$/i,
+                ""
             );
 
 
-        /*
-        ----------------------------------------------------
-        BUILD SRT
-        ----------------------------------------------------
-        */
+        if (translateBtn) {
 
-        const sinhalaSRT =
-            buildSRT(
-                translated
-            );
+            translateBtn.disabled =
+                false;
+
+        }
 
 
-        /*
-        ----------------------------------------------------
-        FILE NAME
-        ----------------------------------------------------
-        */
-
-        const baseName =
-            getSubtitleBaseName(
-                item,
-                season,
-                episode
-            );
-
-
-        const filename =
-            `${baseName}.Sinhala.SubLankaAI.srt`;
-
-
-        /*
-        ----------------------------------------------------
-        AUTO DOWNLOAD
-        ----------------------------------------------------
-        */
-
-        downloadTextFile(
-            sinhalaSRT,
-            filename
+        setSearchStatus(
+            `${subtitles.length} subtitle entries loaded.`
         );
 
 
-        if (searchStatus) {
+        searchResults.innerHTML = `
 
-            searchStatus.textContent =
-                "✓ Sinhala subtitle completed!";
+            <div class="translation-status success">
 
-        }
+                <h3>
+                    ✅ English subtitle loaded
+                </h3>
 
+                <p>
+                    ${subtitles.length}
+                    subtitle entries
+                </p>
 
-        if (searchResults) {
-
-            searchResults.innerHTML = `
-
-                <div
-                    class="translation-status success"
+                <button
+                    type="button"
+                    id="translateSearchSubtitle"
+                    class="select-title-btn"
                 >
+                    Translate to Sinhala
+                </button>
 
-                    <h2>
-                        ✅ Translation Complete
-                    </h2>
+            </div>
 
-                    <p>
-                        ${translated.length}
-                        subtitles translated.
-                    </p>
-
-                    <p>
-                        ${escapeHTML(
-                            filename
-                        )}
-                    </p>
-
-                    <button
-                        type="button"
-                        id="downloadAgainBtn"
-                        class="select-title-btn"
-                    >
-                        ⬇ Download Sinhala Subtitle
-                    </button>
-
-                </div>
-
-            `;
+        `;
 
 
-            document
-                .getElementById(
-                    "downloadAgainBtn"
-                )
-                .addEventListener(
-                    "click",
-                    function () {
+        document
+            .getElementById(
+                "translateSearchSubtitle"
+            )
+            .addEventListener(
+                "click",
+                translateUploadedSubtitle
+            );
 
-                        downloadTextFile(
-                            sinhalaSRT,
-                            filename
-                        );
 
-                    }
-                );
-
-        }
+        preview.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
 
 
     } catch (error) {
 
         console.error(
-            "AUTO TRANSLATION ERROR:",
+            "SUBTITLE DOWNLOAD ERROR:",
             error
         );
 
 
-        if (searchStatus) {
+        setSearchStatus(
+            "Subtitle download failed."
+        );
 
-            searchStatus.textContent =
-                "Translation failed.";
+
+        searchResults.innerHTML = `
+
+            <div class="translation-status error">
+
+                <h3>
+                    ❌ Subtitle download failed
+                </h3>
+
+                <p>
+                    ${escapeHTML(
+                        error.message
+                    )}
+                </p>
+
+            </div>
+
+        `;
+
+    }
+
+}
+
+
+// ============================================================
+// TRANSLATE BUTTON
+// ============================================================
+
+if (translateBtn) {
+
+    translateBtn.addEventListener(
+        "click",
+        translateUploadedSubtitle
+    );
+
+}
+
+
+async function translateUploadedSubtitle() {
+
+    if (isTranslating) {
+        return;
+    }
+
+
+    if (
+        !uploadedSubtitles.length
+    ) {
+
+        // If preview has content, try parsing it
+        if (
+            preview &&
+            preview.value.trim()
+        ) {
+
+            uploadedSubtitles =
+                parseSRT(
+                    preview.value
+                );
 
         }
 
+    }
 
-        if (searchResults) {
 
-            searchResults.innerHTML = `
+    if (
+        !uploadedSubtitles.length
+    ) {
 
-                <div
-                    class="translation-status error"
-                >
+        alert(
+            "Please upload or select an SRT subtitle first."
+        );
 
-                    <h3>
-                        ❌ Translation failed
-                    </h3>
+        return;
+    }
 
-                    <p>
-                        ${escapeHTML(
-                            error.message
-                        )}
-                    </p>
 
-                </div>
+    isTranslating =
+        true;
 
-            `;
+
+    if (translateBtn) {
+
+        translateBtn.disabled =
+            true;
+
+        translateBtn.textContent =
+            "Translating...";
+
+    }
+
+
+    showProgress(
+        "Starting translation...",
+        0
+    );
+
+
+    try {
+
+        const translated =
+            await translateSubtitleChunks(
+                uploadedSubtitles
+            );
+
+
+        translatedSRT =
+            buildSRT(
+                translated
+            );
+
+
+        preview.value =
+            translatedSRT;
+
+
+        const filename =
+            `${uploadedFileName}.Sinhala.SubLankaAI.srt`;
+
+
+        downloadBtn.disabled =
+            false;
+
+
+        setProgress(
+            "Translation completed",
+            100
+        );
+
+
+        // Auto download
+        downloadTextFile(
+            translatedSRT,
+            filename
+        );
+
+
+        setTimeout(
+            hideProgress,
+            1500
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "TRANSLATION ERROR:",
+            error
+        );
+
+
+        hideProgress();
+
+
+        alert(
+            "Translation failed:\n\n" +
+            error.message
+        );
+
+    } finally {
+
+        isTranslating =
+            false;
+
+
+        if (translateBtn) {
+
+            translateBtn.disabled =
+                false;
+
+            translateBtn.textContent =
+                "Translate Subtitle";
 
         }
 
@@ -1596,35 +1438,20 @@ if (!fullSubtitleUrl.startsWith("http")) {
 }
 
 
-// ========================================================
-// TRANSLATE SUBTITLES IN SMALL CHUNKS
-// ========================================================
+// ============================================================
+// GEMINI TRANSLATION
+// ============================================================
 
 async function translateSubtitleChunks(
-    subtitles,
-    progressPrefix = null
+    subtitles
 ) {
 
-    /*
-    --------------------------------------------------------
-    IMPORTANT
-
-    Keep chunks small because Gemini quota/rate limits
-    caused problems earlier.
-
-    20 subtitles per request is safer than sending
-    hundreds at once.
-    --------------------------------------------------------
-    */
-
-    const CHUNK_SIZE = 20;
+    const CHUNK_SIZE =
+        20;
 
 
-    const totalChunks =
-        Math.ceil(
-            subtitles.length /
-            CHUNK_SIZE
-        );
+    const total =
+        subtitles.length;
 
 
     const translated = [];
@@ -1632,7 +1459,7 @@ async function translateSubtitleChunks(
 
     for (
         let start = 0;
-        start < subtitles.length;
+        start < total;
         start += CHUNK_SIZE
     ) {
 
@@ -1650,25 +1477,33 @@ async function translateSubtitleChunks(
             ) + 1;
 
 
-        updateTranslationProgress(
-            chunkNumber,
-            totalChunks,
-            translated.length,
-            subtitles.length
+        const totalChunks =
+            Math.ceil(
+                total /
+                CHUNK_SIZE
+            );
+
+
+        setProgress(
+            `Translating ${chunkNumber}/${totalChunks}...`,
+            Math.round(
+                (
+                    start /
+                    total
+                ) * 100
+            )
         );
 
 
-        let success = false;
+        let success =
+            false;
 
-        let lastError = null;
+
+        let lastError =
+            null;
 
 
-        /*
-        ----------------------------------------------------
-        RETRY
-        ----------------------------------------------------
-        */
-
+        // Retry 3 times
         for (
             let attempt = 1;
             attempt <= 3;
@@ -1688,13 +1523,15 @@ async function translateSubtitleChunks(
                                     "application/json"
                             },
 
-                            body: JSON.stringify({
-                                subtitles:
-                                    chunk,
+                            body:
+                                JSON.stringify({
+                                    subtitles:
+                                        chunk,
 
-                                language:
-                                    "si"
-                            })
+                                    language:
+                                        language.value ||
+                                        "si"
+                                })
                         }
                     );
 
@@ -1714,7 +1551,7 @@ async function translateSubtitleChunks(
                 } catch {
 
                     throw new Error(
-                        "Server returned invalid JSON."
+                        "Translation server returned invalid JSON."
                     );
 
                 }
@@ -1724,7 +1561,7 @@ async function translateSubtitleChunks(
 
                     throw new Error(
                         data.error ||
-                        `Chunk ${chunkNumber} failed.`
+                        "Translation failed."
                     );
 
                 }
@@ -1743,12 +1580,6 @@ async function translateSubtitleChunks(
                 }
 
 
-                /*
-                ------------------------------------------------
-                Validate translated chunk
-                ------------------------------------------------
-                */
-
                 const checked =
                     validateTranslatedChunk(
                         chunk,
@@ -1761,7 +1592,9 @@ async function translateSubtitleChunks(
                 );
 
 
-                success = true;
+                success =
+                    true;
+
 
                 break;
 
@@ -1773,7 +1606,7 @@ async function translateSubtitleChunks(
 
 
                 console.warn(
-                    `Chunk ${chunkNumber} attempt ${attempt} failed:`,
+                    `Translation attempt ${attempt} failed:`,
                     error
                 );
 
@@ -1782,19 +1615,10 @@ async function translateSubtitleChunks(
                     attempt < 3
                 ) {
 
-                    const waitTime =
-                        attempt === 1
-                            ? 3000
-                            : 7000;
-
-
-                    updateTranslationStatus(
-                        `Chunk ${chunkNumber}/${totalChunks} failed — retrying...`
-                    );
-
-
                     await sleep(
-                        waitTime
+                        attempt === 1
+                            ? 2500
+                            : 5000
                     );
 
                 }
@@ -1807,7 +1631,7 @@ async function translateSubtitleChunks(
         if (!success) {
 
             throw new Error(
-                `Chunk ${chunkNumber} failed after 3 attempts: ${
+                `Translation chunk ${chunkNumber} failed: ${
                     lastError?.message ||
                     "Unknown error"
                 }`
@@ -1816,37 +1640,28 @@ async function translateSubtitleChunks(
         }
 
 
-        /*
-        ----------------------------------------------------
-        Progress
-        ----------------------------------------------------
-        */
-
         const completed =
             translated.length;
 
 
-        updateTranslationProgress(
-            chunkNumber,
-            totalChunks,
-            completed,
-            subtitles.length
+        setProgress(
+            `Translated ${completed}/${total}`,
+            Math.round(
+                (
+                    completed /
+                    total
+                ) * 100
+            )
         );
 
 
-        /*
-        ----------------------------------------------------
-        Delay between Gemini requests
-        ----------------------------------------------------
-        */
-
         if (
             start + CHUNK_SIZE <
-            subtitles.length
+            total
         ) {
 
             await sleep(
-                1200
+                1000
             );
 
         }
@@ -1859,35 +1674,37 @@ async function translateSubtitleChunks(
 }
 
 
-// ========================================================
-// VALIDATE TRANSLATED CHUNK
-// ========================================================
+// ============================================================
+// VALIDATE TRANSLATION
+// ============================================================
 
 function validateTranslatedChunk(
     original,
     translated
 ) {
 
-    const translatedMap =
+    const map =
         new Map();
 
 
     translated.forEach(
         function (sub) {
 
+            const number =
+                Number(
+                    sub.number ??
+                    sub.index
+                );
+
+
             if (
-                sub &&
                 Number.isInteger(
-                    Number(
-                        sub.number
-                    )
+                    number
                 )
             ) {
 
-                translatedMap.set(
-                    Number(
-                        sub.number
-                    ),
+                map.set(
+                    number,
                     sub.text
                 );
 
@@ -1900,17 +1717,11 @@ function validateTranslatedChunk(
     return original.map(
         function (sub) {
 
-            const translatedText =
-                translatedMap.get(
+            const text =
+                map.get(
                     sub.number
                 );
 
-
-            /*
-            If Gemini missed a line,
-            keep the original instead of
-            producing a broken SRT.
-            */
 
             return {
 
@@ -1921,10 +1732,9 @@ function validateTranslatedChunk(
                     sub.timestamp,
 
                 text:
-                    typeof translatedText ===
-                    "string" &&
-                    translatedText.trim()
-                        ? translatedText.trim()
+                    typeof text === "string" &&
+                    text.trim()
+                        ? text.trim()
                         : sub.text
 
             };
@@ -1935,85 +1745,9 @@ function validateTranslatedChunk(
 }
 
 
-// ========================================================
-// TRANSLATION PROGRESS
-// ========================================================
-
-function updateTranslationProgress(
-    chunkNumber,
-    totalChunks,
-    completed,
-    total
-) {
-
-    const percent =
-        total > 0
-            ? Math.round(
-                (
-                    completed /
-                    total
-                ) * 100
-            )
-            : 0;
-
-
-    const progress =
-        document.getElementById(
-            "autoTranslateProgress"
-        );
-
-
-    const status =
-        document.getElementById(
-            "autoTranslateStatus"
-        );
-
-
-    if (progress) {
-
-        progress.style.width =
-            `${percent}%`;
-
-    }
-
-
-    if (status) {
-
-        status.textContent =
-            `Translated ${completed}/${total} subtitles — chunk ${chunkNumber}/${totalChunks}`;
-
-    }
-
-}
-
-
-// ========================================================
-// STATUS TEXT
-// ========================================================
-
-function updateTranslationStatus(
-    message
-) {
-
-    const status =
-        document.getElementById(
-            "autoTranslateStatus"
-        );
-
-
-    if (status) {
-
-        status.textContent =
-            message;
-
-    }
-
-}
-
-
-// ========================================================
+// ============================================================
 // SRT PARSER
-// ========================================================
+// ============================================================
 
 function parseSRT(
     srt
@@ -2070,60 +1804,33 @@ function parseSRT(
             ) {
 
                 return;
-
-            }
-
-
-            let numberIndex = 0;
-
-
-            /*
-            Sometimes an SRT block can contain
-            an empty first line.
-            */
-
-            while (
-                numberIndex <
-                    lines.length &&
-                !lines[numberIndex].trim()
-            ) {
-
-                numberIndex++;
-
             }
 
 
             const number =
                 parseInt(
-                    lines[numberIndex],
+                    lines[0].trim(),
                     10
                 );
 
 
             const timestamp =
-                lines[
-                    numberIndex + 1
-                ];
+                lines[1]?.trim();
 
 
             if (
                 Number.isNaN(number) ||
                 !timestamp ||
-                !timestamp.includes(
-                    "-->"
-                )
+                !timestamp.includes("-->")
             ) {
 
                 return;
-
             }
 
 
             const text =
                 lines
-                    .slice(
-                        numberIndex + 2
-                    )
+                    .slice(2)
                     .join("\n")
                     .trim();
 
@@ -2131,7 +1838,6 @@ function parseSRT(
             if (!text) {
 
                 return;
-
             }
 
 
@@ -2139,8 +1845,7 @@ function parseSRT(
 
                 number,
 
-                timestamp:
-                    timestamp.trim(),
+                timestamp,
 
                 text
 
@@ -2155,9 +1860,9 @@ function parseSRT(
 }
 
 
-// ========================================================
+// ============================================================
 // BUILD SRT
-// ========================================================
+// ============================================================
 
 function buildSRT(
     subtitles
@@ -2181,9 +1886,9 @@ function buildSRT(
 }
 
 
-// ========================================================
-// DOWNLOAD TEXT FILE
-// ========================================================
+// ============================================================
+// DOWNLOAD
+// ============================================================
 
 function downloadTextFile(
     text,
@@ -2209,28 +1914,28 @@ function downloadTextFile(
         );
 
 
-    const link =
+    const a =
         document.createElement(
             "a"
         );
 
 
-    link.href =
+    a.href =
         url;
 
-    link.download =
+    a.download =
         filename;
 
 
     document.body.appendChild(
-        link
+        a
     );
 
 
-    link.click();
+    a.click();
 
 
-    link.remove();
+    a.remove();
 
 
     setTimeout(
@@ -2247,105 +1952,180 @@ function downloadTextFile(
 }
 
 
-// ========================================================
-// FILE NAME
-// ========================================================
+// ============================================================
+// DOWNLOAD BUTTON
+// ============================================================
 
-function getSubtitleBaseName(
-    item,
-    season,
-    episode
-) {
+if (downloadBtn) {
 
-    const cleanTitle =
-        String(
-            item?.title ||
-            "Subtitle"
-        )
-            .replace(
-                /[\\/:*?"<>|]/g,
-                ""
-            )
-            .trim();
+    downloadBtn.addEventListener(
+        "click",
+        function () {
 
+            if (
+                !translatedSRT
+            ) {
 
-    if (
-        item?.type === "series"
-    ) {
-
-        const s =
-            String(
-                season
-            )
-                .padStart(
-                    2,
-                    "0"
+                alert(
+                    "Translate the subtitle first."
                 );
 
-
-        const e =
-            String(
-                episode
-            )
-                .padStart(
-                    2,
-                    "0"
-                );
+                return;
+            }
 
 
-        return `${cleanTitle}.S${s}E${e}`;
+            const filename =
+                `${uploadedFileName}.Sinhala.SubLankaAI.srt`;
 
-    }
 
+            downloadTextFile(
+                translatedSRT,
+                filename
+            );
 
-    return cleanTitle;
+        }
+    );
 
 }
 
 
-// ========================================================
-// DECODE SUBTITLE BYTES
-// ========================================================
+// ============================================================
+// PROGRESS
+// ============================================================
+
+function showProgress(
+    text,
+    percent
+) {
+
+    if (!progressContainer) {
+        return;
+    }
+
+
+    progressContainer.style.display =
+        "block";
+
+
+    setProgress(
+        text,
+        percent
+    );
+
+}
+
+
+function setProgress(
+    text,
+    percent
+) {
+
+    if (progressText) {
+
+        progressText.textContent =
+            text;
+
+    }
+
+
+    if (progressPercent) {
+
+        progressPercent.textContent =
+            `${percent}%`;
+
+    }
+
+
+    if (progressFill) {
+
+        progressFill.style.width =
+            `${percent}%`;
+
+    }
+
+}
+
+
+function hideProgress() {
+
+    if (progressContainer) {
+
+        progressContainer.style.display =
+            "none";
+
+    }
+
+}
+
+
+// ============================================================
+// SEARCH STATUS
+// ============================================================
+
+function setSearchStatus(
+    text
+) {
+
+    if (searchStatus) {
+
+        searchStatus.textContent =
+            text;
+
+    }
+
+}
+
+
+// ============================================================
+// ZIP CHECK
+// ============================================================
+
+function isZipFile(
+    bytes
+) {
+
+    return (
+        bytes.length >= 4 &&
+        bytes[0] === 0x50 &&
+        bytes[1] === 0x4B &&
+        bytes[2] === 0x03 &&
+        bytes[3] === 0x04
+    );
+
+}
+
+
+// ============================================================
+// BASE64 -> TEXT
+// ============================================================
 
 function decodeSubtitleBytes(
     bytes
 ) {
 
-    /*
-    UTF-8 first.
-    */
-
     try {
 
-        const text =
+        const utf8 =
             new TextDecoder(
-                "utf-8",
-                {
-                    fatal: false
-                }
+                "utf-8"
             ).decode(
                 bytes
             );
 
 
         if (
-            text.includes(
-                "-->"
-            )
+            utf8.includes("-->")
         ) {
 
-            return text;
+            return utf8;
 
         }
 
     } catch {
-        // Continue
+
+        // fallback
     }
 
-
-    /*
-    Windows-1252 fallback.
-    */
 
     try {
 
@@ -2367,28 +2147,9 @@ function decodeSubtitleBytes(
 }
 
 
-// ========================================================
-// ZIP CHECK
-// ========================================================
-
-function isZipFile(
-    bytes
-) {
-
-    return (
-        bytes.length >= 4 &&
-        bytes[0] === 0x50 &&
-        bytes[1] === 0x4b &&
-        bytes[2] === 0x03 &&
-        bytes[3] === 0x04
-    );
-
-}
-
-
-// ========================================================
-// ESCAPE HTML
-// ========================================================
+// ============================================================
+// HTML ESCAPE
+// ============================================================
 
 function escapeHTML(
     value
@@ -2421,59 +2182,29 @@ function escapeHTML(
 }
 
 
-// ========================================================
-// ESCAPE ATTRIBUTE
-// ========================================================
-
-function escapeAttribute(
-    value
-) {
-
-    return escapeHTML(
-        value
-    );
-
-}
-
-
-// ========================================================
+// ============================================================
 // SLEEP
-// ========================================================
+// ============================================================
 
 function sleep(
     ms
 ) {
 
     return new Promise(
-        function (resolve) {
-
+        resolve =>
             setTimeout(
                 resolve,
                 ms
-            );
-
-        }
+            )
     );
 
 }
 
 
-// ========================================================
-// INITIAL STATE
-// ========================================================
-
-if (translateBtn) {
-
-    translateBtn.disabled =
-        true;
-
-}
-
-
-// ========================================================
-// DEBUG
-// ========================================================
+// ============================================================
+// READY
+// ============================================================
 
 console.log(
-    "SubLanka AI script loaded successfully."
+    "SubLanka AI loaded successfully."
 );
