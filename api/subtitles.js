@@ -2,11 +2,22 @@ module.exports = async function handler(req, res) {
 
     try {
 
+        // ==================================================
+        // METHOD CHECK
+        // ==================================================
+
         if (req.method !== "GET") {
+
             return res.status(405).json({
                 error: "Method not allowed"
             });
+
         }
+
+
+        // ==================================================
+        // QUERY
+        // ==================================================
 
         const {
             imdb_id,
@@ -17,22 +28,39 @@ module.exports = async function handler(req, res) {
 
 
         if (!imdb_id) {
+
             return res.status(400).json({
                 error: "IMDb ID is required"
             });
+
         }
 
+
+        // ==================================================
+        // API KEY
+        // ==================================================
 
         const apiKey =
             process.env.SUBDL_API_KEY;
 
 
         if (!apiKey) {
+
+            console.error(
+                "SUBDL_API_KEY is missing"
+            );
+
             return res.status(500).json({
-                error: "SUBDL_API_KEY is missing"
+                error:
+                    "SUBDL_API_KEY is missing in Vercel Environment Variables"
             });
+
         }
 
+
+        // ==================================================
+        // SUBDL API URL
+        // ==================================================
 
         const url =
             new URL(
@@ -40,31 +68,24 @@ module.exports = async function handler(req, res) {
             );
 
 
-        // API key stays on server
+        // API key stays server-side
         url.searchParams.set(
             "api_key",
             apiKey
         );
 
 
-        // Search by IMDb ID
+        // IMDb ID
         url.searchParams.set(
             "imdb_id",
-            imdb_id
+            String(imdb_id)
         );
 
 
-        // English only
+        // English subtitles
         url.searchParams.set(
             "languages",
             "EN"
-        );
-
-
-        // Return individual files
-        url.searchParams.set(
-            "unpack",
-            "1"
         );
 
 
@@ -75,16 +96,27 @@ module.exports = async function handler(req, res) {
         );
 
 
-        // Identify our application
+        // Ask SubDL to return individual files
+        url.searchParams.set(
+            "unpack",
+            "1"
+        );
+
+
+        // Tell SubDL which application is using the API
         url.searchParams.set(
             "client",
             "custom_integration"
         );
 
 
-        // TV episode
+        // ==================================================
+        // MOVIE / TV
+        // ==================================================
+
         if (type === "episode") {
 
+            // TV
             url.searchParams.set(
                 "type",
                 "tv"
@@ -110,12 +142,9 @@ module.exports = async function handler(req, res) {
 
             }
 
-        }
+        } else {
 
-
-        // Movie
-        else {
-
+            // Movie
             url.searchParams.set(
                 "type",
                 "movie"
@@ -124,10 +153,27 @@ module.exports = async function handler(req, res) {
         }
 
 
+        console.log(
+            "SubDL search:",
+            url
+                .toString()
+                .replace(
+                    apiKey,
+                    "***"
+                )
+        );
+
+
+        // ==================================================
+        // REQUEST SUBDL
+        // ==================================================
+
         const response =
             await fetch(
                 url.toString(),
                 {
+                    method: "GET",
+
                     headers: {
                         "Accept":
                             "application/json"
@@ -140,6 +186,10 @@ module.exports = async function handler(req, res) {
             await response.text();
 
 
+        // ==================================================
+        // PARSE JSON
+        // ==================================================
+
         let data;
 
         try {
@@ -147,31 +197,62 @@ module.exports = async function handler(req, res) {
             data =
                 JSON.parse(raw);
 
-        } catch {
+        } catch (error) {
+
+            console.error(
+                "SUBDL RAW RESPONSE:",
+                raw.substring(
+                    0,
+                    1000
+                )
+            );
 
             return res.status(502).json({
+
                 error:
                     "SubDL returned invalid JSON"
+
             });
 
         }
 
 
-        if (!response.ok || data.status === false) {
+        // ==================================================
+        // API ERROR
+        // ==================================================
+
+        if (
+            !response.ok ||
+            data.status === false
+        ) {
+
+            console.error(
+                "SUBDL API ERROR:",
+                data
+            );
+
 
             return res.status(
                 response.status || 500
             ).json({
+
                 error:
                     data.error ||
                     "SubDL subtitle search failed"
+
             });
 
         }
 
 
+        // ==================================================
+        // GET SUBTITLES
+        // ==================================================
+
         const subtitles =
-            Array.isArray(data.subtitles)
+            Array.isArray(
+                data.subtitles
+            )
                 ? data.subtitles
                 : [];
 
@@ -179,41 +260,154 @@ module.exports = async function handler(req, res) {
         const results = [];
 
 
-        // ------------------------------------------------
-        // Convert SubDL response into our UI format
-        // ------------------------------------------------
+        // ==================================================
+        // PROCESS SUBTITLE RESULTS
+        // ==================================================
 
-        subtitles.forEach(sub => {
+        subtitles.forEach(
+            function (sub) {
 
-            // Individual files from season packs
-            if (
-                Array.isArray(
-                    sub.unpack_files
-                )
-            ) {
+                /*
+                ------------------------------------------------
+                unpack=1 returns individual files here
+                ------------------------------------------------
+                */
+
+                if (
+                    !Array.isArray(
+                        sub.unpack_files
+                    )
+                ) {
+
+                    return;
+
+                }
+
 
                 sub.unpack_files.forEach(
-                    file => {
+                    function (file) {
 
-                        // Make sure this is English
+                        // ----------------------------------------
+                        // Language
+                        // ----------------------------------------
+
                         if (
                             file.language &&
-                            file.language.toUpperCase() !== "EN"
+                            String(
+                                file.language
+                            ).toUpperCase() !== "EN"
                         ) {
+
                             return;
+
                         }
 
 
-                        // For TV make sure episode matches
+                        // ----------------------------------------
+                        // TV episode filter
+                        // ----------------------------------------
+
                         if (
                             type === "episode" &&
-                            episode &&
-                            Number(file.episode) !==
-                                Number(episode)
+                            episode
                         ) {
-                            return;
+
+                            if (
+                                Number(
+                                    file.episode
+                                ) !==
+                                Number(
+                                    episode
+                                )
+                            ) {
+
+                                return;
+
+                            }
+
                         }
 
+
+                        // ----------------------------------------
+                        // URL
+                        // ----------------------------------------
+
+                        let downloadUrl =
+                            file.url ||
+                            "";
+
+
+                        /*
+                        SubDL returns relative URLs such as:
+
+                        /subtitle/12345/abcde
+
+                        Convert them to:
+
+                        https://dl.subdl.com/subtitle/12345/abcde
+                        */
+
+                        if (
+                            downloadUrl.startsWith(
+                                "/"
+                            )
+                        ) {
+
+                            downloadUrl =
+                                `https://dl.subdl.com${downloadUrl}`;
+
+                        }
+
+
+                        /*
+                        If SubDL somehow returns another
+                        absolute URL, only accept dl.subdl.com.
+                        */
+
+                        if (
+                            downloadUrl.startsWith(
+                                "http"
+                            )
+                        ) {
+
+                            try {
+
+                                const parsed =
+                                    new URL(
+                                        downloadUrl
+                                    );
+
+
+                                if (
+                                    parsed.hostname !==
+                                    "dl.subdl.com"
+                                ) {
+
+                                    return;
+
+                                }
+
+                            } catch {
+
+                                return;
+
+                            }
+
+                        }
+
+
+                        if (
+                            !downloadUrl
+                        ) {
+
+                            return;
+
+                        }
+
+
+                        // ----------------------------------------
+                        // Create our clean result
+                        // ----------------------------------------
 
                         results.push({
 
@@ -244,7 +438,9 @@ module.exports = async function handler(req, res) {
                                 null,
 
                             hearingImpaired:
-                                Boolean(file.hi),
+                                Boolean(
+                                    file.hi
+                                ),
 
                             format:
                                 file.format ||
@@ -254,8 +450,17 @@ module.exports = async function handler(req, res) {
                                 file.size ||
                                 0,
 
+                            season:
+                                file.season ??
+                                sub.season ??
+                                null,
+
+                            episode:
+                                file.episode ??
+                                null,
+
                             downloadUrl:
-                                file.url
+                                downloadUrl
 
                         });
 
@@ -263,34 +468,50 @@ module.exports = async function handler(req, res) {
                 );
 
             }
+        );
 
-        });
 
-
-        // ------------------------------------------------
-        // Remove duplicates
-        // ------------------------------------------------
+        // ==================================================
+        // REMOVE DUPLICATES
+        // ==================================================
 
         const unique =
             Array.from(
+
                 new Map(
+
                     results.map(
-                        item => [
-                            item.fileId,
-                            item
-                        ]
+                        function (item) {
+
+                            return [
+                                item.fileId,
+                                item
+                            ];
+
+                        }
                     )
+
                 ).values()
+
             );
 
 
+        // ==================================================
+        // RESPONSE
+        // ==================================================
+
         return res.status(200).json({
+
+            success: true,
 
             total:
                 unique.length,
 
             results:
-                unique.slice(0, 30)
+                unique.slice(
+                    0,
+                    30
+                )
 
         });
 
