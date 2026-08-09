@@ -1,3 +1,5 @@
+const AdmZip = require("adm-zip");
+
 module.exports = async function handler(req, res) {
 
     try {
@@ -29,18 +31,6 @@ module.exports = async function handler(req, res) {
         let finalUrl;
 
 
-        /*
-        --------------------------------------------------
-        SubDL can return either:
-
-        /subtitle/xxxxx.zip
-
-        OR
-
-        https://dl.subdl.com/subtitle/xxxxx.zip
-        --------------------------------------------------
-        */
-
         if (rawUrl.startsWith("/")) {
 
             finalUrl =
@@ -70,7 +60,6 @@ module.exports = async function handler(req, res) {
                 finalUrl =
                     parsed.toString();
 
-
             } catch {
 
                 return res.status(400).json({
@@ -87,21 +76,8 @@ module.exports = async function handler(req, res) {
         // EXTRA SECURITY CHECK
         // ==================================================
 
-        let checkUrl;
-
-        try {
-
-            checkUrl =
-                new URL(finalUrl);
-
-        } catch {
-
-            return res.status(400).json({
-                error:
-                    "Invalid subtitle URL"
-            });
-
-        }
+        const checkUrl =
+            new URL(finalUrl);
 
 
         if (
@@ -145,7 +121,9 @@ module.exports = async function handler(req, res) {
                 finalUrl,
                 {
                     method: "GET",
+
                     redirect: "follow",
+
                     headers: {
                         "User-Agent":
                             "Mozilla/5.0 SubLankaAI"
@@ -155,13 +133,6 @@ module.exports = async function handler(req, res) {
 
 
         if (!response.ok) {
-
-            console.error(
-                "SubDL response:",
-                response.status,
-                response.statusText
-            );
-
 
             return res.status(
                 response.status
@@ -175,15 +146,13 @@ module.exports = async function handler(req, res) {
         }
 
 
-        // ==================================================
-        // READ FILE
-        // ==================================================
-
         const buffer =
-            await response.arrayBuffer();
+            Buffer.from(
+                await response.arrayBuffer()
+            );
 
 
-        if (!buffer.byteLength) {
+        if (!buffer.length) {
 
             return res.status(502).json({
                 error:
@@ -196,26 +165,163 @@ module.exports = async function handler(req, res) {
         const contentType =
             response.headers.get(
                 "content-type"
-            ) || "application/octet-stream";
+            ) ||
+            "application/octet-stream";
 
 
         // ==================================================
-        // RETURN BASE64
+        // CHECK ZIP
+        // ==================================================
+
+        const isZip =
+            buffer.length >= 4 &&
+            buffer[0] === 0x50 &&
+            buffer[1] === 0x4b &&
+            buffer[2] === 0x03 &&
+            buffer[3] === 0x04;
+
+
+        let subtitleBuffer =
+            buffer;
+
+
+        let subtitleContentType =
+            contentType;
+
+
+        let extractedFileName =
+            "subtitle.srt";
+
+
+        // ==================================================
+        // EXTRACT SRT FROM ZIP
+        // ==================================================
+
+        if (isZip) {
+
+            try {
+
+                const zip =
+                    new AdmZip(
+                        buffer
+                    );
+
+
+                const entries =
+                    zip
+                        .getEntries()
+                        .filter(
+                            entry =>
+                                !entry.isDirectory &&
+                                /\.srt$/i.test(
+                                    entry.entryName
+                                )
+                        );
+
+
+                if (
+                    !entries.length
+                ) {
+
+                    return res.status(422).json({
+                        error:
+                            "Subtitle ZIP does not contain an SRT file"
+                    });
+
+                }
+
+
+                // Prefer shortest SRT path
+                entries.sort(
+                    (a, b) =>
+                        a.entryName.length -
+                        b.entryName.length
+                );
+
+
+                const selected =
+                    entries[0];
+
+
+                subtitleBuffer =
+                    selected.getData();
+
+
+                extractedFileName =
+                    selected.entryName
+                        .split("/")
+                        .pop() ||
+                    "subtitle.srt";
+
+
+                subtitleContentType =
+                    "application/x-subrip";
+
+            } catch (zipError) {
+
+                console.error(
+                    "SUBDL ZIP ERROR:",
+                    zipError
+                );
+
+
+                return res.status(422).json({
+                    error:
+                        "Could not extract the subtitle ZIP"
+                });
+
+            }
+
+        }
+
+
+        // ==================================================
+        // BASIC SRT VALIDATION
+        // ==================================================
+
+        const text =
+            subtitleBuffer.toString(
+                "utf8"
+            );
+
+
+        if (
+            !text.includes("-->")
+        ) {
+
+            return res.status(422).json({
+                error:
+                    "Downloaded file is not a valid SRT subtitle"
+            });
+
+        }
+
+
+        // ==================================================
+        // RETURN SRT AS BASE64
         // ==================================================
 
         return res.status(200).json({
 
-            success: true,
+            success:
+                true,
 
             data:
-                Buffer
-                    .from(buffer)
-                    .toString("base64"),
+                subtitleBuffer.toString(
+                    "base64"
+                ),
 
-            contentType,
+            contentType:
+                subtitleContentType,
+
+            fileName:
+                extractedFileName,
 
             size:
-                buffer.byteLength
+                subtitleBuffer.length,
+
+            extractedFromZip:
+                isZip
 
         });
 
