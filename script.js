@@ -1,44 +1,28 @@
 "use strict";
 
-/* ============================================================
+/* =========================================================
    SubLanka AI
-   Search + TV Episodes + SubDL + Upload + Translation
-   ============================================================ */
+   Search + Movie Details + TV Episodes
+   SubDL + SRT Upload + Translation + Download
+========================================================= */
 
 
-/* ============================================================
-   DOM ELEMENTS
-   ============================================================ */
+/* =========================================================
+   DOM
+========================================================= */
 
-const searchInput =
-    document.getElementById("searchInput");
+const searchInput = document.getElementById("searchInput");
+const searchBtn = document.getElementById("searchBtn");
+const searchStatus = document.getElementById("searchStatus");
+const searchResults = document.getElementById("searchResults");
 
-const searchBtn =
-    document.getElementById("searchBtn");
+const subtitleFile = document.getElementById("subtitleFile");
+const fileName = document.getElementById("fileName");
 
-const searchStatus =
-    document.getElementById("searchStatus");
-
-const searchResults =
-    document.getElementById("searchResults");
-
-const subtitleFile =
-    document.getElementById("subtitleFile");
-
-const fileName =
-    document.getElementById("fileName");
-
-const language =
-    document.getElementById("language");
-
-const translateBtn =
-    document.getElementById("translateBtn");
-
-const preview =
-    document.getElementById("preview");
-
-const downloadBtn =
-    document.getElementById("downloadBtn");
+const language = document.getElementById("language");
+const translateBtn = document.getElementById("translateBtn");
+const preview = document.getElementById("preview");
+const downloadBtn = document.getElementById("downloadBtn");
 
 const progressContainer =
     document.getElementById("progressContainer");
@@ -53,24 +37,58 @@ const progressFill =
     document.getElementById("progressFill");
 
 
-/* ============================================================
+/* =========================================================
+   MOVIE DETAILS DOM
+========================================================= */
+
+const movieDetails =
+    document.getElementById("movieDetails");
+
+const moviePoster =
+    document.getElementById("moviePoster");
+
+const movieTitle =
+    document.getElementById("movieTitle");
+
+const movieYear =
+    document.getElementById("movieYear");
+
+const movieRating =
+    document.getElementById("movieRating");
+
+const movieRuntime =
+    document.getElementById("movieRuntime");
+
+const movieGenre =
+    document.getElementById("movieGenre");
+
+const moviePlot =
+    document.getElementById("moviePlot");
+
+const movieDirector =
+    document.getElementById("movieDirector");
+
+const movieActors =
+    document.getElementById("movieActors");
+
+const findMovieSubtitles =
+    document.getElementById("findMovieSubtitles");
+
+
+/* =========================================================
    STATE
-   ============================================================ */
+========================================================= */
 
 let uploadedSubtitles = [];
-
 let uploadedFileName = "subtitle";
-
 let translatedSRT = "";
-
 let selectedMovie = null;
-
 let isTranslating = false;
 
 
-/* ============================================================
+/* =========================================================
    INITIAL STATE
-   ============================================================ */
+========================================================= */
 
 if (progressContainer) {
     progressContainer.style.display = "none";
@@ -85,35 +103,29 @@ if (downloadBtn) {
 }
 
 
-/* ============================================================
+/* =========================================================
    FILE UPLOAD
-   ============================================================ */
+========================================================= */
 
 if (subtitleFile) {
-
     subtitleFile.addEventListener(
         "change",
         handleFileUpload
     );
-
 }
 
 
 async function handleFileUpload(event) {
 
-    const file =
-        event.target.files?.[0];
-
+    const file = event.target.files?.[0];
 
     if (!file) {
 
         uploadedSubtitles = [];
-
         uploadedFileName = "subtitle";
 
         if (fileName) {
-            fileName.textContent =
-                "No file selected";
+            fileName.textContent = "No file selected";
         }
 
         if (preview) {
@@ -132,17 +144,9 @@ async function handleFileUpload(event) {
     }
 
 
-    /* Check file extension */
+    if (!file.name.toLowerCase().endsWith(".srt")) {
 
-    if (
-        !file.name
-            .toLowerCase()
-            .endsWith(".srt")
-    ) {
-
-        alert(
-            "Please select an .srt subtitle file."
-        );
+        alert("Please select an .srt subtitle file.");
 
         subtitleFile.value = "";
 
@@ -151,27 +155,19 @@ async function handleFileUpload(event) {
 
 
     uploadedFileName =
-        file.name.replace(
-            /\.srt$/i,
-            ""
-        );
+        file.name.replace(/\.srt$/i, "");
 
 
     if (fileName) {
-        fileName.textContent =
-            file.name;
+        fileName.textContent = file.name;
     }
 
 
     try {
 
-        const text =
-            await file.text();
+        const text = await file.text();
 
-
-        const subtitles =
-            parseSRT(text);
-
+        const subtitles = parseSRT(text);
 
         if (!subtitles.length) {
 
@@ -183,10 +179,7 @@ async function handleFileUpload(event) {
         }
 
 
-        uploadedSubtitles =
-            subtitles;
-
-
+        uploadedSubtitles = subtitles;
         translatedSRT = "";
 
 
@@ -199,7 +192,6 @@ async function handleFileUpload(event) {
             translateBtn.disabled = false;
         }
 
-
         if (downloadBtn) {
             downloadBtn.disabled = true;
         }
@@ -207,13 +199,6 @@ async function handleFileUpload(event) {
 
         setSearchStatus(
             `${subtitles.length} subtitle entries loaded.`
-        );
-
-
-        console.log(
-            "SRT loaded:",
-            subtitles.length,
-            "entries"
         );
 
 
@@ -227,15 +212,13 @@ async function handleFileUpload(event) {
         alert(
             "Could not read subtitle file."
         );
-
     }
-
 }
 
 
-/* ============================================================
+/* =========================================================
    SEARCH BUTTON
-   ============================================================ */
+========================================================= */
 
 if (searchBtn) {
 
@@ -243,7 +226,6 @@ if (searchBtn) {
         "click",
         searchMovies
     );
-
 }
 
 
@@ -251,25 +233,22 @@ if (searchInput) {
 
     searchInput.addEventListener(
         "keydown",
-        function (event) {
+        event => {
 
             if (event.key === "Enter") {
 
                 event.preventDefault();
 
                 searchMovies();
-
             }
-
         }
     );
-
 }
 
 
-/* ============================================================
+/* =========================================================
    SEARCH MOVIES / TV
-   ============================================================ */
+========================================================= */
 
 async function searchMovies() {
 
@@ -292,20 +271,24 @@ async function searchMovies() {
     setSearchLoading(true);
 
 
+    if (movieDetails) {
+        movieDetails.style.display = "none";
+    }
+
+
     setSearchStatus(
         "Searching movies and TV series..."
     );
 
 
     if (searchResults) {
+
         searchResults.innerHTML = `
             <div class="subtitle-loading">
 
                 <div class="big-spinner"></div>
 
-                <h3>
-                    Searching...
-                </h3>
+                <h3>Searching...</h3>
 
                 <p>
                     Finding movies and TV series
@@ -340,7 +323,6 @@ async function searchMovies() {
                 data.error ||
                 "Search failed."
             );
-
         }
 
 
@@ -360,6 +342,7 @@ async function searchMovies() {
             if (searchResults) {
 
                 searchResults.innerHTML = `
+
                     <div class="search-empty">
 
                         <div class="empty-icon">
@@ -375,8 +358,8 @@ async function searchMovies() {
                         </p>
 
                     </div>
-                `;
 
+                `;
             }
 
             return;
@@ -408,6 +391,7 @@ async function searchMovies() {
         if (searchResults) {
 
             searchResults.innerHTML = `
+
                 <div class="search-empty error">
 
                     <div class="empty-icon">
@@ -419,28 +403,25 @@ async function searchMovies() {
                     </h3>
 
                     <p>
-                        ${escapeHTML(
-                            error.message
-                        )}
+                        ${escapeHTML(error.message)}
                     </p>
 
                 </div>
-            `;
 
+            `;
         }
+
 
     } finally {
 
         setSearchLoading(false);
-
     }
-
 }
 
 
-/* ============================================================
+/* =========================================================
    SEARCH LOADING
-   ============================================================ */
+========================================================= */
 
 function setSearchLoading(loading) {
 
@@ -454,13 +435,10 @@ function setSearchLoading(loading) {
         searchBtn.disabled = true;
 
 
-        if (
-            !searchBtn.dataset.originalText
-        ) {
+        if (!searchBtn.dataset.originalText) {
 
             searchBtn.dataset.originalText =
                 searchBtn.innerHTML;
-
         }
 
 
@@ -488,15 +466,13 @@ function setSearchLoading(loading) {
         searchBtn.classList.remove(
             "search-loading"
         );
-
     }
-
 }
 
 
-/* ============================================================
-   DISPLAY MOVIE / TV RESULTS
-   ============================================================ */
+/* =========================================================
+   DISPLAY SEARCH RESULTS
+========================================================= */
 
 function displaySearchResults(results) {
 
@@ -510,131 +486,112 @@ function displaySearchResults(results) {
 
     results
         .slice(0, 20)
-        .forEach(
-            function (item, index) {
+        .forEach((item, index) => {
 
-                const card =
-                    document.createElement("div");
-
-
-                card.className =
-                    "search-result-card";
+            const card =
+                document.createElement("div");
 
 
-                card.style.animationDelay =
-                    `${index * 0.06}s`;
+            card.className =
+                "search-result-card";
 
 
-                const poster =
-                    item.poster &&
-                    item.poster !== "N/A"
-
-                        ? `
-                            <img
-                                src="${escapeHTML(
-                                    item.poster
-                                )}"
-                                alt="${escapeHTML(
-                                    item.title || ""
-                                )}"
-                                loading="lazy"
-                            >
-                          `
-
-                        : `
-                            <div class="no-poster">
-                                🎬
-                            </div>
-                          `;
+            card.style.animationDelay =
+                `${index * 0.06}s`;
 
 
-                const type =
-                    item.type === "series"
-                        ? "📺 TV Series"
-                        : "🎬 Movie";
+            const poster =
+                item.poster &&
+                item.poster !== "N/A"
 
-
-                card.innerHTML = `
-
-                    <div class="result-poster">
-
-                        ${poster}
-
-                    </div>
-
-
-                    <div class="result-info">
-
-                        <h3>
-                            ${escapeHTML(
-                                item.title || ""
-                            )}
-                        </h3>
-
-
-                        <div class="result-meta">
-
-                            <span>
-                                ${type}
-                            </span>
-
-                            <span>
-                                ${escapeHTML(
-                                    item.year || ""
-                                )}
-                            </span>
-
-                        </div>
-
-
-                        <button
-                            type="button"
-                            class="select-title-btn"
+                    ? `
+                        <img
+                            src="${escapeHTML(item.poster)}"
+                            alt="${escapeHTML(item.title || "")}"
+                            loading="lazy"
                         >
-                            Select
-                        </button>
+                    `
+
+                    : `
+                        <div class="no-poster">
+                            🎬
+                        </div>
+                    `;
+
+
+            const type =
+                item.type === "series"
+                    ? "📺 TV Series"
+                    : "🎬 Movie";
+
+
+            card.innerHTML = `
+
+                <div class="result-poster">
+                    ${poster}
+                </div>
+
+                <div class="result-info">
+
+                    <h3>
+                        ${escapeHTML(
+                            item.title || ""
+                        )}
+                    </h3>
+
+                    <div class="result-meta">
+
+                        <span>
+                            ${type}
+                        </span>
+
+                        <span>
+                            ${escapeHTML(
+                                item.year || ""
+                            )}
+                        </span>
 
                     </div>
 
-                `;
+                    <button
+                        type="button"
+                        class="select-title-btn"
+                    >
+                        Select
+                    </button>
+
+                </div>
+
+            `;
 
 
-                const button =
-                    card.querySelector(
-                        ".select-title-btn"
-                    );
+            const button =
+                card.querySelector(
+                    ".select-title-btn"
+                );
 
 
-                if (button) {
+            if (button) {
 
-                    button.addEventListener(
-                        "click",
-                        function () {
-
-                            selectMovie(item);
-
-                        }
-                    );
-
-                }
-
-
-                searchResults.appendChild(card);
-
+                button.addEventListener(
+                    "click",
+                    () => selectMovie(item)
+                );
             }
-        );
 
+
+            searchResults.appendChild(card);
+        });
 }
 
 
-/* ============================================================
-   SELECT MOVIE / SERIES
-   ============================================================ */
+/* =========================================================
+   SELECT MOVIE / TV
+========================================================= */
 
 function selectMovie(item) {
 
-    selectedMovie =
-        item;
+    selectedMovie = item;
 
 
     if (!item.imdbID) {
@@ -652,12 +609,27 @@ function selectMovie(item) {
     );
 
 
+    loadMovieDetails(item);
+
+
     if (item.type === "movie") {
 
-        searchSubtitles(
-            item,
-            "movie"
-        );
+        if (findMovieSubtitles) {
+
+            findMovieSubtitles.style.display =
+                "inline-flex";
+
+
+            findMovieSubtitles.onclick =
+                () => {
+
+                    searchSubtitles(
+                        item,
+                        "movie"
+                    );
+                };
+        }
+
 
         return;
     }
@@ -665,16 +637,251 @@ function selectMovie(item) {
 
     if (item.type === "series") {
 
+        if (findMovieSubtitles) {
+
+            findMovieSubtitles.style.display =
+                "none";
+        }
+
+
         showEpisodeSelector(item);
-
     }
-
 }
 
 
-/* ============================================================
+/* =========================================================
+   MOVIE DETAILS
+========================================================= */
+
+async function loadMovieDetails(item) {
+
+    if (!movieDetails) {
+        return;
+    }
+
+
+    movieDetails.style.display =
+        "block";
+
+
+    if (movieTitle) {
+        movieTitle.textContent =
+            "Loading movie details...";
+    }
+
+
+    if (moviePlot) {
+        moviePlot.textContent =
+            "Please wait...";
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                `/api/movie-details?imdb_id=${encodeURIComponent(
+                    item.imdbID
+                )}`
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.error ||
+                "Could not load movie details."
+            );
+        }
+
+
+        const movie =
+            data.movie || data;
+
+
+        if (movieTitle) {
+
+            movieTitle.textContent =
+                movie.Title ||
+                item.title ||
+                "Unknown title";
+        }
+
+
+        if (movieYear) {
+
+            movieYear.textContent =
+                `📅 ${
+                    movie.Year ||
+                    item.year ||
+                    "N/A"
+                }`;
+        }
+
+
+        if (movieRating) {
+
+            const rating =
+                movie.imdbRating &&
+                movie.imdbRating !== "N/A"
+                    ? movie.imdbRating
+                    : "N/A";
+
+
+            movieRating.textContent =
+                `⭐ ${rating}/10`;
+        }
+
+
+        if (movieRuntime) {
+
+            movieRuntime.textContent =
+                `⏱ ${
+                    movie.Runtime ||
+                    "N/A"
+                }`;
+        }
+
+
+        if (movieGenre) {
+
+            movieGenre.textContent =
+                movie.Genre ||
+                "Genre unavailable";
+        }
+
+
+        if (moviePlot) {
+
+            moviePlot.textContent =
+                movie.Plot ||
+                "No description available.";
+        }
+
+
+        if (movieDirector) {
+
+            movieDirector.textContent =
+                `🎬 ${
+                    movie.Director ||
+                    "Unknown"
+                }`;
+        }
+
+
+        if (movieActors) {
+
+            movieActors.textContent =
+                `👤 ${
+                    movie.Actors ||
+                    "Unknown"
+                }`;
+        }
+
+
+        if (moviePoster) {
+
+            const poster =
+                movie.Poster &&
+                movie.Poster !== "N/A"
+
+                    ? movie.Poster
+
+                    : (
+                        item.poster &&
+                        item.poster !== "N/A"
+                            ? item.poster
+                            : "sublanka-logo.png"
+                    );
+
+
+            moviePoster.src =
+                poster;
+
+
+            moviePoster.alt =
+                `${movie.Title || item.title || "Movie"} poster`;
+        }
+
+
+        if (
+            item.type === "movie" &&
+            findMovieSubtitles
+        ) {
+
+            findMovieSubtitles.style.display =
+                "inline-flex";
+
+
+            findMovieSubtitles.onclick =
+                () => {
+
+                    searchSubtitles(
+                        item,
+                        "movie"
+                    );
+                };
+        }
+
+
+        movieDetails.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
+
+
+    } catch (error) {
+
+        console.error(
+            "MOVIE DETAILS ERROR:",
+            error
+        );
+
+
+        if (movieTitle) {
+
+            movieTitle.textContent =
+                item.title ||
+                "Movie details unavailable";
+        }
+
+
+        if (moviePlot) {
+
+            moviePlot.textContent =
+                "Movie details could not be loaded.";
+        }
+
+
+        if (
+            item.type === "movie" &&
+            findMovieSubtitles
+        ) {
+
+            findMovieSubtitles.style.display =
+                "inline-flex";
+
+
+            findMovieSubtitles.onclick =
+                () => {
+
+                    searchSubtitles(
+                        item,
+                        "movie"
+                    );
+                };
+        }
+    }
+}
+
+
+/* =========================================================
    TV EPISODE SELECTOR
-   ============================================================ */
+========================================================= */
 
 function showEpisodeSelector(item) {
 
@@ -688,9 +895,7 @@ function showEpisodeSelector(item) {
         <div class="episode-selector">
 
             <h2>
-                ${escapeHTML(
-                    item.title
-                )}
+                ${escapeHTML(item.title)}
             </h2>
 
             <p>
@@ -760,7 +965,7 @@ function showEpisodeSelector(item) {
 
     button.addEventListener(
         "click",
-        function () {
+        () => {
 
             const season =
                 Number(
@@ -797,16 +1002,14 @@ function showEpisodeSelector(item) {
                 season,
                 episode
             );
-
         }
     );
-
 }
 
 
-/* ============================================================
+/* =========================================================
    SUBTITLE SEARCH
-   ============================================================ */
+========================================================= */
 
 async function searchSubtitles(
     item,
@@ -837,17 +1040,14 @@ async function searchSubtitles(
                 </p>
 
                 <div class="loading-dots">
-
                     <span></span>
                     <span></span>
                     <span></span>
-
                 </div>
 
             </div>
 
         `;
-
     }
 
 
@@ -881,7 +1081,6 @@ async function searchSubtitles(
                 "episode",
                 String(episode)
             );
-
         }
 
 
@@ -901,7 +1100,6 @@ async function searchSubtitles(
                 data.error ||
                 "Subtitle search failed."
             );
-
         }
 
 
@@ -937,7 +1135,6 @@ async function searchSubtitles(
                     </div>
 
                 `;
-
             }
 
             return;
@@ -993,17 +1190,14 @@ async function searchSubtitles(
                 </div>
 
             `;
-
         }
-
     }
-
 }
 
 
-/* ============================================================
-   DISPLAY SUBTITLE RESULTS
-   ============================================================ */
+/* =========================================================
+   DISPLAY SUBTITLES
+========================================================= */
 
 function displaySubtitleResults(
     results,
@@ -1036,119 +1230,112 @@ function displaySubtitleResults(
 
     results
         .slice(0, 15)
-        .forEach(
-            function (subtitle, index) {
+        .forEach((subtitle, index) => {
 
-                const card =
-                    document.createElement("div");
-
-
-                card.className =
-                    "search-result-card subtitle-card";
+            const card =
+                document.createElement("div");
 
 
-                card.style.animationDelay =
-                    `${index * 0.06}s`;
+            card.className =
+                "search-result-card subtitle-card";
 
 
-                card.innerHTML = `
-
-                    <div class="result-info">
-
-                        <h3>
-                            ${escapeHTML(
-                                subtitle.fileName ||
-                                "English Subtitle"
-                            )}
-                        </h3>
+            card.style.animationDelay =
+                `${index * 0.06}s`;
 
 
-                        <div class="result-meta">
+            card.innerHTML = `
 
-                            <span>
-                                🇬🇧 English
-                            </span>
+                <div class="result-info">
 
-
-                            ${
-                                subtitle.release
-                                    ? `
-                                        <span>
-                                            ${escapeHTML(
-                                                subtitle.release
-                                            )}
-                                        </span>
-                                      `
-                                    : ""
-                            }
+                    <h3>
+                        ${escapeHTML(
+                            subtitle.fileName ||
+                            "English Subtitle"
+                        )}
+                    </h3>
 
 
-                            ${
-                                subtitle.fps
-                                    ? `
-                                        <span>
-                                            ${escapeHTML(
-                                                String(
-                                                    subtitle.fps
-                                                )
-                                            )}
-                                            FPS
-                                        </span>
-                                      `
-                                    : ""
-                            }
+                    <div class="result-meta">
 
-                        </div>
+                        <span>
+                            🇬🇧 English
+                        </span>
+
+                        ${
+                            subtitle.release
+                                ? `
+                                    <span>
+                                        ${escapeHTML(
+                                            subtitle.release
+                                        )}
+                                    </span>
+                                `
+                                : ""
+                        }
 
 
-                        <button
-                            type="button"
-                            class="select-title-btn"
-                        >
-                            Use This Subtitle
-                        </button>
+                        ${
+                            subtitle.fps
+                                ? `
+                                    <span>
+                                        ${escapeHTML(
+                                            String(
+                                                subtitle.fps
+                                            )
+                                        )}
+                                        FPS
+                                    </span>
+                                `
+                                : ""
+                        }
 
                     </div>
 
-                `;
+
+                    <button
+                        type="button"
+                        class="select-title-btn"
+                    >
+                        Use This Subtitle
+                    </button>
+
+                </div>
+
+            `;
 
 
-                const button =
-                    card.querySelector(
-                        ".select-title-btn"
-                    );
+            const button =
+                card.querySelector(
+                    ".select-title-btn"
+                );
 
 
-                if (button) {
+            if (button) {
 
-                    button.addEventListener(
-                        "click",
-                        function () {
+                button.addEventListener(
+                    "click",
+                    () => {
 
-                            selectSubtitle(
-                                subtitle,
-                                item,
-                                season,
-                                episode
-                            );
-
-                        }
-                    );
-
-                }
-
-
-                searchResults.appendChild(card);
-
+                        selectSubtitle(
+                            subtitle,
+                            item,
+                            season,
+                            episode
+                        );
+                    }
+                );
             }
-        );
 
+
+            searchResults.appendChild(card);
+        });
 }
 
 
-/* ============================================================
+/* =========================================================
    DOWNLOAD / LOAD SUBTITLE
-   ============================================================ */
+========================================================= */
 
 async function selectSubtitle(
     subtitle,
@@ -1180,7 +1367,6 @@ async function selectSubtitle(
         subtitleUrl =
             "https://dl.subdl.com" +
             subtitleUrl;
-
     }
 
 
@@ -1214,7 +1400,6 @@ async function selectSubtitle(
             </div>
 
         `;
-
     }
 
 
@@ -1238,7 +1423,6 @@ async function selectSubtitle(
                 data.error ||
                 "Subtitle download failed."
             );
-
         }
 
 
@@ -1247,11 +1431,8 @@ async function selectSubtitle(
             throw new Error(
                 "Downloaded subtitle is empty."
             );
-
         }
 
-
-        /* Base64 -> Uint8Array */
 
         const binary =
             atob(data.data);
@@ -1271,18 +1452,7 @@ async function selectSubtitle(
 
             bytes[i] =
                 binary.charCodeAt(i);
-
         }
-
-
-        /*
-         * IMPORTANT:
-         *
-         * ZIP extraction is now handled
-         * by /api/subtitle-download.
-         *
-         * Do NOT check for ZIP here.
-         */
 
 
         const englishSRT =
@@ -1298,13 +1468,11 @@ async function selectSubtitle(
             throw new Error(
                 "Downloaded subtitle is not a valid SRT file."
             );
-
         }
 
 
         if (preview) {
-            preview.value =
-                englishSRT;
+            preview.value = englishSRT;
         }
 
 
@@ -1314,7 +1482,6 @@ async function selectSubtitle(
                 subtitle.fileName ||
                 data.fileName ||
                 "Downloaded subtitle";
-
         }
 
 
@@ -1347,9 +1514,7 @@ async function selectSubtitle(
 
 
         setSearchStatus(
-            data.extractedFromZip
-                ? "English subtitle extracted and loaded successfully."
-                : "English subtitle loaded successfully."
+            "English subtitle loaded successfully."
         );
 
 
@@ -1383,7 +1548,6 @@ async function selectSubtitle(
                 </div>
 
             `;
-
         }
 
 
@@ -1399,7 +1563,6 @@ async function selectSubtitle(
                 "click",
                 translateUploadedSubtitle
             );
-
         }
 
 
@@ -1409,7 +1572,6 @@ async function selectSubtitle(
                 behavior: "smooth",
                 block: "center"
             });
-
         }
 
 
@@ -1449,17 +1611,14 @@ async function selectSubtitle(
                 </div>
 
             `;
-
         }
-
     }
-
 }
 
 
-/* ============================================================
-   TRANSLATE BUTTON
-   ============================================================ */
+/* =========================================================
+   TRANSLATE
+========================================================= */
 
 if (translateBtn) {
 
@@ -1467,7 +1626,6 @@ if (translateBtn) {
         "click",
         translateUploadedSubtitle
     );
-
 }
 
 
@@ -1488,7 +1646,6 @@ async function translateUploadedSubtitle() {
             parseSRT(
                 preview.value
             );
-
     }
 
 
@@ -1514,7 +1671,6 @@ async function translateUploadedSubtitle() {
                 ⏳ Translating...
             </span>
         `;
-
     }
 
 
@@ -1552,10 +1708,6 @@ async function translateUploadedSubtitle() {
             100
         );
 
-
-        /*
-         * Automatically download translated subtitle
-         */
 
         const filename =
             `${uploadedFileName}.Sinhala.SubLankaAI.srt`;
@@ -1599,7 +1751,9 @@ async function translateUploadedSubtitle() {
 
             translateBtn.disabled = false;
 
+
             translateBtn.innerHTML = `
+
                 <span class="translate-icon">
                     ✨
                 </span>
@@ -1607,18 +1761,16 @@ async function translateUploadedSubtitle() {
                 <span>
                     Translate Subtitle
                 </span>
+
             `;
-
         }
-
     }
-
 }
 
 
-/* ============================================================
-   GEMINI TRANSLATION
-   ============================================================ */
+/* =========================================================
+   TRANSLATION CHUNKS
+========================================================= */
 
 async function translateSubtitleChunks(
     subtitles
@@ -1666,7 +1818,6 @@ async function translateSubtitleChunks(
 
 
         let success = false;
-
         let lastError = null;
 
 
@@ -1698,9 +1849,7 @@ async function translateSubtitleChunks(
                                     language:
                                         language?.value ||
                                         "si"
-
                                 })
-
                         }
                     );
 
@@ -1722,7 +1871,6 @@ async function translateSubtitleChunks(
                     throw new Error(
                         "Translation server returned invalid JSON."
                     );
-
                 }
 
 
@@ -1732,7 +1880,6 @@ async function translateSubtitleChunks(
                         data.error ||
                         "Translation failed."
                     );
-
                 }
 
 
@@ -1745,7 +1892,6 @@ async function translateSubtitleChunks(
                     throw new Error(
                         "Translation API returned invalid subtitle data."
                     );
-
                 }
 
 
@@ -1785,11 +1931,8 @@ async function translateSubtitleChunks(
                             ? 2500
                             : 5000
                     );
-
                 }
-
             }
-
         }
 
 
@@ -1801,7 +1944,6 @@ async function translateSubtitleChunks(
                     "Unknown error"
                 }`
             );
-
         }
 
 
@@ -1823,20 +1965,17 @@ async function translateSubtitleChunks(
         ) {
 
             await sleep(1000);
-
         }
-
     }
 
 
     return translated;
-
 }
 
 
-/* ============================================================
+/* =========================================================
    VALIDATE TRANSLATION
-   ============================================================ */
+========================================================= */
 
 function validateTranslatedChunk(
     original,
@@ -1848,7 +1987,7 @@ function validateTranslatedChunk(
 
 
     translated.forEach(
-        function (sub) {
+        sub => {
 
             const number =
                 Number(
@@ -1865,15 +2004,13 @@ function validateTranslatedChunk(
                     number,
                     sub.text
                 );
-
             }
-
         }
     );
 
 
     return original.map(
-        function (sub) {
+        sub => {
 
             const text =
                 map.get(
@@ -1894,18 +2031,15 @@ function validateTranslatedChunk(
                     text.trim()
                         ? text.trim()
                         : sub.text
-
             };
-
         }
     );
-
 }
 
 
-/* ============================================================
+/* =========================================================
    SRT PARSER
-   ============================================================ */
+========================================================= */
 
 function parseSRT(srt) {
 
@@ -1914,7 +2048,6 @@ function parseSRT(srt) {
     ) {
 
         return [];
-
     }
 
 
@@ -1944,7 +2077,7 @@ function parseSRT(srt) {
 
 
     blocks.forEach(
-        function (block) {
+        block => {
 
             const lines =
                 block
@@ -1960,7 +2093,6 @@ function parseSRT(srt) {
             ) {
 
                 return;
-
             }
 
 
@@ -1982,7 +2114,6 @@ function parseSRT(srt) {
             ) {
 
                 return;
-
             }
 
 
@@ -2005,27 +2136,24 @@ function parseSRT(srt) {
                 timestamp,
 
                 text
-
             });
-
         }
     );
 
 
     return subtitles;
-
 }
 
 
-/* ============================================================
+/* =========================================================
    BUILD SRT
-   ============================================================ */
+========================================================= */
 
 function buildSRT(subtitles) {
 
     return subtitles
         .map(
-            function (sub) {
+            sub => {
 
                 return [
 
@@ -2038,17 +2166,15 @@ function buildSRT(subtitles) {
                     ""
 
                 ].join("\n");
-
             }
         )
         .join("\n");
-
 }
 
 
-/* ============================================================
+/* =========================================================
    DOWNLOAD TEXT FILE
-   ============================================================ */
+========================================================= */
 
 function downloadTextFile(
     text,
@@ -2083,34 +2209,31 @@ function downloadTextFile(
 
     document.body.appendChild(a);
 
-
     a.click();
-
 
     a.remove();
 
 
     setTimeout(
-        function () {
+        () => {
 
             URL.revokeObjectURL(url);
 
         },
         1000
     );
-
 }
 
 
-/* ============================================================
+/* =========================================================
    DOWNLOAD BUTTON
-   ============================================================ */
+========================================================= */
 
 if (downloadBtn) {
 
     downloadBtn.addEventListener(
         "click",
-        function () {
+        () => {
 
             if (!translatedSRT) {
 
@@ -2130,16 +2253,14 @@ if (downloadBtn) {
                 translatedSRT,
                 filename
             );
-
         }
     );
-
 }
 
 
-/* ============================================================
+/* =========================================================
    PROGRESS
-   ============================================================ */
+========================================================= */
 
 function showProgress(
     text,
@@ -2159,7 +2280,6 @@ function showProgress(
         text,
         percent
     );
-
 }
 
 
@@ -2172,7 +2292,6 @@ function setProgress(
 
         progressText.textContent =
             text;
-
     }
 
 
@@ -2180,7 +2299,6 @@ function setProgress(
 
         progressPercent.textContent =
             `${percent}%`;
-
     }
 
 
@@ -2188,9 +2306,7 @@ function setProgress(
 
         progressFill.style.width =
             `${percent}%`;
-
     }
-
 }
 
 
@@ -2200,15 +2316,13 @@ function hideProgress() {
 
         progressContainer.style.display =
             "none";
-
     }
-
 }
 
 
-/* ============================================================
+/* =========================================================
    SEARCH STATUS
-   ============================================================ */
+========================================================= */
 
 function setSearchStatus(text) {
 
@@ -2216,24 +2330,15 @@ function setSearchStatus(text) {
 
         searchStatus.textContent =
             text;
-
     }
-
 }
 
 
-/* ============================================================
-   DECODE SUBTITLE BYTES
-   ============================================================ */
+/* =========================================================
+   DECODE SUBTITLE
+========================================================= */
 
 function decodeSubtitleBytes(bytes) {
-
-    /*
-     * ZIP extraction is handled on the server.
-     * This function only converts the returned
-     * SRT bytes into readable text.
-     */
-
 
     try {
 
@@ -2248,37 +2353,30 @@ function decodeSubtitleBytes(bytes) {
         ) {
 
             return utf8;
-
         }
 
     } catch {
-        // Try fallback
+        // fallback
     }
 
 
     try {
 
-        const windows1252 =
-            new TextDecoder(
-                "windows-1252"
-            ).decode(bytes);
-
-
-        return windows1252;
+        return new TextDecoder(
+            "windows-1252"
+        ).decode(bytes);
 
     } catch {
 
         return new TextDecoder()
             .decode(bytes);
-
     }
-
 }
 
 
-/* ============================================================
+/* =========================================================
    HTML ESCAPE
-   ============================================================ */
+========================================================= */
 
 function escapeHTML(value) {
 
@@ -2305,13 +2403,12 @@ function escapeHTML(value) {
             /'/g,
             "&#039;"
         );
-
 }
 
 
-/* ============================================================
+/* =========================================================
    SLEEP
-   ============================================================ */
+========================================================= */
 
 function sleep(ms) {
 
@@ -2322,13 +2419,12 @@ function sleep(ms) {
                 ms
             )
     );
-
 }
 
 
-/* ============================================================
+/* =========================================================
    READY
-   ============================================================ */
+========================================================= */
 
 console.log(
     "SubLanka AI loaded successfully."
