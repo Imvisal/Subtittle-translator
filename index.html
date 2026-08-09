@@ -10,9 +10,37 @@
         content="width=device-width, initial-scale=1.0"
     >
 
+    <!-- =================================================
+         SEO
+    ================================================== -->
+
+    <title>
+        English to Sinhala Subtitle Translator | SubLanka AI
+    </title>
+
     <meta
         name="description"
-        content="SubLanka AI - Translate English subtitles into natural Sinhala"
+        content="SubLanka AI is a free English to Sinhala subtitle translator. Search movie and TV subtitles, upload SRT files, translate them into Sinhala, and download translated SRT subtitles."
+    >
+
+    <meta
+        name="keywords"
+        content="Sinhala subtitles, Sinhala subtitle translator, English to Sinhala subtitles, SRT translator, subtitle translator, movie subtitles, TV series subtitles, Sinhala SRT"
+    >
+
+    <meta
+        name="author"
+        content="SubLanka AI"
+    >
+
+    <meta
+        name="robots"
+        content="index, follow"
+    >
+
+    <meta
+        name="googlebot"
+        content="index, follow"
     >
 
     <meta
@@ -20,29 +48,136 @@
         content="#080d1b"
     >
 
-    <title>SubLanka AI</title>
+    <!-- Canonical -->
+    <link
+        rel="canonical"
+        href="https://subtittle-translator.vercel.app/"
+    >
 
 
-    <!-- Favicon -->
+    <!-- =================================================
+         FAVICON
+    ================================================== -->
+
     <link
         rel="icon"
         type="image/png"
         href="sublanka-logo.png"
     >
 
+    <link
+        rel="apple-touch-icon"
+        href="sublanka-logo.png"
+    >
 
-    <!-- CSS -->
+
+    <!-- =================================================
+         OPEN GRAPH
+    ================================================== -->
+
+    <meta
+        property="og:type"
+        content="website"
+    >
+
+    <meta
+        property="og:title"
+        content="SubLanka AI - English to Sinhala Subtitle Translator"
+    >
+
+    <meta
+        property="og:description"
+        content="Translate English movie and TV subtitles into natural Sinhala. Upload an SRT file or search for subtitles and download the translated Sinhala SRT."
+    >
+
+    <meta
+        property="og:url"
+        content="https://subtittle-translator.vercel.app/"
+    >
+
+    <meta
+        property="og:site_name"
+        content="SubLanka AI"
+    >
+
+    <meta
+        property="og:image"
+        content="https://subtittle-translator.vercel.app/sublanka-logo.png"
+    >
+
+    <meta
+        property="og:image:alt"
+        content="SubLanka AI"
+    >
+
+
+    <!-- =================================================
+         TWITTER / X
+    ================================================== -->
+
+    <meta
+        name="twitter:card"
+        content="summary"
+    >
+
+    <meta
+        name="twitter:title"
+        content="SubLanka AI - Sinhala Subtitle Translator"
+    >
+
+    <meta
+        name="twitter:description"
+        content="Translate English subtitles into Sinhala and download them as SRT."
+    >
+
+    <meta
+        name="twitter:image"
+        content="https://subtittle-translator.vercel.app/sublanka-logo.png"
+    >
+
+
+    <!-- =================================================
+         CSS
+    ================================================== -->
+
     <link
         rel="stylesheet"
         href="style.css"
     >
 
 
-    <!-- Google AdSense -->
+    <!-- =================================================
+         GOOGLE ADSENSE
+    ================================================== -->
+
     <script
         async
         src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4763104072764524"
         crossorigin="anonymous">
+    </script>
+
+
+    <!-- =================================================
+         STRUCTURED DATA
+    ================================================== -->
+
+    <script type="application/ld+json">
+
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "SubLanka AI",
+        "url": "https://subtittle-translator.vercel.app/",
+        "description": "English to Sinhala subtitle translator for movie and TV subtitles.",
+        "applicationCategory": "UtilitiesApplication",
+        "operatingSystem": "Web",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+        }
+    }
+
     </script>
 
 </head>
@@ -50,14 +185,16 @@
 
 <body>
 
+
 <main class="container">
 
 
-    <!-- =====================================
+    <!-- =================================================
          HEADER
-    ====================================== -->
+    ================================================== -->
 
     <header class="header">
+
 
         <div class="brand">
 
@@ -65,7 +202,9 @@
 
                 <img
                     src="sublanka-logo.png"
-                    alt="SubLanka AI Logo"
+                    alt="SubLanka AI logo"
+                    width="58"
+                    height="58"
                 >
 
             </div>
@@ -89,11 +228,11 @@
         <div class="hero">
 
             <h1>
-                Translate Subtitles
+                English to Sinhala Subtitle Translator
             </h1>
 
             <p>
-                English subtitles into natural Sinhala
+                Translate English movie and TV subtitles into natural Sinhala.
             </p>
 
         </div>
@@ -102,26 +241,32 @@
 
 
 
-    <!-- =====================================
+    <!-- =================================================
          SEARCH
-    ====================================== -->
+    ================================================== -->
 
-    <section class="search-section">
+    <section
+        class="search-section"
+        aria-labelledby="findSubtitleTitle"
+    >
 
         <div class="section-heading">
 
-            <div class="section-icon">
+            <div
+                class="section-icon"
+                aria-hidden="true"
+            >
                 🎬
             </div>
 
             <div>
 
-                <h2>
-                    Find Subtitle
+                <h2 id="findSubtitleTitle">
+                    Find Movie & TV Subtitles
                 </h2>
 
                 <p>
-                    Search a movie or TV series
+                    Search for English subtitles for movies and TV series.
                 </p>
 
             </div>
@@ -136,6 +281,7 @@
                 id="searchInput"
                 placeholder="Enter movie or TV series name..."
                 autocomplete="off"
+                aria-label="Movie or TV series name"
             >
 
 
@@ -144,7 +290,7 @@
                 id="searchBtn"
             >
 
-                <span>
+                <span aria-hidden="true">
                     🔍
                 </span>
 
@@ -157,15 +303,12 @@
         </div>
 
 
-        <!-- Search status -->
-
         <div
             id="searchStatus"
             class="search-status"
+            aria-live="polite"
         ></div>
 
-
-        <!-- Search results -->
 
         <div
             id="searchResults"
@@ -176,9 +319,24 @@
 
 
 
-    <!-- =====================================
-         OR DIVIDER
-    ====================================== -->
+    <!-- =================================================
+         ADVERTISEMENT
+    ================================================== -->
+
+    <div
+        class="ad-container"
+        aria-label="Advertisement"
+    >
+
+        <!-- AdSense ad will be placed here -->
+
+    </div>
+
+
+
+    <!-- =================================================
+         OR
+    ================================================== -->
 
     <div class="or-divider">
 
@@ -194,27 +352,32 @@
 
 
 
-    <!-- =====================================
+    <!-- =================================================
          UPLOAD
-    ====================================== -->
+    ================================================== -->
 
-    <section class="upload-section">
+    <section
+        class="upload-section"
+        aria-labelledby="uploadTitle"
+    >
 
         <div class="upload-card">
 
-
-            <div class="upload-icon">
+            <div
+                class="upload-icon"
+                aria-hidden="true"
+            >
                 ↑
             </div>
 
 
-            <h2>
-                Upload Subtitle
+            <h2 id="uploadTitle">
+                Upload an SRT Subtitle
             </h2>
 
 
             <p>
-                Select an English .srt subtitle file
+                Upload an English SRT file and translate it into Sinhala.
             </p>
 
 
@@ -236,6 +399,7 @@
             <div
                 id="fileName"
                 class="file-name"
+                aria-live="polite"
             >
                 No file selected
             </div>
@@ -246,9 +410,9 @@
 
 
 
-    <!-- =====================================
+    <!-- =================================================
          LANGUAGE
-    ====================================== -->
+    ================================================== -->
 
     <section class="settings">
 
@@ -273,9 +437,9 @@
 
 
 
-    <!-- =====================================
+    <!-- =================================================
          TRANSLATE BUTTON
-    ====================================== -->
+    ================================================== -->
 
     <button
         id="translateBtn"
@@ -283,7 +447,10 @@
         type="button"
     >
 
-        <span class="translate-icon">
+        <span
+            class="translate-icon"
+            aria-hidden="true"
+        >
             ✨
         </span>
 
@@ -295,13 +462,14 @@
 
 
 
-    <!-- =====================================
+    <!-- =================================================
          PROGRESS
-    ====================================== -->
+    ================================================== -->
 
     <section
         class="progress-container"
         id="progressContainer"
+        aria-live="polite"
     >
 
         <div class="progress-info">
@@ -330,22 +498,25 @@
 
 
 
-    <!-- =====================================
+    <!-- =================================================
          PREVIEW
-    ====================================== -->
+    ================================================== -->
 
-    <section class="preview-section">
+    <section
+        class="preview-section"
+        aria-labelledby="previewTitle"
+    >
 
         <div class="preview-header">
 
             <div>
 
-                <h2>
+                <h2 id="previewTitle">
                     Subtitle Preview
                 </h2>
 
                 <p>
-                    Your subtitle content will appear here
+                    Your subtitle content will appear here.
                 </p>
 
             </div>
@@ -362,15 +533,16 @@
             id="preview"
             placeholder="Your subtitle content will appear here..."
             spellcheck="false"
+            aria-label="Subtitle preview"
         ></textarea>
 
     </section>
 
 
 
-    <!-- =====================================
+    <!-- =================================================
          DOWNLOAD
-    ====================================== -->
+    ================================================== -->
 
     <button
         id="downloadBtn"
@@ -378,7 +550,10 @@
         type="button"
     >
 
-        <span class="download-icon">
+        <span
+            class="download-icon"
+            aria-hidden="true"
+        >
             ↓
         </span>
 
@@ -390,9 +565,89 @@
 
 
 
-    <!-- =====================================
+    <!-- =================================================
+         SEO CONTENT
+    ================================================== -->
+
+    <section class="seo-info">
+
+        <h2>
+            Free English to Sinhala Subtitle Translator
+        </h2>
+
+
+        <p>
+            SubLanka AI helps you translate English subtitles
+            into Sinhala. Search for movie and TV series subtitles
+            or upload your own English SRT subtitle file and
+            translate it into Sinhala.
+        </p>
+
+
+        <div class="seo-features">
+
+
+            <div>
+
+                <strong>
+                    🎬 Movie Subtitles
+                </strong>
+
+                <p>
+                    Search for English subtitles for movies.
+                </p>
+
+            </div>
+
+
+            <div>
+
+                <strong>
+                    📺 TV Series Subtitles
+                </strong>
+
+                <p>
+                    Find subtitles for TV series episodes.
+                </p>
+
+            </div>
+
+
+            <div>
+
+                <strong>
+                    📁 SRT Upload
+                </strong>
+
+                <p>
+                    Upload your own English SRT subtitle file.
+                </p>
+
+            </div>
+
+
+            <div>
+
+                <strong>
+                    🇱🇰 Sinhala Translation
+                </strong>
+
+                <p>
+                    Translate subtitle text into Sinhala.
+                </p>
+
+            </div>
+
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =================================================
          FOOTER
-    ====================================== -->
+    ================================================== -->
 
     <footer class="site-footer">
 
@@ -405,6 +660,8 @@
                 <img
                     src="sublanka-logo.png"
                     alt="SubLanka AI"
+                    width="34"
+                    height="34"
                 >
 
             </div>
@@ -426,7 +683,9 @@
 
 
 
-        <!-- Social -->
+        <!-- =================================================
+             SOCIAL
+        ================================================== -->
 
         <div class="footer-social">
 
@@ -481,31 +740,53 @@
 
         </div>
 
-<div class="footer-links">
 
-    <a href="privacy.html">
-        Privacy Policy
-    </a>
 
-    <span>•</span>
+        <!-- =================================================
+             FOOTER LINKS
+        ================================================== -->
 
-    <a href="terms.html">
-        Terms of Service
-    </a>
+        <div class="footer-links">
 
-    <span>•</span>
 
-    <a href="about.html">
-        About
-    </a>
+            <a href="privacy.html">
+                Privacy Policy
+            </a>
 
-    <span>•</span>
 
-    <a href="contact.html">
-        Contact
-    </a>
+            <span>
+                •
+            </span>
 
-</div>
+
+            <a href="terms.html">
+                Terms of Service
+            </a>
+
+
+            <span>
+                •
+            </span>
+
+
+            <a href="about.html">
+                About
+            </a>
+
+
+            <span>
+                •
+            </span>
+
+
+            <a href="contact.html">
+                Contact
+            </a>
+
+
+        </div>
+
+
 
         <div class="footer-copy">
 
@@ -519,6 +800,7 @@
 
         </div>
 
+
     </footer>
 
 
@@ -526,11 +808,12 @@
 
 
 
-<!-- =====================================
+<!-- =================================================
      JAVASCRIPT
-====================================== -->
+================================================== -->
 
 <script src="script.js"></script>
+
 
 </body>
 
