@@ -500,3 +500,57 @@ footer span {
     }
 
 }
+
+/* ================================
+   Search Loading Animation
+================================ */
+
+.search-spinner {
+    width: 16px;
+    height: 16px;
+
+    display: inline-block;
+
+    border: 2px solid rgba(255,255,255,0.35);
+    border-top: 2px solid white;
+
+    border-radius: 50%;
+
+    animation: searchSpin 0.7s linear infinite;
+
+    vertical-align: middle;
+
+    margin-right: 8px;
+}
+
+@keyframes searchSpin {
+
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+
+}
+
+
+/* Search button smooth transition */
+
+#searchBtn {
+    transition:
+        transform 0.2s ease,
+        opacity 0.2s ease;
+}
+
+
+#searchBtn:not(:disabled):hover {
+    transform: translateY(-2px);
+}
+
+
+#searchBtn:disabled {
+    opacity: 0.75;
+    cursor: wait;
+}
