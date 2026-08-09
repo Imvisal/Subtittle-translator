@@ -2,11 +2,13 @@
 
 // ============================================================
 // SubLanka AI - Complete script.js
+// Search + Upload + Subtitle Search + Translation
+// With Loading Animations
 // ============================================================
 
 
 // ============================================================
-// DOM
+// DOM ELEMENTS
 // ============================================================
 
 const searchInput =
@@ -62,7 +64,7 @@ let isTranslating = false;
 
 
 // ============================================================
-// CREATE SEARCH UI
+// SEARCH UI
 // ============================================================
 
 const searchBox =
@@ -75,7 +77,7 @@ let searchResults =
     document.getElementById("searchResults");
 
 
-// Status එක HTML එකේ නැත්නම් create කරන්න
+// Create status if missing
 if (!searchStatus && searchBox) {
 
     searchStatus =
@@ -87,16 +89,13 @@ if (!searchStatus && searchBox) {
     searchStatus.className =
         "search-status";
 
-    searchStatus.style.marginTop =
-        "15px";
-
     searchBox.after(
         searchStatus
     );
 }
 
 
-// Results container එක HTML එකේ නැත්නම් create කරන්න
+// Create results container if missing
 if (!searchResults && searchBox) {
 
     searchResults =
@@ -165,19 +164,25 @@ async function handleFileUpload(event) {
         uploadedSubtitles = [];
 
         if (fileName) {
+
             fileName.textContent =
                 "No file selected";
+
         }
 
         if (preview) {
-            preview.value = "";
+
+            preview.value =
+                "";
+
         }
 
         return;
+
     }
 
 
-    // Only SRT
+    // Check SRT
     if (
         !file.name
             .toLowerCase()
@@ -188,9 +193,11 @@ async function handleFileUpload(event) {
             "Please select an .srt subtitle file."
         );
 
-        subtitleFile.value = "";
+        subtitleFile.value =
+            "";
 
         return;
+
     }
 
 
@@ -228,10 +235,11 @@ async function handleFileUpload(event) {
             );
 
             return;
+
         }
 
 
-        // Show original SRT
+        // Show subtitle
         if (preview) {
 
             preview.value =
@@ -240,7 +248,6 @@ async function handleFileUpload(event) {
         }
 
 
-        // Enable translate
         if (translateBtn) {
 
             translateBtn.disabled =
@@ -281,7 +288,7 @@ async function handleFileUpload(event) {
 
 
 // ============================================================
-// SEARCH
+// SEARCH BUTTON
 // ============================================================
 
 if (searchBtn) {
@@ -314,6 +321,10 @@ if (searchInput) {
 }
 
 
+// ============================================================
+// SEARCH MOVIES
+// ============================================================
+
 async function searchMovies() {
 
     const query =
@@ -327,36 +338,25 @@ async function searchMovies() {
         );
 
         return;
+
     }
 
 
+    // --------------------------------------------
+    // SEARCH LOADING ANIMATION
+    // --------------------------------------------
+
+    setSearchLoading(true);
+
     setSearchStatus(
-        "Searching OMDb..."
+        "Searching movies and TV series..."
     );
 
 
     searchResults.innerHTML = "";
 
 
-    searchBtn.disabled =
-        true;
-
-    searchBtn.textContent =
-        "Searching...";
-
-
     try {
-
-        /*
-        ----------------------------------------------------
-        IMPORTANT
-
-        Your existing backend is expected to be:
-
-        /api/search?query=movie-name
-
-        ----------------------------------------------------
-        */
 
         const response =
             await fetch(
@@ -392,7 +392,28 @@ async function searchMovies() {
                 "No movies or TV series found."
             );
 
+            searchResults.innerHTML = `
+
+                <div class="search-empty">
+
+                    <div class="empty-icon">
+                        🔎
+                    </div>
+
+                    <h3>
+                        No results found
+                    </h3>
+
+                    <p>
+                        Try another movie or TV series name.
+                    </p>
+
+                </div>
+
+            `;
+
             return;
+
         }
 
 
@@ -420,13 +441,35 @@ async function searchMovies() {
         );
 
 
+        searchResults.innerHTML = `
+
+            <div class="search-empty error">
+
+                <div class="empty-icon">
+                    ❌
+                </div>
+
+                <h3>
+                    Search failed
+                </h3>
+
+                <p>
+                    ${escapeHTML(
+                        error.message
+                    )}
+                </p>
+
+            </div>
+
+        `;
+
     } finally {
 
-        searchBtn.disabled =
-            false;
+        // --------------------------------------------
+        // STOP SEARCH ANIMATION
+        // --------------------------------------------
 
-        searchBtn.textContent =
-            "🔍 Search";
+        setSearchLoading(false);
 
     }
 
@@ -434,7 +477,60 @@ async function searchMovies() {
 
 
 // ============================================================
-// SEARCH RESULTS
+// SEARCH BUTTON ANIMATION
+// ============================================================
+
+function setSearchLoading(
+    loading
+) {
+
+    if (!searchBtn) {
+        return;
+    }
+
+
+    if (loading) {
+
+        searchBtn.disabled =
+            true;
+
+        searchBtn.dataset.originalText =
+            searchBtn.innerHTML;
+
+        searchBtn.innerHTML = `
+
+            <span class="search-spinner"></span>
+
+            <span>
+                Searching...
+            </span>
+
+        `;
+
+        searchBtn.classList.add(
+            "search-loading"
+        );
+
+    } else {
+
+        searchBtn.disabled =
+            false;
+
+        searchBtn.innerHTML =
+            searchBtn.dataset.originalText ||
+            "🔍 Search";
+
+        searchBtn.classList.remove(
+            "search-loading"
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// DISPLAY SEARCH RESULTS
 // ============================================================
 
 function displaySearchResults(
@@ -447,7 +543,7 @@ function displaySearchResults(
     results
         .slice(0, 20)
         .forEach(
-            function (item) {
+            function (item, index) {
 
                 const card =
                     document.createElement(
@@ -459,6 +555,11 @@ function displaySearchResults(
                     "search-result-card";
 
 
+                // Animation delay
+                card.style.animationDelay =
+                    `${index * 0.06}s`;
+
+
                 const poster =
                     item.poster &&
                     item.poster !== "N/A"
@@ -467,13 +568,15 @@ function displaySearchResults(
                                 src="${escapeHTML(
                                     item.poster
                                 )}"
-                                alt=""
+                                alt="${escapeHTML(
+                                    item.title ||
+                                    ""
+                                )}"
+                                loading="lazy"
                             >
                           `
                         : `
-                            <div
-                                class="no-poster"
-                            >
+                            <div class="no-poster">
                                 🎬
                             </div>
                           `;
@@ -487,7 +590,12 @@ function displaySearchResults(
 
                 card.innerHTML = `
 
-                    ${poster}
+                    <div class="result-poster">
+
+                        ${poster}
+
+                    </div>
+
 
                     <div class="result-info">
 
@@ -497,6 +605,7 @@ function displaySearchResults(
                                 ""
                             )}
                         </h3>
+
 
                         <div class="result-meta">
 
@@ -512,6 +621,7 @@ function displaySearchResults(
                             </span>
 
                         </div>
+
 
                         <button
                             type="button"
@@ -572,6 +682,7 @@ function selectMovie(
         );
 
         return;
+
     }
 
 
@@ -591,6 +702,7 @@ function selectMovie(
         );
 
         return;
+
     }
 
 
@@ -609,7 +721,7 @@ function selectMovie(
 
 
 // ============================================================
-// TV SEASON / EPISODE
+// TV EPISODE SELECTOR
 // ============================================================
 
 function showEpisodeSelector(
@@ -629,6 +741,7 @@ function showEpisodeSelector(
             <p>
                 Select Season and Episode
             </p>
+
 
             <div class="episode-fields">
 
@@ -715,6 +828,7 @@ function showEpisodeSelector(
                 );
 
                 return;
+
             }
 
 
@@ -732,7 +846,7 @@ function showEpisodeSelector(
 
 
 // ============================================================
-// SUBDL SEARCH
+// SUBTITLE SEARCH
 // ============================================================
 
 async function searchSubtitles(
@@ -742,24 +856,34 @@ async function searchSubtitles(
     episode = null
 ) {
 
+    // --------------------------------------------
+    // SUBTITLE SEARCH ANIMATION
+    // --------------------------------------------
+
     setSearchStatus(
-        "Searching English subtitles..."
+        "Finding English subtitles..."
     );
 
 
     searchResults.innerHTML = `
 
-        <div class="translation-status">
+        <div class="subtitle-loading">
 
-            <div class="status-spinner"></div>
+            <div class="big-spinner"></div>
 
             <h3>
-                🔎 Searching SubDL...
+                Finding English subtitles
             </h3>
 
             <p>
-                Please wait...
+                Searching SubDL...
             </p>
+
+            <div class="loading-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
 
         </div>
 
@@ -836,15 +960,26 @@ async function searchSubtitles(
 
             searchResults.innerHTML = `
 
-                <div class="translation-status">
+                <div class="search-empty">
 
-                    ❌ No English subtitle found.
+                    <div class="empty-icon">
+                        😕
+                    </div>
+
+                    <h3>
+                        No English subtitles found
+                    </h3>
+
+                    <p>
+                        Try another release or episode.
+                    </p>
 
                 </div>
 
             `;
 
             return;
+
         }
 
 
@@ -870,18 +1005,27 @@ async function searchSubtitles(
 
 
         setSearchStatus(
-            error.message ||
             "Subtitle search failed."
         );
 
 
         searchResults.innerHTML = `
 
-            <div class="translation-status error">
+            <div class="search-empty error">
 
-                ❌ ${escapeHTML(
-                    error.message
-                )}
+                <div class="empty-icon">
+                    ❌
+                </div>
+
+                <h3>
+                    Subtitle search failed
+                </h3>
+
+                <p>
+                    ${escapeHTML(
+                        error.message
+                    )}
+                </p>
 
             </div>
 
@@ -893,7 +1037,7 @@ async function searchSubtitles(
 
 
 // ============================================================
-// SUBTITLE RESULTS
+// DISPLAY SUBTITLE RESULTS
 // ============================================================
 
 function displaySubtitleResults(
@@ -905,9 +1049,17 @@ function displaySubtitleResults(
 
     searchResults.innerHTML = `
 
-        <h3>
-            🇬🇧 English Subtitles
-        </h3>
+        <div class="subtitle-results-title">
+
+            <h3>
+                🇬🇧 English Subtitles
+            </h3>
+
+            <span>
+                ${results.length} found
+            </span>
+
+        </div>
 
     `;
 
@@ -915,7 +1067,7 @@ function displaySubtitleResults(
     results
         .slice(0, 15)
         .forEach(
-            function (subtitle) {
+            function (subtitle, index) {
 
                 const card =
                     document.createElement(
@@ -924,7 +1076,11 @@ function displaySubtitleResults(
 
 
                 card.className =
-                    "search-result-card";
+                    "search-result-card subtitle-card";
+
+
+                card.style.animationDelay =
+                    `${index * 0.06}s`;
 
 
                 card.innerHTML = `
@@ -937,6 +1093,7 @@ function displaySubtitleResults(
                                 "English Subtitle"
                             )}
                         </h3>
+
 
                         <div class="result-meta">
 
@@ -972,6 +1129,7 @@ function displaySubtitleResults(
                             }
 
                         </div>
+
 
                         <button
                             type="button"
@@ -1017,7 +1175,7 @@ function displaySubtitleResults(
 
 
 // ============================================================
-// DOWNLOAD SUBDL SUBTITLE
+// DOWNLOAD SUBTITLE
 // ============================================================
 
 async function selectSubtitle(
@@ -1035,14 +1193,15 @@ async function selectSubtitle(
 
     if (!subtitleUrl) {
 
-        throw new Error(
+        alert(
             "Subtitle download URL is missing."
         );
+
+        return;
 
     }
 
 
-    // Relative SubDL URL
     if (
         subtitleUrl.startsWith("/")
     ) {
@@ -1061,13 +1220,17 @@ async function selectSubtitle(
 
     searchResults.innerHTML = `
 
-        <div class="translation-status">
+        <div class="subtitle-loading">
 
-            <div class="status-spinner"></div>
+            <div class="big-spinner"></div>
 
             <h3>
-                Downloading English subtitle...
+                Downloading subtitle
             </h3>
+
+            <p>
+                Please wait...
+            </p>
 
         </div>
 
@@ -1135,7 +1298,7 @@ async function selectSubtitle(
         ) {
 
             throw new Error(
-                "SubDL returned a ZIP file. ZIP extraction is needed before translation."
+                "SubDL returned a ZIP file. ZIP extraction is needed."
             );
 
         }
@@ -1200,21 +1363,25 @@ async function selectSubtitle(
 
 
         setSearchStatus(
-            `${subtitles.length} subtitle entries loaded.`
+            "English subtitle loaded successfully."
         );
 
 
         searchResults.innerHTML = `
 
-            <div class="translation-status success">
+            <div class="subtitle-loaded">
+
+                <div class="success-icon">
+                    ✓
+                </div>
 
                 <h3>
-                    ✅ English subtitle loaded
+                    English subtitle loaded
                 </h3>
 
                 <p>
                     ${subtitles.length}
-                    subtitle entries
+                    subtitle entries ready.
                 </p>
 
                 <button
@@ -1222,7 +1389,7 @@ async function selectSubtitle(
                     id="translateSearchSubtitle"
                     class="select-title-btn"
                 >
-                    Translate to Sinhala
+                    🇱🇰 Translate to Sinhala
                 </button>
 
             </div>
@@ -1261,10 +1428,14 @@ async function selectSubtitle(
 
         searchResults.innerHTML = `
 
-            <div class="translation-status error">
+            <div class="search-empty error">
+
+                <div class="empty-icon">
+                    ❌
+                </div>
 
                 <h3>
-                    ❌ Subtitle download failed
+                    Subtitle download failed
                 </h3>
 
                 <p>
@@ -1304,21 +1475,15 @@ async function translateUploadedSubtitle() {
 
 
     if (
-        !uploadedSubtitles.length
+        !uploadedSubtitles.length &&
+        preview &&
+        preview.value.trim()
     ) {
 
-        // If preview has content, try parsing it
-        if (
-            preview &&
-            preview.value.trim()
-        ) {
-
-            uploadedSubtitles =
-                parseSRT(
-                    preview.value
-                );
-
-        }
+        uploadedSubtitles =
+            parseSRT(
+                preview.value
+            );
 
     }
 
@@ -1332,6 +1497,7 @@ async function translateUploadedSubtitle() {
         );
 
         return;
+
     }
 
 
@@ -1374,10 +1540,6 @@ async function translateUploadedSubtitle() {
             translatedSRT;
 
 
-        const filename =
-            `${uploadedFileName}.Sinhala.SubLankaAI.srt`;
-
-
         downloadBtn.disabled =
             false;
 
@@ -1388,7 +1550,10 @@ async function translateUploadedSubtitle() {
         );
 
 
-        // Auto download
+        const filename =
+            `${uploadedFileName}.Sinhala.SubLankaAI.srt`;
+
+
         downloadTextFile(
             translatedSRT,
             filename
@@ -1472,25 +1637,20 @@ async function translateSubtitleChunks(
 
         const chunkNumber =
             Math.floor(
-                start /
-                CHUNK_SIZE
+                start / CHUNK_SIZE
             ) + 1;
 
 
         const totalChunks =
             Math.ceil(
-                total /
-                CHUNK_SIZE
+                total / CHUNK_SIZE
             );
 
 
         setProgress(
             `Translating ${chunkNumber}/${totalChunks}...`,
             Math.round(
-                (
-                    start /
-                    total
-                ) * 100
+                (start / total) * 100
             )
         );
 
@@ -1503,7 +1663,6 @@ async function translateSubtitleChunks(
             null;
 
 
-        // Retry 3 times
         for (
             let attempt = 1;
             attempt <= 3;
@@ -1525,13 +1684,16 @@ async function translateSubtitleChunks(
 
                             body:
                                 JSON.stringify({
+
                                     subtitles:
                                         chunk,
 
                                     language:
                                         language.value ||
                                         "si"
+
                                 })
+
                         }
                     );
 
@@ -1647,10 +1809,7 @@ async function translateSubtitleChunks(
         setProgress(
             `Translated ${completed}/${total}`,
             Math.round(
-                (
-                    completed /
-                    total
-                ) * 100
+                (completed / total) * 100
             )
         );
 
@@ -1698,9 +1857,7 @@ function validateTranslatedChunk(
 
 
             if (
-                Number.isInteger(
-                    number
-                )
+                Number.isInteger(number)
             ) {
 
                 map.set(
@@ -1804,6 +1961,7 @@ function parseSRT(
             ) {
 
                 return;
+
             }
 
 
@@ -1825,6 +1983,7 @@ function parseSRT(
             ) {
 
                 return;
+
             }
 
 
@@ -1838,6 +1997,7 @@ function parseSRT(
             if (!text) {
 
                 return;
+
             }
 
 
@@ -1923,6 +2083,7 @@ function downloadTextFile(
     a.href =
         url;
 
+
     a.download =
         filename;
 
@@ -1962,15 +2123,14 @@ if (downloadBtn) {
         "click",
         function () {
 
-            if (
-                !translatedSRT
-            ) {
+            if (!translatedSRT) {
 
                 alert(
                     "Translate the subtitle first."
                 );
 
                 return;
+
             }
 
 
@@ -2096,7 +2256,7 @@ function isZipFile(
 
 
 // ============================================================
-// BASE64 -> TEXT
+// DECODE SUBTITLE
 // ============================================================
 
 function decodeSubtitleBytes(
@@ -2122,7 +2282,6 @@ function decodeSubtitleBytes(
         }
 
     } catch {
-
         // fallback
     }
 
