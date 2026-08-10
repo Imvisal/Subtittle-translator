@@ -2413,20 +2413,19 @@ body {
     }
 
 
-   /* Mobile Search Input */
-@media (max-width: 600px) {
+   @media (max-width: 600px) {
 
     .search-box input {
-        height: 58px;
-        min-height: 58px;
-        padding: 0 18px;
-        font-size: 17px;
-        border-radius: 16px;
+        height: 70px;
+        min-height: 70px;
+        padding: 0 22px;
+        font-size: 19px;
+        border-radius: 18px;
         box-sizing: border-box;
     }
 
     .search-box {
-        gap: 12px;
+        gap: 14px;
     }
 
 }
