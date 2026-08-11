@@ -2669,35 +2669,158 @@ p {
         transform 0.2s ease,
         background-color 0.3s ease,
         border-color 0.3s ease;
+/* =========================================================
+   FIX - DARK / LIGHT MODE
+========================================================= */
+
+:root {
+    --bg: #080d1b;
+    --card: #111a32;
+    --card2: #17223d;
+    --text: #ffffff;
+    --muted: #a8b0c7;
+    --border: rgba(255,255,255,0.12);
+    --input: #0b1224;
+}
+
+
+/* DARK MODE */
+
+html[data-theme="dark"] body {
+    background: var(--bg);
+    color: var(--text);
+}
+
+
+/* LIGHT MODE */
+
+html[data-theme="light"] body {
+    --bg: #f5f7fb;
+    --card: #ffffff;
+    --card2: #eef2f8;
+    --text: #111827;
+    --muted: #5f6b7a;
+    --border: rgba(0,0,0,0.12);
+    --input: #ffffff;
+
+    background: var(--bg);
+    color: var(--text);
+}
+
+
+/* IMPORTANT:
+   Existing sections should NOT become black */
+
+html[data-theme="dark"] .search-section h2,
+html[data-theme="dark"] .search-section h3,
+html[data-theme="dark"] .search-section strong,
+html[data-theme="dark"] .upload-section h2,
+html[data-theme="dark"] .preview-section h2,
+html[data-theme="dark"] .settings label {
+    color: #ffffff;
+}
+
+
+html[data-theme="light"] .search-section h2,
+html[data-theme="light"] .search-section h3,
+html[data-theme="light"] .search-section strong,
+html[data-theme="light"] .upload-section h2,
+html[data-theme="light"] .preview-section h2,
+html[data-theme="light"] .settings label {
+    color: #111827;
+}
+
+
+/* Paragraphs */
+
+html[data-theme="dark"] p {
+    color: #a8b0c7;
+}
+
+html[data-theme="light"] p {
+    color: #5f6b7a;
+}
+
+
+/* Search input */
+
+html[data-theme="dark"] #searchInput {
+    background: #0b1224;
+    color: #ffffff;
+}
+
+html[data-theme="light"] #searchInput {
+    background: #ffffff;
+    color: #111827;
+}
+
+
+/* Placeholder */
+
+html[data-theme="dark"] #searchInput::placeholder {
+    color: #707b99;
+}
+
+html[data-theme="light"] #searchInput::placeholder {
+    color: #8a94a6;
+}
+
+
+/* Theme button */
+
+.theme-toggle {
+    width: 58px;
+    height: 58px;
+
+    border-radius: 50%;
+
+    border: 1px solid rgba(255,255,255,0.15);
+
+    background: #ffffff;
+
+    font-size: 30px;
+
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    position: absolute;
+    top: 48px;
+    left: 28px;
+
+    z-index: 20;
+
+    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+
+    transition: transform 0.2s ease;
 }
 
 
 .theme-toggle:hover {
-
-    transform: rotate(15deg) scale(1.08);
-
+    transform: scale(1.08);
 }
 
 
-/* Light mode cards */
-
-html[data-theme="light"] .search-result-card,
-html[data-theme="light"] .upload-card,
-html[data-theme="light"] .preview-section,
-html[data-theme="light"] .settings,
-html[data-theme="light"] .history-section {
-
-    background: var(--card);
-
-    border-color: var(--border);
+html[data-theme="light"] .theme-toggle {
+    background: #111827;
+    border-color: rgba(0,0,0,0.1);
 }
 
 
-/* Smooth everything */
+/* Mobile */
 
-* {
+@media (max-width: 600px) {
 
-    transition:
-        background-color 0.25s ease,
-        border-color 0.25s ease;
+    .theme-toggle {
+        width: 58px;
+        height: 58px;
+
+        top: 48px;
+        left: 28px;
+
+        font-size: 28px;
+    }
+
 }
