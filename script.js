@@ -2612,3 +2612,81 @@ displayTranslationHistory();
 console.log(
     "SubLanka AI loaded successfully."
 );
+
+/* =========================================================
+   DARK / LIGHT MODE
+========================================================= */
+
+const themeToggle =
+    document.getElementById("themeToggle");
+
+
+function applyTheme(theme) {
+
+    document.documentElement.setAttribute(
+        "data-theme",
+        theme
+    );
+
+
+    if (themeToggle) {
+
+        themeToggle.textContent =
+            theme === "light"
+                ? "🌙"
+                : "☀️";
+
+        themeToggle.setAttribute(
+            "aria-label",
+            theme === "light"
+                ? "Switch to dark mode"
+                : "Switch to light mode"
+        );
+    }
+
+
+    localStorage.setItem(
+        "sublanka_theme",
+        theme
+    );
+}
+
+
+/* Load saved theme */
+
+const savedTheme =
+    localStorage.getItem(
+        "sublanka_theme"
+    );
+
+
+applyTheme(
+    savedTheme === "light"
+        ? "light"
+        : "dark"
+);
+
+
+/* Toggle */
+
+if (themeToggle) {
+
+    themeToggle.addEventListener(
+        "click",
+        () => {
+
+            const currentTheme =
+                document.documentElement
+                    .getAttribute("data-theme");
+
+
+            const newTheme =
+                currentTheme === "light"
+                    ? "dark"
+                    : "light";
+
+
+            applyTheme(newTheme);
+        }
+    );
+}
