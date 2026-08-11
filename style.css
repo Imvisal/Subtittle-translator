@@ -2429,3 +2429,122 @@ body {
     }
 
 }
+
+   /* =========================================================
+   TRANSLATION HISTORY
+========================================================= */
+
+.history-section {
+    margin-top: 30px;
+    padding: 22px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+.history-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    margin-bottom: 18px;
+}
+
+.history-header h2 {
+    margin: 0;
+    font-size: 20px;
+}
+
+.history-header p {
+    margin: 5px 0 0;
+    opacity: 0.65;
+    font-size: 13px;
+}
+
+.clear-history-btn {
+    border: none;
+    padding: 9px 13px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.history-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    padding: 15px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+}
+
+.history-info {
+    min-width: 0;
+}
+
+.history-title {
+    font-weight: 600;
+    word-break: break-word;
+}
+
+.history-meta {
+    margin-top: 5px;
+    font-size: 12px;
+    opacity: 0.6;
+}
+
+.history-actions {
+    display: flex;
+    gap: 7px;
+    flex-shrink: 0;
+}
+
+.history-download,
+.history-delete {
+    border: none;
+    border-radius: 9px;
+    padding: 8px 11px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.history-empty {
+    text-align: center;
+    padding: 25px 10px;
+    opacity: 0.55;
+    font-size: 13px;
+}
+
+@media (max-width: 600px) {
+
+    .history-section {
+        padding: 17px;
+    }
+
+    .history-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .history-item {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .history-actions {
+        width: 100%;
+    }
+
+    .history-download,
+    .history-delete {
+        flex: 1;
+    }
+}
