@@ -3,7 +3,9 @@
 /* =========================================================
    SubLanka AI
    Search + TV Episodes
-   SubDL + SRT Upload + Translation + Download
+   SubDL + SRT Upload
+   Translation + Download
+   Translation History
 ========================================================= */
 
 
@@ -55,22 +57,37 @@ const progressFill =
 
 
 /* =========================================================
+   TRANSLATION HISTORY DOM
+========================================================= */
+
+const historyList =
+    document.getElementById("historyList");
+
+const clearHistoryBtn =
+    document.getElementById("clearHistoryBtn");
+
+
+/* =========================================================
    STATE
 ========================================================= */
 
 let uploadedSubtitles = [];
 
-let uploadedFileName =
-    "subtitle";
+let uploadedFileName = "subtitle";
 
-let translatedSRT =
-    "";
+let translatedSRT = "";
 
-let selectedMovie =
-    null;
+let selectedMovie = null;
 
-let isTranslating =
-    false;
+let isTranslating = false;
+
+
+/* =========================================================
+   HISTORY
+========================================================= */
+
+const HISTORY_KEY =
+    "sublanka_translation_history";
 
 
 /* =========================================================
@@ -78,23 +95,15 @@ let isTranslating =
 ========================================================= */
 
 if (progressContainer) {
-
-    progressContainer.style.display =
-        "none";
+    progressContainer.style.display = "none";
 }
-
 
 if (translateBtn) {
-
-    translateBtn.disabled =
-        true;
+    translateBtn.disabled = true;
 }
 
-
 if (downloadBtn) {
-
-    downloadBtn.disabled =
-        true;
+    downloadBtn.disabled = true;
 }
 
 
@@ -121,35 +130,29 @@ async function handleFileUpload(event) {
 
         uploadedSubtitles = [];
 
-        uploadedFileName =
-            "subtitle";
+        uploadedFileName = "subtitle";
+
+        translatedSRT = "";
 
 
         if (fileName) {
-
             fileName.textContent =
                 "No file selected";
         }
 
 
         if (preview) {
-
-            preview.value =
-                "";
+            preview.value = "";
         }
 
 
         if (translateBtn) {
-
-            translateBtn.disabled =
-                true;
+            translateBtn.disabled = true;
         }
 
 
         if (downloadBtn) {
-
-            downloadBtn.disabled =
-                true;
+            downloadBtn.disabled = true;
         }
 
 
@@ -167,10 +170,7 @@ async function handleFileUpload(event) {
             "Please select an .srt subtitle file."
         );
 
-
-        subtitleFile.value =
-            "";
-
+        subtitleFile.value = "";
 
         return;
     }
@@ -184,7 +184,6 @@ async function handleFileUpload(event) {
 
 
     if (fileName) {
-
         fileName.textContent =
             file.name;
     }
@@ -206,7 +205,6 @@ async function handleFileUpload(event) {
                 "This SRT file could not be read."
             );
 
-
             return;
         }
 
@@ -214,29 +212,21 @@ async function handleFileUpload(event) {
         uploadedSubtitles =
             subtitles;
 
-
-        translatedSRT =
-            "";
+        translatedSRT = "";
 
 
         if (preview) {
-
-            preview.value =
-                text;
+            preview.value = text;
         }
 
 
         if (translateBtn) {
-
-            translateBtn.disabled =
-                false;
+            translateBtn.disabled = false;
         }
 
 
         if (downloadBtn) {
-
-            downloadBtn.disabled =
-                true;
+            downloadBtn.disabled = true;
         }
 
 
@@ -279,9 +269,7 @@ if (searchInput) {
         "keydown",
         event => {
 
-            if (
-                event.key === "Enter"
-            ) {
+            if (event.key === "Enter") {
 
                 event.preventDefault();
 
@@ -310,14 +298,11 @@ async function searchMovies() {
             "Enter a movie or TV series name."
         );
 
-
         return;
     }
 
 
-    setSearchLoading(
-        true
-    );
+    setSearchLoading(true);
 
 
     setSearchStatus(
@@ -333,20 +318,16 @@ async function searchMovies() {
 
                 <div class="big-spinner"></div>
 
-                <h3>
-                    Searching...
-                </h3>
+                <h3>Searching...</h3>
 
                 <p>
                     Finding movies and TV series
                 </p>
 
                 <div class="loading-dots">
-
                     <span></span>
                     <span></span>
                     <span></span>
-
                 </div>
 
             </div>
@@ -359,9 +340,7 @@ async function searchMovies() {
 
         const response =
             await fetch(
-                `/api/search?query=${encodeURIComponent(
-                    query
-                )}`
+                `/api/search?query=${encodeURIComponent(query)}`
             );
 
 
@@ -379,9 +358,7 @@ async function searchMovies() {
 
 
         const results =
-            Array.isArray(
-                data.results
-            )
+            Array.isArray(data.results)
                 ? data.results
                 : [];
 
@@ -426,9 +403,7 @@ async function searchMovies() {
         );
 
 
-        displaySearchResults(
-            results
-        );
+        displaySearchResults(results);
 
 
     } catch (error) {
@@ -473,9 +448,7 @@ async function searchMovies() {
 
     } finally {
 
-        setSearchLoading(
-            false
-        );
+        setSearchLoading(false);
     }
 }
 
@@ -484,25 +457,19 @@ async function searchMovies() {
    SEARCH LOADING
 ========================================================= */
 
-function setSearchLoading(
-    loading
-) {
+function setSearchLoading(loading) {
 
     if (!searchBtn) {
-
         return;
     }
 
 
     if (loading) {
 
-        searchBtn.disabled =
-            true;
+        searchBtn.disabled = true;
 
 
-        if (
-            !searchBtn.dataset.originalText
-        ) {
+        if (!searchBtn.dataset.originalText) {
 
             searchBtn.dataset.originalText =
                 searchBtn.innerHTML;
@@ -520,25 +487,14 @@ function setSearchLoading(
         `;
 
 
-        searchBtn.classList.add(
-            "search-loading"
-        );
-
-
     } else {
 
-        searchBtn.disabled =
-            false;
+        searchBtn.disabled = false;
 
 
         searchBtn.innerHTML =
             searchBtn.dataset.originalText ||
             "🔍 Search";
-
-
-        searchBtn.classList.remove(
-            "search-loading"
-        );
     }
 }
 
@@ -547,108 +503,127 @@ function setSearchLoading(
    DISPLAY SEARCH RESULTS
 ========================================================= */
 
-function displaySearchResults(
-    results
-) {
+function displaySearchResults(results) {
 
     if (!searchResults) {
-
         return;
     }
 
 
-    searchResults.innerHTML =
-        "";
+    searchResults.innerHTML = "";
 
 
     results
         .slice(0, 20)
-        .forEach(
-            (item, index) => {
+        .forEach((item, index) => {
 
-                const card =
-                    document.createElement(
-                        "div"
-                    );
+            const card =
+                document.createElement("div");
 
 
-                card.className =
-                    "search-result-card";
+            card.className =
+                "search-result-card";
 
 
-                card.style.animationDelay =
-                    `${index * 0.06}s`;
+            card.style.animationDelay =
+                `${index * 0.06}s`;
 
 
-                const type =
-                    item.type === "series"
-                        ? "📺 TV Series"
-                        : "🎬 Movie";
+            const poster =
+                item.poster &&
+                item.poster !== "N/A"
 
+                    ? `
 
-                card.innerHTML = `
-
-                    <div class="result-info">
-
-                        <h3>
-                            ${escapeHTML(
+                        <img
+                            src="${escapeHTML(
+                                item.poster
+                            )}"
+                            alt="${escapeHTML(
                                 item.title || ""
-                            )}
-                        </h3>
+                            )}"
+                            loading="lazy"
+                        >
 
+                    `
 
-                        <div class="result-meta">
+                    : `
 
-                            <span>
-                                ${type}
-                            </span>
-
-                            <span>
-                                ${escapeHTML(
-                                    item.year || ""
-                                )}
-                            </span>
-
+                        <div class="no-poster">
+                            🎬
                         </div>
 
+                    `;
 
-                        <button
-                            type="button"
-                            class="select-title-btn"
-                        >
-                            Select
-                        </button>
+
+            const type =
+                item.type === "series"
+                    ? "📺 TV Series"
+                    : "🎬 Movie";
+
+
+            card.innerHTML = `
+
+                <div class="result-poster">
+
+                    ${poster}
+
+                </div>
+
+
+                <div class="result-info">
+
+                    <h3>
+                        ${escapeHTML(
+                            item.title || ""
+                        )}
+                    </h3>
+
+
+                    <div class="result-meta">
+
+                        <span>
+                            ${type}
+                        </span>
+
+                        <span>
+                            ${escapeHTML(
+                                item.year || ""
+                            )}
+                        </span>
 
                     </div>
 
-                `;
+
+                    <button
+                        type="button"
+                        class="select-title-btn"
+                    >
+                        Select
+                    </button>
+
+                </div>
+
+            `;
 
 
-                const button =
-                    card.querySelector(
-                        ".select-title-btn"
-                    );
+            const button =
+                card.querySelector(
+                    ".select-title-btn"
+                );
 
 
-                if (button) {
+            if (button) {
 
-                    button.addEventListener(
-                        "click",
-                        () => {
-
-                            selectMovie(
-                                item
-                            );
-                        }
-                    );
-                }
-
-
-                searchResults.appendChild(
-                    card
+                button.addEventListener(
+                    "click",
+                    () => selectMovie(item)
                 );
             }
-        );
+
+
+            searchResults.appendChild(card);
+        });
 }
 
 
@@ -656,12 +631,9 @@ function displaySearchResults(
    SELECT MOVIE / TV
 ========================================================= */
 
-function selectMovie(
-    item
-) {
+function selectMovie(item) {
 
-    selectedMovie =
-        item;
+    selectedMovie = item;
 
 
     if (!item.imdbID) {
@@ -669,7 +641,6 @@ function selectMovie(
         alert(
             "IMDb ID is missing."
         );
-
 
         return;
     }
@@ -680,37 +651,20 @@ function selectMovie(
     );
 
 
-    /*
-       MOVIE
-       Directly search subtitles
-    */
-
-    if (
-        item.type === "movie"
-    ) {
+    if (item.type === "movie") {
 
         searchSubtitles(
             item,
             "movie"
         );
 
-
         return;
     }
 
 
-    /*
-       TV SERIES
-       Show season / episode selector
-    */
+    if (item.type === "series") {
 
-    if (
-        item.type === "series"
-    ) {
-
-        showEpisodeSelector(
-            item
-        );
+        showEpisodeSelector(item);
     }
 }
 
@@ -719,12 +673,9 @@ function selectMovie(
    TV EPISODE SELECTOR
 ========================================================= */
 
-function showEpisodeSelector(
-    item
-) {
+function showEpisodeSelector(item) {
 
     if (!searchResults) {
-
         return;
     }
 
@@ -800,7 +751,6 @@ function showEpisodeSelector(
 
 
     if (!button) {
-
         return;
     }
 
@@ -833,7 +783,6 @@ function showEpisodeSelector(
                 setSearchStatus(
                     "Enter a valid season and episode."
                 );
-
 
                 return;
             }
@@ -914,9 +863,7 @@ async function searchSubtitles(
         );
 
 
-        if (
-            type === "episode"
-        ) {
+        if (type === "episode") {
 
             params.set(
                 "season",
@@ -951,9 +898,7 @@ async function searchSubtitles(
 
 
         const results =
-            Array.isArray(
-                data.results
-            )
+            Array.isArray(data.results)
                 ? data.results
                 : [];
 
@@ -961,7 +906,7 @@ async function searchSubtitles(
         if (!results.length) {
 
             setSearchStatus(
-                ""
+                "No English subtitles found."
             );
 
 
@@ -1048,7 +993,7 @@ async function searchSubtitles(
 
 
 /* =========================================================
-   DISPLAY SUBTITLES
+   DISPLAY SUBTITLE RESULTS
 ========================================================= */
 
 function displaySubtitleResults(
@@ -1059,7 +1004,6 @@ function displaySubtitleResults(
 ) {
 
     if (!searchResults) {
-
         return;
     }
 
@@ -1083,113 +1027,107 @@ function displaySubtitleResults(
 
     results
         .slice(0, 15)
-        .forEach(
-            (subtitle, index) => {
+        .forEach((subtitle, index) => {
 
-                const card =
-                    document.createElement(
-                        "div"
-                    );
+            const card =
+                document.createElement("div");
 
 
-                card.className =
-                    "search-result-card subtitle-card";
+            card.className =
+                "search-result-card subtitle-card";
 
 
-                card.style.animationDelay =
-                    `${index * 0.06}s`;
+            card.style.animationDelay =
+                `${index * 0.06}s`;
 
 
-                card.innerHTML = `
+            card.innerHTML = `
 
-                    <div class="result-info">
+                <div class="result-info">
 
-                        <h3>
-                            ${escapeHTML(
-                                subtitle.fileName ||
-                                "English Subtitle"
-                            )}
-                        </h3>
-
-
-                        <div class="result-meta">
-
-                            <span>
-                                🇬🇧 English
-                            </span>
+                    <h3>
+                        ${escapeHTML(
+                            subtitle.fileName ||
+                            "English Subtitle"
+                        )}
+                    </h3>
 
 
-                            ${
-                                subtitle.release
-                                    ? `
-                                        <span>
-                                            ${escapeHTML(
-                                                subtitle.release
-                                            )}
-                                        </span>
-                                    `
-                                    : ""
-                            }
+                    <div class="result-meta">
+
+                        <span>
+                            🇬🇧 English
+                        </span>
 
 
-                            ${
-                                subtitle.fps
-                                    ? `
-                                        <span>
-                                            ${escapeHTML(
-                                                String(
-                                                    subtitle.fps
-                                                )
-                                            )}
-                                            FPS
-                                        </span>
-                                    `
-                                    : ""
-                            }
-
-                        </div>
+                        ${
+                            subtitle.release
+                                ? `
+                                    <span>
+                                        ${escapeHTML(
+                                            subtitle.release
+                                        )}
+                                    </span>
+                                `
+                                : ""
+                        }
 
 
-                        <button
-                            type="button"
-                            class="select-title-btn"
-                        >
-                            Use This Subtitle
-                        </button>
+                        ${
+                            subtitle.fps
+                                ? `
+                                    <span>
+                                        ${escapeHTML(
+                                            String(
+                                                subtitle.fps
+                                            )
+                                        )}
+                                        FPS
+                                    </span>
+                                `
+                                : ""
+                        }
 
                     </div>
 
-                `;
+
+                    <button
+                        type="button"
+                        class="select-title-btn"
+                    >
+                        Use This Subtitle
+                    </button>
+
+                </div>
+
+            `;
 
 
-                const button =
-                    card.querySelector(
-                        ".select-title-btn"
-                    );
+            const button =
+                card.querySelector(
+                    ".select-title-btn"
+                );
 
 
-                if (button) {
+            if (button) {
 
-                    button.addEventListener(
-                        "click",
-                        () => {
+                button.addEventListener(
+                    "click",
+                    () => {
 
-                            selectSubtitle(
-                                subtitle,
-                                item,
-                                season,
-                                episode
-                            );
-                        }
-                    );
-                }
-
-
-                searchResults.appendChild(
-                    card
+                        selectSubtitle(
+                            subtitle,
+                            item,
+                            season,
+                            episode
+                        );
+                    }
                 );
             }
-        );
+
+
+            searchResults.appendChild(card);
+        });
 }
 
 
@@ -1215,7 +1153,6 @@ async function selectSubtitle(
         alert(
             "Subtitle download URL is missing."
         );
-
 
         return;
     }
@@ -1251,14 +1188,6 @@ async function selectSubtitle(
                 <p>
                     Please wait...
                 </p>
-
-                <div class="loading-dots">
-
-                    <span></span>
-                    <span></span>
-                    <span></span>
-
-                </div>
 
             </div>
 
@@ -1298,9 +1227,7 @@ async function selectSubtitle(
 
 
         const binary =
-            atob(
-                data.data
-            );
+            atob(data.data);
 
 
         const bytes =
@@ -1321,15 +1248,11 @@ async function selectSubtitle(
 
 
         const englishSRT =
-            decodeSubtitleBytes(
-                bytes
-            );
+            decodeSubtitleBytes(bytes);
 
 
         const subtitles =
-            parseSRT(
-                englishSRT
-            );
+            parseSRT(englishSRT);
 
 
         if (!subtitles.length) {
@@ -1341,7 +1264,6 @@ async function selectSubtitle(
 
 
         if (preview) {
-
             preview.value =
                 englishSRT;
         }
@@ -1371,21 +1293,16 @@ async function selectSubtitle(
             );
 
 
-        translatedSRT =
-            "";
+        translatedSRT = "";
 
 
         if (translateBtn) {
-
-            translateBtn.disabled =
-                false;
+            translateBtn.disabled = false;
         }
 
 
         if (downloadBtn) {
-
-            downloadBtn.disabled =
-                true;
+            downloadBtn.disabled = true;
         }
 
 
@@ -1413,6 +1330,7 @@ async function selectSubtitle(
                         subtitle entries ready.
                     </p>
 
+
                     <button
                         type="button"
                         id="translateSearchSubtitle"
@@ -1439,18 +1357,6 @@ async function selectSubtitle(
                 "click",
                 translateUploadedSubtitle
             );
-        }
-
-
-        if (preview) {
-
-            preview.scrollIntoView({
-
-                behavior: "smooth",
-
-                block: "center"
-
-            });
         }
 
 
@@ -1508,10 +1414,13 @@ if (translateBtn) {
 }
 
 
+/* =========================================================
+   TRANSLATE SUBTITLE
+========================================================= */
+
 async function translateUploadedSubtitle() {
 
     if (isTranslating) {
-
         return;
     }
 
@@ -1535,19 +1444,16 @@ async function translateUploadedSubtitle() {
             "Please upload or select an SRT subtitle first."
         );
 
-
         return;
     }
 
 
-    isTranslating =
-        true;
+    isTranslating = true;
 
 
     if (translateBtn) {
 
-        translateBtn.disabled =
-            true;
+        translateBtn.disabled = true;
 
 
         translateBtn.innerHTML = `
@@ -1575,22 +1481,17 @@ async function translateUploadedSubtitle() {
 
 
         translatedSRT =
-            buildSRT(
-                translated
-            );
+            buildSRT(translated);
 
 
         if (preview) {
-
             preview.value =
                 translatedSRT;
         }
 
 
         if (downloadBtn) {
-
-            downloadBtn.disabled =
-                false;
+            downloadBtn.disabled = false;
         }
 
 
@@ -1604,10 +1505,17 @@ async function translateUploadedSubtitle() {
             `${uploadedFileName}.Sinhala.SubLankaAI.srt`;
 
 
+        /* Automatic download */
+
         downloadTextFile(
             translatedSRT,
             filename
         );
+
+
+        /* Save to Translation History */
+
+        addCurrentTranslationToHistory();
 
 
         setTimeout(
@@ -1635,14 +1543,12 @@ async function translateUploadedSubtitle() {
 
     } finally {
 
-        isTranslating =
-            false;
+        isTranslating = false;
 
 
         if (translateBtn) {
 
-            translateBtn.disabled =
-                false;
+            translateBtn.disabled = false;
 
 
             translateBtn.innerHTML = `
@@ -1669,16 +1575,12 @@ async function translateSubtitleChunks(
     subtitles
 ) {
 
-    const CHUNK_SIZE =
-        20;
-
+    const CHUNK_SIZE = 20;
 
     const total =
         subtitles.length;
 
-
-    const translated =
-        [];
+    const translated = [];
 
 
     for (
@@ -1707,21 +1609,16 @@ async function translateSubtitleChunks(
 
 
         setProgress(
-
             `Translating ${chunkNumber}/${totalChunks}...`,
-
             Math.round(
                 (start / total) * 100
             )
         );
 
 
-        let success =
-            false;
+        let success = false;
 
-
-        let lastError =
-            null;
+        let lastError = null;
 
 
         for (
@@ -1736,15 +1633,11 @@ async function translateSubtitleChunks(
                     await fetch(
                         "/api/translate",
                         {
-
-                            method:
-                                "POST",
+                            method: "POST",
 
                             headers: {
-
                                 "Content-Type":
                                     "application/json"
-
                             },
 
                             body:
@@ -1758,7 +1651,6 @@ async function translateSubtitleChunks(
                                         "si"
 
                                 })
-
                         }
                     );
 
@@ -1773,9 +1665,7 @@ async function translateSubtitleChunks(
                 try {
 
                     data =
-                        JSON.parse(
-                            raw
-                        );
+                        JSON.parse(raw);
 
                 } catch {
 
@@ -1818,9 +1708,7 @@ async function translateSubtitleChunks(
                 );
 
 
-                success =
-                    true;
-
+                success = true;
 
                 break;
 
@@ -1837,9 +1725,7 @@ async function translateSubtitleChunks(
                 );
 
 
-                if (
-                    attempt < 3
-                ) {
+                if (attempt < 3) {
 
                     await sleep(
                         attempt === 1
@@ -1867,9 +1753,7 @@ async function translateSubtitleChunks(
 
 
         setProgress(
-
             `Translated ${completed}/${total}`,
-
             Math.round(
                 (completed / total) * 100
             )
@@ -1881,9 +1765,7 @@ async function translateSubtitleChunks(
             total
         ) {
 
-            await sleep(
-                1000
-            );
+            await sleep(1000);
         }
     }
 
@@ -1916,9 +1798,7 @@ function validateTranslatedChunk(
 
 
             if (
-                Number.isInteger(
-                    number
-                )
+                Number.isInteger(number)
             ) {
 
                 map.set(
@@ -1963,9 +1843,7 @@ function validateTranslatedChunk(
    SRT PARSER
 ========================================================= */
 
-function parseSRT(
-    srt
-) {
+function parseSRT(srt) {
 
     if (
         typeof srt !== "string"
@@ -1977,17 +1855,14 @@ function parseSRT(
 
     const normalized =
         srt
-
             .replace(
                 /^\uFEFF/,
                 ""
             )
-
             .replace(
                 /\r\n/g,
                 "\n"
             )
-
             .replace(
                 /\r/g,
                 "\n"
@@ -2000,8 +1875,7 @@ function parseSRT(
         );
 
 
-    const subtitles =
-        [];
+    const subtitles = [];
 
 
     blocks.forEach(
@@ -2053,7 +1927,6 @@ function parseSRT(
 
 
             if (!text) {
-
                 return;
             }
 
@@ -2079,12 +1952,9 @@ function parseSRT(
    BUILD SRT
 ========================================================= */
 
-function buildSRT(
-    subtitles
-) {
+function buildSRT(subtitles) {
 
     return subtitles
-
         .map(
             sub => {
 
@@ -2102,7 +1972,6 @@ function buildSRT(
 
             }
         )
-
         .join("\n");
 }
 
@@ -2130,32 +1999,21 @@ function downloadTextFile(
 
 
     const url =
-        URL.createObjectURL(
-            blob
-        );
+        URL.createObjectURL(blob);
 
 
     const a =
-        document.createElement(
-            "a"
-        );
+        document.createElement("a");
 
 
-    a.href =
-        url;
+    a.href = url;
+
+    a.download = filename;
 
 
-    a.download =
-        filename;
-
-
-    document.body.appendChild(
-        a
-    );
-
+    document.body.appendChild(a);
 
     a.click();
-
 
     a.remove();
 
@@ -2163,9 +2021,7 @@ function downloadTextFile(
     setTimeout(
         () => {
 
-            URL.revokeObjectURL(
-                url
-            );
+            URL.revokeObjectURL(url);
 
         },
         1000
@@ -2188,7 +2044,6 @@ if (downloadBtn) {
                 alert(
                     "Translate the subtitle first."
                 );
-
 
                 return;
             }
@@ -2217,7 +2072,6 @@ function showProgress(
 ) {
 
     if (!progressContainer) {
-
         return;
     }
 
@@ -2274,9 +2128,7 @@ function hideProgress() {
    SEARCH STATUS
 ========================================================= */
 
-function setSearchStatus(
-    text
-) {
+function setSearchStatus(text) {
 
     if (searchStatus) {
 
@@ -2290,24 +2142,18 @@ function setSearchStatus(
    DECODE SUBTITLE
 ========================================================= */
 
-function decodeSubtitleBytes(
-    bytes
-) {
+function decodeSubtitleBytes(bytes) {
 
     try {
 
         const utf8 =
             new TextDecoder(
                 "utf-8"
-            ).decode(
-                bytes
-            );
+            ).decode(bytes);
 
 
         if (
-            utf8.includes(
-                "-->"
-            )
+            utf8.includes("-->")
         ) {
 
             return utf8;
@@ -2322,16 +2168,12 @@ function decodeSubtitleBytes(
 
         return new TextDecoder(
             "windows-1252"
-        ).decode(
-            bytes
-        );
+        ).decode(bytes);
 
     } catch {
 
         return new TextDecoder()
-            .decode(
-                bytes
-            );
+            .decode(bytes);
     }
 }
 
@@ -2340,34 +2182,27 @@ function decodeSubtitleBytes(
    HTML ESCAPE
 ========================================================= */
 
-function escapeHTML(
-    value
-) {
+function escapeHTML(value) {
 
     return String(
         value ?? ""
     )
-
         .replace(
             /&/g,
             "&amp;"
         )
-
         .replace(
             /</g,
             "&lt;"
         )
-
         .replace(
             />/g,
             "&gt;"
         )
-
         .replace(
             /"/g,
             "&quot;"
         )
-
         .replace(
             /'/g,
             "&#039;"
@@ -2379,9 +2214,7 @@ function escapeHTML(
    SLEEP
 ========================================================= */
 
-function sleep(
-    ms
-) {
+function sleep(ms) {
 
     return new Promise(
         resolve =>
@@ -2394,30 +2227,7 @@ function sleep(
 
 
 /* =========================================================
-   READY
-========================================================= */
-
-console.log(
-    "SubLanka AI loaded successfully."
-);
-
-/* =========================================================
    TRANSLATION HISTORY
-========================================================= */
-
-const historyList =
-    document.getElementById("historyList");
-
-const clearHistoryBtn =
-    document.getElementById("clearHistoryBtn");
-
-
-const HISTORY_KEY =
-    "sublanka_translation_history";
-
-
-/* =========================================================
-   GET HISTORY
 ========================================================= */
 
 function getTranslationHistory() {
@@ -2429,16 +2239,20 @@ function getTranslationHistory() {
                 HISTORY_KEY
             );
 
+
         if (!saved) {
             return [];
         }
 
+
         const history =
             JSON.parse(saved);
+
 
         return Array.isArray(history)
             ? history
             : [];
+
 
     } catch (error) {
 
@@ -2446,6 +2260,7 @@ function getTranslationHistory() {
             "HISTORY READ ERROR:",
             error
         );
+
 
         return [];
     }
@@ -2456,9 +2271,7 @@ function getTranslationHistory() {
    SAVE HISTORY
 ========================================================= */
 
-function saveTranslationHistory(
-    item
-) {
+function saveTranslationHistory(item) {
 
     try {
 
@@ -2469,9 +2282,7 @@ function saveTranslationHistory(
         history.unshift(item);
 
 
-        /*
-           Keep only latest 10 translations
-        */
+        /* Keep latest 10 */
 
         history =
             history.slice(
@@ -2500,7 +2311,47 @@ function saveTranslationHistory(
 
 
 /* =========================================================
-   DISPLAY HISTORY
+   ADD TRANSLATION TO HISTORY
+========================================================= */
+
+function addCurrentTranslationToHistory() {
+
+    if (!translatedSRT) {
+        return;
+    }
+
+
+    const filename =
+        `${uploadedFileName}.Sinhala.SubLankaAI.srt`;
+
+
+    const historyItem = {
+
+        name:
+            uploadedFileName ||
+            "Subtitle",
+
+        filename:
+            filename,
+
+        content:
+            translatedSRT,
+
+        date:
+            new Date()
+                .toLocaleString()
+
+    };
+
+
+    saveTranslationHistory(
+        historyItem
+    );
+}
+
+
+/* =========================================================
+   DISPLAY TRANSLATION HISTORY
 ========================================================= */
 
 function displayTranslationHistory() {
@@ -2534,8 +2385,7 @@ function displayTranslationHistory() {
     }
 
 
-    historyList.innerHTML =
-        "";
+    historyList.innerHTML = "";
 
 
     history.forEach(
@@ -2564,6 +2414,7 @@ function displayTranslationHistory() {
 
                     </div>
 
+
                     <div class="history-meta">
 
                         🇬🇧 English
@@ -2586,7 +2437,6 @@ function displayTranslationHistory() {
                     <button
                         type="button"
                         class="history-download"
-                        data-index="${index}"
                     >
                         ↓ Download
                     </button>
@@ -2595,7 +2445,6 @@ function displayTranslationHistory() {
                     <button
                         type="button"
                         class="history-delete"
-                        data-index="${index}"
                     >
                         🗑 Delete
                     </button>
@@ -2659,9 +2508,7 @@ function displayTranslationHistory() {
    DOWNLOAD HISTORY ITEM
 ========================================================= */
 
-function downloadHistoryItem(
-    index
-) {
+function downloadHistoryItem(index) {
 
     const history =
         getTranslationHistory();
@@ -2687,9 +2534,7 @@ function downloadHistoryItem(
    DELETE HISTORY ITEM
 ========================================================= */
 
-function deleteHistoryItem(
-    index
-) {
+function deleteHistoryItem(index) {
 
     const history =
         getTranslationHistory();
@@ -2730,13 +2575,13 @@ if (clearHistoryBtn) {
             }
 
 
-            const confirmClear =
+            const confirmed =
                 confirm(
                     "Clear all translation history?"
                 );
 
 
-            if (!confirmClear) {
+            if (!confirmed) {
                 return;
             }
 
@@ -2754,47 +2599,16 @@ if (clearHistoryBtn) {
 
 
 /* =========================================================
-   ADD CURRENT TRANSLATION TO HISTORY
-========================================================= */
-
-function addCurrentTranslationToHistory() {
-
-    if (!translatedSRT) {
-        return;
-    }
-
-
-    const filename =
-        `${uploadedFileName}.Sinhala.SubLankaAI.srt`;
-
-
-    const historyItem = {
-
-        name:
-            uploadedFileName ||
-            "Subtitle",
-
-        filename:
-            filename,
-
-        content:
-            translatedSRT,
-
-        date:
-            new Date()
-                .toLocaleString()
-
-    };
-
-
-    saveTranslationHistory(
-        historyItem
-    );
-}
-
-
-/* =========================================================
-   LOAD HISTORY
+   LOAD HISTORY ON START
 ========================================================= */
 
 displayTranslationHistory();
+
+
+/* =========================================================
+   READY
+========================================================= */
+
+console.log(
+    "SubLanka AI loaded successfully."
+);
