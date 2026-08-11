@@ -2400,3 +2400,401 @@ function sleep(
 console.log(
     "SubLanka AI loaded successfully."
 );
+
+/* =========================================================
+   TRANSLATION HISTORY
+========================================================= */
+
+const historyList =
+    document.getElementById("historyList");
+
+const clearHistoryBtn =
+    document.getElementById("clearHistoryBtn");
+
+
+const HISTORY_KEY =
+    "sublanka_translation_history";
+
+
+/* =========================================================
+   GET HISTORY
+========================================================= */
+
+function getTranslationHistory() {
+
+    try {
+
+        const saved =
+            localStorage.getItem(
+                HISTORY_KEY
+            );
+
+        if (!saved) {
+            return [];
+        }
+
+        const history =
+            JSON.parse(saved);
+
+        return Array.isArray(history)
+            ? history
+            : [];
+
+    } catch (error) {
+
+        console.error(
+            "HISTORY READ ERROR:",
+            error
+        );
+
+        return [];
+    }
+}
+
+
+/* =========================================================
+   SAVE HISTORY
+========================================================= */
+
+function saveTranslationHistory(
+    item
+) {
+
+    try {
+
+        let history =
+            getTranslationHistory();
+
+
+        history.unshift(item);
+
+
+        /*
+           Keep only latest 10 translations
+        */
+
+        history =
+            history.slice(
+                0,
+                10
+            );
+
+
+        localStorage.setItem(
+            HISTORY_KEY,
+            JSON.stringify(history)
+        );
+
+
+        displayTranslationHistory();
+
+
+    } catch (error) {
+
+        console.error(
+            "HISTORY SAVE ERROR:",
+            error
+        );
+    }
+}
+
+
+/* =========================================================
+   DISPLAY HISTORY
+========================================================= */
+
+function displayTranslationHistory() {
+
+    if (!historyList) {
+        return;
+    }
+
+
+    const history =
+        getTranslationHistory();
+
+
+    if (!history.length) {
+
+        historyList.innerHTML = `
+
+            <div class="history-empty">
+
+                🕘
+
+                <br>
+
+                No translations yet.
+
+            </div>
+
+        `;
+
+        return;
+    }
+
+
+    historyList.innerHTML =
+        "";
+
+
+    history.forEach(
+        (item, index) => {
+
+            const div =
+                document.createElement(
+                    "div"
+                );
+
+
+            div.className =
+                "history-item";
+
+
+            div.innerHTML = `
+
+                <div class="history-info">
+
+                    <div class="history-title">
+
+                        🎬
+                        ${escapeHTML(
+                            item.name
+                        )}
+
+                    </div>
+
+                    <div class="history-meta">
+
+                        🇬🇧 English
+                        →
+                        🇱🇰 Sinhala
+
+                        •
+
+                        ${escapeHTML(
+                            item.date
+                        )}
+
+                    </div>
+
+                </div>
+
+
+                <div class="history-actions">
+
+                    <button
+                        type="button"
+                        class="history-download"
+                        data-index="${index}"
+                    >
+                        ↓ Download
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="history-delete"
+                        data-index="${index}"
+                    >
+                        🗑 Delete
+                    </button>
+
+                </div>
+
+            `;
+
+
+            const downloadButton =
+                div.querySelector(
+                    ".history-download"
+                );
+
+
+            const deleteButton =
+                div.querySelector(
+                    ".history-delete"
+                );
+
+
+            if (downloadButton) {
+
+                downloadButton.addEventListener(
+                    "click",
+                    () => {
+
+                        downloadHistoryItem(
+                            index
+                        );
+
+                    }
+                );
+            }
+
+
+            if (deleteButton) {
+
+                deleteButton.addEventListener(
+                    "click",
+                    () => {
+
+                        deleteHistoryItem(
+                            index
+                        );
+
+                    }
+                );
+            }
+
+
+            historyList.appendChild(
+                div
+            );
+        }
+    );
+}
+
+
+/* =========================================================
+   DOWNLOAD HISTORY ITEM
+========================================================= */
+
+function downloadHistoryItem(
+    index
+) {
+
+    const history =
+        getTranslationHistory();
+
+
+    const item =
+        history[index];
+
+
+    if (!item) {
+        return;
+    }
+
+
+    downloadTextFile(
+        item.content,
+        item.filename
+    );
+}
+
+
+/* =========================================================
+   DELETE HISTORY ITEM
+========================================================= */
+
+function deleteHistoryItem(
+    index
+) {
+
+    const history =
+        getTranslationHistory();
+
+
+    history.splice(
+        index,
+        1
+    );
+
+
+    localStorage.setItem(
+        HISTORY_KEY,
+        JSON.stringify(history)
+    );
+
+
+    displayTranslationHistory();
+}
+
+
+/* =========================================================
+   CLEAR ALL HISTORY
+========================================================= */
+
+if (clearHistoryBtn) {
+
+    clearHistoryBtn.addEventListener(
+        "click",
+        () => {
+
+            const history =
+                getTranslationHistory();
+
+
+            if (!history.length) {
+                return;
+            }
+
+
+            const confirmClear =
+                confirm(
+                    "Clear all translation history?"
+                );
+
+
+            if (!confirmClear) {
+                return;
+            }
+
+
+            localStorage.removeItem(
+                HISTORY_KEY
+            );
+
+
+            displayTranslationHistory();
+
+        }
+    );
+}
+
+
+/* =========================================================
+   ADD CURRENT TRANSLATION TO HISTORY
+========================================================= */
+
+function addCurrentTranslationToHistory() {
+
+    if (!translatedSRT) {
+        return;
+    }
+
+
+    const filename =
+        `${uploadedFileName}.Sinhala.SubLankaAI.srt`;
+
+
+    const historyItem = {
+
+        name:
+            uploadedFileName ||
+            "Subtitle",
+
+        filename:
+            filename,
+
+        content:
+            translatedSRT,
+
+        date:
+            new Date()
+                .toLocaleString()
+
+    };
+
+
+    saveTranslationHistory(
+        historyItem
+    );
+}
+
+
+/* =========================================================
+   LOAD HISTORY
+========================================================= */
+
+displayTranslationHistory();
