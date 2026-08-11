@@ -2548,3 +2548,156 @@ body {
         flex: 1;
     }
 }
+
+   /* =========================================================
+   DARK / LIGHT MODE
+========================================================= */
+
+:root {
+    --bg: #080d1b;
+    --card: #111a32;
+    --card-2: #17223d;
+    --text: #ffffff;
+    --muted: #a8b0c7;
+    --border: rgba(255, 255, 255, 0.12);
+    --input: #0b1224;
+}
+
+
+html[data-theme="light"] {
+
+    --bg: #f5f7fb;
+    --card: #ffffff;
+    --card-2: #eef2f8;
+    --text: #111827;
+    --muted: #5f6b7a;
+    --border: rgba(0, 0, 0, 0.12);
+    --input: #ffffff;
+}
+
+
+/* Main background */
+
+body {
+
+    background: var(--bg);
+
+    color: var(--text);
+
+    transition:
+        background-color 0.3s ease,
+        color 0.3s ease;
+}
+
+
+/* Cards / sections */
+
+.header,
+.search-section,
+.upload-section,
+.settings,
+.preview-section,
+.progress-container,
+.history-section,
+.search-result-card,
+.episode-selector,
+.subtitle-loaded {
+
+    color: var(--text);
+
+    transition:
+        background-color 0.3s ease,
+        border-color 0.3s ease,
+        color 0.3s ease;
+}
+
+
+/* Inputs */
+
+input,
+textarea,
+select {
+
+    background: var(--input);
+
+    color: var(--text);
+
+    border-color: var(--border);
+
+    transition:
+        background-color 0.3s ease,
+        color 0.3s ease,
+        border-color 0.3s ease;
+}
+
+
+/* Paragraphs */
+
+p {
+
+    color: var(--muted);
+}
+
+
+/* Theme button */
+
+.theme-toggle {
+
+    width: 46px;
+
+    height: 46px;
+
+    border: 1px solid var(--border);
+
+    border-radius: 50%;
+
+    background: var(--card);
+
+    color: var(--text);
+
+    font-size: 21px;
+
+    cursor: pointer;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    transition:
+        transform 0.2s ease,
+        background-color 0.3s ease,
+        border-color 0.3s ease;
+}
+
+
+.theme-toggle:hover {
+
+    transform: rotate(15deg) scale(1.08);
+
+}
+
+
+/* Light mode cards */
+
+html[data-theme="light"] .search-result-card,
+html[data-theme="light"] .upload-card,
+html[data-theme="light"] .preview-section,
+html[data-theme="light"] .settings,
+html[data-theme="light"] .history-section {
+
+    background: var(--card);
+
+    border-color: var(--border);
+}
+
+
+/* Smooth everything */
+
+* {
+
+    transition:
+        background-color 0.25s ease,
+        border-color 0.25s ease;
+}
