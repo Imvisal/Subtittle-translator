@@ -1,485 +1,692 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>English to Sinhala Subtitle Translator | SubLanka AI</title>
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
 
-    <meta name="description"
-          content="Search movie and TV subtitles, translate English SRT subtitles into Sinhala and download translated subtitles.">
+    <meta name="theme-color" content="#080b18">
 
-    <meta name="theme-color" content="#070914">
+    <title>SubLanka AI - English to Sinhala Subtitle Translator</title>
 
-    <link rel="icon" type="image/png" href="sublanka-logo.png">
     <link rel="stylesheet" href="style.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet">
+
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
 
 <body>
 
-<div class="ambient ambient-one"></div>
-<div class="ambient ambient-two"></div>
+    <!-- Background -->
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+    <div class="bg-glow bg-glow-3"></div>
 
-<main class="container">
+    <main class="app">
 
-    <!-- HEADER -->
-    <header class="header">
+        <!-- =========================================
+             HEADER
+        ========================================== -->
 
-        <div class="brand">
-            <div class="brand-logo">
-                <img src="sublanka-logo.png" alt="SubLanka AI">
-            </div>
+        <header class="top-header">
 
-            <div class="brand-name">
-                <strong>SubLanka</strong><span>AI</span>
-            </div>
-        </div>
+            <div class="brand">
 
-        <button
-            id="themeToggle"
-            class="theme-toggle"
-            type="button"
-            aria-label="Toggle theme"
-        >
-            ☀️
-        </button>
-
-
-        <!-- HERO -->
-        <div class="hero">
-
-            <div class="hero-badge">
-                ✨ AI Powered Subtitle Translation
-            </div>
-
-            <h1>
-                English to Sinhala
-                <span>Subtitle Translator</span>
-            </h1>
-
-            <p>
-                Translate English movie and TV subtitles into
-                natural Sinhala instantly.
-            </p>
-
-        </div>
-
-    </header>
-
-
-    <!-- SEARCH -->
-    <section class="search-section">
-
-        <div class="search-box">
-
-            <div class="search-input-wrap">
-
-                <span class="search-input-icon">⌕</span>
-
-                <input
-                    id="searchInput"
-                    type="text"
-                    placeholder="Search movies or TV series..."
-                    autocomplete="off"
-                >
-
-            </div>
-
-            <button id="searchBtn" type="button">
-                <span>🔍</span>
-                <span>Search</span>
-            </button>
-
-        </div>
-
-
-        <!-- CATEGORY CHIPS -->
-        <div class="category-chips">
-
-            <button type="button" class="category-chip active">
-                🔥 Trending
-            </button>
-
-            <button type="button" class="category-chip">
-                🎬 Movies
-            </button>
-
-            <button type="button" class="category-chip">
-                📺 TV Series
-            </button>
-
-            <button type="button" class="category-chip">
-                ✨ Sinhala
-            </button>
-
-        </div>
-
-
-        <div
-            id="searchStatus"
-            class="search-status"
-            aria-live="polite"
-        ></div>
-
-
-        <div
-            id="searchResults"
-            class="search-results"
-        ></div>
-
-    </section>
-
-
-    <!-- MOVIE DETAILS -->
-    <section
-        id="movieDetails"
-        class="movie-details"
-        style="display:none"
-    >
-
-        <div class="movie-details-card">
-
-            <div class="movie-poster-wrap">
-                <img id="moviePoster" src="" alt="Movie Poster">
-            </div>
-
-            <div class="movie-info">
-
-                <h2 id="movieTitle">Movie Title</h2>
-
-                <div class="movie-meta">
-                    <span id="movieYear">📅 2026</span>
-                    <span id="movieRating">⭐ 0.0/10</span>
-                    <span id="movieRuntime">⏱ 120 min</span>
+                <div class="brand-logo">
+                    <img src="logo.png" alt="SubLanka AI">
                 </div>
 
-                <div id="movieGenre" class="movie-genre">
-                    Action • Drama
+                <div class="brand-text">
+                    <div class="brand-title">
+                        SubLanka <span>AI</span>
+                    </div>
+
+                    <div class="brand-subtitle">
+                        Subtitle Translator
+                    </div>
                 </div>
 
-                <p id="moviePlot" class="movie-plot">
-                    Movie description...
-                </p>
+            </div>
 
-                <div class="movie-extra">
-                    <span id="movieDirector">🎬 Director</span>
-                    <span id="movieActors">👤 Actors</span>
-                </div>
 
-                <button
-                    id="findMovieSubtitles"
-                    class="find-subtitles-btn"
-                    type="button"
-                >
-                    🔍 Find English Subtitles
+            <div class="header-actions">
+
+                <button class="theme-toggle" id="themeToggle"
+                        aria-label="Toggle theme">
+
+                    <span class="sun">
+                        ☀️
+                    </span>
+
+                    <span class="moon">
+                        🌙
+                    </span>
+
+                </button>
+
+                <button class="settings-button"
+                        aria-label="Settings">
+
+                    <i class="fa-solid fa-gear"></i>
+
                 </button>
 
             </div>
 
-        </div>
-
-    </section>
+        </header>
 
 
-    <!-- FEATURE CARDS -->
-    <section class="quick-actions">
+        <!-- =========================================
+             HERO
+        ========================================== -->
 
-        <div class="action-card blue-card">
+        <section class="hero">
 
-            <div class="action-icon blue">
-                🎬
+            <!-- Movie poster decoration -->
+
+            <div class="poster-collage">
+
+                <div class="poster poster-one">
+                    <div class="poster-label">
+                        THE<br>LAST<br>OF US
+                    </div>
+                </div>
+
+                <div class="poster poster-two">
+                    <div class="spider-symbol">🕷️</div>
+                    <div class="poster-label">
+                        SPIDER-MAN
+                    </div>
+                </div>
+
+                <div class="poster poster-three">
+                    <div class="poster-label">
+                        JOHN<br>WICK
+                    </div>
+                </div>
+
             </div>
 
-            <div>
-                <h3>Find Subtitles</h3>
+
+            <div class="hero-content">
+
+                <div class="hero-star">
+                    ✦
+                </div>
+
+                <h1>
+                    English to
+                    <span>Sinhala</span>
+                    <br>
+                    Subtitle Translator
+                </h1>
+
                 <p>
-                    Search English subtitles for your
-                    favourite movies and TV series.
+                    Translate English movie and TV subtitles
+                    <br class="desktop-only">
+                    into natural Sinhala with AI.
                 </p>
+
             </div>
 
-            <span class="action-arrow">→</span>
+
+            <!-- Purple wave -->
+            <div class="hero-wave">
+                <div class="wave-glow"></div>
+            </div>
+
+        </section>
+
+
+        <!-- =========================================
+             SEARCH
+        ========================================== -->
+
+        <section class="search-section">
+
+            <div class="search-card">
+
+                <div class="search-row">
+
+                    <div class="search-input-wrap">
+
+                        <i class="fa-solid fa-magnifying-glass"></i>
+
+                        <input
+                            type="text"
+                            id="searchInput"
+                            placeholder="Enter movie or TV series name..."
+                            autocomplete="off"
+                        >
+
+                    </div>
+
+
+                    <button id="searchBtn"
+                            class="search-button">
+
+                        <i class="fa-solid fa-magnifying-glass"></i>
+
+                        <span>Search</span>
+
+                    </button>
+
+                </div>
+
+
+                <div class="category-chips">
+
+                    <button class="category-chip active">
+                        🔥 Trending
+                    </button>
+
+                    <button class="category-chip">
+                        🎬 Movies
+                    </button>
+
+                    <button class="category-chip">
+                        📺 TV Series
+                    </button>
+
+                    <button class="category-chip">
+                        🎮 Anime
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <div id="searchStatus"
+                 class="search-status">
+            </div>
+
+            <div id="searchResults"
+                 class="search-results">
+            </div>
+
+        </section>
+
+
+        <!-- =========================================
+             MOVIE DETAILS
+        ========================================== -->
+
+        <section id="movieDetails"
+                 class="movie-details"
+                 style="display:none;">
+
+            <div class="movie-details-card">
+
+                <div class="movie-poster-wrap">
+
+                    <img id="moviePoster"
+                         src=""
+                         alt="Movie poster">
+
+                </div>
+
+                <div class="movie-info">
+
+                    <h2 id="movieTitle"></h2>
+
+                    <div class="movie-meta">
+
+                        <span id="movieYear"></span>
+                        <span id="movieRating"></span>
+                        <span id="movieRuntime"></span>
+
+                    </div>
+
+                    <div id="movieGenre"
+                         class="movie-genre">
+                    </div>
+
+                    <p id="moviePlot"
+                       class="movie-plot">
+                    </p>
+
+                    <div class="movie-extra">
+
+                        <span id="movieDirector"></span>
+                        <span id="movieActors"></span>
+
+                    </div>
+
+                    <button id="findMovieSubtitles"
+                            class="find-subtitles-btn">
+
+                        <i class="fa-solid fa-closed-captioning"></i>
+
+                        Find Subtitles
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================================
+             QUICK ACTIONS
+        ========================================== -->
+
+        <section class="quick-actions">
+
+            <div class="action-card subtitles-card">
+
+                <div class="action-icon purple-icon">
+
+                    <i class="fa-solid fa-clapperboard"></i>
+
+                </div>
+
+                <div class="action-content">
+
+                    <h3>Find Subtitles</h3>
+
+                    <p>
+                        Search for English subtitles
+                        for movies and TV series.
+                    </p>
+
+                </div>
+
+                <div class="action-arrow">
+                    →
+                </div>
+
+            </div>
+
+
+            <div class="action-card translate-card">
+
+                <div class="action-icon blue-icon">
+
+                    <i class="fa-solid fa-language"></i>
+
+                </div>
+
+                <div class="action-content">
+
+                    <h3>Translate with AI</h3>
+
+                    <p>
+                        Get natural and accurate
+                        Sinhala translations.
+                    </p>
+
+                </div>
+
+                <div class="action-arrow">
+                    →
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================================
+             UPLOAD
+        ========================================== -->
+
+        <section class="upload-section">
+
+            <div class="upload-card">
+
+                <div class="upload-wave wave-left"></div>
+                <div class="upload-wave wave-right"></div>
+
+                <div class="upload-content">
+
+                    <div class="upload-icon">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                    </div>
+
+                    <h2>
+                        Or Upload Your Subtitle File
+                    </h2>
+
+                    <p>
+                        Upload an SRT file to translate it to Sinhala.
+                    </p>
+
+
+                    <label for="subtitleFile"
+                           class="choose-file-btn">
+
+                        <i class="fa-regular fa-file-lines"></i>
+
+                        Choose SRT File
+
+                    </label>
+
+                    <input
+                        type="file"
+                        id="subtitleFile"
+                        accept=".srt"
+                    >
+
+                    <div id="fileName"
+                         class="file-name">
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================================
+             SETTINGS
+        ========================================== -->
+
+        <section class="settings-section">
+
+            <div class="settings-box">
+
+                <div class="settings-info">
+
+                    <div class="settings-icon">
+                        <i class="fa-solid fa-language"></i>
+                    </div>
+
+                    <div>
+                        <strong>Translation Language</strong>
+
+                        <small>
+                            Choose your subtitle language
+                        </small>
+                    </div>
+
+                </div>
+
+
+                <select id="language">
+
+                    <option value="si">
+                        Sinhala
+                    </option>
+
+                    <option value="en">
+                        English
+                    </option>
+
+                </select>
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================================
+             TRANSLATE BUTTON
+        ========================================== -->
+
+        <button id="translateBtn"
+                class="translate-btn"
+                disabled>
+
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+
+            Translate Subtitle with AI
+
+        </button>
+
+
+        <!-- =========================================
+             PROGRESS
+        ========================================== -->
+
+        <div id="progressContainer"
+             class="progress-container">
+
+            <div class="progress-info">
+
+                <span id="progressText">
+                    Translating...
+                </span>
+
+                <span id="progressPercent">
+                    0%
+                </span>
+
+            </div>
+
+            <div class="progress-bar">
+
+                <div id="progressFill"
+                     class="progress-fill">
+                </div>
+
+            </div>
 
         </div>
 
 
-        <div class="action-card purple-card">
+        <!-- =========================================
+             PREVIEW
+        ========================================== -->
 
-            <div class="action-icon purple">
-                ✨
+        <section class="preview-section">
+
+            <div class="section-heading">
+
+                <div>
+                    <h2>
+                        Subtitle Preview
+                    </h2>
+
+                    <p>
+                        Preview and review your translated subtitles
+                    </p>
+                </div>
+
+                <span class="format-badge">
+                    .SRT
+                </span>
+
             </div>
 
-            <div>
-                <h3>Translate with AI</h3>
-                <p>
-                    Translate English subtitles into
-                    natural Sinhala using AI.
-                </p>
+
+            <textarea id="preview"
+                      placeholder="Your subtitle preview will appear here..."
+                      spellcheck="false">
+            </textarea>
+
+
+            <button id="downloadBtn"
+                    class="download-btn"
+                    disabled>
+
+                <i class="fa-solid fa-download"></i>
+
+                Download Sinhala Subtitle
+
+            </button>
+
+        </section>
+
+
+        <!-- =========================================
+             HISTORY
+        ========================================== -->
+
+        <section id="historySection"
+                 class="history-section">
+
+            <div class="history-header">
+
+                <div>
+                    <h2>
+                        Recent Searches
+                    </h2>
+
+                    <p>
+                        Your recently translated subtitles
+                    </p>
+                </div>
+
+                <button id="clearHistoryBtn"
+                        class="clear-history-btn">
+
+                    Clear All
+
+                </button>
+
             </div>
 
-            <span class="action-arrow">→</span>
 
-        </div>
-
-    </section>
-
-
-    <!-- AD -->
-    <div class="ad-container"></div>
-
-
-    <!-- UPLOAD -->
-    <section class="upload-section">
-
-        <div class="upload-card">
-
-            <div class="upload-glow"></div>
-
-            <div class="upload-icon">
-                ↑
+            <div id="historyList"
+                 class="history-list">
             </div>
+
+        </section>
+
+
+        <!-- =========================================
+             SEARCH / SUBTITLE DYNAMIC AREA
+        ========================================== -->
+
+        <div id="subtitleDynamicArea"></div>
+
+
+        <!-- =========================================
+             SEO
+        ========================================== -->
+
+        <section class="seo-info">
 
             <h2>
-                Or Upload Your Subtitle
+                Sinhala Subtitle Translator
             </h2>
 
             <p>
-                Upload an English SRT file and translate
-                it into Sinhala.
+                SubLanka AI helps you translate English
+                movie and TV subtitles into natural Sinhala
+                using AI-powered translation.
             </p>
 
-            <label
-                for="subtitleFile"
-                class="file-label"
-            >
-                📁 Choose SRT File
-            </label>
 
-            <input
-                type="file"
-                id="subtitleFile"
-                accept=".srt"
-            >
+            <div class="seo-features">
 
-            <div
-                id="fileName"
-                class="file-name"
-            >
-                No file selected
+                <div>
+                    <strong>🎬 Movies</strong>
+                    <p>
+                        Translate subtitles from your
+                        favourite movies.
+                    </p>
+                </div>
+
+                <div>
+                    <strong>📺 TV Series</strong>
+                    <p>
+                        Translate episodes quickly
+                        and easily.
+                    </p>
+                </div>
+
+                <div>
+                    <strong>🤖 AI Translation</strong>
+                    <p>
+                        Natural Sinhala subtitle
+                        translations.
+                    </p>
+                </div>
+
+                <div>
+                    <strong>⚡ Fast</strong>
+                    <p>
+                        Simple and fast subtitle
+                        processing.
+                    </p>
+                </div>
+
             </div>
 
-        </div>
-
-    </section>
+        </section>
 
 
-    <!-- LANGUAGE -->
-    <section class="settings">
+        <!-- =========================================
+             FOOTER
+        ========================================== -->
 
-        <div class="settings-title">
-            <span>🌐</span>
+        <footer class="site-footer">
 
-            <div>
-                <strong>Translation Language</strong>
-                <small>Select output language</small>
-            </div>
-        </div>
+            <div class="footer-brand">
 
-        <select id="language">
-            <option value="si">🇱🇰 Sinhala</option>
-            <option value="ta">🇱🇰 Tamil</option>
-        </select>
+                <div class="footer-logo">
+                    <img src="logo.png"
+                         alt="SubLanka AI">
+                </div>
 
-    </section>
+                <div>
+                    <strong>
+                        SubLanka AI
+                    </strong>
 
+                    <span>
+                        AI Subtitle Translator
+                    </span>
+                </div>
 
-    <!-- TRANSLATE -->
-    <button
-        id="translateBtn"
-        class="translate-btn"
-        type="button"
-    >
-        <span class="translate-icon">✨</span>
-        <span>Translate Subtitle</span>
-    </button>
-
-
-    <!-- PROGRESS -->
-    <section
-        id="progressContainer"
-        class="progress-container"
-    >
-
-        <div class="progress-info">
-
-            <span id="progressText">
-                Ready
-            </span>
-
-            <span id="progressPercent">
-                0%
-            </span>
-
-        </div>
-
-        <div class="progress-bar">
-            <div
-                id="progressFill"
-                class="progress-fill"
-            ></div>
-        </div>
-
-    </section>
-
-
-    <!-- PREVIEW -->
-    <section class="preview-section">
-
-        <div class="preview-header">
-
-            <div>
-                <h2>Subtitle Preview</h2>
-                <p>
-                    Your subtitle content will appear here.
-                </p>
             </div>
 
-            <span class="format-badge">
-                SRT
-            </span>
 
-        </div>
+            <div class="footer-links">
 
-        <textarea
-            id="preview"
-            placeholder="Your subtitle content will appear here..."
-            spellcheck="false"
-        ></textarea>
+                <a href="#">
+                    Home
+                </a>
 
-    </section>
+                <span>•</span>
 
+                <a href="#">
+                    About
+                </a>
 
-    <!-- DOWNLOAD -->
-    <button
-        id="downloadBtn"
-        class="download-btn"
-        type="button"
-    >
-        ↓ Download Sinhala Subtitle
-    </button>
+                <span>•</span>
 
+                <a href="#">
+                    Privacy
+                </a>
 
-    <!-- HISTORY -->
-    <section
-        class="history-section"
-        id="historySection"
-    >
+                <span>•</span>
 
-        <div class="history-header">
+                <a href="#">
+                    Contact
+                </a>
 
-            <div>
-                <h2>🕘 Recent Translations</h2>
-                <p>Your recently translated subtitles</p>
             </div>
 
-            <button
-                type="button"
-                id="clearHistoryBtn"
-                class="clear-history-btn"
-            >
-                Clear
-            </button>
 
-        </div>
+            <p class="footer-copy">
+                © 2026 SubLanka AI. All rights reserved.
+            </p>
 
-        <div
-            id="historyList"
-            class="history-list"
-        ></div>
+        </footer>
 
-    </section>
+    </main>
 
 
-    <!-- SEO -->
-    <section class="seo-info">
+    <!-- IMPORTANT:
+         Keep your existing script.js unchanged
+    -->
 
-        <h2>
-            Sinhala Subtitles Made Simple
-        </h2>
-
-        <p>
-            Search English subtitles or upload your own
-            SRT file and translate it into Sinhala with
-            SubLanka AI.
-        </p>
-
-        <div class="seo-features">
-
-            <div>
-                <strong>🎬 Movies</strong>
-                <p>Find movie subtitles.</p>
-            </div>
-
-            <div>
-                <strong>📺 TV Series</strong>
-                <p>Find TV episode subtitles.</p>
-            </div>
-
-            <div>
-                <strong>📁 SRT Upload</strong>
-                <p>Upload your subtitle files.</p>
-            </div>
-
-            <div>
-                <strong>✨ AI Translation</strong>
-                <p>Translate English into Sinhala.</p>
-            </div>
-
-        </div>
-
-    </section>
-
-
-    <!-- FOOTER -->
-    <footer class="site-footer">
-
-        <div class="footer-main">
-
-            <div class="footer-logo">
-                <img src="sublanka-logo.png" alt="SubLanka AI">
-            </div>
-
-            <div class="footer-info">
-                <strong>SubLanka AI</strong>
-                <span>English → Sinhala</span>
-            </div>
-
-        </div>
-
-        <div class="footer-links">
-
-            <a href="privacy.html">Privacy</a>
-            <span>•</span>
-
-            <a href="terms.html">Terms</a>
-            <span>•</span>
-
-            <a href="about.html">About</a>
-            <span>•</span>
-
-            <a href="contact.html">Contact</a>
-
-        </div>
-
-        <div class="footer-copy">
-            © 2026 SubLanka AI • English → Sinhala
-        </div>
-
-    </footer>
-
-</main>
-
-<script src="script.js"></script>
+    <script src="script.js"></script>
 
 </body>
+
 </html>
