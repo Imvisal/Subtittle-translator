@@ -3546,3 +3546,19 @@ textarea:focus-visible {
     }
 
 }
+
+
+/* Remove ugly browser focus rectangle */
+.search-input-wrap input:focus,
+.search-input-wrap input:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Keep the search container clean when typing */
+.search-input-wrap:focus-within {
+    border-color: rgba(110, 91, 255, 0.45);
+    box-shadow:
+        0 0 0 2px rgba(110, 91, 255, 0.08),
+        0 0 25px rgba(100, 70, 255, 0.08);
+}
