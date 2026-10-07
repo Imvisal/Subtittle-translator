@@ -2620,3 +2620,201 @@ textarea:focus-visible {
         transition-duration: .01ms !important;
     }
 }
+
+/* =========================================================
+   FINAL OVERRIDE FIX
+========================================================= */
+
+.top-header {
+    position: relative !important;
+    z-index: 100 !important;
+}
+
+.hero {
+    position: relative !important;
+    display: flex !important;
+    min-height: 475px !important;
+    height: 475px !important;
+    align-items: center !important;
+    padding: 40px 15px 0 !important;
+    overflow: visible !important;
+}
+
+.hero-content {
+    position: relative !important;
+    z-index: 20 !important;
+    width: 62% !important;
+    padding-top: 40px !important;
+    transform: none !important;
+}
+
+.hero h1 {
+    position: relative !important;
+    z-index: 20 !important;
+    margin: 0 !important;
+    font-size: clamp(43px, 5.4vw, 72px) !important;
+    line-height: 1.12 !important;
+}
+
+.hero p {
+    position: relative !important;
+    z-index: 20 !important;
+    margin-top: 20px !important;
+}
+
+.hero-star {
+    position: relative !important;
+    z-index: 20 !important;
+}
+
+.poster-collage {
+    position: absolute !important;
+    z-index: 1 !important;
+    pointer-events: none !important;
+}
+
+.hero-wave {
+    position: absolute !important;
+    z-index: 3 !important;
+}
+
+.search-section {
+    position: relative !important;
+    z-index: 30 !important;
+    margin-top: 0 !important;
+}
+
+.search-card {
+    position: relative !important;
+    z-index: 30 !important;
+}
+
+.search-row {
+    display: flex !important;
+    width: 100% !important;
+}
+
+.search-input-wrap {
+    flex: 1 !important;
+    display: flex !important;
+}
+
+.search-button {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    min-width: 165px !important;
+    height: 76px !important;
+
+    border: none !important;
+    outline: none !important;
+
+    border-radius: 24px !important;
+
+    background:
+        linear-gradient(
+            110deg,
+            #6557ff,
+            #9e4dff,
+            #d34fff
+        ) !important;
+
+    color: #fff !important;
+
+    font-family: "Poppins", sans-serif !important;
+    font-size: 17px !important;
+    font-weight: 700 !important;
+
+    cursor: pointer !important;
+}
+
+.quick-actions {
+    position: relative !important;
+    z-index: 20 !important;
+}
+
+
+/* prevent decorative poster text from becoming huge */
+.poster-label {
+    font-size: 12px !important;
+    line-height: 1.1 !important;
+}
+
+.spider-symbol {
+    font-size: 25px !important;
+}
+
+
+/* =========================================================
+   MOBILE FIX
+========================================================= */
+
+@media (max-width: 700px) {
+
+    .hero {
+        min-height: 375px !important;
+        height: 375px !important;
+        padding-top: 30px !important;
+    }
+
+    .hero-content {
+        width: 88% !important;
+        padding-top: 80px !important;
+    }
+
+    .hero h1 {
+        font-size: 43px !important;
+        line-height: 1.13 !important;
+    }
+
+    .hero p {
+        font-size: 14px !important;
+    }
+
+    .search-row {
+        display: flex !important;
+        flex-direction: row !important;
+    }
+
+    .search-input-wrap {
+        width: auto !important;
+        flex: 1 !important;
+    }
+
+    .search-button {
+        width: auto !important;
+        min-width: 105px !important;
+        height: 62px !important;
+        border-radius: 20px !important;
+        font-size: 13px !important;
+    }
+}
+
+@media (max-width: 430px) {
+
+    .hero {
+        min-height: 365px !important;
+        height: 365px !important;
+    }
+
+    .hero-content {
+        padding-top: 85px !important;
+    }
+
+    .hero h1 {
+        font-size: 36px !important;
+    }
+
+    .search-row {
+        flex-direction: column !important;
+    }
+
+    .search-input-wrap {
+        width: 100% !important;
+    }
+
+    .search-button {
+        width: 100% !important;
+    }
+}
