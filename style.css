@@ -3576,3 +3576,922 @@ textarea:focus-visible {
 .movie-info {
     width: 100%;
 }
+
+/* =========================================================
+   SUBLANKA AI - FINAL CINEMATIC MOBILE LAYOUT
+========================================================= */
+
+
+/* ---------------------------------------------------------
+   SEARCH FOCUS FIX
+--------------------------------------------------------- */
+
+.search-input-wrap input,
+.search-input-wrap input:focus,
+.search-input-wrap input:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.search-input-wrap:focus-within {
+    border-color: rgba(117, 91, 255, .45);
+    box-shadow:
+        0 0 0 2px rgba(117, 91, 255, .07),
+        0 0 25px rgba(117, 91, 255, .08);
+}
+
+
+/* ---------------------------------------------------------
+   REMOVE MOVIE DETAILS / POSTER AREA
+--------------------------------------------------------- */
+
+.movie-details {
+    display: none !important;
+}
+
+.movie-poster-wrap {
+    display: none !important;
+}
+
+
+/* =========================================================
+   DESKTOP HERO
+========================================================= */
+
+.hero {
+    position: relative;
+
+    width: 100%;
+
+    height: 520px;
+
+    margin-top: 0;
+
+    overflow: hidden;
+
+    border-radius: 0 0 30px 30px;
+}
+
+
+/* Full hero image */
+
+.hero-banner {
+    position: absolute;
+
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+
+    z-index: 1;
+
+    overflow: hidden;
+}
+
+.hero-banner img {
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    object-fit: cover;
+
+    object-position: center;
+
+    transform: scale(1.02);
+
+    opacity: .90;
+
+    filter:
+        saturate(1.08)
+        brightness(.72);
+}
+
+
+/* Cinematic gradient */
+
+.hero-overlay {
+    position: absolute;
+
+    inset: 0;
+
+    z-index: 2;
+
+    pointer-events: none;
+
+    background:
+        linear-gradient(
+            90deg,
+            #060814 0%,
+            rgba(6, 8, 20, .94) 18%,
+            rgba(6, 8, 20, .72) 40%,
+            rgba(6, 8, 20, .25) 72%,
+            rgba(6, 8, 20, .08) 100%
+        );
+}
+
+
+/* Bottom fade */
+
+.hero-overlay::after {
+    content: "";
+
+    position: absolute;
+
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    height: 180px;
+
+    background:
+        linear-gradient(
+            to top,
+            #060814 0%,
+            rgba(6, 8, 20, .75) 35%,
+            transparent 100%
+        );
+}
+
+
+/* Hero content */
+
+.hero-content {
+    position: relative;
+
+    z-index: 5;
+
+    width: 62%;
+
+    padding-top: 125px;
+}
+
+.hero-star {
+    margin-bottom: 15px;
+
+    color: #55d8ff;
+
+    font-size: 27px;
+
+    text-shadow:
+        0 0 20px rgba(68, 209, 255, .8);
+}
+
+.hero h1 {
+    max-width: 700px;
+
+    color: #fff;
+
+    font-size:
+        clamp(42px, 5vw, 68px);
+
+    line-height: 1.1;
+
+    letter-spacing: -2.5px;
+
+    font-weight: 700;
+}
+
+.hero h1 span {
+    background:
+        linear-gradient(
+            90deg,
+            #855eff,
+            #b84dff,
+            #df57ff
+        );
+
+    -webkit-background-clip: text;
+
+    background-clip: text;
+
+    color: transparent;
+}
+
+.hero p {
+    max-width: 570px;
+
+    margin-top: 20px;
+
+    color: #aeb7d2;
+
+    font-size: 16px;
+
+    line-height: 1.65;
+}
+
+
+/* =========================================================
+   QUICK ACTION CARDS
+========================================================= */
+
+.quick-actions {
+    display: grid;
+
+    grid-template-columns:
+        1fr 1fr;
+
+    gap: 22px;
+
+    margin-top: 25px;
+}
+
+.action-card {
+    min-height: 220px;
+
+    padding: 25px;
+
+    border-radius: 27px;
+}
+
+
+/* =========================================================
+   UPLOAD SECTION
+========================================================= */
+
+.upload-section {
+    margin-top: 25px;
+}
+
+.upload-card {
+    min-height: 220px;
+
+    border-radius: 27px;
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 700px) {
+
+    /* App */
+
+    .app {
+        width: 100%;
+
+        padding:
+            0 10px 45px;
+    }
+
+
+    /* -----------------------------------------------------
+       HEADER
+    ----------------------------------------------------- */
+
+    .top-header {
+        min-height: 82px;
+
+        padding:
+            12px 8px;
+    }
+
+    .brand-logo {
+        width: 58px;
+        height: 58px;
+
+        flex-basis: 58px;
+
+        border-radius: 17px;
+    }
+
+    .brand-title {
+        font-size: 21px;
+
+        letter-spacing: -.6px;
+    }
+
+    .brand-subtitle {
+        margin-top: 3px;
+
+        font-size: 10px;
+    }
+
+    .theme-toggle {
+        width: 55px;
+        height: 43px;
+    }
+
+    .settings-button {
+        width: 43px;
+        height: 43px;
+    }
+
+
+    /* =====================================================
+       FULL WIDTH HERO
+    ===================================================== */
+
+    .hero {
+
+        /*
+         * app එකේ 10px padding එකෙන්
+         * hero එක පිටතට අරගෙන full screen කරනවා
+         */
+
+        width: calc(100% + 20px);
+
+        margin-left: -10px;
+
+        height: 415px;
+
+        min-height: 415px;
+
+        border-radius: 0 0 28px 28px;
+    }
+
+
+    /* Full-screen banner */
+
+    .hero-banner {
+        inset: 0;
+
+        width: 100%;
+        height: 100%;
+    }
+
+    .hero-banner img {
+
+        width: 100%;
+        height: 100%;
+
+        object-fit: cover;
+
+        /*
+         * image එකේ දෙපැත්තේ
+         * හිස් තැන් නොපෙනෙන්න
+         */
+
+        object-position: center center;
+
+        transform: scale(1.08);
+
+        opacity: .78;
+
+        filter:
+            saturate(1.12)
+            brightness(.66);
+    }
+
+
+    /* Dark cinematic overlay */
+
+    .hero-overlay {
+
+        background:
+            linear-gradient(
+                90deg,
+                #060814 0%,
+                rgba(6, 8, 20, .94) 18%,
+                rgba(6, 8, 20, .72) 45%,
+                rgba(6, 8, 20, .28) 75%,
+                rgba(6, 8, 20, .08) 100%
+            );
+    }
+
+
+    .hero-overlay::after {
+
+        height: 145px;
+
+        background:
+            linear-gradient(
+                to top,
+                #060814,
+                rgba(6, 8, 20, .65),
+                transparent
+            );
+    }
+
+
+    /* -----------------------------------------------------
+       HERO TEXT
+    ----------------------------------------------------- */
+
+    .hero-content {
+
+        width: 100%;
+
+        padding:
+            104px 20px 0;
+    }
+
+    .hero-star {
+
+        margin-bottom: 10px;
+
+        font-size: 22px;
+    }
+
+    .hero h1 {
+
+        max-width: 370px;
+
+        font-size: 31px;
+
+        line-height: 1.12;
+
+        letter-spacing: -1.4px;
+    }
+
+    .hero p {
+
+        max-width: 350px;
+
+        margin-top: 14px;
+
+        font-size: 11px;
+
+        line-height: 1.65;
+    }
+
+
+    /* =====================================================
+       SEARCH
+    ===================================================== */
+
+    .search-section {
+
+        margin-top: -2px;
+    }
+
+    .search-card {
+
+        padding: 12px;
+
+        border-radius: 24px;
+    }
+
+    .search-row {
+
+        display: flex;
+
+        flex-direction: row;
+
+        gap: 8px;
+    }
+
+    .search-input-wrap {
+
+        flex: 1;
+
+        min-width: 0;
+
+        height: 61px;
+
+        padding:
+            0 13px;
+
+        border-radius: 20px;
+
+        gap: 9px;
+    }
+
+    .search-input-wrap i {
+
+        flex:
+            0 0 22px;
+
+        font-size: 19px;
+    }
+
+    .search-input-wrap input {
+
+        min-width: 0;
+
+        font-size: 11px;
+    }
+
+    .search-button {
+
+        flex:
+            0 0 96px;
+
+        width: 96px;
+
+        min-width: 96px;
+
+        height: 61px;
+
+        border-radius: 20px;
+
+        font-size: 11px;
+    }
+
+
+    /* Chips */
+
+    .category-chips {
+
+        gap: 7px;
+
+        margin-top: 11px;
+
+        overflow-x: auto;
+
+        scrollbar-width: none;
+    }
+
+    .category-chips::-webkit-scrollbar {
+        display: none;
+    }
+
+    .category-chip {
+
+        flex: 0 0 auto;
+
+        height: 41px;
+
+        padding:
+            0 13px;
+
+        font-size: 10px;
+    }
+
+
+    /* =====================================================
+       QUICK CARDS
+    ===================================================== */
+
+    .quick-actions {
+
+        grid-template-columns:
+            1fr 1fr;
+
+        gap: 11px;
+
+        margin-top: 22px;
+    }
+
+    .action-card {
+
+        min-height: 185px;
+
+        padding: 16px;
+
+        border-radius: 22px;
+    }
+
+    .action-icon {
+
+        width: 49px;
+        height: 49px;
+
+        margin-bottom: 14px;
+
+        border-radius: 15px;
+
+        font-size: 20px;
+    }
+
+    .action-content h3 {
+
+        font-size: 14px;
+    }
+
+    .action-content p {
+
+        max-width: 135px;
+
+        margin-top: 7px;
+
+        font-size: 8px;
+
+        line-height: 1.55;
+    }
+
+    .action-arrow {
+
+        width: 37px;
+        height: 37px;
+
+        right: 10px;
+        bottom: 10px;
+
+        font-size: 16px;
+    }
+
+
+    /* =====================================================
+       UPLOAD
+    ===================================================== */
+
+    .upload-section {
+
+        margin-top: 22px;
+    }
+
+    .upload-card {
+
+        min-height: 205px;
+
+        padding:
+            18px 12px;
+
+        border-radius: 23px;
+    }
+
+    .upload-icon {
+
+        margin-bottom: 8px;
+
+        font-size: 37px;
+    }
+
+    .upload-content h2 {
+
+        font-size: 16px;
+    }
+
+    .upload-content p {
+
+        margin-top: 4px;
+
+        font-size: 9px;
+    }
+
+    .choose-file-btn {
+
+        min-width: 245px;
+
+        height: 51px;
+
+        margin-top: 14px;
+
+        font-size: 11px;
+    }
+
+
+    /* =====================================================
+       TRANSLATION SETTINGS
+    ===================================================== */
+
+    .settings-section {
+
+        margin-top: 20px;
+    }
+
+    .settings-box {
+
+        padding: 16px;
+
+        border-radius: 21px;
+    }
+
+    .settings-box select {
+
+        width: 100%;
+
+        height: 45px;
+    }
+
+    .translate-btn {
+
+        height: 55px;
+
+        margin-top: 15px;
+    }
+
+}
+
+
+/* =========================================================
+   SMALL MOBILE
+========================================================= */
+
+@media (max-width: 430px) {
+
+    .top-header {
+
+        min-height: 76px;
+
+        padding:
+            9px 7px;
+    }
+
+    .brand-logo {
+
+        width: 54px;
+        height: 54px;
+
+        flex-basis: 54px;
+    }
+
+    .brand-title {
+
+        font-size: 19px;
+    }
+
+    .brand-subtitle {
+
+        font-size: 9px;
+    }
+
+    .theme-toggle {
+
+        width: 49px;
+        height: 40px;
+    }
+
+    .settings-button {
+
+        width: 40px;
+        height: 40px;
+    }
+
+
+    /* HERO */
+
+    .hero {
+
+        height: 390px;
+
+        min-height: 390px;
+    }
+
+    .hero-banner img {
+
+        transform: scale(1.10);
+
+        object-position: 58% center;
+
+        opacity: .76;
+    }
+
+    .hero-content {
+
+        padding:
+            91px 19px 0;
+    }
+
+    .hero-star {
+
+        font-size: 21px;
+
+        margin-bottom: 9px;
+    }
+
+    .hero h1 {
+
+        font-size: 28px;
+
+        line-height: 1.12;
+    }
+
+    .hero p {
+
+        max-width: 310px;
+
+        margin-top: 13px;
+
+        font-size: 10px;
+    }
+
+
+    /* SEARCH */
+
+    .search-card {
+
+        padding: 10px;
+    }
+
+    .search-input-wrap {
+
+        height: 57px;
+
+        padding:
+            0 11px;
+    }
+
+    .search-input-wrap input {
+
+        font-size: 10px;
+    }
+
+    .search-button {
+
+        flex:
+            0 0 88px;
+
+        width: 88px;
+
+        min-width: 88px;
+
+        height: 57px;
+
+        font-size: 10px;
+    }
+
+
+    /* QUICK CARDS */
+
+    .quick-actions {
+
+        gap: 9px;
+
+        margin-top: 19px;
+    }
+
+    .action-card {
+
+        min-height: 174px;
+
+        padding: 13px;
+    }
+
+    .action-icon {
+
+        width: 45px;
+        height: 45px;
+
+        font-size: 18px;
+    }
+
+    .action-content h3 {
+
+        font-size: 12px;
+    }
+
+    .action-content p {
+
+        font-size: 7.5px;
+    }
+
+    .action-arrow {
+
+        width: 35px;
+        height: 35px;
+    }
+
+
+    /* UPLOAD */
+
+    .upload-section {
+
+        margin-top: 19px;
+    }
+
+    .upload-card {
+
+        min-height: 190px;
+    }
+
+    .upload-icon {
+
+        font-size: 34px;
+    }
+
+    .upload-content h2 {
+
+        font-size: 15px;
+    }
+
+    .choose-file-btn {
+
+        min-width: 230px;
+
+        height: 48px;
+    }
+
+}
+
+
+/* =========================================================
+   VERY SMALL
+========================================================= */
+
+@media (max-width: 360px) {
+
+    .hero {
+
+        height: 375px;
+
+        min-height: 375px;
+    }
+
+    .hero-content {
+
+        padding-top: 88px;
+    }
+
+    .hero h1 {
+
+        font-size: 26px;
+    }
+
+    .hero p {
+
+        font-size: 9px;
+    }
+
+    .search-button {
+
+        flex-basis: 80px;
+
+        width: 80px;
+
+        min-width: 80px;
+    }
+
+}
