@@ -3562,3 +3562,17 @@ textarea:focus-visible {
         0 0 0 2px rgba(110, 91, 255, 0.08),
         0 0 25px rgba(100, 70, 255, 0.08);
 }
+
+
+/* Hide movie poster from movie details */
+.movie-poster-wrap {
+    display: none !important;
+}
+
+.movie-details {
+    display: block;
+}
+
+.movie-info {
+    width: 100%;
+}
