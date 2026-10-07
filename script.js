@@ -5,19 +5,21 @@
 SUBLANKA AI - COMPLETE SCRIPT.JS
 ========================================================
 
-Features:
+FEATURES
 1. SRT file upload
 2. SRT preview
 3. English -> Sinhala translation
 4. Movie / TV search
 5. TV season / episode selection
-6. SubDL subtitle search
+6. SubDL English subtitle search
 7. Subtitle download
 8. Automatic Sinhala translation
 9. Automatic SRT download
 10. Translation progress
 11. Smooth scroll to translation section
 12. Dark / Light theme
+13. Sinhala subtitle source search
+14. Baiscope / SinhalaSub / Cineru source buttons
 ========================================================
 */
 
@@ -41,8 +43,6 @@ const searchStatus =
 
 // --------------------------------------------------------
 // FILE INPUT
-// Supports the new HTML id="subtitleFile"
-// and older IDs too.
 // --------------------------------------------------------
 
 const fileInput =
@@ -166,7 +166,6 @@ function loadTheme() {
         "data-theme",
         theme
     );
-
 }
 
 
@@ -191,7 +190,6 @@ function toggleTheme() {
         "sublanka_theme",
         newTheme
     );
-
 }
 
 
@@ -227,7 +225,6 @@ function scrollToTranslationSection() {
         block: "start",
         inline: "nearest"
     });
-
 }
 
 
@@ -439,7 +436,6 @@ function showSRTPreview(subtitles) {
 
 async function translateUploadedSubtitle() {
 
-    // Scroll first
     scrollToTranslationSection();
 
 
@@ -465,10 +461,6 @@ async function translateUploadedSubtitle() {
         true;
 
 
-    // ----------------------------------------------------
-    // Button state
-    // ----------------------------------------------------
-
     if (translateBtn) {
 
         translateBtn.disabled =
@@ -480,10 +472,6 @@ async function translateUploadedSubtitle() {
     }
 
 
-    // ----------------------------------------------------
-    // Show progress
-    // ----------------------------------------------------
-
     showProgress();
 
     updateMainProgress(
@@ -493,12 +481,6 @@ async function translateUploadedSubtitle() {
 
 
     try {
-
-        /*
-        ----------------------------------------------------
-        Give the page a moment to scroll before API work
-        ----------------------------------------------------
-        */
 
         await sleep(350);
 
@@ -514,10 +496,6 @@ async function translateUploadedSubtitle() {
                 translated
             );
 
-
-        // ------------------------------------------------
-        // Show translated preview
-        // ------------------------------------------------
 
         if (subtitlePreview) {
 
@@ -539,10 +517,6 @@ async function translateUploadedSubtitle() {
         }
 
 
-        // ------------------------------------------------
-        // Enable download
-        // ------------------------------------------------
-
         if (downloadBtn) {
 
             downloadBtn.disabled =
@@ -550,10 +524,6 @@ async function translateUploadedSubtitle() {
 
         }
 
-
-        // ------------------------------------------------
-        // Download automatically
-        // ------------------------------------------------
 
         const filename =
             `${uploadedFileName}.Sinhala.SubLankaAI.srt`;
@@ -587,14 +557,6 @@ async function translateUploadedSubtitle() {
         }
 
 
-        /*
-        ----------------------------------------------------
-        Do not show an alert immediately.
-        The user can see the completed UI.
-        ----------------------------------------------------
-        */
-
-
     } catch (error) {
 
         console.error(
@@ -621,7 +583,6 @@ async function translateUploadedSubtitle() {
             "Translation failed:\n\n" +
             error.message
         );
-
 
     } finally {
 
@@ -782,7 +743,7 @@ async function searchMovies() {
     if (searchStatus) {
 
         searchStatus.textContent =
-            "Searching...";
+            "Searching movies and TV series...";
 
     }
 
@@ -792,8 +753,11 @@ async function searchMovies() {
         searchResults.innerHTML =
             `
             <div class="subtitle-loading">
+
                 <div class="big-spinner"></div>
+
                 Searching...
+
             </div>
             `;
 
@@ -920,9 +884,11 @@ async function searchMovies() {
             searchResults.innerHTML =
                 `
                 <div class="search-empty">
+
                     ❌ ${escapeHTML(
                         error.message
                     )}
+
                 </div>
                 `;
 
@@ -987,16 +953,19 @@ function displaySearchResults(
                                 item.poster
                             )}"
                             alt=""
+                            loading="lazy"
                         >
                         `
                         : `
-                        <div class="result-poster"
-                             style="
+                        <div
+                            class="result-poster"
+                            style="
                                 display:flex;
                                 align-items:center;
                                 justify-content:center;
                                 font-size:25px;
-                             ">
+                            "
+                        >
                             🎬
                         </div>
                         `;
@@ -1035,6 +1004,24 @@ function displaySearchResults(
 
                         </div>
 
+
+                        <!-- SINHALA SOURCES -->
+
+                        <div class="sinhala-status">
+
+                            <div class="sinhala-checking">
+
+                                <i class="fa-solid fa-spinner fa-spin"></i>
+
+                                Checking Sinhala subtitles...
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- SELECT -->
+
                         <button
                             type="button"
                             class="select-title-btn"
@@ -1052,24 +1039,202 @@ function displaySearchResults(
                     );
 
 
-                button.addEventListener(
-                    "click",
-                    function () {
+                if (button) {
 
-                        selectSearchResult(
-                            item
-                        );
+                    button.addEventListener(
+                        "click",
+                        function () {
 
-                    }
-                );
+                            selectSearchResult(
+                                item
+                            );
+
+                        }
+                    );
+
+                }
 
 
                 searchResults.appendChild(
                     card
                 );
 
+
+                /*
+                ------------------------------------------------
+                CHECK SINHALA SOURCES
+                ------------------------------------------------
+                */
+
+                checkSinhalaSubtitles(
+                    item,
+                    card
+                );
+
             }
         );
+
+}
+
+
+// ========================================================
+// CHECK SINHALA SUBTITLE SOURCES
+// ========================================================
+
+async function checkSinhalaSubtitles(
+    item,
+    card
+) {
+
+    if (!item || !card) {
+        return;
+    }
+
+
+    const status =
+        card.querySelector(
+            ".sinhala-status"
+        );
+
+
+    if (!status) {
+        return;
+    }
+
+
+    try {
+
+        const params =
+            new URLSearchParams();
+
+
+        params.set(
+            "title",
+            item.title || ""
+        );
+
+
+        params.set(
+            "year",
+            item.year || ""
+        );
+
+
+        params.set(
+            "type",
+            item.type || "movie"
+        );
+
+
+        const response =
+            await fetch(
+                `/api/sinhala-search?${params.toString()}`
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.error ||
+                "Sinhala subtitle search failed."
+            );
+
+        }
+
+
+        const sources =
+            Array.isArray(
+                data.results
+            )
+                ? data.results
+                : [];
+
+
+        if (!sources.length) {
+
+            status.innerHTML =
+                `
+                <div class="sinhala-not-found">
+
+                    ✨ Sinhala subtitle not found
+
+                </div>
+                `;
+
+            return;
+        }
+
+
+        status.innerHTML =
+            `
+            <div class="sinhala-title">
+
+                🇱🇰 Sinhala Subtitle Sources
+
+            </div>
+
+            <div class="sinhala-sources">
+
+                ${
+                    sources
+                        .map(
+                            function (source) {
+
+                                return `
+                                <a
+                                    class="sinhala-source"
+                                    href="${escapeAttribute(
+                                        source.searchUrl
+                                    )}"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+
+                                    <span>
+                                        🟢
+                                        ${escapeHTML(
+                                            source.source
+                                        )}
+                                    </span>
+
+                                    <span>
+                                        Open ↗
+                                    </span>
+
+                                </a>
+                                `;
+
+                            }
+                        )
+                        .join("")
+                }
+
+            </div>
+            `;
+
+
+    } catch (error) {
+
+        console.error(
+            "SINHALA SEARCH ERROR:",
+            error
+        );
+
+
+        status.innerHTML =
+            `
+            <div class="sinhala-check-failed">
+
+                🔎 Sinhala subtitle search unavailable
+
+            </div>
+            `;
+
+    }
 
 }
 
@@ -1158,6 +1323,7 @@ function showEpisodeSelector(
                 Select Season and Episode
             </p>
 
+
             <div class="episode-fields">
 
                 <div>
@@ -1220,19 +1386,27 @@ function showEpisodeSelector(
         "click",
         function () {
 
+            const seasonInput =
+                document.getElementById(
+                    "seasonInput"
+                );
+
+
+            const episodeInput =
+                document.getElementById(
+                    "episodeInput"
+                );
+
+
             const season =
                 Number(
-                    document.getElementById(
-                        "seasonInput"
-                    ).value
+                    seasonInput?.value
                 );
 
 
             const episode =
                 Number(
-                    document.getElementById(
-                        "episodeInput"
-                    ).value
+                    episodeInput?.value
                 );
 
 
@@ -1268,7 +1442,7 @@ function showEpisodeSelector(
 
 
 // ========================================================
-// SUBDL SEARCH
+// SUBDL ENGLISH SUBTITLE SEARCH
 // ========================================================
 
 async function searchSubtitles(
@@ -1381,7 +1555,19 @@ async function searchSubtitles(
                 searchResults.innerHTML =
                     `
                     <div class="search-empty">
+
                         ❌ No English subtitles found.
+
+                        <br><br>
+
+                        <button
+                            type="button"
+                            class="back-search-btn"
+                            onclick="location.reload()"
+                        >
+                            Back to Search
+                        </button>
+
                     </div>
                     `;
 
@@ -1444,7 +1630,7 @@ async function searchSubtitles(
 
 
 // ========================================================
-// DISPLAY SUBTITLE RESULTS
+// DISPLAY ENGLISH SUBTITLE RESULTS
 // ========================================================
 
 function displaySubtitleResults(
@@ -1462,7 +1648,9 @@ function displaySubtitleResults(
     searchResults.innerHTML =
         `
         <div class="subtitle-results-title">
-            English Subtitles
+
+            🇬🇧 English Subtitles
+
         </div>
         `;
 
@@ -1506,23 +1694,28 @@ function displaySubtitleResults(
                     </h4>
 
                     <p>
+
                         🇬🇧 English
-                        ${release
-                            ? " • " +
-                              escapeHTML(
-                                  release
-                              )
-                            : ""
+
+                        ${
+                            release
+                                ? " • " +
+                                  escapeHTML(
+                                      release
+                                  )
+                                : ""
                         }
 
-                        ${fps
-                            ? " • " +
-                              escapeHTML(
-                                  String(fps)
-                              ) +
-                              " FPS"
-                            : ""
+                        ${
+                            fps
+                                ? " • " +
+                                  escapeHTML(
+                                      String(fps)
+                                  ) +
+                                  " FPS"
+                                : ""
                         }
+
                     </p>
 
                     <button
@@ -1539,19 +1732,23 @@ function displaySubtitleResults(
                     );
 
 
-                button.addEventListener(
-                    "click",
-                    function () {
+                if (button) {
 
-                        selectSubtitle(
-                            subtitle,
-                            item,
-                            season,
-                            episode
-                        );
+                    button.addEventListener(
+                        "click",
+                        function () {
 
-                    }
-                );
+                            selectSubtitle(
+                                subtitle,
+                                item,
+                                season,
+                                episode
+                            );
+
+                        }
+                    );
+
+                }
 
 
                 searchResults.appendChild(
@@ -1565,7 +1762,7 @@ function displaySubtitleResults(
 
 
 // ========================================================
-// SELECT SUBTITLE
+// SELECT ENGLISH SUBTITLE
 // DOWNLOAD -> TRANSLATE
 // ========================================================
 
@@ -1575,13 +1772,6 @@ async function selectSubtitle(
     season,
     episode
 ) {
-
-    /*
-    --------------------------------------------------------
-    When the user taps the subtitle/translate action,
-    move to the translation section.
-    --------------------------------------------------------
-    */
 
     scrollToTranslationSection();
 
@@ -1657,12 +1847,6 @@ async function selectSubtitle(
 
     try {
 
-        /*
-        ----------------------------------------------------
-        DOWNLOAD SRT FROM OUR API
-        ----------------------------------------------------
-        */
-
         const response =
             await fetch(
                 `/api/subtitle-download?url=${encodeURIComponent(
@@ -1694,12 +1878,6 @@ async function selectSubtitle(
         }
 
 
-        /*
-        ----------------------------------------------------
-        BASE64 -> BYTES
-        ----------------------------------------------------
-        */
-
         const binary =
             atob(
                 data.data
@@ -1724,29 +1902,16 @@ async function selectSubtitle(
         }
 
 
-        /*
-        ----------------------------------------------------
-        ZIP CHECK
-        ----------------------------------------------------
-        */
-
         if (
             isZipFile(bytes)
         ) {
 
             throw new Error(
-                "SubDL returned a ZIP subtitle package. " +
-                "ZIP extraction is required in the download API."
+                "SubDL returned a ZIP subtitle package. ZIP extraction is required in the download API."
             );
 
         }
 
-
-        /*
-        ----------------------------------------------------
-        DECODE
-        ----------------------------------------------------
-        */
 
         const englishSRT =
             decodeSubtitleBytes(
@@ -1765,12 +1930,6 @@ async function selectSubtitle(
         }
 
 
-        /*
-        ----------------------------------------------------
-        PARSE
-        ----------------------------------------------------
-        */
-
         const subtitles =
             parseSRT(
                 englishSRT
@@ -1786,25 +1945,14 @@ async function selectSubtitle(
         }
 
 
-        /*
-        ----------------------------------------------------
-        Move user to translation section again
-        ----------------------------------------------------
-        */
-
         scrollToTranslationSection();
 
 
         await sleep(300);
 
 
-        /*
-        ----------------------------------------------------
-        SHOW TRANSLATION UI
-        ----------------------------------------------------
-        */
-
         showProgress();
+
 
         updateMainProgress(
             0,
@@ -1840,12 +1988,6 @@ async function selectSubtitle(
         }
 
 
-        /*
-        ----------------------------------------------------
-        Translate button from search result
-        ----------------------------------------------------
-        */
-
         const translateSearchSubtitle =
             document.getElementById(
                 "translateSearchSubtitle"
@@ -1860,9 +2002,16 @@ async function selectSubtitle(
                 "click",
                 async function () {
 
+                    if (isTranslating) {
+                        return;
+                    }
+
+
                     scrollToTranslationSection();
 
+
                     await sleep(300);
+
 
                     try {
 
@@ -1964,6 +2113,12 @@ async function selectSubtitle(
                         );
 
 
+                        translateSearchSubtitle.disabled =
+                            false;
+
+                        translateSearchSubtitle.textContent =
+                            "🇱🇰 Translate to Sinhala";
+
                     } finally {
 
                         isTranslating =
@@ -2020,12 +2175,6 @@ async function selectSubtitle(
 async function translateSubtitleChunks(
     subtitles
 ) {
-
-    /*
-    --------------------------------------------------------
-    20 subtitles per request
-    --------------------------------------------------------
-    */
 
     const CHUNK_SIZE =
         20;
@@ -2090,12 +2239,6 @@ async function translateSubtitleChunks(
         let lastError =
             null;
 
-
-        /*
-        ----------------------------------------------------
-        RETRY 3 TIMES
-        ----------------------------------------------------
-        */
 
         for (
             let attempt = 1;
@@ -2249,12 +2392,6 @@ async function translateSubtitleChunks(
         }
 
 
-        /*
-        ----------------------------------------------------
-        UPDATE PROGRESS
-        ----------------------------------------------------
-        */
-
         const completed =
             translated.length;
 
@@ -2275,12 +2412,6 @@ async function translateSubtitleChunks(
             `Translating ${completed}/${subtitles.length}...`
         );
 
-
-        /*
-        ----------------------------------------------------
-        Delay between API requests
-        ----------------------------------------------------
-        */
 
         if (
             start + CHUNK_SIZE <
@@ -2706,12 +2837,6 @@ function decodeSubtitleBytes(
     bytes
 ) {
 
-    /*
-    --------------------------------------------------------
-    UTF-8
-    --------------------------------------------------------
-    */
-
     try {
 
         const text =
@@ -2739,12 +2864,6 @@ function decodeSubtitleBytes(
         // Continue
     }
 
-
-    /*
-    --------------------------------------------------------
-    Windows-1252 fallback
-    --------------------------------------------------------
-    */
 
     try {
 
