@@ -2832,3 +2832,717 @@ textarea:focus-visible {
     }
 
 }
+
+
+/* =========================================================
+   FINAL MOBILE / IMAGE FIXES
+========================================================= */
+
+/* Prevent broken logo from showing as an ugly empty box */
+.brand-logo:has(img[style*="display: none"]) {
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+}
+
+
+/* Logo */
+.brand-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+
+/* Hero banner */
+.hero-banner img {
+    object-fit: cover;
+    object-position: center right;
+}
+
+
+/* Movie poster */
+.movie-poster-wrap {
+    position: relative;
+    overflow: hidden;
+    border-radius: 15px;
+    background:
+        linear-gradient(
+            135deg,
+            #171d3b,
+            #090d1e
+        );
+}
+
+.movie-poster-wrap img {
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+    display: block;
+}
+
+
+/* Search result posters */
+.result-poster {
+    overflow: hidden;
+    background:
+        linear-gradient(
+            135deg,
+            #171d3b,
+            #090d1e
+        );
+}
+
+.result-poster img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+
+/* =========================================================
+   MOBILE FINAL
+========================================================= */
+
+@media (max-width: 700px) {
+
+    .app {
+        padding:
+            12px 10px 45px;
+    }
+
+
+    /* HEADER */
+
+    .top-header {
+        min-height: 72px;
+    }
+
+    .brand-logo {
+        width: 58px;
+        height: 58px;
+        flex-basis: 58px;
+        border-radius: 17px;
+    }
+
+    .brand-title {
+        font-size: 21px;
+    }
+
+    .brand-subtitle {
+        font-size: 10px;
+        margin-top: 3px;
+    }
+
+    .header-actions {
+        gap: 7px;
+    }
+
+    .theme-toggle {
+        width: 54px;
+        height: 43px;
+    }
+
+    .theme-sun {
+        width: 34px;
+        height: 34px;
+    }
+
+    .settings-button {
+        width: 43px;
+        height: 43px;
+    }
+
+
+    /* =====================================================
+       HERO
+    ===================================================== */
+
+    .hero {
+        height: 400px;
+        min-height: 400px;
+
+        margin-top: 0;
+
+        border-radius: 0 0 22px 22px;
+    }
+
+    .hero-banner {
+        position: absolute;
+
+        top: 0;
+        right: -30%;
+
+        width: 125%;
+        height: 100%;
+    }
+
+    .hero-banner img {
+        width: 100%;
+        height: 100%;
+
+        object-fit: cover;
+
+        object-position: 72% center;
+
+        opacity: .68;
+
+        filter:
+            saturate(1.08)
+            brightness(.72);
+
+        transform: scale(1.04);
+    }
+
+    .hero-overlay {
+        background:
+            linear-gradient(
+                90deg,
+                #060814 0%,
+                rgba(6, 8, 20, .96) 23%,
+                rgba(6, 8, 20, .76) 48%,
+                rgba(6, 8, 20, .28) 78%,
+                rgba(6, 8, 20, .08) 100%
+            );
+    }
+
+    .hero-overlay::after {
+        height: 110px;
+
+        background:
+            linear-gradient(
+                to top,
+                #060814,
+                transparent
+            );
+    }
+
+    .hero-content {
+        width: 100%;
+
+        padding-top: 118px;
+
+        padding-right: 8px;
+    }
+
+    .hero-star {
+        margin-bottom: 12px;
+
+        font-size: 23px;
+    }
+
+    .hero h1 {
+        max-width: 370px;
+
+        font-size: 31px;
+
+        line-height: 1.13;
+
+        letter-spacing: -1.5px;
+    }
+
+    .hero p {
+        max-width: 360px;
+
+        margin-top: 16px;
+
+        font-size: 11px;
+
+        line-height: 1.65;
+    }
+
+
+    /* =====================================================
+       SEARCH
+    ===================================================== */
+
+    .search-section {
+        margin-top: -2px;
+    }
+
+    .search-card {
+        padding: 12px;
+
+        border-radius: 24px;
+    }
+
+    .search-row {
+        display: flex;
+
+        flex-direction: row;
+
+        gap: 8px;
+    }
+
+    .search-input-wrap {
+        flex: 1;
+
+        width: auto;
+
+        min-width: 0;
+
+        height: 62px;
+
+        padding:
+            0 13px;
+
+        gap: 9px;
+
+        border-radius: 20px;
+    }
+
+    .search-input-wrap i {
+        flex: 0 0 22px;
+
+        width: 22px;
+
+        min-width: 22px;
+
+        font-size: 20px;
+    }
+
+    .search-input-wrap input {
+        width: 100%;
+
+        min-width: 0;
+
+        font-size: 11px;
+    }
+
+    .search-button {
+        flex: 0 0 96px;
+
+        width: 96px;
+
+        min-width: 96px;
+
+        height: 62px;
+
+        border-radius: 20px;
+
+        font-size: 11px;
+    }
+
+    .search-button i {
+        font-size: 15px;
+    }
+
+
+    /* CATEGORY */
+
+    .category-chips {
+        display: flex;
+
+        gap: 7px;
+
+        margin-top: 12px;
+
+        padding-bottom: 2px;
+
+        overflow-x: auto;
+    }
+
+    .category-chip {
+        flex: 0 0 auto;
+
+        height: 42px;
+
+        padding:
+            0 13px;
+
+        border-radius: 22px;
+
+        font-size: 10px;
+    }
+
+
+    /* =====================================================
+       MOVIE DETAILS
+    ===================================================== */
+
+    .movie-details {
+        display: flex;
+
+        flex-direction: row;
+
+        align-items: flex-start;
+
+        gap: 14px;
+
+        margin-top: 22px;
+
+        padding: 14px;
+
+        border-radius: 21px;
+    }
+
+    .movie-poster-wrap {
+        width: 105px;
+
+        min-width: 105px;
+
+        border-radius: 12px;
+    }
+
+    .movie-info {
+        flex: 1;
+
+        min-width: 0;
+    }
+
+    .movie-info h2 {
+        font-size: 17px;
+
+        line-height: 1.3;
+    }
+
+    .movie-meta {
+        gap: 4px;
+
+        margin: 7px 0;
+    }
+
+    .movie-meta span {
+        padding:
+            4px 6px;
+
+        font-size: 8px;
+    }
+
+    .movie-info p {
+        margin-top: 5px;
+
+        font-size: 9px;
+
+        line-height: 1.5;
+
+        display: -webkit-box;
+
+        -webkit-line-clamp: 3;
+
+        -webkit-box-orient: vertical;
+
+        overflow: hidden;
+    }
+
+    .primary-button {
+        margin-top: 9px;
+
+        padding:
+            8px 11px;
+
+        font-size: 9px;
+    }
+
+
+    /* =====================================================
+       QUICK ACTIONS
+    ===================================================== */
+
+    .quick-actions {
+        grid-template-columns:
+            1fr 1fr;
+
+        gap: 10px;
+
+        margin-top: 20px;
+    }
+
+    .action-card {
+        min-height: 185px;
+
+        padding: 15px;
+
+        border-radius: 21px;
+    }
+
+    .action-icon {
+        width: 48px;
+        height: 48px;
+
+        margin-bottom: 13px;
+
+        border-radius: 14px;
+
+        font-size: 19px;
+    }
+
+    .action-content h3 {
+        font-size: 13px;
+    }
+
+    .action-content p {
+        max-width: 135px;
+
+        font-size: 8px;
+
+        line-height: 1.55;
+    }
+
+    .action-arrow {
+        width: 35px;
+        height: 35px;
+
+        right: 10px;
+        bottom: 10px;
+
+        font-size: 15px;
+    }
+
+
+    /* =====================================================
+       UPLOAD
+    ===================================================== */
+
+    .upload-section {
+        margin-top: 20px;
+    }
+
+    .upload-card {
+        min-height: 210px;
+
+        padding:
+            20px 12px;
+
+        border-radius: 22px;
+    }
+
+    .upload-icon {
+        font-size: 37px;
+    }
+
+    .upload-content h2 {
+        font-size: 15px;
+    }
+
+    .upload-content p {
+        font-size: 9px;
+    }
+
+    .choose-file-btn {
+        min-width: 240px;
+
+        height: 50px;
+
+        margin-top: 14px;
+
+        font-size: 11px;
+    }
+
+
+    /* =====================================================
+       SETTINGS
+    ===================================================== */
+
+    .settings-box {
+        flex-direction: column;
+
+        align-items: stretch;
+
+        gap: 12px;
+    }
+
+    .settings-box select {
+        width: 100%;
+
+        height: 45px;
+    }
+
+    .translate-btn {
+        height: 55px;
+
+        font-size: 12px;
+    }
+
+
+    /* =====================================================
+       PREVIEW
+    ===================================================== */
+
+    .preview-section,
+    .history-section {
+        padding: 17px;
+
+        border-radius: 21px;
+    }
+
+    #preview {
+        min-height: 230px;
+
+        font-size: 10px;
+    }
+
+
+    /* =====================================================
+       SEO
+    ===================================================== */
+
+    .seo-info {
+        padding: 20px 15px;
+    }
+
+    .seo-features {
+        grid-template-columns:
+            1fr 1fr;
+    }
+
+}
+
+
+/* =========================================================
+   SMALL PHONES
+========================================================= */
+
+@media (max-width: 430px) {
+
+    .brand-logo {
+        width: 54px;
+        height: 54px;
+
+        flex-basis: 54px;
+    }
+
+    .brand-title {
+        font-size: 19px;
+    }
+
+    .brand-subtitle {
+        font-size: 9px;
+    }
+
+    .theme-toggle {
+        width: 49px;
+        height: 40px;
+    }
+
+    .theme-sun {
+        width: 31px;
+        height: 31px;
+    }
+
+    .settings-button {
+        width: 40px;
+        height: 40px;
+    }
+
+
+    .hero {
+        height: 385px;
+        min-height: 385px;
+    }
+
+    .hero-banner {
+        right: -38%;
+
+        width: 132%;
+    }
+
+    .hero-banner img {
+        object-position: 73% center;
+
+        opacity: .65;
+    }
+
+    .hero-content {
+        padding-top: 112px;
+    }
+
+    .hero h1 {
+        font-size: 28px;
+    }
+
+    .hero p {
+        max-width: 315px;
+
+        font-size: 10px;
+    }
+
+
+    .search-input-wrap {
+        height: 57px;
+
+        padding:
+            0 11px;
+    }
+
+    .search-input-wrap input {
+        font-size: 10px;
+    }
+
+    .search-button {
+        flex-basis: 88px;
+
+        width: 88px;
+
+        min-width: 88px;
+
+        height: 57px;
+
+        font-size: 10px;
+    }
+
+    .search-button i {
+        font-size: 14px;
+    }
+
+
+    .movie-poster-wrap {
+        width: 92px;
+
+        min-width: 92px;
+    }
+
+    .movie-info h2 {
+        font-size: 15px;
+    }
+
+    .movie-info p {
+        font-size: 8px;
+    }
+
+
+    .action-card {
+        min-height: 175px;
+
+        padding: 13px;
+    }
+
+    .action-content h3 {
+        font-size: 12px;
+    }
+
+    .action-content p {
+        font-size: 7.5px;
+    }
+
+}
+
+
+/* =========================================================
+   EXTRA SMALL
+========================================================= */
+
+@media (max-width: 360px) {
+
+    .hero h1 {
+        font-size: 26px;
+    }
+
+    .search-button {
+        flex-basis: 80px;
+
+        width: 80px;
+
+        min-width: 80px;
+
+        font-size: 9px;
+    }
+
+    .movie-poster-wrap {
+        width: 82px;
+
+        min-width: 82px;
+    }
+
+}
