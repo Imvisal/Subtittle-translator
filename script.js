@@ -2,22 +2,22 @@
 
 /*
 ========================================================
-SubLanka AI - Complete script.js
+SUBLANKA AI — COMPLETE script.js
 ========================================================
 Features:
 - SRT upload
 - SRT preview
 - Sinhala translation
 - Movie / TV search
-- Search animation
-- Mobile result-card fix
+- TMDB categories
+- 4 category cards
 - Sinhala subtitle availability
+- Baiscope / SinhalaSub / Cineru links
 - TV Season / Episode
 - English subtitle search
 - English subtitle download
 - Automatic Sinhala translation
-- Friendly translation progress UI
-- Sinhala SRT download
+- Friendly translation progress
 ========================================================
 */
 
@@ -134,8 +134,7 @@ if (translateBtn) {
 
                 translationSection.scrollIntoView({
                     behavior: "smooth",
-                    block: "start",
-                    inline: "nearest"
+                    block: "start"
                 });
 
             }
@@ -154,13 +153,456 @@ if (translateBtn) {
 
 
 // ========================================================
+// CATEGORY SYSTEM
+// ========================================================
+
+function setupCategories() {
+
+    const chips =
+        document.querySelectorAll(
+            ".category-chip"
+        );
+
+    if (!chips.length) {
+        return;
+    }
+
+
+    createCategoryContainer();
+
+
+    chips.forEach(
+        function (chip) {
+
+            chip.addEventListener(
+                "click",
+                function () {
+
+                    chips.forEach(
+                        function (item) {
+                            item.classList.remove(
+                                "active"
+                            );
+                        }
+                    );
+
+
+                    chip.classList.add(
+                        "active"
+                    );
+
+
+                    const category =
+                        chip.dataset.category ||
+                        "trending";
+
+
+                    loadCategory(
+                        category
+                    );
+
+                }
+            );
+
+        }
+    );
+
+
+    // Load Trending automatically
+    loadCategory("trending");
+
+}
+
+
+// ========================================================
+// CREATE CATEGORY CONTAINER
+// ========================================================
+
+function createCategoryContainer() {
+
+    if (
+        document.getElementById(
+            "categoryResults"
+        )
+    ) {
+        return;
+    }
+
+
+    const categoryChips =
+        document.querySelector(
+            ".category-chips"
+        );
+
+
+    if (!categoryChips) {
+        return;
+    }
+
+
+    const container =
+        document.createElement(
+            "div"
+        );
+
+
+    container.id =
+        "categoryResults";
+
+
+    container.className =
+        "category-results";
+
+
+    container.innerHTML = `
+
+        <div class="category-results-grid">
+
+        </div>
+
+    `;
+
+
+    categoryChips.insertAdjacentElement(
+        "afterend",
+        container
+    );
+
+}
+
+
+// ========================================================
+// LOAD TMDB CATEGORY
+// ========================================================
+
+async function loadCategory(
+    category
+) {
+
+    const container =
+        document.getElementById(
+            "categoryResults"
+        );
+
+
+    if (!container) {
+        return;
+    }
+
+
+    const grid =
+        container.querySelector(
+            ".category-results-grid"
+        );
+
+
+    if (!grid) {
+        return;
+    }
+
+
+    grid.innerHTML = `
+
+        <div class="category-loading">
+
+            <span class="category-spinner"></span>
+
+            <span>
+                Loading...
+            </span>
+
+        </div>
+
+    `;
+
+
+    try {
+
+        const response =
+            await fetch(
+                `/api/categories?category=${encodeURIComponent(
+                    category
+                )}`
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.error ||
+                "Could not load category."
+            );
+
+        }
+
+
+        const results =
+            Array.isArray(data.results)
+                ? data.results
+                : [];
+
+
+        if (!results.length) {
+
+            grid.innerHTML = `
+
+                <div class="category-empty">
+
+                    🎬
+
+                    <p>
+                        No titles found.
+                    </p>
+
+                </div>
+
+            `;
+
+            return;
+        }
+
+
+        // EXACTLY 4
+        renderCategoryCards(
+            results.slice(0, 4)
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "CATEGORY ERROR:",
+            error
+        );
+
+
+        grid.innerHTML = `
+
+            <div class="category-empty">
+
+                ⚠️
+
+                <p>
+                    Could not load titles.
+                </p>
+
+            </div>
+
+        `;
+
+    }
+
+}
+
+
+// ========================================================
+// RENDER CATEGORY CARDS
+// ========================================================
+
+function renderCategoryCards(
+    results
+) {
+
+    const container =
+        document.getElementById(
+            "categoryResults"
+        );
+
+
+    if (!container) {
+        return;
+    }
+
+
+    const grid =
+        container.querySelector(
+            ".category-results-grid"
+        );
+
+
+    if (!grid) {
+        return;
+    }
+
+
+    grid.innerHTML = "";
+
+
+    results.forEach(
+        function (item) {
+
+            const card =
+                document.createElement(
+                    "div"
+                );
+
+
+            card.className =
+                "category-card";
+
+
+            const poster =
+                item.poster &&
+                item.poster !== "N/A"
+
+                    ? `
+
+                        <img
+                            class="category-poster"
+                            src="${escapeAttribute(
+                                item.poster
+                            )}"
+                            alt=""
+                            loading="lazy"
+                        >
+
+                      `
+
+                    : `
+
+                        <div
+                            class="
+                                category-poster
+                                category-poster-empty
+                            "
+                        >
+                            🎬
+                        </div>
+
+                      `;
+
+
+            const typeText =
+                item.type === "series"
+                    ? "TV"
+                    : "Movie";
+
+
+            card.innerHTML = `
+
+                <div class="category-poster-wrap">
+
+                    ${poster}
+
+                    <span
+                        class="category-type-badge"
+                    >
+                        ${typeText}
+                    </span>
+
+                </div>
+
+
+                <div class="category-card-info">
+
+                    <h3>
+                        ${escapeHTML(
+                            item.title
+                        )}
+                    </h3>
+
+
+                    <div class="category-card-meta">
+
+                        <span>
+                            ${escapeHTML(
+                                item.year || ""
+                            )}
+                        </span>
+
+                        <span>
+                            ${typeText}
+                        </span>
+
+                    </div>
+
+
+                    <button
+                        type="button"
+                        class="category-select-btn"
+                    >
+                        Select
+                    </button>
+
+
+                    <!-- SINHALA SUBTITLE STATUS -->
+
+                    <div class="sinhala-status">
+
+                        <span class="sinhala-checking">
+
+                            🔎 Checking Sinhala subtitle...
+
+                        </span>
+
+                    </div>
+
+                </div>
+
+            `;
+
+
+            // =================================================
+            // SELECT BUTTON
+            // =================================================
+
+            const selectButton =
+                card.querySelector(
+                    ".category-select-btn"
+                );
+
+
+            if (selectButton) {
+
+                selectButton.addEventListener(
+                    "click",
+                    function () {
+
+                        selectSearchResult(
+                            item
+                        );
+
+                    }
+                );
+
+            }
+
+
+            grid.appendChild(
+                card
+            );
+
+
+            // =================================================
+            // CHECK SINHALA SUBTITLE
+            // =================================================
+
+            checkSinhalaSubtitles(
+                item,
+                card
+            );
+
+        }
+    );
+
+}
+
+
+// ========================================================
 // HANDLE FILE UPLOAD
 // ========================================================
 
-async function handleFileUpload(event) {
+async function handleFileUpload(
+    event
+) {
 
     const file =
         event.target.files?.[0];
+
 
     if (!file) {
         return;
@@ -201,8 +643,11 @@ async function handleFileUpload(event) {
         const text =
             await file.text();
 
+
         uploadedSubtitles =
-            parseSRT(text);
+            parseSRT(
+                text
+            );
 
 
         if (!uploadedSubtitles.length) {
@@ -221,7 +666,10 @@ async function handleFileUpload(event) {
 
 
         if (translateBtn) {
-            translateBtn.disabled = false;
+
+            translateBtn.disabled =
+                false;
+
         }
 
 
@@ -231,6 +679,7 @@ async function handleFileUpload(event) {
             "FILE ERROR:",
             error
         );
+
 
         alert(
             "Could not read subtitle file."
@@ -245,7 +694,9 @@ async function handleFileUpload(event) {
 // SHOW SRT PREVIEW
 // ========================================================
 
-function showSRTPreview(subtitles) {
+function showSRTPreview(
+    subtitles
+) {
 
     if (!subtitlePreview) {
         return;
@@ -253,7 +704,9 @@ function showSRTPreview(subtitles) {
 
 
     subtitlePreview.textContent =
-        buildSRT(subtitles);
+        buildSRT(
+            subtitles
+        );
 
 }
 
@@ -287,7 +740,8 @@ async function translateUploadedSubtitle() {
 
     if (translateBtn) {
 
-        translateBtn.disabled = true;
+        translateBtn.disabled =
+            true;
 
         translateBtn.textContent =
             "Translating...";
@@ -304,7 +758,9 @@ async function translateUploadedSubtitle() {
 
 
         const sinhalaSRT =
-            buildSRT(translated);
+            buildSRT(
+                translated
+            );
 
 
         const filename =
@@ -330,6 +786,7 @@ async function translateUploadedSubtitle() {
             error
         );
 
+
         alert(
             "Translation failed:\n\n" +
             error.message
@@ -337,12 +794,14 @@ async function translateUploadedSubtitle() {
 
     } finally {
 
-        isTranslating = false;
+        isTranslating =
+            false;
 
 
         if (translateBtn) {
 
-            translateBtn.disabled = false;
+            translateBtn.disabled =
+                false;
 
             translateBtn.textContent =
                 "Translate Subtitle";
@@ -382,17 +841,21 @@ async function searchMovies() {
     }
 
 
-    // SEARCH ANIMATION
-
     if (searchBtn) {
 
-        searchBtn.disabled = true;
+        searchBtn.disabled =
+            true;
 
         searchBtn.innerHTML = `
+
             <span class="search-loading">
+
                 <span class="search-spinner"></span>
+
                 Searching...
+
             </span>
+
         `;
 
     }
@@ -401,14 +864,15 @@ async function searchMovies() {
     if (searchStatus) {
 
         searchStatus.textContent =
-            "Searching OMDb...";
+            "Searching...";
 
     }
 
 
     if (searchResults) {
 
-        searchResults.innerHTML = "";
+        searchResults.innerHTML =
+            "";
 
     }
 
@@ -438,7 +902,9 @@ async function searchMovies() {
 
 
         const results =
-            Array.isArray(data.results)
+            Array.isArray(
+                data.results
+            )
                 ? data.results
                 : [];
 
@@ -454,31 +920,6 @@ async function searchMovies() {
 
             return;
         }
-
-
-        // Put TV series first
-
-        results.sort(
-            function (a, b) {
-
-                if (
-                    a.type === "series" &&
-                    b.type !== "series"
-                ) {
-                    return -1;
-                }
-
-                if (
-                    a.type !== "series" &&
-                    b.type === "series"
-                ) {
-                    return 1;
-                }
-
-                return 0;
-
-            }
-        );
 
 
         if (searchStatus) {
@@ -514,7 +955,8 @@ async function searchMovies() {
 
         if (searchBtn) {
 
-            searchBtn.disabled = false;
+            searchBtn.disabled =
+                false;
 
             searchBtn.innerHTML =
                 "🔍 Search";
@@ -527,17 +969,20 @@ async function searchMovies() {
 
 
 // ========================================================
-// DISPLAY MOVIE / TV RESULTS
+// DISPLAY SEARCH RESULTS
 // ========================================================
 
-function displaySearchResults(results) {
+function displaySearchResults(
+    results
+) {
 
     if (!searchResults) {
         return;
     }
 
 
-    searchResults.innerHTML = "";
+    searchResults.innerHTML =
+        "";
 
 
     results
@@ -546,7 +991,9 @@ function displaySearchResults(results) {
             function (item) {
 
                 const card =
-                    document.createElement("div");
+                    document.createElement(
+                        "div"
+                    );
 
 
                 card.className =
@@ -558,6 +1005,7 @@ function displaySearchResults(results) {
                     item.poster !== "N/A"
 
                         ? `
+
                             <img
                                 class="result-poster"
                                 src="${escapeAttribute(
@@ -565,9 +1013,11 @@ function displaySearchResults(results) {
                                 )}"
                                 alt=""
                             >
+
                           `
 
                         : `
+
                             <div
                                 class="result-poster"
                                 style="
@@ -583,6 +1033,7 @@ function displaySearchResults(results) {
                             >
                                 🎬
                             </div>
+
                           `;
 
 
@@ -604,6 +1055,7 @@ function displaySearchResults(results) {
                             )}
                         </h3>
 
+
                         <div class="result-meta">
 
                             <span>
@@ -618,6 +1070,7 @@ function displaySearchResults(results) {
 
                         </div>
 
+
                         <button
                             type="button"
                             class="select-title-btn"
@@ -625,10 +1078,13 @@ function displaySearchResults(results) {
                             Select
                         </button>
 
+
                         <div class="sinhala-status">
 
                             <span class="sinhala-checking">
+
                                 🔎 Checking Sinhala subtitle...
+
                             </span>
 
                         </div>
@@ -664,8 +1120,6 @@ function displaySearchResults(results) {
                     card
                 );
 
-
-                // Check Sinhala subtitle
 
                 checkSinhalaSubtitles(
                     item,
@@ -739,7 +1193,9 @@ async function checkSinhalaSubtitles(
 
         if (
             data.found &&
-            Array.isArray(data.sources) &&
+            Array.isArray(
+                data.sources
+            ) &&
             data.sources.length
         ) {
 
@@ -766,6 +1222,9 @@ async function checkSinhalaSubtitles(
                                     source.source ||
                                     "Source"
                                 )}
+
+                                ↗
+
                             </a>
 
                         `
@@ -781,8 +1240,11 @@ async function checkSinhalaSubtitles(
                         🇱🇰 Sinhala Subtitle Available
                     </strong>
 
+
                     <div class="sinhala-source-links">
+
                         ${links}
+
                     </div>
 
                 </div>
@@ -831,9 +1293,14 @@ async function checkSinhalaSubtitles(
 // SELECT MOVIE / TV
 // ========================================================
 
-async function selectSearchResult(item) {
+async function selectSearchResult(
+    item
+) {
 
-    if (!item || !item.imdbID) {
+    if (
+        !item ||
+        !item.imdbID
+    ) {
 
         alert(
             "IMDb ID is missing."
@@ -851,7 +1318,9 @@ async function selectSearchResult(item) {
     }
 
 
-    if (item.type === "movie") {
+    if (
+        item.type === "movie"
+    ) {
 
         await searchSubtitles(
             item,
@@ -862,7 +1331,9 @@ async function selectSearchResult(item) {
     }
 
 
-    if (item.type === "series") {
+    if (
+        item.type === "series"
+    ) {
 
         showEpisodeSelector(
             item
@@ -877,7 +1348,9 @@ async function selectSearchResult(item) {
 // TV SEASON / EPISODE SELECTOR
 // ========================================================
 
-function showEpisodeSelector(item) {
+function showEpisodeSelector(
+    item
+) {
 
     if (!searchResults) {
         return;
@@ -894,9 +1367,11 @@ function showEpisodeSelector(item) {
                 )}
             </h2>
 
+
             <p>
                 Select Season and Episode
             </p>
+
 
             <div class="episode-fields">
 
@@ -915,6 +1390,7 @@ function showEpisodeSelector(item) {
 
                 </div>
 
+
                 <div>
 
                     <label>
@@ -931,6 +1407,7 @@ function showEpisodeSelector(item) {
                 </div>
 
             </div>
+
 
             <button
                 type="button"
@@ -1067,7 +1544,9 @@ async function searchSubtitles(
         );
 
 
-        if (type === "episode") {
+        if (
+            type === "episode"
+        ) {
 
             params.set(
                 "season",
@@ -1103,7 +1582,9 @@ async function searchSubtitles(
 
 
         const results =
-            Array.isArray(data.results)
+            Array.isArray(
+                data.results
+            )
                 ? data.results
                 : [];
 
@@ -1172,9 +1653,7 @@ async function searchSubtitles(
 
             searchResults.innerHTML = `
 
-                <div
-                    class="translation-status error"
-                >
+                <div class="translation-status error">
 
                     ❌ ${escapeHTML(
                         error.message
@@ -1192,7 +1671,7 @@ async function searchSubtitles(
 
 
 // ========================================================
-// DISPLAY SUBDL RESULTS
+// DISPLAY SUBTITLE RESULTS
 // ========================================================
 
 function displaySubtitleResults(
@@ -1207,7 +1686,8 @@ function displaySubtitleResults(
     }
 
 
-    searchResults.innerHTML = "";
+    searchResults.innerHTML =
+        "";
 
 
     results
@@ -1256,6 +1736,7 @@ function displaySubtitleResults(
                             )}
                         </h3>
 
+
                         <div class="result-meta">
 
                             <span>
@@ -1288,9 +1769,11 @@ function displaySubtitleResults(
 
                         </div>
 
+
                         <p>
                             ${hi}
                         </p>
+
 
                         <button
                             type="button"
@@ -1457,8 +1940,6 @@ async function selectSubtitle(
         }
 
 
-        // Base64 -> binary
-
         const binary =
             atob(data.data);
 
@@ -1481,11 +1962,12 @@ async function selectSubtitle(
         }
 
 
-        if (isZipFile(bytes)) {
+        if (
+            isZipFile(bytes)
+        ) {
 
             throw new Error(
-                "SubDL returned a ZIP subtitle package. " +
-                "The download endpoint needs ZIP extraction."
+                "SubDL returned a ZIP subtitle package."
             );
 
         }
@@ -1497,7 +1979,9 @@ async function selectSubtitle(
             );
 
 
-        if (!englishSRT.trim()) {
+        if (
+            !englishSRT.trim()
+        ) {
 
             throw new Error(
                 "Subtitle file is empty."
@@ -1512,7 +1996,9 @@ async function selectSubtitle(
             );
 
 
-        if (!subtitles.length) {
+        if (
+            !subtitles.length
+        ) {
 
             throw new Error(
                 "Downloaded file is not a valid SRT."
@@ -1529,10 +2015,6 @@ async function selectSubtitle(
         }
 
 
-        // ====================================================
-        // FRIENDLY TRANSLATION PROGRESS UI
-        // ====================================================
-
         if (searchResults) {
 
             searchResults.innerHTML = `
@@ -1543,13 +2025,16 @@ async function selectSubtitle(
                         ✨
                     </div>
 
+
                     <h3>
                         Translating to Sinhala
                     </h3>
 
+
                     <p class="translation-subtitle">
                         AI is creating your Sinhala subtitles
                     </p>
+
 
                     <div class="translation-progress-row">
 
@@ -1562,6 +2047,7 @@ async function selectSubtitle(
 
                         </div>
 
+
                         <span
                             id="autoTranslatePercent"
                             class="progress-percent"
@@ -1571,12 +2057,14 @@ async function selectSubtitle(
 
                     </div>
 
+
                     <div
                         id="autoTranslateCount"
                         class="translation-count"
                     >
                         0 of ${subtitles.length} subtitles
                     </div>
+
 
                     <p
                         id="autoTranslateStatus"
@@ -1591,8 +2079,6 @@ async function selectSubtitle(
 
         }
 
-
-        // Translate
 
         const translated =
             await translateSubtitleChunks(
@@ -1636,32 +2122,35 @@ async function selectSubtitle(
 
             searchResults.innerHTML = `
 
-                <div
-                    class="translation-status success"
-                >
+                <div class="translation-status success">
 
                     <div class="translation-complete-icon">
                         ✓
                     </div>
 
+
                     <h2>
                         Translation Complete
                     </h2>
 
+
                     <p class="translation-subtitle">
                         Your Sinhala subtitle is ready
                     </p>
+
 
                     <div class="translation-count">
                         ${translated.length}
                         subtitles translated
                     </div>
 
+
                     <p class="translation-file-name">
                         ${escapeHTML(
                             filename
                         )}
                     </p>
+
 
                     <button
                         type="button"
@@ -1721,9 +2210,7 @@ async function selectSubtitle(
 
             searchResults.innerHTML = `
 
-                <div
-                    class="translation-status error"
-                >
+                <div class="translation-status error">
 
                     <h3>
                         ❌ Translation failed
@@ -1754,7 +2241,8 @@ async function translateSubtitleChunks(
     subtitles
 ) {
 
-    const CHUNK_SIZE = 20;
+    const CHUNK_SIZE =
+        20;
 
 
     const totalChunks =
@@ -1795,12 +2283,13 @@ async function translateSubtitleChunks(
         );
 
 
-        let success = false;
+        let success =
+            false;
 
-        let lastError = null;
 
+        let lastError =
+            null;
 
-        // Retry 3 times
 
         for (
             let attempt = 1;
@@ -1814,7 +2303,8 @@ async function translateSubtitleChunks(
                     await fetch(
                         "/api/translate",
                         {
-                            method: "POST",
+                            method:
+                                "POST",
 
                             headers: {
                                 "Content-Type":
@@ -1846,7 +2336,9 @@ async function translateSubtitleChunks(
                 try {
 
                     data =
-                        JSON.parse(raw);
+                        JSON.parse(
+                            raw
+                        );
 
                 } catch {
 
@@ -1857,7 +2349,9 @@ async function translateSubtitleChunks(
                 }
 
 
-                if (!response.ok) {
+                if (
+                    !response.ok
+                ) {
 
                     throw new Error(
                         data.error ||
@@ -1892,7 +2386,9 @@ async function translateSubtitleChunks(
                 );
 
 
-                success = true;
+                success =
+                    true;
+
 
                 break;
 
@@ -2049,7 +2545,7 @@ function validateTranslatedChunk(
 
 
 // ========================================================
-// FRIENDLY TRANSLATION PROGRESS
+// TRANSLATION PROGRESS
 // ========================================================
 
 function updateTranslationProgress(
@@ -2128,37 +2624,27 @@ function updateTranslationProgress(
             status.textContent =
                 "Preparing your Sinhala subtitles...";
 
-        }
-
-        else if (percent < 25) {
+        } else if (percent < 25) {
 
             status.textContent =
                 "Getting things started...";
 
-        }
-
-        else if (percent < 50) {
+        } else if (percent < 50) {
 
             status.textContent =
                 "Translating your subtitles...";
 
-        }
-
-        else if (percent < 75) {
+        } else if (percent < 75) {
 
             status.textContent =
                 "Sinhala translation is in progress...";
 
-        }
-
-        else if (percent < 100) {
+        } else if (percent < 100) {
 
             status.textContent =
                 "Almost there...";
 
-        }
-
-        else {
+        } else {
 
             status.textContent =
                 "Translation complete!";
@@ -2198,10 +2684,13 @@ function updateTranslationStatus(
 // SRT PARSER
 // ========================================================
 
-function parseSRT(srt) {
+function parseSRT(
+    srt
+) {
 
     if (
-        typeof srt !== "string"
+        typeof srt !==
+        "string"
     ) {
 
         return [];
@@ -2255,7 +2744,8 @@ function parseSRT(srt) {
             }
 
 
-            let numberIndex = 0;
+            let numberIndex =
+                0;
 
 
             while (
@@ -2333,7 +2823,9 @@ function parseSRT(srt) {
 // BUILD SRT
 // ========================================================
 
-function buildSRT(subtitles) {
+function buildSRT(
+    subtitles
+) {
 
     return subtitles
         .map(
@@ -2354,7 +2846,7 @@ function buildSRT(subtitles) {
 
 
 // ========================================================
-// DOWNLOAD TEXT FILE
+// DOWNLOAD TEXT
 // ========================================================
 
 function downloadTextFile(
@@ -2443,7 +2935,8 @@ function getSubtitleBaseName(
 
 
     if (
-        item?.type === "series"
+        item?.type ===
+        "series"
     ) {
 
         const s =
@@ -2459,9 +2952,9 @@ function getSubtitleBaseName(
             String(
                 episode
             ).padStart(
-                    2,
-                    "0"
-                );
+                2,
+                "0"
+            );
 
 
         return `${cleanTitle}.S${s}E${e}`;
@@ -2478,7 +2971,9 @@ function getSubtitleBaseName(
 // DECODE SUBTITLE
 // ========================================================
 
-function decodeSubtitleBytes(bytes) {
+function decodeSubtitleBytes(
+    bytes
+) {
 
     try {
 
@@ -2488,11 +2983,15 @@ function decodeSubtitleBytes(bytes) {
                 {
                     fatal: false
                 }
-            ).decode(bytes);
+            ).decode(
+                bytes
+            );
 
 
         if (
-            text.includes("-->")
+            text.includes(
+                "-->"
+            )
         ) {
 
             return text;
@@ -2500,7 +2999,9 @@ function decodeSubtitleBytes(bytes) {
         }
 
     } catch {
+
         // Continue
+
     }
 
 
@@ -2508,12 +3009,16 @@ function decodeSubtitleBytes(bytes) {
 
         return new TextDecoder(
             "windows-1252"
-        ).decode(bytes);
+        ).decode(
+            bytes
+        );
 
     } catch {
 
         return new TextDecoder()
-            .decode(bytes);
+            .decode(
+                bytes
+            );
 
     }
 
@@ -2524,7 +3029,9 @@ function decodeSubtitleBytes(bytes) {
 // ZIP CHECK
 // ========================================================
 
-function isZipFile(bytes) {
+function isZipFile(
+    bytes
+) {
 
     return (
 
@@ -2544,7 +3051,9 @@ function isZipFile(bytes) {
 // ESCAPE HTML
 // ========================================================
 
-function escapeHTML(value) {
+function escapeHTML(
+    value
+) {
 
     return String(
         value ?? ""
@@ -2577,9 +3086,13 @@ function escapeHTML(value) {
 // ESCAPE ATTRIBUTE
 // ========================================================
 
-function escapeAttribute(value) {
+function escapeAttribute(
+    value
+) {
 
-    return escapeHTML(value);
+    return escapeHTML(
+        value
+    );
 
 }
 
@@ -2588,7 +3101,9 @@ function escapeAttribute(value) {
 // SLEEP
 // ========================================================
 
-function sleep(ms) {
+function sleep(
+    ms
+) {
 
     return new Promise(
         function (resolve) {
@@ -2605,7 +3120,7 @@ function sleep(ms) {
 
 
 // ========================================================
-// SEARCH UI FIXES + ANIMATION
+// UI STYLES
 // ========================================================
 
 (function injectSearchUIStyles() {
@@ -2648,8 +3163,7 @@ function sleep(ms) {
         }
 
 
-        #searchResults
-        .search-result-card {
+        #searchResults .search-result-card {
 
             width: 100% !important;
 
@@ -2665,19 +3179,13 @@ function sleep(ms) {
 
             gap: 14px !important;
 
-            flex: 0 0 auto !important;
-
             overflow: hidden !important;
 
         }
 
 
-        #searchResults
-        .search-result-card > img,
-
-        #searchResults
-        .search-result-card
-        .result-poster {
+        #searchResults .search-result-card > img,
+        #searchResults .search-result-card .result-poster {
 
             width: 82px !important;
 
@@ -2700,8 +3208,7 @@ function sleep(ms) {
         }
 
 
-        #searchResults
-        .result-info {
+        #searchResults .result-info {
 
             min-width: 0 !important;
 
@@ -2711,8 +3218,6 @@ function sleep(ms) {
 
         }
 
-
-        /* SEARCH SPINNER */
 
         .search-loading {
 
@@ -2750,45 +3255,45 @@ function sleep(ms) {
         @keyframes sublankaSearchSpin {
 
             from {
-
-                transform:
-                    rotate(0deg);
-
+                transform: rotate(0deg);
             }
 
             to {
-
-                transform:
-                    rotate(360deg);
-
+                transform: rotate(360deg);
             }
 
         }
 
 
-        /* SINHALA STATUS */
-
         .sinhala-status {
 
             margin-top: 10px;
 
-            font-size: 13px;
+            font-size: 12px;
+
+        }
+
+
+        .sinhala-checking {
+
+            color:
+                rgba(220,220,240,.60);
 
         }
 
 
         .sinhala-available {
 
-            padding: 9px 10px;
+            padding: 8px;
 
-            border-radius: 10px;
+            border-radius: 9px;
 
             background:
-                rgba(34,197,94,.10);
+                rgba(34,197,94,.08);
 
             border:
                 1px solid
-                rgba(34,197,94,.24);
+                rgba(34,197,94,.20);
 
         }
 
@@ -2797,7 +3302,11 @@ function sleep(ms) {
 
             display: block;
 
-            margin-bottom: 7px;
+            margin-bottom: 6px;
+
+            color: #86efac;
+
+            font-size: 11px;
 
         }
 
@@ -2808,7 +3317,7 @@ function sleep(ms) {
 
             flex-wrap: wrap;
 
-            gap: 6px;
+            gap: 5px;
 
         }
 
@@ -2817,30 +3326,34 @@ function sleep(ms) {
 
             display: inline-flex;
 
-            align-items: center;
+            padding: 4px 7px;
 
-            padding: 5px 8px;
+            border-radius: 6px;
 
-            border-radius: 7px;
+            color: #d8c8ff;
 
             text-decoration: none;
 
             background:
                 rgba(124,58,237,.16);
 
-        }
+            border:
+                1px solid
+                rgba(139,92,246,.18);
 
-
-        .sinhala-not-found,
-
-        .sinhala-checking {
-
-            opacity: .82;
+            font-size: 10px;
 
         }
 
 
-        /* SUBDL SPINNER */
+        .sinhala-not-found {
+
+            color: #fbbf24;
+
+            font-size: 10px;
+
+        }
+
 
         .status-spinner {
 
@@ -2864,10 +3377,6 @@ function sleep(ms) {
         }
 
 
-        /* =================================================
-           FRIENDLY TRANSLATION PROGRESS
-           ================================================= */
-
         .translation-status {
 
             width: 100% !important;
@@ -2883,17 +3392,13 @@ function sleep(ms) {
             background:
                 linear-gradient(
                     145deg,
-                    rgba(25, 30, 70, .96),
-                    rgba(18, 20, 48, .96)
+                    rgba(25,30,70,.96),
+                    rgba(18,20,48,.96)
                 ) !important;
 
             border:
                 1px solid
-                rgba(150, 110, 255, .28) !important;
-
-            box-shadow:
-                0 18px 45px
-                rgba(0, 0, 0, .25) !important;
+                rgba(150,110,255,.28) !important;
 
         }
 
@@ -2904,8 +3409,7 @@ function sleep(ms) {
 
             height: 58px;
 
-            margin:
-                0 auto 14px;
+            margin: 0 auto 14px;
 
             display: flex;
 
@@ -2920,13 +3424,9 @@ function sleep(ms) {
             background:
                 linear-gradient(
                     135deg,
-                    rgba(125, 92, 255, .22),
-                    rgba(185, 70, 255, .18)
+                    rgba(125,92,255,.22),
+                    rgba(185,70,255,.18)
                 );
-
-            border:
-                1px solid
-                rgba(155, 110, 255, .35);
 
             animation:
                 translationPulse
@@ -2941,8 +3441,6 @@ function sleep(ms) {
 
             font-size: 22px;
 
-            font-weight: 700;
-
             color: #fff;
 
         }
@@ -2950,15 +3448,12 @@ function sleep(ms) {
 
         .translation-subtitle {
 
-            margin:
-                8px 0 22px;
+            margin: 8px 0 22px;
 
             color:
-                rgba(220, 220, 240, .68);
+                rgba(220,220,240,.68);
 
             font-size: 13px;
-
-            line-height: 1.5;
 
         }
 
@@ -2976,16 +3471,11 @@ function sleep(ms) {
         }
 
 
-        .translation-progress-row
         .progress-track {
 
             flex: 1;
 
-            width: auto;
-
             height: 9px;
-
-            margin: 0;
 
             overflow: hidden;
 
@@ -2997,7 +3487,6 @@ function sleep(ms) {
         }
 
 
-        .translation-progress-row
         .progress-fill {
 
             width: 0%;
@@ -3013,10 +3502,6 @@ function sleep(ms) {
                     #b14cff
                 );
 
-            box-shadow:
-                0 0 14px
-                rgba(150, 80, 255, .5);
-
             transition:
                 width .35s ease;
 
@@ -3029,11 +3514,11 @@ function sleep(ms) {
 
             text-align: right;
 
+            color: #c5a8ff;
+
             font-size: 13px;
 
             font-weight: 700;
-
-            color: #c5a8ff;
 
         }
 
@@ -3042,25 +3527,24 @@ function sleep(ms) {
 
             margin-top: 14px;
 
+            color:
+                rgba(235,235,250,.82);
+
             font-size: 14px;
 
             font-weight: 600;
-
-            color:
-                rgba(235,235,250,.82);
 
         }
 
 
         .translation-status-text {
 
-            margin:
-                7px 0 0;
-
-            font-size: 12px;
+            margin-top: 7px;
 
             color:
                 rgba(200,200,225,.55);
+
+            font-size: 12px;
 
         }
 
@@ -3071,8 +3555,7 @@ function sleep(ms) {
 
             height: 62px;
 
-            margin:
-                0 auto 14px;
+            margin: 0 auto 14px;
 
             display: flex;
 
@@ -3081,10 +3564,6 @@ function sleep(ms) {
             justify-content: center;
 
             border-radius: 50%;
-
-            font-size: 32px;
-
-            font-weight: 700;
 
             color: #fff;
 
@@ -3095,26 +3574,21 @@ function sleep(ms) {
                     #b04cff
                 );
 
-            box-shadow:
-                0 0 28px
-                rgba(140,90,255,.30);
+            font-size: 32px;
+
+            font-weight: 700;
 
         }
 
 
         .translation-file-name {
 
-            margin:
-                10px auto 18px;
-
-            max-width: 100%;
-
-            font-size: 12px;
-
-            line-height: 1.5;
+            margin: 10px auto 18px;
 
             color:
                 rgba(220,220,240,.55);
+
+            font-size: 12px;
 
             word-break: break-word;
 
@@ -3123,38 +3597,20 @@ function sleep(ms) {
 
         @keyframes translationPulse {
 
-            0%,
-            100% {
-
-                transform:
-                    scale(1);
-
-                box-shadow:
-                    0 0 0
-                    rgba(150,80,255,0);
-
+            0%,100% {
+                transform: scale(1);
             }
 
             50% {
-
-                transform:
-                    scale(1.04);
-
-                box-shadow:
-                    0 0 25px
-                    rgba(150,80,255,.18);
-
+                transform: scale(1.04);
             }
 
         }
 
 
-        /* MOBILE */
+        @media (max-width:600px) {
 
-        @media (max-width: 600px) {
-
-            #searchResults
-            .search-result-card {
+            #searchResults .search-result-card {
 
                 padding: 12px !important;
 
@@ -3163,12 +3619,8 @@ function sleep(ms) {
             }
 
 
-            #searchResults
-            .search-result-card > img,
-
-            #searchResults
-            .search-result-card
-            .result-poster {
+            #searchResults .search-result-card > img,
+            #searchResults .search-result-card .result-poster {
 
                 width: 78px !important;
 
@@ -3191,82 +3643,6 @@ function sleep(ms) {
 
                 padding:
                     24px 18px !important;
-
-                border-radius:
-                    20px !important;
-
-            }
-
-
-            .translation-icon {
-
-                width: 52px;
-
-                height: 52px;
-
-                font-size: 25px;
-
-                border-radius: 16px;
-
-            }
-
-
-            .translation-status h3 {
-
-                font-size: 20px;
-
-            }
-
-
-            .translation-subtitle {
-
-                font-size: 12px;
-
-                margin-bottom: 20px;
-
-            }
-
-
-            .translation-progress-row {
-
-                gap: 9px;
-
-            }
-
-
-            .translation-count {
-
-                font-size: 13px;
-
-            }
-
-        }
-
-
-        /* SMALL PHONES */
-
-        @media (max-width: 380px) {
-
-            #searchResults
-            .search-result-card > img,
-
-            #searchResults
-            .search-result-card
-            .result-poster {
-
-                width: 68px !important;
-
-                min-width: 68px !important;
-
-                max-width: 68px !important;
-
-                height: 98px !important;
-
-                min-height: 98px !important;
-
-                max-height: 98px !important;
-
-                flex-basis: 68px !important;
 
             }
 
@@ -3311,416 +3687,16 @@ if (translateBtn) {
 
 }
 
-// ========================================================
-// TMDB CATEGORY SYSTEM
-// ========================================================
-
-const categoryChips =
-    document.querySelectorAll(".category-chip");
-
-let categoryResultsContainer = null;
-
 
 // ========================================================
-// CREATE CATEGORY CONTAINER
-// ========================================================
-
-function createCategoryResultsContainer() {
-
-    if (categoryResultsContainer) {
-        return categoryResultsContainer;
-    }
-
-    categoryResultsContainer =
-        document.createElement("div");
-
-    categoryResultsContainer.id =
-        "categoryResults";
-
-    categoryResultsContainer.className =
-        "category-results";
-
-    const categorySection =
-        document.querySelector(".category-chips");
-
-    if (categorySection) {
-
-        categorySection.insertAdjacentElement(
-            "afterend",
-            categoryResultsContainer
-        );
-
-    } else if (searchResults) {
-
-        searchResults.insertAdjacentElement(
-            "beforebegin",
-            categoryResultsContainer
-        );
-
-    }
-
-    return categoryResultsContainer;
-}
-
-
-// ========================================================
-// LOAD CATEGORY
-// ========================================================
-
-async function loadCategory(category) {
-
-    const container =
-        createCategoryResultsContainer();
-
-    if (!container) {
-        return;
-    }
-
-
-    container.innerHTML = `
-
-        <div class="category-loading">
-
-            <div class="category-spinner"></div>
-
-            <span>
-                Loading ${getCategoryName(category)}...
-            </span>
-
-        </div>
-
-    `;
-
-
-    try {
-
-        const response =
-            await fetch(
-                `/api/categories?category=${encodeURIComponent(
-                    category
-                )}`
-            );
-
-
-        const data =
-            await response.json();
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                data.error ||
-                "Category loading failed."
-            );
-
-        }
-
-
-        const results =
-            Array.isArray(data.results)
-                ? data.results
-                : [];
-
-
-        if (!results.length) {
-
-            container.innerHTML = `
-
-                <div class="category-empty">
-
-                    🎬
-
-                    <p>
-                        No titles found right now.
-                    </p>
-
-                </div>
-
-            `;
-
-            return;
-        }
-
-
-        renderCategoryResults(
-            results.slice(0, 4),
-            container
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "CATEGORY ERROR:",
-            error
-        );
-
-
-        container.innerHTML = `
-
-            <div class="category-empty category-error">
-
-                ❌
-
-                <p>
-                    Could not load titles.
-                </p>
-
-                <button
-                    type="button"
-                    class="category-retry-btn"
-                    onclick="loadCategory('${escapeAttribute(
-                        category
-                    )}')"
-                >
-                    Try Again
-                </button>
-
-            </div>
-
-        `;
-
-    }
-
-}
-
-
-// ========================================================
-// CATEGORY NAME
-// ========================================================
-
-function getCategoryName(category) {
-
-    const names = {
-
-        trending: "Trending",
-        movie: "Movies",
-        tv: "TV Series",
-        anime: "Anime"
-
-    };
-
-    return names[category] || "titles";
-
-}
-
-
-// ========================================================
-// RENDER CATEGORY RESULTS
-// ========================================================
-
-function renderCategoryResults(
-    results,
-    container
-) {
-
-    container.innerHTML = "";
-
-
-    const grid =
-        document.createElement("div");
-
-    grid.className =
-        "category-results-grid";
-
-
-    results.forEach(
-        function (item) {
-
-            const card =
-                document.createElement("article");
-
-            card.className =
-                "category-card";
-
-
-            const poster =
-                item.poster &&
-                item.poster !== "N/A"
-
-                    ? `
-
-                        <img
-                            src="${escapeAttribute(
-                                item.poster
-                            )}"
-                            alt="${escapeAttribute(
-                                item.title
-                            )}"
-                            loading="lazy"
-                            class="category-poster"
-                        >
-
-                      `
-
-                    : `
-
-                        <div class="category-poster category-poster-empty">
-                            🎬
-                        </div>
-
-                      `;
-
-
-            const typeText =
-                item.type === "series"
-                    ? "TV Series"
-                    : "Movie";
-
-
-            card.innerHTML = `
-
-                <div class="category-poster-wrap">
-
-                    ${poster}
-
-                    <span class="category-type-badge">
-
-                        ${
-                            item.type === "series"
-                                ? "📺 TV"
-                                : "🎬 Movie"
-                        }
-
-                    </span>
-
-                </div>
-
-
-                <div class="category-card-info">
-
-                    <h3>
-                        ${escapeHTML(
-                            item.title
-                        )}
-                    </h3>
-
-                    <div class="category-card-meta">
-
-                        <span>
-                            ${escapeHTML(
-                                item.year || ""
-                            )}
-                        </span>
-
-                        <span>
-                            ${typeText}
-                        </span>
-
-                    </div>
-
-
-                    <button
-                        type="button"
-                        class="category-select-btn"
-                    >
-                        Select
-                    </button>
-
-                </div>
-
-            `;
-
-
-            const selectButton =
-                card.querySelector(
-                    ".category-select-btn"
-                );
-
-
-            if (selectButton) {
-
-                selectButton.addEventListener(
-                    "click",
-                    function () {
-
-                        selectSearchResult(
-                            item
-                        );
-
-                    }
-                );
-
-            }
-
-
-            grid.appendChild(
-                card
-            );
-
-        }
-    );
-
-
-    container.appendChild(
-        grid
-    );
-
-}
-
-
-// ========================================================
-// CATEGORY CHIP EVENTS
-// ========================================================
-
-categoryChips.forEach(
-    function (chip) {
-
-        chip.addEventListener(
-            "click",
-            function () {
-
-                categoryChips.forEach(
-                    function (item) {
-
-                        item.classList.remove(
-                            "active"
-                        );
-
-                    }
-                );
-
-
-                chip.classList.add(
-                    "active"
-                );
-
-
-                const category =
-                    chip.dataset.category ||
-                    "trending";
-
-
-                loadCategory(
-                    category
-                );
-
-            }
-        );
-
-    }
-);
-
-
-// ========================================================
-// LOAD TRENDING ON PAGE LOAD
+// START CATEGORIES
 // ========================================================
 
 document.addEventListener(
     "DOMContentLoaded",
     function () {
 
-        if (
-            document.querySelector(
-                ".category-chips"
-            )
-        ) {
-
-            loadCategory(
-                "trending"
-            );
-
-        }
+        setupCategories();
 
     }
 );
