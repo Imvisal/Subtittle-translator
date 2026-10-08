@@ -4178,14 +4178,14 @@ html[data-theme="light"] .subtitle-type {
     /* Hero text moves upward */
     .hero-content {
         padding:
-            155px
+            135px
             28px
             80px !important;
     }
 
     /* Search card moves upward */
     .search-section {
-        margin-top: -100px !important;
+        margin-top: -120px !important;
     }
 }
 
