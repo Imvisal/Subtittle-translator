@@ -16,7 +16,7 @@ Features:
 - English subtitle search
 - English subtitle download
 - Automatic Sinhala translation
-- Progress bar
+- Friendly translation progress UI
 - Sinhala SRT download
 ========================================================
 */
@@ -1529,32 +1529,60 @@ async function selectSubtitle(
         }
 
 
+        // ====================================================
+        // FRIENDLY TRANSLATION PROGRESS UI
+        // ====================================================
+
         if (searchResults) {
 
             searchResults.innerHTML = `
 
                 <div class="translation-status">
 
+                    <div class="translation-icon">
+                        ✨
+                    </div>
+
                     <h3>
-                        🇬🇧 English subtitle downloaded
+                        Translating to Sinhala
                     </h3>
 
-                    <p>
-                        ${subtitles.length}
-                        subtitle entries
+                    <p class="translation-subtitle">
+                        AI is creating your Sinhala subtitles
                     </p>
 
-                    <div class="progress-track">
+                    <div class="translation-progress-row">
 
-                        <div
-                            id="autoTranslateProgress"
-                            class="progress-fill"
-                        ></div>
+                        <div class="progress-track">
+
+                            <div
+                                id="autoTranslateProgress"
+                                class="progress-fill"
+                            ></div>
+
+                        </div>
+
+                        <span
+                            id="autoTranslatePercent"
+                            class="progress-percent"
+                        >
+                            0%
+                        </span>
 
                     </div>
 
-                    <p id="autoTranslateStatus">
-                        Preparing translation...
+                    <div
+                        id="autoTranslateCount"
+                        class="translation-count"
+                    >
+                        0 of ${subtitles.length} subtitles
+                    </div>
+
+                    <p
+                        id="autoTranslateStatus"
+                        class="translation-status-text"
+                    >
+                        Preparing your Sinhala subtitles...
                     </p>
 
                 </div>
@@ -1612,16 +1640,24 @@ async function selectSubtitle(
                     class="translation-status success"
                 >
 
+                    <div class="translation-complete-icon">
+                        ✓
+                    </div>
+
                     <h2>
-                        ✅ Translation Complete
+                        Translation Complete
                     </h2>
 
-                    <p>
-                        ${translated.length}
-                        subtitles translated.
+                    <p class="translation-subtitle">
+                        Your Sinhala subtitle is ready
                     </p>
 
-                    <p>
+                    <div class="translation-count">
+                        ${translated.length}
+                        subtitles translated
+                    </div>
+
+                    <p class="translation-file-name">
                         ${escapeHTML(
                             filename
                         )}
@@ -1884,7 +1920,7 @@ async function translateSubtitleChunks(
 
 
                     updateTranslationStatus(
-                        `Chunk ${chunkNumber}/${totalChunks} failed — retrying...`
+                        "Having a little trouble — retrying..."
                     );
 
 
@@ -1902,7 +1938,7 @@ async function translateSubtitleChunks(
         if (!success) {
 
             throw new Error(
-                `Chunk ${chunkNumber} failed after 3 attempts: ${
+                `Translation could not continue: ${
                     lastError?.message ||
                     "Unknown error"
                 }`
@@ -2013,7 +2049,7 @@ function validateTranslatedChunk(
 
 
 // ========================================================
-// TRANSLATION PROGRESS
+// FRIENDLY TRANSLATION PROGRESS
 // ========================================================
 
 function updateTranslationProgress(
@@ -2025,11 +2061,14 @@ function updateTranslationProgress(
 
     const percent =
         total > 0
-            ? Math.round(
-                (
-                    completed /
-                    total
-                ) * 100
+            ? Math.min(
+                100,
+                Math.round(
+                    (
+                        completed /
+                        total
+                    ) * 100
+                )
             )
             : 0;
 
@@ -2046,6 +2085,18 @@ function updateTranslationProgress(
         );
 
 
+    const percentText =
+        document.getElementById(
+            "autoTranslatePercent"
+        );
+
+
+    const countText =
+        document.getElementById(
+            "autoTranslateCount"
+        );
+
+
     if (progress) {
 
         progress.style.width =
@@ -2054,10 +2105,65 @@ function updateTranslationProgress(
     }
 
 
+    if (percentText) {
+
+        percentText.textContent =
+            `${percent}%`;
+
+    }
+
+
+    if (countText) {
+
+        countText.textContent =
+            `${completed} of ${total} subtitles`;
+
+    }
+
+
     if (status) {
 
-        status.textContent =
-            `Translated ${completed}/${total} subtitles — chunk ${chunkNumber}/${totalChunks}`;
+        if (percent === 0) {
+
+            status.textContent =
+                "Preparing your Sinhala subtitles...";
+
+        }
+
+        else if (percent < 25) {
+
+            status.textContent =
+                "Getting things started...";
+
+        }
+
+        else if (percent < 50) {
+
+            status.textContent =
+                "Translating your subtitles...";
+
+        }
+
+        else if (percent < 75) {
+
+            status.textContent =
+                "Sinhala translation is in progress...";
+
+        }
+
+        else if (percent < 100) {
+
+            status.textContent =
+                "Almost there...";
+
+        }
+
+        else {
+
+            status.textContent =
+                "Translation complete!";
+
+        }
 
     }
 
@@ -2758,6 +2864,291 @@ function sleep(ms) {
         }
 
 
+        /* =================================================
+           FRIENDLY TRANSLATION PROGRESS
+           ================================================= */
+
+        .translation-status {
+
+            width: 100% !important;
+
+            box-sizing: border-box !important;
+
+            padding: 28px 22px !important;
+
+            text-align: center !important;
+
+            border-radius: 22px !important;
+
+            background:
+                linear-gradient(
+                    145deg,
+                    rgba(25, 30, 70, .96),
+                    rgba(18, 20, 48, .96)
+                ) !important;
+
+            border:
+                1px solid
+                rgba(150, 110, 255, .28) !important;
+
+            box-shadow:
+                0 18px 45px
+                rgba(0, 0, 0, .25) !important;
+
+        }
+
+
+        .translation-icon {
+
+            width: 58px;
+
+            height: 58px;
+
+            margin:
+                0 auto 14px;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            border-radius: 18px;
+
+            font-size: 28px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    rgba(125, 92, 255, .22),
+                    rgba(185, 70, 255, .18)
+                );
+
+            border:
+                1px solid
+                rgba(155, 110, 255, .35);
+
+            animation:
+                translationPulse
+                2s ease-in-out infinite;
+
+        }
+
+
+        .translation-status h3 {
+
+            margin: 0;
+
+            font-size: 22px;
+
+            font-weight: 700;
+
+            color: #fff;
+
+        }
+
+
+        .translation-subtitle {
+
+            margin:
+                8px 0 22px;
+
+            color:
+                rgba(220, 220, 240, .68);
+
+            font-size: 13px;
+
+            line-height: 1.5;
+
+        }
+
+
+        .translation-progress-row {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 12px;
+
+            width: 100%;
+
+        }
+
+
+        .translation-progress-row
+        .progress-track {
+
+            flex: 1;
+
+            width: auto;
+
+            height: 9px;
+
+            margin: 0;
+
+            overflow: hidden;
+
+            border-radius: 999px;
+
+            background:
+                rgba(255,255,255,.08);
+
+        }
+
+
+        .translation-progress-row
+        .progress-fill {
+
+            width: 0%;
+
+            height: 100%;
+
+            border-radius: inherit;
+
+            background:
+                linear-gradient(
+                    90deg,
+                    #7357ff,
+                    #b14cff
+                );
+
+            box-shadow:
+                0 0 14px
+                rgba(150, 80, 255, .5);
+
+            transition:
+                width .35s ease;
+
+        }
+
+
+        .progress-percent {
+
+            min-width: 42px;
+
+            text-align: right;
+
+            font-size: 13px;
+
+            font-weight: 700;
+
+            color: #c5a8ff;
+
+        }
+
+
+        .translation-count {
+
+            margin-top: 14px;
+
+            font-size: 14px;
+
+            font-weight: 600;
+
+            color:
+                rgba(235,235,250,.82);
+
+        }
+
+
+        .translation-status-text {
+
+            margin:
+                7px 0 0;
+
+            font-size: 12px;
+
+            color:
+                rgba(200,200,225,.55);
+
+        }
+
+
+        .translation-complete-icon {
+
+            width: 62px;
+
+            height: 62px;
+
+            margin:
+                0 auto 14px;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            border-radius: 50%;
+
+            font-size: 32px;
+
+            font-weight: 700;
+
+            color: #fff;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #7c5cff,
+                    #b04cff
+                );
+
+            box-shadow:
+                0 0 28px
+                rgba(140,90,255,.30);
+
+        }
+
+
+        .translation-file-name {
+
+            margin:
+                10px auto 18px;
+
+            max-width: 100%;
+
+            font-size: 12px;
+
+            line-height: 1.5;
+
+            color:
+                rgba(220,220,240,.55);
+
+            word-break: break-word;
+
+        }
+
+
+        @keyframes translationPulse {
+
+            0%,
+            100% {
+
+                transform:
+                    scale(1);
+
+                box-shadow:
+                    0 0 0
+                    rgba(150,80,255,0);
+
+            }
+
+            50% {
+
+                transform:
+                    scale(1.04);
+
+                box-shadow:
+                    0 0 25px
+                    rgba(150,80,255,.18);
+
+            }
+
+        }
+
+
         /* MOBILE */
 
         @media (max-width: 600px) {
@@ -2792,6 +3183,60 @@ function sleep(ms) {
                 max-height: 112px !important;
 
                 flex-basis: 78px !important;
+
+            }
+
+
+            .translation-status {
+
+                padding:
+                    24px 18px !important;
+
+                border-radius:
+                    20px !important;
+
+            }
+
+
+            .translation-icon {
+
+                width: 52px;
+
+                height: 52px;
+
+                font-size: 25px;
+
+                border-radius: 16px;
+
+            }
+
+
+            .translation-status h3 {
+
+                font-size: 20px;
+
+            }
+
+
+            .translation-subtitle {
+
+                font-size: 12px;
+
+                margin-bottom: 20px;
+
+            }
+
+
+            .translation-progress-row {
+
+                gap: 9px;
+
+            }
+
+
+            .translation-count {
+
+                font-size: 13px;
 
             }
 
