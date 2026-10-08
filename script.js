@@ -445,16 +445,6 @@ async function searchMovies() {
     }
 
 
-    /*
-    ======================================================
-    IMPORTANT
-
-    When searching:
-    Category 4 cards disappear.
-    Search results are shown instead.
-    ======================================================
-    */
-
     hideCategoryResults();
 
 
@@ -1226,6 +1216,10 @@ async function searchSubtitles(
         }
 
 
+        // IMPORTANT:
+        // Sinhala results are checked inside
+        // displaySubtitleResults()
+
         displaySubtitleResults(
             results,
             item,
@@ -1274,149 +1268,424 @@ async function searchSubtitles(
 
 
 // ========================================================
-// DISPLAY SUBDL RESULTS
+// DISPLAY SUBTITLE RESULTS
+// ========================================================
+// NEW VERSION
+//
+// Sinhala subtitle links appear FIRST.
+// English SubDL results appear BELOW.
 // ========================================================
 
-function displaySubtitleResults(
-    results,
-    item,
-    season,
-    episode
+async function displaySubtitleResults(
+    subtitles,
+    movie,
+    season = null,
+    episode = null
 ) {
 
-    if (!searchResults) {
+    const container =
+        document.getElementById(
+            "searchResults"
+        );
+
+
+    if (!container) {
         return;
     }
 
 
-    searchResults.innerHTML = "";
+    // ====================================================
+    // LOADING
+    // ====================================================
+
+    container.innerHTML = `
+
+        <div class="subtitle-loading">
+
+            <div class="status-spinner"></div>
+
+            <strong>
+                🔎 Checking Sinhala subtitles...
+            </strong>
+
+            <p>
+                Finding Sinhala subtitle sources
+            </p>
+
+        </div>
+
+    `;
 
 
-    results
-        .slice(0, 15)
-        .forEach(
-            function (subtitle) {
+    // ====================================================
+    // CHECK SINHALA SUBTITLE
+    // ====================================================
 
-                const card =
-                    document.createElement(
-                        "div"
-                    );
+    let sinhalaHTML = "";
 
 
-                card.className =
-                    "search-result-card";
+    try {
+
+        const params =
+            new URLSearchParams({
+
+                title:
+                    movie?.title || "",
+
+                year:
+                    String(
+                        movie?.year || ""
+                    ),
+
+                type:
+                    movie?.type || "movie"
+
+            });
 
 
-                const fileName =
-                    subtitle.fileName ||
-                    "English Subtitle";
+        const response =
+            await fetch(
+                `/api/sinhala-search?${params.toString()}`
+            );
 
 
-                const release =
-                    subtitle.release ||
-                    "";
+        const data =
+            await response.json();
 
 
-                const fps =
-                    subtitle.fps ||
-                    "";
+        if (
+            response.ok &&
+            data.found &&
+            Array.isArray(data.sources) &&
+            data.sources.length
+        ) {
 
+            const links =
+                data.sources
+                    .filter(
+                        function (source) {
 
-                const hi =
-                    subtitle.hearingImpaired
-                        ? "🔊 Hearing Impaired"
-                        : "🎬 Standard";
-
-
-                card.innerHTML = `
-
-                    <div class="result-info">
-
-                        <h3>
-                            ${escapeHTML(
-                                fileName
-                            )}
-                        </h3>
-
-                        <div class="result-meta">
-
-                            <span>
-                                🇬🇧 English
-                            </span>
-
-                            ${
-                                release
-                                    ? `
-                                        <span>
-                                            ${escapeHTML(
-                                                release
-                                            )}
-                                        </span>
-                                      `
-                                    : ""
-                            }
-
-                            ${
-                                fps
-                                    ? `
-                                        <span>
-                                            ${escapeHTML(
-                                                String(fps)
-                                            )} FPS
-                                        </span>
-                                      `
-                                    : ""
-                            }
-
-                        </div>
-
-                        <p>
-                            ${hi}
-                        </p>
-
-                        <button
-                            type="button"
-                            class="select-title-btn"
-                        >
-                            Use This Subtitle
-                        </button>
-
-                    </div>
-
-                `;
-
-
-                const button =
-                    card.querySelector(
-                        ".select-title-btn"
-                    );
-
-
-                if (button) {
-
-                    button.addEventListener(
-                        "click",
-                        function () {
-
-                            selectSubtitle(
-                                subtitle,
-                                item,
-                                season,
-                                episode
+                            return (
+                                source &&
+                                source.url
                             );
 
                         }
-                    );
+                    )
+                    .slice(0, 3)
+                    .map(
+                        function (source) {
 
-                }
+                            return `
+
+                                <a
+                                    href="${escapeAttribute(
+                                        source.url
+                                    )}"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="sinhala-first-source"
+                                >
+
+                                    ${escapeHTML(
+                                        source.source ||
+                                        "Source"
+                                    )}
+
+                                    <i
+                                        class="fa-solid fa-arrow-up-right-from-square"
+                                    ></i>
+
+                                </a>
+
+                            `;
+
+                        }
+                    )
+                    .join("");
 
 
-                searchResults.appendChild(
-                    card
+            sinhalaHTML = `
+
+                <div class="sinhala-first-card">
+
+                    <div class="sinhala-first-header">
+
+                        <span class="sinhala-first-icon">
+                            🇱🇰
+                        </span>
+
+                        <div>
+
+                            <strong>
+                                Sinhala Subtitle Available
+                            </strong>
+
+                            <small>
+
+                                ${escapeHTML(
+                                    movie?.title || ""
+                                )}
+
+                                ${
+                                    movie?.year
+                                        ? `
+                                            (${escapeHTML(
+                                                String(
+                                                    movie.year
+                                                )
+                                            )})
+                                          `
+                                        : ""
+                                }
+
+                            </small>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="sinhala-first-sources">
+
+                        ${links}
+
+                    </div>
+
+                </div>
+
+            `;
+
+        } else {
+
+            sinhalaHTML = `
+
+                <div class="sinhala-first-not-found">
+
+                    ✨ Sinhala subtitle not found
+
+                </div>
+
+            `;
+
+        }
+
+
+    } catch (error) {
+
+        console.warn(
+            "Selected movie Sinhala search error:",
+            error
+        );
+
+
+        sinhalaHTML = `
+
+            <div class="sinhala-first-not-found">
+
+                ✨ Sinhala subtitle not found
+
+            </div>
+
+        `;
+
+    }
+
+
+    // ====================================================
+    // ENGLISH SUBTITLE RESULTS
+    // ====================================================
+
+    let englishHTML = `
+
+        <div class="english-subtitle-heading">
+
+            <span>
+                🇬🇧
+            </span>
+
+            <strong>
+                English Subtitles
+            </strong>
+
+        </div>
+
+    `;
+
+
+    if (
+        !Array.isArray(subtitles) ||
+        !subtitles.length
+    ) {
+
+        englishHTML += `
+
+            <div class="subtitle-empty">
+
+                No English subtitles found.
+
+            </div>
+
+        `;
+
+    } else {
+
+        englishHTML +=
+
+            subtitles
+                .slice(0, 15)
+                .map(
+                    function (
+                        subtitle,
+                        index
+                    ) {
+
+                        const fileName =
+                            subtitle.fileName ||
+                            `English Subtitle ${
+                                index + 1
+                            }`;
+
+
+                        const release =
+                            subtitle.release ||
+                            "Unknown release";
+
+
+                        const fps =
+                            subtitle.fps ||
+                            "";
+
+
+                        const hi =
+                            subtitle.hearingImpaired
+                                ? "🔊 Hearing Impaired"
+                                : "🎬 Standard";
+
+
+                        return `
+
+                            <div
+                                class="subtitle-result-card"
+                            >
+
+                                <div
+                                    class="subtitle-result-info"
+                                >
+
+                                    <strong>
+
+                                        ${escapeHTML(
+                                            fileName
+                                        )}
+
+                                    </strong>
+
+
+                                    <div
+                                        class="subtitle-meta"
+                                    >
+
+                                        ${escapeHTML(
+                                            release
+                                        )}
+
+                                        ${
+                                            fps
+                                                ? `
+                                                    · ${escapeHTML(
+                                                        String(
+                                                            fps
+                                                        )
+                                                    )} FPS
+                                                  `
+                                                : ""
+                                        }
+
+                                    </div>
+
+
+                                    <div
+                                        class="subtitle-type"
+                                    >
+
+                                        ${hi}
+
+                                    </div>
+
+                                </div>
+
+
+                                <button
+                                    class="subtitle-select-btn"
+                                    type="button"
+                                    data-subtitle-index="${index}"
+                                >
+
+                                    Select
+
+                                </button>
+
+                            </div>
+
+                        `;
+
+                    }
+                )
+                .join("");
+
+
+        // ================================================
+        // ADD BUTTON EVENTS SAFELY
+        // ================================================
+
+        container.innerHTML =
+            sinhalaHTML +
+            englishHTML;
+
+
+        const buttons =
+            container.querySelectorAll(
+                ".subtitle-select-btn"
+            );
+
+
+        buttons.forEach(
+            function (
+                button,
+                index
+            ) {
+
+                button.addEventListener(
+                    "click",
+                    function () {
+
+                        selectSubtitle(
+                            subtitles[index],
+                            movie,
+                            season,
+                            episode
+                        );
+
+                    }
                 );
 
             }
         );
+
+
+        return;
+
+    }
+
+
+    // ====================================================
+    // FINAL OUTPUT
+    // ====================================================
+
+    container.innerHTML =
+        sinhalaHTML +
+        englishHTML;
 
 }
 
@@ -2901,6 +3170,414 @@ function sleep(ms) {
         }
 
 
+        /* ============================================
+           SINHALA FIRST RESULT
+        ============================================ */
+
+        .sinhala-first-card {
+
+            width: 100%;
+
+            box-sizing: border-box;
+
+            padding: 18px;
+
+            margin-bottom: 14px;
+
+            border-radius: 18px;
+
+            background:
+                linear-gradient(
+                    145deg,
+                    rgba(24,34,70,.96),
+                    rgba(18,20,48,.96)
+                );
+
+            border:
+                1px solid
+                rgba(110,255,180,.25);
+
+            box-shadow:
+                0 15px 40px
+                rgba(0,0,0,.22);
+
+        }
+
+
+        .sinhala-first-header {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 13px;
+
+            margin-bottom: 15px;
+
+        }
+
+
+        .sinhala-first-icon {
+
+            width: 48px;
+
+            height: 48px;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            border-radius: 14px;
+
+            font-size: 24px;
+
+            background:
+                rgba(34,197,94,.12);
+
+            border:
+                1px solid
+                rgba(34,197,94,.25);
+
+            flex-shrink: 0;
+
+        }
+
+
+        .sinhala-first-header strong {
+
+            display: block;
+
+            color: #fff;
+
+            font-size: 16px;
+
+            margin-bottom: 4px;
+
+        }
+
+
+        .sinhala-first-header small {
+
+            display: block;
+
+            color:
+                rgba(220,225,245,.58);
+
+            font-size: 12px;
+
+        }
+
+
+        .sinhala-first-sources {
+
+            display: flex;
+
+            flex-wrap: wrap;
+
+            gap: 8px;
+
+        }
+
+
+        .sinhala-first-source {
+
+            display: inline-flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            gap: 7px;
+
+            padding: 9px 12px;
+
+            border-radius: 10px;
+
+            text-decoration: none;
+
+            color: #fff;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    rgba(124,92,255,.28),
+                    rgba(65,100,255,.18)
+                );
+
+            border:
+                1px solid
+                rgba(145,120,255,.28);
+
+            font-size: 12px;
+
+            font-weight: 600;
+
+            transition:
+                transform .2s ease,
+                background .2s ease;
+
+        }
+
+
+        .sinhala-first-source:hover {
+
+            transform:
+                translateY(-2px);
+
+            background:
+                linear-gradient(
+                    135deg,
+                    rgba(124,92,255,.42),
+                    rgba(65,100,255,.28)
+                );
+
+        }
+
+
+        .sinhala-first-source i {
+
+            font-size: 10px;
+
+            opacity: .75;
+
+        }
+
+
+        .sinhala-first-not-found {
+
+            width: 100%;
+
+            box-sizing: border-box;
+
+            padding: 14px 16px;
+
+            margin-bottom: 14px;
+
+            border-radius: 14px;
+
+            background:
+                rgba(255,255,255,.045);
+
+            border:
+                1px solid
+                rgba(255,255,255,.08);
+
+            color:
+                rgba(230,230,245,.72);
+
+            font-size: 13px;
+
+        }
+
+
+        .english-subtitle-heading {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 9px;
+
+            margin:
+                8px 0 10px;
+
+            padding:
+                3px 2px;
+
+            color: #fff;
+
+            font-size: 16px;
+
+        }
+
+
+        .english-subtitle-heading span {
+
+            font-size: 18px;
+
+        }
+
+
+        .subtitle-result-card {
+
+            width: 100%;
+
+            box-sizing: border-box;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            gap: 14px;
+
+            padding: 15px;
+
+            margin-bottom: 10px;
+
+            border-radius: 14px;
+
+            background:
+                rgba(255,255,255,.045);
+
+            border:
+                1px solid
+                rgba(255,255,255,.08);
+
+        }
+
+
+        .subtitle-result-info {
+
+            min-width: 0;
+
+            flex: 1;
+
+        }
+
+
+        .subtitle-result-info strong {
+
+            display: block;
+
+            color: #fff;
+
+            font-size: 14px;
+
+            line-height: 1.4;
+
+            word-break: break-word;
+
+        }
+
+
+        .subtitle-meta {
+
+            margin-top: 5px;
+
+            color:
+                rgba(220,225,245,.55);
+
+            font-size: 11px;
+
+            word-break: break-word;
+
+        }
+
+
+        .subtitle-type {
+
+            margin-top: 5px;
+
+            color:
+                rgba(220,225,245,.5);
+
+            font-size: 11px;
+
+        }
+
+
+        .subtitle-select-btn {
+
+            flex-shrink: 0;
+
+            border: none;
+
+            padding: 9px 13px;
+
+            border-radius: 9px;
+
+            cursor: pointer;
+
+            color: #fff;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #7357ff,
+                    #8c4dff
+                );
+
+            font-size: 12px;
+
+            font-weight: 600;
+
+        }
+
+
+        .subtitle-select-btn:hover {
+
+            opacity: .9;
+
+        }
+
+
+        .subtitle-loading {
+
+            width: 100%;
+
+            box-sizing: border-box;
+
+            padding: 28px 20px;
+
+            text-align: center;
+
+            border-radius: 18px;
+
+            background:
+                rgba(255,255,255,.045);
+
+            border:
+                1px solid
+                rgba(255,255,255,.08);
+
+        }
+
+
+        .subtitle-loading strong {
+
+            display: block;
+
+            color: #fff;
+
+            font-size: 15px;
+
+        }
+
+
+        .subtitle-loading p {
+
+            margin:
+                7px 0 0;
+
+            color:
+                rgba(220,225,245,.55);
+
+            font-size: 12px;
+
+        }
+
+
+        .subtitle-empty {
+
+            padding: 18px;
+
+            text-align: center;
+
+            border-radius: 14px;
+
+            color:
+                rgba(220,225,245,.6);
+
+            background:
+                rgba(255,255,255,.04);
+
+        }
+
+
         .translation-status {
 
             width: 100% !important;
@@ -3178,6 +3855,46 @@ function sleep(ms) {
                 max-height: 112px !important;
 
                 flex-basis: 78px !important;
+
+            }
+
+
+            .subtitle-result-card {
+
+                align-items: flex-start;
+
+            }
+
+
+            .subtitle-select-btn {
+
+                padding:
+                    8px 10px;
+
+            }
+
+
+            .sinhala-first-card {
+
+                padding: 15px;
+
+            }
+
+
+            .sinhala-first-sources {
+
+                display: grid;
+
+                grid-template-columns: 1fr;
+
+            }
+
+
+            .sinhala-first-source {
+
+                width: 100%;
+
+                box-sizing: border-box;
 
             }
 
@@ -3637,8 +4354,6 @@ categoryChips.forEach(
             "click",
             function () {
 
-                // Active tab
-
                 categoryChips.forEach(
                     function (item) {
 
@@ -3658,19 +4373,6 @@ categoryChips.forEach(
                 const category =
                     chip.dataset.category ||
                     "trending";
-
-
-                /*
-                =================================================
-                IMPORTANT
-
-                When category is clicked:
-
-                1. Search results disappear
-                2. Category cards appear
-                3. Selected category loads
-                =================================================
-                */
 
 
                 if (searchResults) {
