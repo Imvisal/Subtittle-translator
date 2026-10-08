@@ -4416,3 +4416,683 @@ textarea:focus-visible {
     margin: 0 !important;
     padding: 0 !important;
 }
+
+/* =========================================================
+   FINAL MOBILE FIX
+   HEADER + HERO + SEARCH VISIBLE
+========================================================= */
+
+@media (max-width: 600px) {
+
+    html,
+    body {
+        width: 100%;
+        overflow-x: hidden;
+    }
+
+
+    /* =====================================================
+       HEADER
+    ===================================================== */
+
+    header {
+        position: relative !important;
+
+        width: 100% !important;
+        height: 140px !important;
+
+        min-height: 140px !important;
+
+        padding: 16px 20px !important;
+
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+
+        background:
+            linear-gradient(
+                180deg,
+                #090a20 0%,
+                #0b0c25 100%
+            ) !important;
+
+        overflow: hidden !important;
+    }
+
+
+    /* =====================================================
+       BRAND
+    ===================================================== */
+
+    .brand {
+        display: flex !important;
+
+        align-items: center !important;
+
+        gap: 14px !important;
+
+        min-width: 0 !important;
+    }
+
+
+    /* =====================================================
+       LOGO
+    ===================================================== */
+
+    .brand-logo {
+        width: 78px !important;
+        height: 78px !important;
+
+        min-width: 78px !important;
+        max-width: 78px !important;
+
+        padding: 0 !important;
+
+        border-radius: 20px !important;
+
+        overflow: hidden !important;
+
+        display: flex !important;
+
+        align-items: center !important;
+        justify-content: center !important;
+
+        background:
+            rgba(8, 9, 30, .8) !important;
+
+        box-shadow:
+            0 10px 35px
+            rgba(90, 70, 255, .22) !important;
+    }
+
+
+    .brand-logo img {
+        display: block !important;
+
+        width: 100% !important;
+        height: 100% !important;
+
+        object-fit: contain !important;
+
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+
+
+    /* =====================================================
+       BRAND TEXT
+    ===================================================== */
+
+    .brand-title {
+        font-size: 23px !important;
+
+        line-height: 1.1 !important;
+
+        white-space: nowrap !important;
+
+        color: #ffffff !important;
+    }
+
+
+    .brand-title span {
+        color: #ad4cff !important;
+    }
+
+
+    .brand-subtitle {
+        margin-top: 5px !important;
+
+        font-size: 12px !important;
+
+        color: #9995bd !important;
+
+        white-space: nowrap !important;
+    }
+
+
+    /* =====================================================
+       HEADER BUTTONS
+    ===================================================== */
+
+    .header-actions {
+        display: flex !important;
+
+        align-items: center !important;
+
+        gap: 7px !important;
+
+        flex-shrink: 0 !important;
+    }
+
+
+    .settings-button,
+    #themeToggle {
+
+        width: 54px !important;
+        height: 54px !important;
+
+        min-width: 54px !important;
+
+        border-radius: 50% !important;
+
+        background:
+            rgba(10, 12, 35, .65) !important;
+
+        border:
+            1px solid
+            rgba(115, 110, 255, .25) !important;
+
+        color: #ffffff !important;
+
+        font-size: 17px !important;
+    }
+
+
+    /* =====================================================
+       HERO
+    ===================================================== */
+
+    .hero {
+
+        position: relative !important;
+
+        width: 100% !important;
+
+        height: 600px !important;
+
+        min-height: 600px !important;
+
+        max-height: 600px !important;
+
+        margin: 0 !important;
+
+        border-radius:
+            0 0 28px 28px !important;
+
+        overflow: hidden !important;
+    }
+
+
+    /* =====================================================
+       HERO IMAGE
+    ===================================================== */
+
+    .hero-banner {
+
+        position: absolute !important;
+
+        inset: 0 !important;
+
+        width: 100% !important;
+        height: 100% !important;
+
+        overflow: hidden !important;
+    }
+
+
+    .hero-banner img {
+
+        position: absolute !important;
+
+        inset: 0 !important;
+
+        width: 100% !important;
+        height: 100% !important;
+
+        object-fit: cover !important;
+
+        object-position:
+            center center !important;
+
+        transform:
+            scale(1) !important;
+
+        filter:
+            brightness(.46)
+            saturate(1.05) !important;
+    }
+
+
+    /* =====================================================
+       HERO OVERLAY
+    ===================================================== */
+
+    .hero-overlay {
+
+        position: absolute !important;
+
+        inset: 0 !important;
+
+        z-index: 2 !important;
+
+        background:
+
+            linear-gradient(
+                90deg,
+                rgba(3, 5, 16, .88),
+                rgba(3, 5, 16, .38)
+            ),
+
+            linear-gradient(
+                180deg,
+                rgba(3, 5, 16, .10) 0%,
+                rgba(3, 5, 16, .25) 55%,
+                rgba(3, 5, 16, .98) 100%
+            ) !important;
+    }
+
+
+    /* =====================================================
+       HERO CONTENT
+    ===================================================== */
+
+    .hero-content {
+
+        position: relative !important;
+
+        z-index: 10 !important;
+
+        width: 100% !important;
+        height: 100% !important;
+
+        min-height: 600px !important;
+
+        padding:
+            0 34px 35px !important;
+
+        margin: 0 !important;
+
+        display: flex !important;
+
+        flex-direction: column !important;
+
+        justify-content: flex-end !important;
+
+        align-items: flex-start !important;
+    }
+
+
+    /* small star */
+
+    .hero-star {
+
+        margin-bottom: 18px !important;
+
+        color: #62dfff !important;
+
+        font-size: 28px !important;
+    }
+
+
+    /* =====================================================
+       HERO TITLE
+    ===================================================== */
+
+    .hero-content h1 {
+
+        max-width: 650px !important;
+
+        margin: 0 !important;
+
+        font-size: 40px !important;
+
+        line-height: 1.08 !important;
+
+        letter-spacing: -1.7px !important;
+
+        color: #ffffff !important;
+    }
+
+
+    .hero-content h1 span {
+
+        display: inline !important;
+
+        background:
+            linear-gradient(
+                90deg,
+                #ffffff,
+                #a84cff,
+                #913cff
+            ) !important;
+
+        -webkit-background-clip: text !important;
+
+        background-clip: text !important;
+
+        -webkit-text-fill-color: transparent !important;
+    }
+
+
+    /* =====================================================
+       HERO DESCRIPTION
+    ===================================================== */
+
+    .hero-content p {
+
+        max-width: 600px !important;
+
+        margin-top: 20px !important;
+
+        margin-bottom: 5px !important;
+
+        font-size: 13px !important;
+
+        line-height: 1.7 !important;
+
+        color:
+            rgba(225, 228, 242, .78) !important;
+    }
+
+
+    /* =====================================================
+       SEARCH SECTION
+    ===================================================== */
+
+    .search-section {
+
+        position: relative !important;
+
+        z-index: 30 !important;
+
+        width: 100% !important;
+
+        max-width: none !important;
+
+        margin: 0 !important;
+
+        padding:
+            0 18px !important;
+    }
+
+
+    /* =====================================================
+       SEARCH CARD
+    ===================================================== */
+
+    .search-card {
+
+        width: 100% !important;
+
+        margin: 0 !important;
+
+        padding: 18px !important;
+
+        border-radius: 24px !important;
+
+        background:
+            linear-gradient(
+                145deg,
+                rgba(20, 27, 62, .97),
+                rgba(9, 13, 35, .98)
+            ) !important;
+
+        border:
+            1px solid
+            rgba(100, 120, 255, .25) !important;
+
+        box-shadow:
+            0 25px 60px
+            rgba(0, 0, 0, .35) !important;
+
+        backdrop-filter:
+            blur(18px) !important;
+
+        -webkit-backdrop-filter:
+            blur(18px) !important;
+    }
+
+
+    /* =====================================================
+       SEARCH ROW
+    ===================================================== */
+
+    .search-row {
+
+        display: flex !important;
+
+        flex-direction: row !important;
+
+        align-items: stretch !important;
+
+        gap: 10px !important;
+    }
+
+
+    /* =====================================================
+       SEARCH INPUT
+    ===================================================== */
+
+    .search-input-wrap {
+
+        flex: 1 1 auto !important;
+
+        min-width: 0 !important;
+    }
+
+
+    .search-input-wrap input {
+
+        width: 100% !important;
+
+        height: 60px !important;
+
+        padding:
+            0 16px !important;
+
+        border-radius: 20px !important;
+
+        background:
+            rgba(5, 9, 29, .90) !important;
+
+        border:
+            1px solid
+            rgba(100, 120, 255, .20) !important;
+
+        color: #ffffff !important;
+
+        font-size: 12px !important;
+
+        outline: none !important;
+
+        box-shadow: none !important;
+    }
+
+
+    .search-input-wrap input::placeholder {
+
+        color: #858ca5 !important;
+    }
+
+
+    /* =====================================================
+       SEARCH BUTTON
+    ===================================================== */
+
+    #searchBtn {
+
+        width: 108px !important;
+
+        min-width: 108px !important;
+
+        height: 60px !important;
+
+        padding: 0 12px !important;
+
+        border-radius: 20px !important;
+
+        background:
+            linear-gradient(
+                135deg,
+                #7558ff,
+                #b63dff
+            ) !important;
+
+        color: #ffffff !important;
+
+        font-size: 12px !important;
+    }
+
+
+    /* =====================================================
+       CATEGORY CHIPS
+    ===================================================== */
+
+    .category-chips {
+
+        display: flex !important;
+
+        flex-wrap: nowrap !important;
+
+        gap: 8px !important;
+
+        margin-top: 13px !important;
+
+        overflow-x: auto !important;
+
+        scrollbar-width: none !important;
+    }
+
+
+    .category-chips::-webkit-scrollbar {
+        display: none !important;
+    }
+
+
+    .category-chip {
+
+        flex:
+            0 0 auto !important;
+
+        height: 45px !important;
+
+        padding:
+            0 15px !important;
+
+        border:
+            1px solid
+            rgba(100, 120, 255, .22) !important;
+
+        border-radius: 999px !important;
+
+        background:
+            rgba(5, 9, 29, .55) !important;
+
+        color: #a6abc0 !important;
+
+        font-size: 10px !important;
+    }
+
+
+    /* =====================================================
+       RESULTS
+    ===================================================== */
+
+    #searchResults {
+
+        margin-top: 15px !important;
+
+        gap: 10px !important;
+    }
+
+
+}
+
+
+/* =========================================================
+   SMALL PHONES
+========================================================= */
+
+@media (max-width: 380px) {
+
+    header {
+        height: 125px !important;
+        min-height: 125px !important;
+
+        padding:
+            14px 14px !important;
+    }
+
+
+    .brand-logo {
+
+        width: 68px !important;
+        height: 68px !important;
+
+        min-width: 68px !important;
+    }
+
+
+    .brand-title {
+        font-size: 19px !important;
+    }
+
+
+    .brand-subtitle {
+        font-size: 10px !important;
+    }
+
+
+    .settings-button,
+    #themeToggle {
+
+        width: 46px !important;
+        height: 46px !important;
+
+        min-width: 46px !important;
+    }
+
+
+    .hero {
+
+        height: 560px !important;
+
+        min-height: 560px !important;
+
+        max-height: 560px !important;
+    }
+
+
+    .hero-content {
+
+        min-height: 560px !important;
+
+        padding:
+            0 25px 28px !important;
+    }
+
+
+    .hero-content h1 {
+
+        font-size: 34px !important;
+    }
+
+
+    .hero-content p {
+
+        font-size: 11px !important;
+    }
+
+
+    .search-section {
+
+        padding:
+            0 12px !important;
+    }
+
+
+    .search-card {
+
+        padding:
+            14px !important;
+    }
+
+
+    #searchBtn {
+
+        width: 95px !important;
+
+        min-width: 95px !important;
+    }
+
+}
