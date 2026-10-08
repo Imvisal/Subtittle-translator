@@ -2535,3 +2535,232 @@ html[data-theme="light"] #language {
         font-size: 14px;
     }
 }
+
+/* =========================================================
+   MOBILE SEARCH RESULT FIX
+========================================================= */
+
+.search-results {
+    width: 100%;
+}
+
+.search-result-card {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+
+    overflow: hidden;
+}
+
+/* Poster size */
+.search-result-card > img,
+.search-result-card .result-poster {
+    width: 82px !important;
+    min-width: 82px !important;
+    max-width: 82px !important;
+
+    height: 118px !important;
+    min-height: 118px !important;
+    max-height: 118px !important;
+
+    object-fit: cover !important;
+    border-radius: 10px;
+
+    flex: 0 0 82px !important;
+}
+
+/* Placeholder poster */
+.search-result-card > div[style*="width:80px"] {
+    width: 82px !important;
+    min-width: 82px !important;
+    max-width: 82px !important;
+
+    height: 118px !important;
+    min-height: 118px !important;
+
+    flex: 0 0 82px !important;
+}
+
+/* Text area */
+.search-result-card .result-info {
+    min-width: 0;
+    flex: 1;
+}
+
+/* Title */
+.search-result-card .result-info h3 {
+    font-size: 17px;
+    line-height: 1.3;
+    margin: 0 0 7px;
+}
+
+/* Meta */
+.search-result-card .result-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 12px;
+}
+
+/* Buttons */
+.search-result-card .select-title-btn {
+    margin-top: 10px;
+    font-size: 13px;
+    padding: 8px 13px;
+}
+
+
+/* =========================================================
+   SINHALA STATUS
+========================================================= */
+
+.sinhala-status {
+    margin-top: 10px;
+}
+
+.sinhala-status-title {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.sinhala-source-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.sinhala-source-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    width: 100%;
+    box-sizing: border-box;
+
+    padding: 7px 10px;
+
+    border-radius: 8px;
+
+    font-size: 12px;
+
+    text-decoration: none;
+}
+
+.sinhala-source-note {
+    margin-top: 5px;
+    font-size: 10px;
+    opacity: .55;
+}
+
+.sinhala-not-found {
+    padding: 8px 0;
+}
+
+.translate-search-btn {
+    margin-top: 7px;
+
+    border: 0;
+    border-radius: 8px;
+
+    padding: 8px 11px;
+
+    font-size: 11px;
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+
+/* =========================================================
+   SEARCH LOADING ANIMATION
+========================================================= */
+
+.search-loading {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+}
+
+.search-spinner {
+    width: 17px;
+    height: 17px;
+
+    border: 3px solid rgba(255,255,255,.35);
+    border-top-color: #ffffff;
+
+    border-radius: 50%;
+
+    animation: searchSpin .7s linear infinite;
+}
+
+@keyframes searchSpin {
+
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 600px) {
+
+    .search-result-card {
+        padding: 12px !important;
+        gap: 12px;
+    }
+
+    .search-result-card > img,
+    .search-result-card .result-poster {
+        width: 78px !important;
+        min-width: 78px !important;
+        max-width: 78px !important;
+
+        height: 112px !important;
+        min-height: 112px !important;
+        max-height: 112px !important;
+
+        flex-basis: 78px !important;
+    }
+
+    .search-result-card .result-info h3 {
+        font-size: 16px;
+    }
+
+    .search-result-card .result-meta {
+        font-size: 11px;
+    }
+
+    .sinhala-status-title {
+        font-size: 12px;
+    }
+
+}
+
+
+/* =========================================================
+   VERY SMALL PHONES
+========================================================= */
+
+@media (max-width: 380px) {
+
+    .search-result-card > img,
+    .search-result-card .result-poster {
+        width: 68px !important;
+        min-width: 68px !important;
+        max-width: 68px !important;
+
+        height: 98px !
