@@ -308,13 +308,13 @@ module.exports = async function handler(req, res) {
         );
 
         return res.status(500).json({
-            found: false,
-            title,
-            year,
-            type,
-            sources: [],
-            error:
-                "Sinhala subtitle search unavailable"
-        });
+    found: false,
+    title,
+    year,
+    type,
+    sources: [],
+    error: error.message,
+    details: String(error)
+});
     }
 };
