@@ -3684,3 +3684,149 @@ html[data-theme="light"] #language {
         padding: 2px 4px;
     }
 }
+
+/* ========================================================
+   FORCE TMDB CATEGORY CARDS - 4 SMALL CARDS
+======================================================== */
+
+.category-results {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+
+.category-results-grid {
+    display: grid !important;
+
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr)) !important;
+
+    gap: 8px !important;
+
+    width: 100% !important;
+    max-width: 100% !important;
+
+    overflow: hidden !important;
+}
+
+.category-card {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+
+    margin: 0 !important;
+
+    border-radius: 10px !important;
+
+    box-sizing: border-box !important;
+
+    overflow: hidden !important;
+}
+
+.category-poster-wrap {
+    width: 100% !important;
+
+    aspect-ratio: 2 / 3 !important;
+
+    height: auto !important;
+
+    overflow: hidden !important;
+}
+
+.category-poster {
+    width: 100% !important;
+    height: 100% !important;
+
+    object-fit: cover !important;
+
+    display: block !important;
+}
+
+.category-card-info {
+    padding: 6px !important;
+}
+
+.category-card-info h3 {
+    font-size: 10px !important;
+    line-height: 1.25 !important;
+
+    min-height: 25px !important;
+
+    margin: 0 !important;
+}
+
+.category-card-meta {
+    font-size: 8px !important;
+
+    margin-top: 4px !important;
+
+    gap: 3px !important;
+}
+
+.category-select-btn {
+    width: 100% !important;
+
+    padding: 5px 2px !important;
+
+    margin-top: 5px !important;
+
+    font-size: 8px !important;
+
+    border-radius: 6px !important;
+}
+
+
+/* ========================================================
+   MOBILE - KEEP 4 CARDS VISIBLE
+======================================================== */
+
+@media (max-width: 600px) {
+
+    .category-results-grid {
+        display: grid !important;
+
+        grid-template-columns:
+            repeat(4, minmax(0, 1fr)) !important;
+
+        gap: 6px !important;
+
+        overflow: hidden !important;
+    }
+
+    .category-card {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    .category-card-info {
+        padding: 5px !important;
+    }
+
+    .category-card-info h3 {
+        font-size: 9px !important;
+
+        line-height: 1.2 !important;
+
+        min-height: 22px !important;
+    }
+
+    .category-card-meta {
+        font-size: 7px !important;
+    }
+
+    .category-select-btn {
+        font-size: 7px !important;
+
+        padding: 5px 2px !important;
+    }
+
+    .category-type-badge {
+        font-size: 6px !important;
+
+        padding: 2px 3px !important;
+
+        top: 3px !important;
+        left: 3px !important;
+    }
+}
+   
