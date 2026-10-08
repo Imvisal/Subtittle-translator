@@ -23,6 +23,7 @@ body {
     min-height: 100vh;
     font-family: 'Poppins', sans-serif;
     color: #f7f7ff;
+
     background:
         radial-gradient(
             circle at 15% 25%,
@@ -119,7 +120,6 @@ body::before {
     inset: 0;
 
     pointer-events: none;
-
     z-index: -5;
 
     background:
@@ -904,13 +904,11 @@ body::before {
     width: 82px !important;
 
     min-width: 82px !important;
-
     max-width: 82px !important;
 
     height: 118px !important;
 
     min-height: 118px !important;
-
     max-height: 118px !important;
 
     flex: 0 0 82px !important;
@@ -985,7 +983,6 @@ body::before {
 
 /* =========================================================
    CATEGORY RESULTS
-   4 CARDS
 ========================================================= */
 
 .category-results {
@@ -1080,13 +1077,11 @@ body::before {
 
 .category-poster-empty {
     width: 100%;
-
     height: 100%;
 
     display: flex;
 
     align-items: center;
-
     justify-content: center;
 
     background: #111522;
@@ -1098,7 +1093,6 @@ body::before {
     position: absolute;
 
     top: 5px;
-
     left: 5px;
 
     padding: 3px 5px;
@@ -1478,7 +1472,6 @@ body::before {
     flex-direction: column;
 
     align-items: center;
-
     justify-content: center;
 
     text-align: center;
@@ -1843,7 +1836,7 @@ body::before {
 }
 
 /* =========================================================
-   FRIENDLY TRANSLATION PROGRESS
+   TRANSLATION STATUS
 ========================================================= */
 
 .translation-status {
@@ -2138,35 +2131,8 @@ body::before {
     }
 }
 
-.loading-dots::after {
-    content: "...";
-
-    animation:
-        dots
-        1.2s infinite;
-}
-
-@keyframes dots {
-
-    0% {
-        content: "";
-    }
-
-    33% {
-        content: ".";
-    }
-
-    66% {
-        content: "..";
-    }
-
-    100% {
-        content: "...";
-    }
-}
-
 /* =========================================================
-   EMPTY / ERROR
+   ERROR
 ========================================================= */
 
 .search-empty {
@@ -2249,15 +2215,6 @@ body::before {
             #715cff,
             #a944ef
         );
-}
-
-.subtitle-loaded {
-    border-color:
-        rgba(79, 211, 255, 0.35);
-
-    box-shadow:
-        0 0 20px
-        rgba(53, 181, 255, 0.08);
 }
 
 /* =========================================================
@@ -2345,7 +2302,7 @@ body::before {
 }
 
 /* =========================================================
-   SINHALA SUBTITLE STATUS
+   SINHALA STATUS
 ========================================================= */
 
 .sinhala-status {
@@ -2375,25 +2332,11 @@ body::before {
     font-size: 12px;
 }
 
-.sinhala-checking {
-    display: inline-flex;
-
-    align-items: center;
-
-    background: transparent;
-
-    border: 0;
-
-    padding: 0;
-}
-
 .mini-spinner {
     display: inline-block;
 
     width: 11px;
     height: 11px;
-
-    min-width: 11px;
 
     margin-right: 7px;
 
@@ -2447,18 +2390,13 @@ body::before {
     display: flex;
 
     align-items: center;
-
     justify-content: space-between;
 
     width: 100%;
 
-    box-sizing: border-box;
-
     padding: 8px 10px;
 
     border-radius: 9px;
-
-    text-decoration: none;
 
     color: #ffffff;
 
@@ -2475,9 +2413,7 @@ body::before {
         1px solid
         rgba(130, 110, 255, 0.2);
 
-    transition:
-        transform .2s ease,
-        border-color .2s ease;
+    transition: 0.2s ease;
 }
 
 .sinhala-source-btn:hover,
@@ -2492,8 +2428,6 @@ body::before {
     color: #bba5ff;
 
     font-size: 11px;
-
-    font-weight: 600;
 }
 
 .sinhala-source-note {
@@ -2521,8 +2455,6 @@ body::before {
 
     padding: 8px 11px;
 
-    border: 0;
-
     border-radius: 8px;
 
     color: white;
@@ -2537,19 +2469,18 @@ body::before {
     font-size: 11px;
 
     font-weight: 600;
-
-    cursor: pointer;
 }
 
 /* =========================================================
-   SINHALA SUBTITLE — TOP CARD
+   SINHALA TOP CARD
 ========================================================= */
 
 .sinhala-first-card {
     width: 100%;
-    box-sizing: border-box;
 
-    margin: 18px 0 22px;
+    margin:
+        18px 0 22px;
+
     padding: 18px;
 
     border-radius: 18px;
@@ -2613,8 +2544,6 @@ body::before {
     color: #ffffff;
 
     font-size: 16px;
-
-    line-height: 1.3;
 }
 
 .sinhala-first-header small {
@@ -2625,8 +2554,6 @@ body::before {
     color: #9da8c7;
 
     font-size: 12px;
-
-    line-height: 1.4;
 }
 
 .sinhala-first-sources {
@@ -2641,7 +2568,6 @@ body::before {
     display: inline-flex;
 
     align-items: center;
-
     justify-content: center;
 
     gap: 7px;
@@ -2660,31 +2586,21 @@ body::before {
 
     color: #ffffff;
 
-    text-decoration: none;
-
     font-size: 13px;
 
     font-weight: 500;
 
-    transition:
-        transform .2s ease,
-        background .2s ease,
-        border-color .2s ease;
+    transition: 0.2s ease;
 }
 
 .sinhala-first-source:hover {
-    transform:
-        translateY(-2px);
+    transform: translateY(-2px);
 
     background:
         rgba(145, 80, 255, 0.40);
 
     border-color:
         rgba(180, 130, 255, 0.55);
-
-    box-shadow:
-        0 7px 20px
-        rgba(120, 70, 255, 0.18);
 }
 
 .sinhala-first-source i {
@@ -2695,8 +2611,6 @@ body::before {
 
 .sinhala-first-not-found {
     width: 100%;
-
-    box-sizing: border-box;
 
     margin:
         18px 0 22px;
@@ -2754,13 +2668,11 @@ body::before {
 }
 
 /* =========================================================
-   NEW ENGLISH SUBTITLE RESULT CARDS
+   ENGLISH SUBTITLE CARDS
 ========================================================= */
 
 .subtitle-result-card {
     width: 100%;
-
-    box-sizing: border-box;
 
     display: flex;
 
@@ -2783,14 +2695,11 @@ body::before {
         1px solid
         rgba(255,255,255,.08);
 
-    transition:
-        transform .2s ease,
-        border-color .2s ease;
+    transition: 0.2s ease;
 }
 
 .subtitle-result-card:hover {
-    transform:
-        translateY(-2px);
+    transform: translateY(-2px);
 
     border-color:
         rgba(132,96,255,.40);
@@ -2821,8 +2730,6 @@ body::before {
         rgba(220,225,245,.55);
 
     font-size: 11px;
-
-    word-break: break-word;
 }
 
 .subtitle-type {
@@ -2842,8 +2749,6 @@ body::before {
 
     border-radius: 9px;
 
-    cursor: pointer;
-
     color: #ffffff;
 
     background:
@@ -2857,14 +2762,11 @@ body::before {
 
     font-weight: 600;
 
-    transition:
-        transform .2s ease,
-        filter .2s ease;
+    transition: 0.2s ease;
 }
 
 .subtitle-select-btn:hover {
-    transform:
-        translateY(-1px);
+    transform: translateY(-1px);
 
     filter:
         brightness(1.12);
@@ -2891,8 +2793,6 @@ body::before {
 .subtitle-loading {
     width: 100%;
 
-    box-sizing: border-box;
-
     padding:
         28px 20px;
 
@@ -2909,24 +2809,6 @@ body::before {
 
     color:
         rgba(220,225,245,.70);
-}
-
-.subtitle-loading strong {
-    display: block;
-
-    color: #ffffff;
-
-    font-size: 15px;
-}
-
-.subtitle-loading p {
-    margin:
-        7px 0 0;
-
-    color:
-        rgba(220,225,245,.55);
-
-    font-size: 12px;
 }
 
 @keyframes sinhalaCardIn {
@@ -3211,9 +3093,9 @@ html[data-theme="light"] .subtitle-type {
 
     .hero-content {
         padding:
-            195px
+            185px
             30px
-            90px;
+            80px;
     }
 
     .hero h1 {
@@ -3225,7 +3107,7 @@ html[data-theme="light"] .subtitle-type {
     }
 
     .search-section {
-        margin-top: -35px;
+        margin-top: -30px;
     }
 }
 
@@ -3234,16 +3116,6 @@ html[data-theme="light"] .subtitle-type {
 ========================================================= */
 
 @media (max-width: 600px) {
-
-    body {
-        background:
-            radial-gradient(
-                circle at 20% 20%,
-                rgba(91, 61, 255, 0.12),
-                transparent 28%
-            ),
-            #070b17;
-    }
 
     .app {
         width: 100%;
@@ -3303,11 +3175,13 @@ html[data-theme="light"] .subtitle-type {
 
     .settings-button {
         width: 45px;
-
         height: 45px;
     }
 
-    /* HERO */
+    /* =====================================================
+       HERO MOBILE
+       BALANCED POSITION
+    ===================================================== */
 
     .hero {
         min-height: 500px;
@@ -3339,11 +3213,17 @@ html[data-theme="light"] .subtitle-type {
             );
     }
 
+    /*
+       IMPORTANT:
+       Title was too low.
+       Moved hero content UP.
+    */
+
     .hero-content {
         padding:
-            225px
+            160px
             28px
-            80px;
+            55px;
     }
 
     .hero-star {
@@ -3352,37 +3232,42 @@ html[data-theme="light"] .subtitle-type {
 
         font-size: 25px;
 
-        margin-bottom: 10px;
+        margin-bottom: 8px;
     }
 
     .hero h1 {
         font-size:
             clamp(
-                37px,
-                10vw,
-                48px
+                36px,
+                9.5vw,
+                47px
             );
 
-        letter-spacing: -1.7px;
+        line-height: 1.05;
 
-        line-height: 1.07;
+        letter-spacing: -1.6px;
     }
 
     .hero-content p {
         max-width: 360px;
 
-        margin-top: 18px;
+        margin-top: 14px;
 
-        font-size: 15px;
+        font-size: 14px;
 
-        line-height: 1.6;
+        line-height: 1.55;
+    }
+
+    /*
+       Search card slightly higher
+       to balance with hero text.
+    */
+
+    .search-section {
+        margin-top: -25px;
     }
 
     /* SEARCH */
-
-    .search-section {
-        margin-top: -35px;
-    }
 
     .search-card {
         padding: 16px;
@@ -3439,10 +3324,7 @@ html[data-theme="light"] .subtitle-type {
         font-size: 12px;
     }
 
-    /* =====================================================
-       TMDB CARDS — MOBILE
-       ALWAYS 4 IN ONE ROW
-    ===================================================== */
+    /* CATEGORY CARDS */
 
     .category-results {
         width: 100% !important;
@@ -3507,10 +3389,6 @@ html[data-theme="light"] .subtitle-type {
         margin-top: 4px !important;
     }
 
-    .category-card-meta span + span::before {
-        margin-right: 3px;
-    }
-
     .category-select-btn {
         width: 100% !important;
 
@@ -3535,7 +3413,7 @@ html[data-theme="light"] .subtitle-type {
         font-size: 6px !important;
     }
 
-    /* QUICK CARDS */
+    /* QUICK ACTIONS */
 
     .quick-actions {
         grid-template-columns:
@@ -3597,8 +3475,7 @@ html[data-theme="light"] .subtitle-type {
         margin-top: 16px;
 
         padding:
-            24px
-            15px;
+            24px 15px;
 
         border-radius: 23px;
     }
@@ -3636,50 +3513,7 @@ html[data-theme="light"] .subtitle-type {
         margin-top: 16px;
     }
 
-    /* PREVIEW */
-
-    #preview {
-        padding: 17px;
-
-        border-radius: 19px;
-    }
-
-    /* TRANSLATION */
-
-    .translation-status {
-        padding: 24px 18px;
-
-        border-radius: 20px;
-    }
-
-    .translation-icon {
-        width: 52px;
-        height: 52px;
-
-        font-size: 25px;
-
-        border-radius: 16px;
-    }
-
-    .translation-status h3 {
-        font-size: 20px;
-    }
-
-    .translation-subtitle {
-        font-size: 12px;
-
-        margin-bottom: 20px;
-    }
-
-    .translation-progress-row {
-        gap: 9px;
-    }
-
-    .translation-count {
-        font-size: 13px;
-    }
-
-    /* SEARCH RESULT */
+    /* SEARCH RESULTS */
 
     .search-result-card {
         padding: 12px !important;
@@ -3692,13 +3526,11 @@ html[data-theme="light"] .subtitle-type {
         width: 78px !important;
 
         min-width: 78px !important;
-
         max-width: 78px !important;
 
         height: 112px !important;
 
         min-height: 112px !important;
-
         max-height: 112px !important;
 
         flex-basis: 78px !important;
@@ -3713,7 +3545,7 @@ html[data-theme="light"] .subtitle-type {
     }
 
     /* =====================================================
-       SINHALA TOP CARD — MOBILE
+       SINHALA TOP CARD
     ===================================================== */
 
     .sinhala-first-card {
@@ -3760,12 +3592,6 @@ html[data-theme="light"] .subtitle-type {
     .sinhala-first-source {
         width: 100%;
 
-        min-width: 0;
-
-        box-sizing: border-box;
-
-        justify-content: center;
-
         padding:
             9px 10px;
 
@@ -3782,9 +3608,7 @@ html[data-theme="light"] .subtitle-type {
         font-size: 12px;
     }
 
-    /* =====================================================
-       ENGLISH SUBTITLE RESULTS — MOBILE
-    ===================================================== */
+    /* ENGLISH SUBTITLE */
 
     .english-subtitle-heading {
         margin:
@@ -3833,10 +3657,6 @@ html[data-theme="light"] .subtitle-type {
 
         padding: 20px;
     }
-
-    .sinhala-status-title {
-        font-size: 12px;
-    }
 }
 
 /* =========================================================
@@ -3847,7 +3667,6 @@ html[data-theme="light"] .subtitle-type {
 
     .top-header {
         padding-left: 13px;
-
         padding-right: 13px;
     }
 
@@ -3874,7 +3693,6 @@ html[data-theme="light"] .subtitle-type {
 
     .settings-button {
         width: 41px;
-
         height: 41px;
     }
 
@@ -3882,19 +3700,32 @@ html[data-theme="light"] .subtitle-type {
         min-height: 485px;
     }
 
+    /*
+       Even smaller phones:
+       keep title high and balanced.
+    */
+
     .hero-content {
         padding:
-            215px
+            150px
             23px
-            75px;
+            50px;
     }
 
     .hero h1 {
         font-size: 35px;
+
+        line-height: 1.04;
     }
 
     .hero-content p {
-        font-size: 14px;
+        font-size: 13.5px;
+
+        margin-top: 13px;
+    }
+
+    .search-section {
+        margin-top: -22px;
     }
 
     .search-card {
@@ -3971,13 +3802,11 @@ html[data-theme="light"] .subtitle-type {
         width: 68px !important;
 
         min-width: 68px !important;
-
         max-width: 68px !important;
 
         height: 98px !important;
 
         min-height: 98px !important;
-
         max-height: 98px !important;
 
         flex:
@@ -3996,13 +3825,6 @@ html[data-theme="light"] .subtitle-type {
 
     .search-result-card .result-meta {
         font-size: 10px;
-    }
-
-    .search-result-card .select-title-btn {
-        font-size: 11px;
-
-        padding:
-            7px 10px;
     }
 
     .sinhala-first-header strong {
@@ -4048,11 +3870,22 @@ html[data-theme="light"] .subtitle-type {
     }
 
     .hero-content {
-        padding-top: 205px;
+        padding:
+            145px
+            20px
+            45px;
     }
 
     .hero h1 {
         font-size: 32px;
+    }
+
+    .hero-content p {
+        font-size: 13px;
+    }
+
+    .search-section {
+        margin-top: -18px;
     }
 
     .quick-actions {
@@ -4121,8 +3954,7 @@ html[data-theme="light"] .subtitle-type {
     .sinhala-first-source {
         font-size: 10px;
 
-        padding:
-            8px;
+        padding: 8px;
     }
 }
 
