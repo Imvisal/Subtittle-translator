@@ -2,22 +2,24 @@
 
 /*
 ========================================================
-SubLanka AI - Complete script.js
+SUBLANKA AI - FULL script.js
 ========================================================
-Features:
-- SRT upload
-- SRT preview
-- Sinhala translation
-- Movie / TV search
-- Search animation
-- Mobile result-card fix
-- Sinhala subtitle availability
-- TV Season / Episode
-- English subtitle search
-- English subtitle download
-- Automatic Sinhala translation
-- Progress bar
-- Sinhala SRT download
+
+FEATURES
+1. SRT upload
+2. SRT preview
+3. English -> Sinhala translation
+4. Movie / TV search
+5. Sinhala subtitle availability check
+6. Baiscope / SinhalaSub / Cineru links
+7. TV Season / Episode selector
+8. SubDL English subtitle search
+9. English subtitle download
+10. Automatic Sinhala translation
+11. Sinhala SRT download
+12. Translation progress
+13. Search loading animation
+14. Clean Sinhala checking spinner
 ========================================================
 */
 
@@ -38,26 +40,35 @@ const searchResults =
 const searchStatus =
     document.getElementById("searchStatus");
 
+
 const fileInput =
     document.getElementById("fileInput") ||
     document.getElementById("srtFile") ||
     document.getElementById("subtitleFile");
 
+
 const fileName =
     document.getElementById("fileName") ||
     document.getElementById("fileNameDisplay");
+
 
 const translateBtn =
     document.getElementById("translateBtn") ||
     document.getElementById("translateButton");
 
+
 const languageSelect =
     document.getElementById("languageSelect") ||
     document.getElementById("language");
 
+
 const subtitlePreview =
     document.getElementById("subtitlePreview") ||
     document.getElementById("preview");
+
+
+const themeToggle =
+    document.getElementById("themeToggle");
 
 
 // ========================================================
@@ -92,6 +103,7 @@ if (searchInput) {
         function (event) {
 
             if (event.key === "Enter") {
+                event.preventDefault();
                 searchMovies();
             }
 
@@ -102,7 +114,7 @@ if (searchInput) {
 
 
 // ========================================================
-// FILE UPLOAD
+// FILE UPLOAD EVENT
 // ========================================================
 
 if (fileInput) {
@@ -123,28 +135,36 @@ if (translateBtn) {
 
     translateBtn.addEventListener(
         "click",
+        translateUploadedSubtitle
+    );
+
+    translateBtn.disabled = true;
+
+}
+
+
+// ========================================================
+// THEME TOGGLE
+// ========================================================
+
+if (themeToggle) {
+
+    themeToggle.addEventListener(
+        "click",
         function () {
 
-            const translationSection =
-                document.querySelector(
-                    ".settings-section"
+            document.body.classList.toggle(
+                "light-mode"
+            );
+
+            const light =
+                document.body.classList.contains(
+                    "light-mode"
                 );
 
-            if (translationSection) {
-
-                translationSection.scrollIntoView({
-                    behavior: "smooth",
-                    block: "start",
-                    inline: "nearest"
-                });
-
-            }
-
-            setTimeout(
-                function () {
-                    translateUploadedSubtitle();
-                },
-                350
+            localStorage.setItem(
+                "sublanka-theme",
+                light ? "light" : "dark"
             );
 
         }
@@ -153,8 +173,40 @@ if (translateBtn) {
 }
 
 
+(function restoreTheme() {
+
+    try {
+
+        const theme =
+            localStorage.getItem(
+                "sublanka-theme"
+            );
+
+        if (
+            theme === "light" &&
+            document.body
+        ) {
+
+            document.body.classList.add(
+                "light-mode"
+            );
+
+        }
+
+    } catch (error) {
+
+        console.warn(
+            "Theme restore failed:",
+            error
+        );
+
+    }
+
+})();
+
+
 // ========================================================
-// HANDLE FILE UPLOAD
+// HANDLE SRT FILE UPLOAD
 // ========================================================
 
 async function handleFileUpload(event) {
@@ -176,6 +228,8 @@ async function handleFileUpload(event) {
         alert(
             "Please select an SRT subtitle file."
         );
+
+        event.target.value = "";
 
         return;
     }
@@ -201,11 +255,14 @@ async function handleFileUpload(event) {
         const text =
             await file.text();
 
+
         uploadedSubtitles =
             parseSRT(text);
 
 
-        if (!uploadedSubtitles.length) {
+        if (
+            !uploadedSubtitles.length
+        ) {
 
             alert(
                 "This SRT file could not be read."
@@ -221,9 +278,17 @@ async function handleFileUpload(event) {
 
 
         if (translateBtn) {
-            translateBtn.disabled = false;
+
+            translateBtn.disabled =
+                false;
+
         }
 
+        console.log(
+            "SRT loaded:",
+            uploadedSubtitles.length,
+            "subtitles"
+        );
 
     } catch (error) {
 
@@ -250,6 +315,10 @@ function showSRTPreview(subtitles) {
     if (!subtitlePreview) {
         return;
     }
+
+
+    subtitlePreview.value =
+        buildSRT(subtitles);
 
 
     subtitlePreview.textContent =
@@ -287,7 +356,8 @@ async function translateUploadedSubtitle() {
 
     if (translateBtn) {
 
-        translateBtn.disabled = true;
+        translateBtn.disabled =
+            true;
 
         translateBtn.textContent =
             "Translating...";
@@ -304,7 +374,9 @@ async function translateUploadedSubtitle() {
 
 
         const sinhalaSRT =
-            buildSRT(translated);
+            buildSRT(
+                translated
+            );
 
 
         const filename =
@@ -342,7 +414,8 @@ async function translateUploadedSubtitle() {
 
         if (translateBtn) {
 
-            translateBtn.disabled = false;
+            translateBtn.disabled =
+                false;
 
             translateBtn.textContent =
                 "Translate Subtitle";
@@ -382,7 +455,7 @@ async function searchMovies() {
     }
 
 
-    // SEARCH ANIMATION
+    // SEARCH BUTTON LOADING
 
     if (searchBtn) {
 
@@ -401,7 +474,7 @@ async function searchMovies() {
     if (searchStatus) {
 
         searchStatus.textContent =
-            "Searching OMDb...";
+            "Searching movies & TV series...";
 
     }
 
@@ -456,7 +529,7 @@ async function searchMovies() {
         }
 
 
-        // Put TV series first
+        // TV SERIES FIRST
 
         results.sort(
             function (a, b) {
@@ -510,6 +583,7 @@ async function searchMovies() {
 
         }
 
+
     } finally {
 
         if (searchBtn) {
@@ -527,7 +601,7 @@ async function searchMovies() {
 
 
 // ========================================================
-// DISPLAY MOVIE / TV RESULTS
+// DISPLAY SEARCH RESULTS
 // ========================================================
 
 function displaySearchResults(results) {
@@ -546,7 +620,9 @@ function displaySearchResults(results) {
             function (item) {
 
                 const card =
-                    document.createElement("div");
+                    document.createElement(
+                        "div"
+                    );
 
 
                 card.className =
@@ -564,22 +640,13 @@ function displaySearchResults(results) {
                                     item.poster
                                 )}"
                                 alt=""
+                                loading="lazy"
                             >
                           `
 
                         : `
                             <div
-                                class="result-poster"
-                                style="
-                                    width:80px;
-                                    height:115px;
-                                    display:flex;
-                                    align-items:center;
-                                    justify-content:center;
-                                    background:#111827;
-                                    border-radius:8px;
-                                    font-size:28px;
-                                "
+                                class="result-poster result-poster-empty"
                             >
                                 🎬
                             </div>
@@ -628,7 +695,13 @@ function displaySearchResults(results) {
                         <div class="sinhala-status">
 
                             <span class="sinhala-checking">
-                                🔎 Checking Sinhala subtitle...
+
+                                <span class="mini-spinner"></span>
+
+                                <span>
+                                    Checking...
+                                </span>
+
                             </span>
 
                         </div>
@@ -731,7 +804,7 @@ async function checkSinhalaSubtitles(
 
             throw new Error(
                 data.error ||
-                "Sinhala search failed"
+                "Sinhala search failed."
             );
 
         }
@@ -752,23 +825,27 @@ async function checkSinhalaSubtitles(
                     )
                     .slice(0, 3)
                     .map(
-                        source => `
+                        function (source) {
 
-                            <a
-                                href="${escapeAttribute(
-                                    source.url
-                                )}"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="sinhala-source-link"
-                            >
-                                ${escapeHTML(
-                                    source.source ||
-                                    "Source"
-                                )}
-                            </a>
+                            return `
 
-                        `
+                                <a
+                                    href="${escapeAttribute(
+                                        source.url
+                                    )}"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="sinhala-source-link"
+                                >
+                                    ${escapeHTML(
+                                        source.source ||
+                                        "Source"
+                                    )}
+                                </a>
+
+                            `;
+
+                        }
                     )
                     .join("");
 
@@ -781,13 +858,20 @@ async function checkSinhalaSubtitles(
                         🇱🇰 Sinhala Subtitle Available
                     </strong>
 
-                    <div class="sinhala-source-links">
-                        ${links}
-                    </div>
+                    ${
+                        links
+                            ? `
+                                <div class="sinhala-source-links">
+                                    ${links}
+                                </div>
+                              `
+                            : ""
+                    }
 
                 </div>
 
             `;
+
 
         } else {
 
@@ -833,7 +917,10 @@ async function checkSinhalaSubtitles(
 
 async function selectSearchResult(item) {
 
-    if (!item || !item.imdbID) {
+    if (
+        !item ||
+        !item.imdbID
+    ) {
 
         alert(
             "IMDb ID is missing."
@@ -851,7 +938,9 @@ async function selectSearchResult(item) {
     }
 
 
-    if (item.type === "movie") {
+    if (
+        item.type === "movie"
+    ) {
 
         await searchSubtitles(
             item,
@@ -862,7 +951,9 @@ async function selectSearchResult(item) {
     }
 
 
-    if (item.type === "series") {
+    if (
+        item.type === "series"
+    ) {
 
         showEpisodeSelector(
             item
@@ -964,7 +1055,7 @@ function showEpisodeSelector(item) {
                 Number(
                     document.getElementById(
                         "seasonInput"
-                    ).value
+                    )?.value
                 );
 
 
@@ -972,7 +1063,7 @@ function showEpisodeSelector(item) {
                 Number(
                     document.getElementById(
                         "episodeInput"
-                    ).value
+                    )?.value
                 );
 
 
@@ -1008,7 +1099,7 @@ function showEpisodeSelector(item) {
 
 
 // ========================================================
-// SUBDL SEARCH
+// SUBDL SUBTITLE SEARCH
 // ========================================================
 
 async function searchSubtitles(
@@ -1067,7 +1158,9 @@ async function searchSubtitles(
         );
 
 
-        if (type === "episode") {
+        if (
+            type === "episode"
+        ) {
 
             params.set(
                 "season",
@@ -1172,9 +1265,7 @@ async function searchSubtitles(
 
             searchResults.innerHTML = `
 
-                <div
-                    class="translation-status error"
-                >
+                <div class="translation-status error">
 
                     ❌ ${escapeHTML(
                         error.message
@@ -1340,8 +1431,8 @@ function displaySubtitleResults(
 
 
 // ========================================================
-// DOWNLOAD ENGLISH SUBTITLE
-// THEN TRANSLATE
+// SELECT ENGLISH SUBTITLE
+// DOWNLOAD -> TRANSLATE
 // ========================================================
 
 async function selectSubtitle(
@@ -1351,80 +1442,85 @@ async function selectSubtitle(
     episode
 ) {
 
-    const subtitleUrl =
-        subtitle.downloadUrl ||
-        subtitle.url ||
-        subtitle.download_url;
+    try {
+
+        const subtitleUrl =
+            subtitle.downloadUrl ||
+            subtitle.url ||
+            subtitle.download_url;
 
 
-    if (!subtitleUrl) {
+        if (!subtitleUrl) {
 
-        throw new Error(
-            "Subtitle download URL is missing."
-        );
+            throw new Error(
+                "Subtitle download URL is missing."
+            );
 
-    }
-
-
-    let fullSubtitleUrl =
-        subtitleUrl;
+        }
 
 
-    if (
-        subtitleUrl.startsWith("/")
-    ) {
-
-        fullSubtitleUrl =
-            "https://dl.subdl.com" +
+        let fullSubtitleUrl =
             subtitleUrl;
 
-    }
+
+        if (
+            subtitleUrl.startsWith("/")
+        ) {
+
+            fullSubtitleUrl =
+                "https://dl.subdl.com" +
+                subtitleUrl;
+
+        }
 
 
-    if (
-        !fullSubtitleUrl.startsWith("http")
-    ) {
+        if (
+            !fullSubtitleUrl.startsWith(
+                "http"
+            )
+        ) {
 
-        throw new Error(
-            "Invalid subtitle URL: " +
-            fullSubtitleUrl
-        );
+            throw new Error(
+                "Invalid subtitle URL."
+            );
 
-    }
-
-
-    if (searchStatus) {
-
-        searchStatus.textContent =
-            "Downloading English subtitle...";
-
-    }
+        }
 
 
-    if (searchResults) {
+        if (searchStatus) {
 
-        searchResults.innerHTML = `
+            searchStatus.textContent =
+                "Downloading English subtitle...";
 
-            <div class="translation-status">
-
-                <div class="status-spinner"></div>
-
-                <h3>
-                    Downloading English subtitle...
-                </h3>
-
-                <p>
-                    Please wait...
-                </p>
-
-            </div>
-
-        `;
-
-    }
+        }
 
 
-    try {
+        if (searchResults) {
+
+            searchResults.innerHTML = `
+
+                <div class="translation-status">
+
+                    <div class="status-spinner"></div>
+
+                    <h3>
+                        Downloading English subtitle...
+                    </h3>
+
+                    <p>
+                        Please wait...
+                    </p>
+
+                </div>
+
+            `;
+
+        }
+
+
+        // ==================================================
+        // DOWNLOAD FROM OUR API
+        // ==================================================
 
         const response =
             await fetch(
@@ -1457,7 +1553,9 @@ async function selectSubtitle(
         }
 
 
-        // Base64 -> binary
+        // ==================================================
+        // BASE64 -> BYTES
+        // ==================================================
 
         const binary =
             atob(data.data);
@@ -1481,11 +1579,17 @@ async function selectSubtitle(
         }
 
 
-        if (isZipFile(bytes)) {
+        // ==================================================
+        // ZIP CHECK
+        // ==================================================
+
+        if (
+            isZipFile(bytes)
+        ) {
 
             throw new Error(
                 "SubDL returned a ZIP subtitle package. " +
-                "The download endpoint needs ZIP extraction."
+                "ZIP extraction is required for this subtitle."
             );
 
         }
@@ -1497,7 +1601,9 @@ async function selectSubtitle(
             );
 
 
-        if (!englishSRT.trim()) {
+        if (
+            !englishSRT.trim()
+        ) {
 
             throw new Error(
                 "Subtitle file is empty."
@@ -1506,13 +1612,19 @@ async function selectSubtitle(
         }
 
 
+        // ==================================================
+        // PARSE SRT
+        // ==================================================
+
         const subtitles =
             parseSRT(
                 englishSRT
             );
 
 
-        if (!subtitles.length) {
+        if (
+            !subtitles.length
+        ) {
 
             throw new Error(
                 "Downloaded file is not a valid SRT."
@@ -1528,6 +1640,10 @@ async function selectSubtitle(
 
         }
 
+
+        // ==================================================
+        // TRANSLATION UI
+        // ==================================================
 
         if (searchResults) {
 
@@ -1564,7 +1680,9 @@ async function selectSubtitle(
         }
 
 
-        // Translate
+        // ==================================================
+        // TRANSLATE
+        // ==================================================
 
         const translated =
             await translateSubtitleChunks(
@@ -1572,11 +1690,19 @@ async function selectSubtitle(
             );
 
 
+        // ==================================================
+        // BUILD SINHALA SRT
+        // ==================================================
+
         const sinhalaSRT =
             buildSRT(
                 translated
             );
 
+
+        // ==================================================
+        // FILE NAME
+        // ==================================================
 
         const baseName =
             getSubtitleBaseName(
@@ -1589,6 +1715,10 @@ async function selectSubtitle(
         const filename =
             `${baseName}.Sinhala.SubLankaAI.srt`;
 
+
+        // ==================================================
+        // AUTO DOWNLOAD
+        // ==================================================
 
         downloadTextFile(
             sinhalaSRT,
@@ -1604,13 +1734,15 @@ async function selectSubtitle(
         }
 
 
+        // ==================================================
+        // COMPLETE UI
+        // ==================================================
+
         if (searchResults) {
 
             searchResults.innerHTML = `
 
-                <div
-                    class="translation-status success"
-                >
+                <div class="translation-status success">
 
                     <h2>
                         ✅ Translation Complete
@@ -1640,15 +1772,15 @@ async function selectSubtitle(
             `;
 
 
-            const downloadAgainBtn =
+            const again =
                 document.getElementById(
                     "downloadAgainBtn"
                 );
 
 
-            if (downloadAgainBtn) {
+            if (again) {
 
-                downloadAgainBtn.addEventListener(
+                again.addEventListener(
                     "click",
                     function () {
 
@@ -1685,9 +1817,7 @@ async function selectSubtitle(
 
             searchResults.innerHTML = `
 
-                <div
-                    class="translation-status error"
-                >
+                <div class="translation-status error">
 
                     <h3>
                         ❌ Translation failed
@@ -1764,7 +1894,9 @@ async function translateSubtitleChunks(
         let lastError = null;
 
 
-        // Retry 3 times
+        // ==================================================
+        // RETRY 3 TIMES
+        // ==================================================
 
         for (
             let attempt = 1;
@@ -1785,16 +1917,15 @@ async function translateSubtitleChunks(
                                     "application/json"
                             },
 
-                            body:
-                                JSON.stringify({
+                            body: JSON.stringify({
 
-                                    subtitles:
-                                        chunk,
+                                subtitles:
+                                    chunk,
 
-                                    language:
-                                        "si"
+                                language:
+                                    "si"
 
-                                })
+                            })
 
                         }
                     );
@@ -1911,17 +2042,19 @@ async function translateSubtitleChunks(
         }
 
 
-        const completed =
-            translated.length;
-
+        // ==================================================
+        // UPDATE PROGRESS
+        // ==================================================
 
         updateTranslationProgress(
             chunkNumber,
             totalChunks,
-            completed,
+            translated.length,
             subtitles.length
         );
 
+
+        // Small delay between API requests
 
         if (
             start + CHUNK_SIZE <
@@ -1961,16 +2094,12 @@ function validateTranslatedChunk(
             if (
                 sub &&
                 Number.isInteger(
-                    Number(
-                        sub.number
-                    )
+                    Number(sub.number)
                 )
             ) {
 
                 translatedMap.set(
-                    Number(
-                        sub.number
-                    ),
+                    Number(sub.number),
                     sub.text
                 );
 
@@ -1999,7 +2128,7 @@ function validateTranslatedChunk(
 
                 text:
                     typeof translatedText ===
-                    "string" &&
+                        "string" &&
                     translatedText.trim()
                         ? translatedText.trim()
                         : sub.text
@@ -2065,7 +2194,7 @@ function updateTranslationProgress(
 
 
 // ========================================================
-// STATUS TEXT
+// TRANSLATION STATUS
 // ========================================================
 
 function updateTranslationStatus(
@@ -2227,17 +2356,24 @@ function parseSRT(srt) {
 // BUILD SRT
 // ========================================================
 
-function buildSRT(subtitles) {
+function buildSRT(
+    subtitles
+) {
 
     return subtitles
         .map(
             function (sub) {
 
                 return [
+
                     sub.number,
+
                     sub.timestamp,
+
                     sub.text,
+
                     ""
+
                 ].join("\n");
 
             }
@@ -2315,7 +2451,7 @@ function downloadTextFile(
 
 
 // ========================================================
-// FILE NAME
+// SUBTITLE FILE NAME
 // ========================================================
 
 function getSubtitleBaseName(
@@ -2343,22 +2479,26 @@ function getSubtitleBaseName(
         const s =
             String(
                 season
-            ).padStart(
-                2,
-                "0"
-            );
-
-
-        const e =
-            String(
-                episode
-            ).padStart(
+            )
+                .padStart(
                     2,
                     "0"
                 );
 
 
-        return `${cleanTitle}.S${s}E${e}`;
+        const e =
+            String(
+                episode
+            )
+                .padStart(
+                    2,
+                    "0"
+                );
+
+
+        return (
+            `${cleanTitle}.S${s}E${e}`
+        );
 
     }
 
@@ -2369,10 +2509,12 @@ function getSubtitleBaseName(
 
 
 // ========================================================
-// DECODE SUBTITLE
+// DECODE SUBTITLE BYTES
 // ========================================================
 
-function decodeSubtitleBytes(bytes) {
+function decodeSubtitleBytes(
+    bytes
+) {
 
     try {
 
@@ -2382,11 +2524,15 @@ function decodeSubtitleBytes(bytes) {
                 {
                     fatal: false
                 }
-            ).decode(bytes);
+            ).decode(
+                bytes
+            );
 
 
         if (
-            text.includes("-->")
+            text.includes(
+                "-->"
+            )
         ) {
 
             return text;
@@ -2394,7 +2540,7 @@ function decodeSubtitleBytes(bytes) {
         }
 
     } catch {
-        // Continue
+        // fallback
     }
 
 
@@ -2402,12 +2548,16 @@ function decodeSubtitleBytes(bytes) {
 
         return new TextDecoder(
             "windows-1252"
-        ).decode(bytes);
+        ).decode(
+            bytes
+        );
 
     } catch {
 
         return new TextDecoder()
-            .decode(bytes);
+            .decode(
+                bytes
+            );
 
     }
 
@@ -2418,15 +2568,20 @@ function decodeSubtitleBytes(bytes) {
 // ZIP CHECK
 // ========================================================
 
-function isZipFile(bytes) {
+function isZipFile(
+    bytes
+) {
 
     return (
 
         bytes.length >= 4 &&
 
         bytes[0] === 0x50 &&
+
         bytes[1] === 0x4b &&
+
         bytes[2] === 0x03 &&
+
         bytes[3] === 0x04
 
     );
@@ -2438,7 +2593,9 @@ function isZipFile(bytes) {
 // ESCAPE HTML
 // ========================================================
 
-function escapeHTML(value) {
+function escapeHTML(
+    value
+) {
 
     return String(
         value ?? ""
@@ -2471,9 +2628,13 @@ function escapeHTML(value) {
 // ESCAPE ATTRIBUTE
 // ========================================================
 
-function escapeAttribute(value) {
+function escapeAttribute(
+    value
+) {
 
-    return escapeHTML(value);
+    return escapeHTML(
+        value
+    );
 
 }
 
@@ -2482,7 +2643,9 @@ function escapeAttribute(value) {
 // SLEEP
 // ========================================================
 
-function sleep(ms) {
+function sleep(
+    ms
+) {
 
     return new Promise(
         function (resolve) {
@@ -2499,17 +2662,19 @@ function sleep(ms) {
 
 
 // ========================================================
-// SEARCH UI FIXES + ANIMATION
+// UI FIXES
 // ========================================================
 
-(function injectSearchUIStyles() {
+(function injectSublankaStyles() {
 
     if (
         document.getElementById(
-            "sublankaSearchFixes"
+            "sublanka-script-fixes"
         )
     ) {
+
         return;
+
     }
 
 
@@ -2520,10 +2685,14 @@ function sleep(ms) {
 
 
     style.id =
-        "sublankaSearchFixes";
+        "sublanka-script-fixes";
 
 
     style.textContent = `
+
+        /* ================================
+           SEARCH RESULTS
+        ================================= */
 
         #searchResults {
 
@@ -2566,8 +2735,9 @@ function sleep(ms) {
         }
 
 
-        #searchResults
-        .search-result-card > img,
+        /* ================================
+           POSTER
+        ================================= */
 
         #searchResults
         .search-result-card
@@ -2594,6 +2764,26 @@ function sleep(ms) {
         }
 
 
+        .result-poster-empty {
+
+            display: flex !important;
+
+            align-items: center !important;
+
+            justify-content: center !important;
+
+            background:
+                rgba(255,255,255,.06) !important;
+
+            font-size: 28px !important;
+
+        }
+
+
+        /* ================================
+           RESULT INFO
+        ================================= */
+
         #searchResults
         .result-info {
 
@@ -2606,7 +2796,19 @@ function sleep(ms) {
         }
 
 
-        /* SEARCH SPINNER */
+        #searchResults
+        .result-info h3 {
+
+            overflow-wrap: anywhere !important;
+
+            word-break: break-word !important;
+
+        }
+
+
+        /* ================================
+           SEARCH BUTTON SPINNER
+        ================================= */
 
         .search-loading {
 
@@ -2616,32 +2818,337 @@ function sleep(ms) {
 
             justify-content: center;
 
-            gap: 9px;
+            gap: 8px;
 
         }
 
 
         .search-spinner {
 
-            width: 17px;
+            width: 16px;
 
-            height: 17px;
+            height: 16px;
 
-            border: 3px solid
-                rgba(255,255,255,.35);
+            flex: 0 0 16px;
 
-            border-top-color: #fff;
+            border:
+
+                2px solid
+
+                rgba(255,255,255,.3);
+
+            border-top-color:
+
+                #ffffff;
 
             border-radius: 50%;
 
             animation:
-                sublankaSearchSpin
+
+                sublankaSpin
+
                 .7s linear infinite;
 
         }
 
 
-        @keyframes sublankaSearchSpin {
+        /* ================================
+           SINHALA CHECKING
+        ================================= */
+
+        .sinhala-status {
+
+            margin-top: 9px !important;
+
+            width: 100% !important;
+
+            min-width: 0 !important;
+
+            display: block !important;
+
+            background: transparent !important;
+
+            border: 0 !important;
+
+            box-shadow: none !important;
+
+            padding: 0 !important;
+
+        }
+
+
+        .sinhala-checking {
+
+            display: inline-flex !important;
+
+            align-items: center !important;
+
+            gap: 7px !important;
+
+            width: auto !important;
+
+            max-width: 100% !important;
+
+            min-width: 0 !important;
+
+            padding: 0 !important;
+
+            margin: 0 !important;
+
+            background: transparent !important;
+
+            border: 0 !important;
+
+            box-shadow: none !important;
+
+            color: inherit !important;
+
+            font-size: 12px !important;
+
+            line-height: 1.3 !important;
+
+            opacity: .65 !important;
+
+            white-space: nowrap !important;
+
+        }
+
+
+        .mini-spinner {
+
+            width: 12px !important;
+
+            height: 12px !important;
+
+            min-width: 12px !important;
+
+            max-width: 12px !important;
+
+            flex: 0 0 12px !important;
+
+            border:
+
+                2px solid
+
+                rgba(255,255,255,.18) !important;
+
+            border-top-color:
+
+                #9b7cff !important;
+
+            border-radius: 50% !important;
+
+            animation:
+
+                sublankaSpin
+
+                .7s linear infinite !important;
+
+        }
+
+
+        /* ================================
+           SINHALA AVAILABLE
+        ================================= */
+
+        .sinhala-available {
+
+            display: block !important;
+
+            width: 100% !important;
+
+            padding: 0 !important;
+
+            margin: 0 !important;
+
+            background: transparent !important;
+
+            border: 0 !important;
+
+            box-shadow: none !important;
+
+        }
+
+
+        .sinhala-available strong {
+
+            display: block !important;
+
+            color: #a8ffcf !important;
+
+            font-size: 12px !important;
+
+            line-height: 1.4 !important;
+
+        }
+
+
+        .sinhala-source-links {
+
+            display: flex !important;
+
+            flex-wrap: wrap !important;
+
+            gap: 6px !important;
+
+            margin-top: 7px !important;
+
+        }
+
+
+        .sinhala-source-link {
+
+            display: inline-flex !important;
+
+            align-items: center !important;
+
+            justify-content: center !important;
+
+            padding: 4px 8px !important;
+
+            border-radius: 6px !important;
+
+            text-decoration: none !important;
+
+            font-size: 11px !important;
+
+            line-height: 1.2 !important;
+
+            color: #d9d0ff !important;
+
+            background:
+
+                rgba(123,92,255,.12) !important;
+
+            border:
+
+                1px solid
+
+                rgba(123,92,255,.25) !important;
+
+        }
+
+
+        .sinhala-source-link:hover {
+
+            background:
+
+                rgba(123,92,255,.22) !important;
+
+        }
+
+
+        /* ================================
+           NOT FOUND
+        ================================= */
+
+        .sinhala-not-found {
+
+            display: block !important;
+
+            padding: 0 !important;
+
+            margin: 0 !important;
+
+            background: transparent !important;
+
+            border: 0 !important;
+
+            box-shadow: none !important;
+
+            font-size: 12px !important;
+
+            line-height: 1.4 !important;
+
+            opacity: .6 !important;
+
+        }
+
+
+        /* ================================
+           STATUS SPINNER
+        ================================= */
+
+        .status-spinner {
+
+            width: 22px;
+
+            height: 22px;
+
+            margin: 0 auto 12px;
+
+            border:
+
+                3px solid
+
+                rgba(255,255,255,.15);
+
+            border-top-color:
+
+                #9b7cff;
+
+            border-radius: 50%;
+
+            animation:
+
+                sublankaSpin
+
+                .7s linear infinite;
+
+        }
+
+
+        /* ================================
+           PROGRESS
+        ================================= */
+
+        .progress-track {
+
+            width: 100%;
+
+            height: 8px;
+
+            overflow: hidden;
+
+            border-radius: 999px;
+
+            background:
+
+                rgba(255,255,255,.08);
+
+            margin: 14px 0;
+
+        }
+
+
+        .progress-fill {
+
+            width: 0%;
+
+            height: 100%;
+
+            border-radius: inherit;
+
+            background:
+
+                linear-gradient(
+                    90deg,
+                    #6d5dfc,
+                    #a66cff
+                );
+
+            transition:
+
+                width .3s ease;
+
+        }
+
+
+        /* ================================
+           ANIMATION
+        ================================= */
+
+        @keyframes sublankaSpin {
 
             from {
 
@@ -2660,120 +3167,11 @@ function sleep(ms) {
         }
 
 
-        /* SINHALA STATUS */
-
-        .sinhala-status {
-
-            margin-top: 10px;
-
-            font-size: 13px;
-
-        }
-
-
-        .sinhala-available {
-
-            padding: 9px 10px;
-
-            border-radius: 10px;
-
-            background:
-                rgba(34,197,94,.10);
-
-            border:
-                1px solid
-                rgba(34,197,94,.24);
-
-        }
-
-
-        .sinhala-available strong {
-
-            display: block;
-
-            margin-bottom: 7px;
-
-        }
-
-
-        .sinhala-source-links {
-
-            display: flex;
-
-            flex-wrap: wrap;
-
-            gap: 6px;
-
-        }
-
-
-        .sinhala-source-link {
-
-            display: inline-flex;
-
-            align-items: center;
-
-            padding: 5px 8px;
-
-            border-radius: 7px;
-
-            text-decoration: none;
-
-            background:
-                rgba(124,58,237,.16);
-
-        }
-
-
-        .sinhala-not-found,
-
-        .sinhala-checking {
-
-            opacity: .82;
-
-        }
-
-
-        /* SUBDL SPINNER */
-
-        .status-spinner {
-
-            width: 24px;
-
-            height: 24px;
-
-            margin: 0 auto 12px;
-
-            border: 3px solid
-                rgba(255,255,255,.2);
-
-            border-top-color: #fff;
-
-            border-radius: 50%;
-
-            animation:
-                sublankaSearchSpin
-                .7s linear infinite;
-
-        }
-
-
-        /* MOBILE */
+        /* ================================
+           MOBILE
+        ================================= */
 
         @media (max-width: 600px) {
-
-            #searchResults
-            .search-result-card {
-
-                padding: 12px !important;
-
-                gap: 12px !important;
-
-            }
-
-
-            #searchResults
-            .search-result-card > img,
 
             #searchResults
             .search-result-card
@@ -2795,15 +3193,17 @@ function sleep(ms) {
 
             }
 
+
+            .sinhala-checking {
+
+                font-size: 11px !important;
+
+            }
+
         }
 
 
-        /* SMALL PHONES */
-
         @media (max-width: 380px) {
-
-            #searchResults
-            .search-result-card > img,
 
             #searchResults
             .search-result-card
@@ -2838,39 +3238,9 @@ function sleep(ms) {
 
 
 // ========================================================
-// TRANSLATION SECTION SCROLL
-// ========================================================
-
-const translationSection =
-    document.querySelector(
-        ".settings-section"
-    );
-
-
-if (translationSection) {
-
-    translationSection.style.scrollMarginTop =
-        "18px";
-
-}
-
-
-// ========================================================
-// INITIAL STATE
-// ========================================================
-
-if (translateBtn) {
-
-    translateBtn.disabled =
-        true;
-
-}
-
-
-// ========================================================
-// DEBUG
+// INITIAL MESSAGE
 // ========================================================
 
 console.log(
-    "SubLanka AI script loaded successfully."
+    "SubLanka AI script.js loaded successfully."
 );
