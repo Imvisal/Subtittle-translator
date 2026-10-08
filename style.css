@@ -2383,3 +2383,155 @@ html[data-theme="light"] #language {
     color: #94a3b8;
 }
 
+
+/* ================================
+   SINHALA SUBTITLE STATUS
+================================ */
+
+.sinhala-status {
+    margin-top: 16px;
+    width: 100%;
+}
+
+.sinhala-checking,
+.sinhala-not-found,
+.sinhala-found {
+    border: 1px solid rgba(130, 110, 255, 0.18);
+    background: rgba(20, 27, 55, 0.72);
+    border-radius: 18px;
+    padding: 16px;
+}
+
+.sinhala-checking {
+    color: #aeb8d8;
+    font-size: 15px;
+}
+
+.sinhala-status-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 12px;
+}
+
+.sinhala-source-list {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+
+.sinhala-source-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    width: 100%;
+    padding: 12px 14px;
+
+    border-radius: 12px;
+
+    text-decoration: none;
+
+    color: #ffffff;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(38, 47, 91, 0.9),
+            rgba(31, 35, 75, 0.9)
+        );
+
+    border: 1px solid rgba(130, 110, 255, 0.2);
+
+    transition:
+        transform 0.2s ease,
+        border-color 0.2s ease,
+        background 0.2s ease;
+}
+
+.sinhala-source-btn:hover {
+    transform: translateY(-2px);
+
+    border-color:
+        rgba(145, 100, 255, 0.65);
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(62, 50, 120, 0.95),
+            rgba(37, 43, 91, 0.95)
+        );
+}
+
+.open-arrow {
+    color: #bba5ff;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.sinhala-source-note {
+    margin-top: 10px;
+
+    color: #7f8aaf;
+    font-size: 12px;
+}
+
+.sinhala-not-found {
+    border-color:
+        rgba(130, 110, 255, 0.16);
+}
+
+.translate-search-btn {
+    border: none;
+    border-radius: 12px;
+
+    padding: 11px 17px;
+
+    color: white;
+
+    background:
+        linear-gradient(
+            135deg,
+            #7c3aed,
+            #9d4edd
+        );
+
+    font-size: 14px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.translate-search-btn:hover {
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 8px 25px
+        rgba(124, 58, 237, 0.3);
+}
+
+@media (max-width: 600px) {
+
+    .sinhala-status {
+        margin-top: 14px;
+    }
+
+    .sinhala-found,
+    .sinhala-not-found,
+    .sinhala-checking {
+        padding: 14px;
+    }
+
+    .sinhala-status-title {
+        font-size: 15px;
+    }
+
+    .sinhala-source-btn {
+        padding: 11px 12px;
+        font-size: 14px;
+    }
+}
