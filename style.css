@@ -2124,3 +2124,256 @@ textarea {
     -webkit-tap-highlight-color:
         transparent;
 }
+
+/* =========================================================
+   FINAL MOBILE FIX
+   ========================================================= */
+
+@media (max-width: 700px) {
+
+    /* HEADER */
+    header {
+        height: 105px !important;
+        padding: 14px 18px !important;
+        background:
+            linear-gradient(
+                180deg,
+                #090b20 0%,
+                #0b0d24 100%
+            ) !important;
+    }
+
+    .brand-logo {
+        width: 58px !important;
+        height: 58px !important;
+        font-size: 25px !important;
+        border-radius: 16px !important;
+    }
+
+    .brand-title {
+        font-size: 21px !important;
+        color: #ffffff !important;
+    }
+
+    .brand-subtitle {
+        font-size: 10px !important;
+        color: #9298b4 !important;
+    }
+
+    #themeToggle,
+    .settings-button {
+        width: 50px !important;
+        height: 50px !important;
+        font-size: 20px !important;
+        color: #ffffff !important;
+        background: rgba(8, 12, 35, 0.75) !important;
+        border-color: rgba(112, 128, 255, 0.30) !important;
+    }
+
+
+    /* HERO */
+    .hero {
+        width: calc(100% - 36px) !important;
+
+        /*
+         * IMPORTANT:
+         * Previous 700px was too tall.
+         */
+        height: 470px !important;
+
+        margin: 15px auto 0 !important;
+
+        border-radius: 27px !important;
+
+        overflow: hidden !important;
+    }
+
+    .hero-banner,
+    .hero-banner img {
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    .hero-banner img {
+        object-fit: cover !important;
+        object-position: center !important;
+        transform: scale(1.01) !important;
+    }
+
+
+    /* HERO TEXT */
+    .hero-content {
+        height: 100% !important;
+
+        justify-content: flex-end !important;
+
+        padding:
+            30px 20px 55px !important;
+    }
+
+    .hero-content h1 {
+        max-width: 100% !important;
+
+        font-size: 36px !important;
+
+        line-height: 1.08 !important;
+
+        letter-spacing: -1.4px !important;
+    }
+
+    .hero-content p {
+        max-width: 100% !important;
+
+        margin-top: 17px !important;
+
+        font-size: 12px !important;
+
+        line-height: 1.65 !important;
+    }
+
+
+    /* SEARCH */
+    .search-section {
+        width: calc(100% - 36px) !important;
+
+        margin:
+            18px auto 0 !important;
+
+        padding: 0 !important;
+    }
+
+    .search-card {
+        padding: 15px !important;
+
+        border-radius: 24px !important;
+    }
+
+    .search-row {
+        display: flex !important;
+
+        flex-direction: row !important;
+
+        gap: 9px !important;
+    }
+
+
+    /* INPUT */
+    .search-input-wrap {
+        flex: 1 !important;
+
+        min-width: 0 !important;
+    }
+
+    .search-input-wrap input {
+        width: 100% !important;
+
+        height: 62px !important;
+
+        padding:
+            0 15px !important;
+
+        border-radius: 20px !important;
+
+        font-size: 13px !important;
+
+        background:
+            rgba(4, 8, 27, 0.70) !important;
+
+        color: #ffffff !important;
+
+        outline: none !important;
+
+        box-shadow: none !important;
+    }
+
+
+    /* SEARCH BUTTON */
+    #searchBtn {
+        width: 108px !important;
+
+        min-width: 108px !important;
+
+        height: 62px !important;
+
+        padding: 0 8px !important;
+
+        border-radius: 20px !important;
+
+        font-size: 12px !important;
+    }
+
+
+    /* CATEGORY */
+    .category-chips {
+        display: flex !important;
+
+        flex-wrap: nowrap !important;
+
+        overflow-x: auto !important;
+
+        gap: 8px !important;
+
+        margin-top: 12px !important;
+
+        padding-bottom: 2px !important;
+    }
+
+    .category-chip {
+        height: 43px !important;
+
+        flex: 0 0 auto !important;
+
+        padding:
+            0 14px !important;
+
+        font-size: 10px !important;
+    }
+
+
+    /* SEARCH STATUS */
+    #searchStatus {
+        margin-top: 14px !important;
+
+        font-size: 12px !important;
+    }
+
+
+    /* RESULTS */
+    #searchResults {
+        margin-top: 12px !important;
+
+        gap: 10px !important;
+    }
+
+}
+
+
+/* =========================================================
+   SMALL PHONE
+========================================================= */
+
+@media (max-width: 420px) {
+
+    .hero {
+        height: 450px !important;
+    }
+
+    .hero-content {
+        padding:
+            25px 17px 48px !important;
+    }
+
+    .hero-content h1 {
+        font-size: 33px !important;
+    }
+
+    .hero-content p {
+        font-size: 11px !important;
+    }
+
+    #searchBtn {
+        width: 100px !important;
+        min-width: 100px !important;
+    }
+
+}
