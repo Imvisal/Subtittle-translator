@@ -3249,3 +3249,428 @@ textarea:focus-visible {
 /* =========================================================
    END
 ========================================================= */
+/* =========================================================
+   FINAL MOBILE FIX
+   Fix header clipping + hero height + search visibility
+========================================================= */
+
+@media (max-width: 600px) {
+
+    /* ================================
+       HEADER
+    ================================= */
+
+    header {
+        height: 112px !important;
+        min-height: 112px !important;
+
+        padding: 12px 18px !important;
+
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+
+        overflow: hidden !important;
+    }
+
+
+    /* ================================
+       BRAND
+    ================================= */
+
+    .brand {
+        display: flex !important;
+
+        align-items: center !important;
+
+        gap: 10px !important;
+
+        min-width: 0 !important;
+
+        flex: 1 1 auto !important;
+
+        overflow: hidden !important;
+    }
+
+
+    /* ================================
+       LOGO
+    ================================= */
+
+    .brand-logo {
+        width: 62px !important;
+        height: 62px !important;
+
+        min-width: 62px !important;
+        max-width: 62px !important;
+
+        border-radius: 18px !important;
+
+        flex: 0 0 62px !important;
+    }
+
+    .brand-logo img {
+        width: 100% !important;
+        height: 100% !important;
+
+        object-fit: contain !important;
+    }
+
+
+    /* ================================
+       BRAND TEXT
+    ================================= */
+
+    .brand-title {
+        display: block !important;
+
+        max-width: 145px !important;
+
+        overflow: hidden !important;
+
+        text-overflow: ellipsis !important;
+
+        white-space: nowrap !important;
+
+        font-size: 19px !important;
+
+        line-height: 1.15 !important;
+
+        letter-spacing: -.5px !important;
+    }
+
+    .brand-subtitle {
+        display: block !important;
+
+        margin-top: 4px !important;
+
+        font-size: 10px !important;
+
+        white-space: nowrap !important;
+    }
+
+
+    /* ================================
+       HEADER BUTTONS
+    ================================= */
+
+    .header-actions {
+        display: flex !important;
+
+        align-items: center !important;
+
+        gap: 7px !important;
+
+        flex: 0 0 auto !important;
+
+        margin-left: 7px !important;
+    }
+
+    .settings-button,
+    #themeToggle {
+        width: 49px !important;
+        height: 49px !important;
+
+        min-width: 49px !important;
+        max-width: 49px !important;
+
+        border-radius: 50% !important;
+    }
+
+
+    /* ================================
+       HERO
+    ================================= */
+
+    .hero {
+        height: 510px !important;
+
+        min-height: 510px !important;
+
+        max-height: 510px !important;
+
+        border-radius:
+            0 0 25px 25px !important;
+    }
+
+
+    /* ================================
+       HERO IMAGE
+    ================================= */
+
+    .hero-banner,
+    .hero-banner img {
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    .hero-banner img {
+        object-fit: cover !important;
+
+        object-position:
+            58% center !important;
+    }
+
+
+    /* ================================
+       HERO CONTENT
+    ================================= */
+
+    .hero-content {
+        width: 100% !important;
+
+        height: 100% !important;
+
+        min-height: 510px !important;
+
+        padding:
+            0 28px 38px !important;
+
+        justify-content:
+            flex-end !important;
+    }
+
+
+    /* ================================
+       STAR
+    ================================= */
+
+    .hero-star {
+        margin-bottom: 12px !important;
+
+        font-size: 24px !important;
+    }
+
+
+    /* ================================
+       HERO TITLE
+    ================================= */
+
+    .hero-content h1 {
+        max-width: 100% !important;
+
+        font-size: 34px !important;
+
+        line-height: 1.08 !important;
+
+        letter-spacing:
+            -1.4px !important;
+    }
+
+
+    /* ================================
+       HERO DESCRIPTION
+    ================================= */
+
+    .hero-content p {
+        max-width: 100% !important;
+
+        margin-top: 15px !important;
+
+        font-size: 11px !important;
+
+        line-height: 1.65 !important;
+    }
+
+
+    /* ================================
+       SEARCH SECTION
+    ================================= */
+
+    .search-section {
+        width: 100% !important;
+
+        margin:
+            18px 0 0 !important;
+
+        padding:
+            0 16px !important;
+    }
+
+
+    /* ================================
+       SEARCH CARD
+    ================================= */
+
+    .search-card {
+        width: 100% !important;
+
+        padding: 14px !important;
+
+        border-radius: 22px !important;
+    }
+
+
+    /* ================================
+       SEARCH ROW
+    ================================= */
+
+    .search-row {
+        width: 100% !important;
+
+        gap: 8px !important;
+    }
+
+
+    /* ================================
+       INPUT
+    ================================= */
+
+    .search-input-wrap {
+        min-width: 0 !important;
+
+        flex: 1 1 auto !important;
+    }
+
+    .search-input-wrap input {
+        width: 100% !important;
+
+        height: 54px !important;
+
+        border-radius: 17px !important;
+
+        padding:
+            0 14px !important;
+
+        font-size: 11px !important;
+    }
+
+
+    /* ================================
+       SEARCH BUTTON
+    ================================= */
+
+    #searchBtn {
+        width: 92px !important;
+
+        min-width: 92px !important;
+
+        height: 54px !important;
+
+        border-radius: 17px !important;
+
+        padding:
+            0 8px !important;
+
+        font-size: 11px !important;
+    }
+
+
+    /* ================================
+       CATEGORY CHIPS
+    ================================= */
+
+    .category-chips {
+        margin-top: 10px !important;
+
+        gap: 6px !important;
+    }
+
+    .category-chip {
+        height: 36px !important;
+
+        padding:
+            0 11px !important;
+
+        font-size: 9px !important;
+    }
+}
+
+
+/* =========================================================
+   SMALL PHONES
+========================================================= */
+
+@media (max-width: 380px) {
+
+    header {
+        height: 100px !important;
+        min-height: 100px !important;
+
+        padding:
+            10px 13px !important;
+    }
+
+
+    .brand-logo {
+        width: 56px !important;
+        height: 56px !important;
+
+        min-width: 56px !important;
+        max-width: 56px !important;
+    }
+
+
+    .brand {
+        gap: 8px !important;
+    }
+
+
+    .brand-title {
+        max-width: 118px !important;
+
+        font-size: 17px !important;
+    }
+
+
+    .brand-subtitle {
+        font-size: 9px !important;
+    }
+
+
+    .header-actions {
+        gap: 5px !important;
+    }
+
+
+    .settings-button,
+    #themeToggle {
+        width: 43px !important;
+        height: 43px !important;
+
+        min-width: 43px !important;
+        max-width: 43px !important;
+    }
+
+
+    .hero {
+        height: 475px !important;
+
+        min-height: 475px !important;
+
+        max-height: 475px !important;
+    }
+
+
+    .hero-content {
+        min-height: 475px !important;
+
+        padding:
+            0 22px 32px !important;
+    }
+
+
+    .hero-content h1 {
+        font-size: 31px !important;
+    }
+
+
+    .hero-content p {
+        font-size: 10px !important;
+    }
+
+
+    .search-section {
+        padding:
+            0 12px !important;
+    }
+
+
+    #searchBtn {
+        width: 84px !important;
+
+        min-width: 84px !important;
+    }
+}
+
+
