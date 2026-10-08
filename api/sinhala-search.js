@@ -3,340 +3,197 @@
 function normalizeTitle(title = "") {
     return title
         .toLowerCase()
-        .replace(/&amp;/g, "&")
         .replace(/[^\p{L}\p{N}]+/gu, " ")
-        .replace(/\b(the|a|an)\b/g, "")
-        .replace(/\b(19|20)\d{2}\b/g, "")
+        .replace(/\b(the|a|an|movie|film)\b/g, " ")
+        .replace(/\b(19|20)\d{2}\b/g, " ")
         .replace(/\s+/g, " ")
         .trim();
 }
 
-function titleMatches(foundTitle, wantedTitle) {
-    const found = normalizeTitle(foundTitle);
+function titleMatches(text, wantedTitle, year = "") {
+    const found = normalizeTitle(text);
     const wanted = normalizeTitle(wantedTitle);
 
     if (!found || !wanted) return false;
 
-    // Exact match
+    // Exact title
     if (found === wanted) {
         return true;
     }
 
-    // One contains the other
-    if (
-        found.includes(wanted) ||
-        wanted.includes(found)
-    ) {
+    // Full title contained
+    if (found.includes(wanted)) {
         return true;
     }
 
-    const wantedWords = wanted
+    // Important words comparison
+    const words = wanted
         .split(" ")
-        .filter(word => word.length >= 2);
+        .filter(w => w.length >= 2);
 
-    if (!wantedWords.length) {
-        return false;
-    }
+    if (!words.length) return false;
 
     let matched = 0;
 
-    for (const word of wantedWords) {
+    for (const word of words) {
         if (found.includes(word)) {
             matched++;
         }
     }
 
-    return (
-        matched / wantedWords.length >= 0.75
-    );
+    const score = matched / words.length;
+
+    // 80%+ title words must match
+    if (score >= 0.8) {
+        return true;
+    }
+
+    // If year is present, allow slightly weaker match
+    if (
+        year &&
+        String(text).includes(String(year)) &&
+        score >= 0.65
+    ) {
+        return true;
+    }
+
+    return false;
 }
 
-function decodeMarkdownText(text = "") {
-    return text
-        .replace(/\*\*/g, "")
-        .replace(/`/g, "")
-        .replace(/&amp;/g, "&")
-        .replace(/&#8217;|&#039;/g, "'")
-        .replace(/&#8211;|&#8212;/g, "-")
-        .replace(/&quot;/g, '"')
+function decodeHtml(str = "") {
+    return str
+        .replace(/&amp;/gi, "&")
+        .replace(/&#39;|&#039;/gi, "'")
+        .replace(/&quot;/gi, '"')
+        .replace(/&#8217;/gi, "'")
+        .replace(/&#8211;/gi, "-")
+        .replace(/&#8212;/gi, "-")
+        .replace(/&nbsp;/gi, " ");
+}
+
+function stripHtml(str = "") {
+    return decodeHtml(
+        str.replace(/<[^>]*>/g, " ")
+    )
+        .replace(/\s+/g, " ")
         .trim();
 }
 
-function extractMarkdownLinks(text = "") {
-    const links = [];
+function extractSearchResults(html = "") {
+    const results = [];
 
+    /*
+     * DuckDuckGo HTML result format
+     */
     const regex =
-        /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g;
+        /<a[^>]*class=["'][^"']*result__a[^"']*["'][^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
 
     let match;
 
-    while ((match = regex.exec(text)) !== null) {
-        links.push({
-            title: decodeMarkdownText(match[1]),
-            url: match[2]
+    while ((match = regex.exec(html)) !== null) {
+        let url = decodeHtml(match[1]);
+        const title = stripHtml(match[2]);
+
+        if (!url || !title) continue;
+
+        // Decode DDG redirect URL
+        try {
+            const parsed = new URL(url);
+
+            if (
+                parsed.hostname.includes("duckduckgo.com") &&
+                parsed.searchParams.get("uddg")
+            ) {
+                url = decodeURIComponent(
+                    parsed.searchParams.get("uddg")
+                );
+            }
+        } catch {
+            // Ignore invalid URLs
+        }
+
+        results.push({
+            title,
+            url
         });
     }
 
-    return links;
+    return results;
 }
 
-async function jinaFetch(url) {
+async function duckSearch(query) {
     try {
-        const readerUrl =
-            "https://r.jina.ai/" + url;
+        const url =
+            "https://html.duckduckgo.com/html/?q=" +
+            encodeURIComponent(query);
 
-        const response = await fetch(readerUrl, {
+        const response = await fetch(url, {
             headers: {
                 "User-Agent":
-                    "Mozilla/5.0",
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131 Safari/537.36",
                 "Accept":
-                    "text/plain,text/markdown,*/*"
+                    "text/html,application/xhtml+xml"
             }
         });
 
         if (!response.ok) {
-            console.error(
-                "Jina HTTP:",
-                response.status,
-                url
+            console.log(
+                "DuckDuckGo HTTP:",
+                response.status
             );
 
-            return null;
+            return [];
         }
 
-        return await response.text();
+        const html = await response.text();
+
+        return extractSearchResults(html);
 
     } catch (error) {
         console.error(
-            "Jina fetch error:",
+            "DuckDuckGo search error:",
             error.message
         );
 
-        return null;
+        return [];
     }
 }
 
 async function searchSource({
     source,
-    searchUrl,
-    baseUrl,
+    domain,
     title,
     year,
     type
 }) {
     try {
+        /*
+         * Search using the movie title itself.
+         *
+         * Example:
+         * site:baiscope.lk
+         * "Sonic the Hedgehog"
+         * "Sinhala Subtitle"
+         */
+        const queries = [
+            `site:${domain} "${title}" "Sinhala Subtitle"`,
+            `site:${domain} "${title}" Sinhala`,
+            `site:${domain} "${title}" ${year || ""}`
+        ];
 
-        console.log(
-            `Searching ${source}: ${searchUrl}`
-        );
+        let allResults = [];
 
-        const markdown =
-            await jinaFetch(searchUrl);
+        for (const query of queries) {
 
-        if (!markdown) {
-            return null;
-        }
+            const results =
+                await duckSearch(query);
 
-        const links =
-            extractMarkdownLinks(markdown);
+            allResults.push(...results);
 
-        // Only keep links belonging to the source site
-        const siteLinks =
-            links.filter(link =>
-                link.url.startsWith(baseUrl)
-            );
-
-        // Search result candidates
-        const candidates = [];
-
-        for (const link of siteLinks) {
-
-            const combinedTitle =
-                `${link.title} ${link.url}`;
-
-            if (
-                titleMatches(
-                    combinedTitle,
-                    title
-                )
-            ) {
-                candidates.push(link);
+            if (allResults.length >= 20) {
+                break;
             }
         }
 
         // Remove duplicates
-        const unique = candidates.filter(
-            (item, index, array) =>
-                index ===
-                array.findIndex(
-                    x => x.url === item.url
-                )
-        );
-
-        // Ignore obvious category/search/navigation pages
-        const valid =
-            unique.filter(link => {
-
-                const url =
-                    link.url.toLowerCase();
-
-                return (
-                    !url.includes("/category/") &&
-                    !url.includes("/tag/") &&
-                    !url.includes("/page/") &&
-                    !url.includes("?s=") &&
-                    !url.endsWith("/search")
-                );
-            });
-
-        if (!valid.length) {
-            return null;
-        }
-
-        // Prefer links containing subtitle wording
-        const subtitlePage =
-            valid.find(link => {
-
-                const value =
-                    `${link.title} ${link.url}`
-                        .toLowerCase();
-
-                return (
-                    value.includes("subtitle") ||
-                    value.includes("subtitles") ||
-                    value.includes("sinhala-sub")
-                );
-            });
-
-        const result =
-            subtitlePage || valid[0];
-
-        console.log(
-            `FOUND ${source}: ${result.url}`
-        );
-
-        return {
-            source,
-            url: result.url,
-            title: result.title,
-            type
-        };
-
-    } catch (error) {
-
-        console.error(
-            `${source} error:`,
-            error.message
-        );
-
-        return null;
-    }
-}
-
-module.exports = async function handler(
-    req,
-    res
-) {
-
-    if (req.method !== "GET") {
-        return res.status(405).json({
-            error: "Method not allowed"
-        });
-    }
-
-    const title =
-        String(
-            req.query.title || ""
-        ).trim();
-
-    const year =
-        String(
-            req.query.year || ""
-        ).trim();
-
-    const type =
-        String(
-            req.query.type || "movie"
-        ).toLowerCase();
-
-    if (!title) {
-        return res.status(400).json({
-            found: false,
-            sources: [],
-            error: "Title is required"
-        });
-    }
-
-    try {
-
-        const encoded =
-            encodeURIComponent(title);
-
-        const results =
-            await Promise.allSettled([
-
-                // Baiscope
-                searchSource({
-                    source: "Baiscope",
-                    searchUrl:
-                        `https://www.baiscope.lk/?s=${encoded}`,
-                    baseUrl:
-                        "https://www.baiscope.lk",
-                    title,
-                    year,
-                    type
-                }),
-
-                // SinhalaSub
-                searchSource({
-                    source: "SinhalaSub",
-                    searchUrl:
-                        `https://sinhalasub.lk/?s=${encoded}`,
-                    baseUrl:
-                        "https://sinhalasub.lk",
-                    title,
-                    year,
-                    type
-                }),
-
-                // Cineru
-                searchSource({
-                    source: "Cineru",
-                    searchUrl:
-                        `https://cineru.lk/cineru-search/?s=${encoded}`,
-                    baseUrl:
-                        "https://cineru.lk",
-                    title,
-                    year,
-                    type
-                })
-
-            ]);
-
-        const sources = [];
-
-        for (const result of results) {
-
-            if (
-                result.status === "fulfilled" &&
-                result.value
-            ) {
-                sources.push(result.value);
-            }
-        }
-
-        // Remove duplicate source names
-        const uniqueSources =
-            sources.filter(
-                (item, index, array) =>
-                    index ===
-                    array.findIndex(
-                        x =>
-                            x.source ===
-                            item.source
-                    )
-            );
-
-        return res.status(200).json({
-
-            found
+        allResults = allResults.filter(
