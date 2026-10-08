@@ -1,6 +1,5 @@
 /* =========================================================
-   SUBLANKA AI
-   MAIN STYLE.CSS
+   SUBLANKA AI — COMPLETE STYLE.CSS
    ========================================================= */
 
 * {
@@ -14,22 +13,26 @@ html {
 }
 
 body {
-    font-family: "Poppins", sans-serif;
-    background:
-        radial-gradient(
-            circle at 15% 10%,
-            rgba(104, 77, 255, 0.13),
-            transparent 35%
-        ),
-        radial-gradient(
-            circle at 85% 30%,
-            rgba(0, 153, 255, 0.09),
-            transparent 35%
-        ),
-        #070912;
-    color: #ffffff;
     min-height: 100vh;
     overflow-x: hidden;
+
+    font-family: "Poppins", sans-serif;
+
+    color: #ffffff;
+
+    background:
+        radial-gradient(
+            circle at 10% 0%,
+            rgba(105, 78, 255, 0.14),
+            transparent 32%
+        ),
+        radial-gradient(
+            circle at 90% 25%,
+            rgba(0, 140, 255, 0.08),
+            transparent 30%
+        ),
+        #070912;
+
     transition:
         background 0.3s ease,
         color 0.3s ease;
@@ -42,32 +45,30 @@ body {
 
 :root {
     --bg: #070912;
-    --bg-soft: #0c1020;
+    --bg-soft: #0d1120;
 
-    --card: rgba(17, 21, 39, 0.76);
-    --card-strong: rgba(20, 24, 44, 0.92);
+    --card: rgba(17, 21, 39, 0.82);
+    --card-strong: rgba(20, 24, 44, 0.95);
 
     --border: rgba(255, 255, 255, 0.08);
 
     --text: #ffffff;
-    --text-soft: #a9afc3;
-    --text-muted: #777f96;
+    --text-soft: #aeb4c8;
+    --text-muted: #7c849a;
 
-    --purple: #7c5cff;
-    --purple-light: #a98cff;
-    --blue: #4d8dff;
+    --purple: #765aff;
+    --purple-light: #a58dff;
+    --blue: #4f88ff;
 
-    --green: #8dffc6;
-    --red: #ff6f91;
+    --green: #91ffca;
+    --red: #ff708e;
 
     --radius: 18px;
-    --shadow:
-        0 20px 60px rgba(0, 0, 0, 0.35);
 }
 
 
 /* =========================================================
-   BODY SCROLLBAR
+   SCROLLBAR
    ========================================================= */
 
 ::-webkit-scrollbar {
@@ -75,16 +76,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-    background: #060810;
+    background: #05070d;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: rgba(124, 92, 255, 0.55);
+    background: rgba(118, 90, 255, 0.55);
     border-radius: 20px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: rgba(124, 92, 255, 0.8);
+    background: rgba(118, 90, 255, 0.8);
 }
 
 
@@ -94,19 +95,22 @@ body {
 
 header {
     position: absolute;
+
     top: 0;
     left: 0;
 
     width: 100%;
     height: 76px;
 
-    z-index: 50;
+    z-index: 100;
 
     display: flex;
+
     align-items: center;
     justify-content: space-between;
 
-    padding: 0 6%;
+    padding:
+        0 6%;
 
     background:
         linear-gradient(
@@ -126,11 +130,18 @@ header {
 
 .brand {
     display: flex;
+
     align-items: center;
+
     gap: 11px;
 
+    color: #ffffff;
+
     text-decoration: none;
-    color: white;
+
+    position: relative;
+
+    z-index: 101;
 }
 
 .brand-logo {
@@ -138,6 +149,7 @@ header {
     height: 42px;
 
     display: flex;
+
     align-items: center;
     justify-content: center;
 
@@ -150,28 +162,41 @@ header {
             #4d8dff
         );
 
-    box-shadow:
-        0 8px 30px rgba(111, 83, 255, 0.35);
+    color: white;
 
-    font-size: 19px;
+    font-size: 18px;
+
     font-weight: 700;
+
+    box-shadow:
+        0 8px 30px
+        rgba(111, 83, 255, 0.35);
 }
 
 .brand-title {
+    color: #ffffff;
+
     font-size: 18px;
+
     font-weight: 700;
+
     letter-spacing: -0.3px;
+
+    line-height: 1.1;
 }
 
 .brand-subtitle {
     display: block;
 
-    margin-top: -2px;
+    margin-top: 3px;
 
-    color: #8f96aa;
+    color: #aaa3ff;
 
     font-size: 10px;
+
     font-weight: 500;
+
+    line-height: 1;
 }
 
 
@@ -181,8 +206,14 @@ header {
 
 .header-actions {
     display: flex;
+
     align-items: center;
-    gap: 10px;
+
+    gap: 9px;
+
+    position: relative;
+
+    z-index: 101;
 }
 
 .settings-button,
@@ -190,23 +221,31 @@ header {
     width: 42px;
     height: 42px;
 
-    border: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    border:
+        1px solid
+        rgba(255,255,255,0.10);
+
     border-radius: 12px;
 
-    background: rgba(255,255,255,0.05);
+    background:
+        rgba(10,13,25,0.45);
 
-    color: white;
+    color: #ffffff;
 
     cursor: pointer;
 
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 
     transition:
         transform 0.2s ease,
         background 0.2s ease,
-        border 0.2s ease;
+        border-color 0.2s ease;
 }
 
 .settings-button:hover,
@@ -214,10 +253,10 @@ header {
     transform: translateY(-2px);
 
     background:
-        rgba(124,92,255,0.16);
+        rgba(118,90,255,0.18);
 
     border-color:
-        rgba(124,92,255,0.35);
+        rgba(118,90,255,0.4);
 }
 
 
@@ -230,7 +269,7 @@ header {
 
     width: 100%;
 
-    min-height: 620px;
+    min-height: 650px;
 
     overflow: hidden;
 }
@@ -261,12 +300,12 @@ header {
 
     object-fit: cover;
 
-    object-position: center;
+    object-position: center center;
 
-    transform: scale(1.01);
+    transform: scale(1);
 
     filter:
-        brightness(0.63)
+        brightness(0.52)
         saturate(0.95);
 }
 
@@ -280,18 +319,20 @@ header {
 
     inset: 0;
 
+    z-index: 2;
+
     background:
         linear-gradient(
             90deg,
-            rgba(5, 7, 15, 0.95) 0%,
-            rgba(5, 7, 15, 0.78) 32%,
-            rgba(5, 7, 15, 0.30) 68%,
-            rgba(5, 7, 15, 0.72) 100%
+            rgba(5,7,15,0.96) 0%,
+            rgba(5,7,15,0.75) 30%,
+            rgba(5,7,15,0.30) 65%,
+            rgba(5,7,15,0.72) 100%
         ),
         linear-gradient(
             180deg,
-            rgba(4, 6, 14, 0.55) 0%,
-            rgba(4, 6, 14, 0.08) 38%,
+            rgba(4,6,14,0.48) 0%,
+            rgba(4,6,14,0.08) 40%,
             #070912 100%
         );
 }
@@ -304,28 +345,36 @@ header {
 .hero-content {
     position: relative;
 
-    z-index: 5;
+    z-index: 10;
 
     width: 100%;
+
     max-width: 1250px;
 
-    margin: 0 auto;
+    margin:
+        0 auto;
 
     padding:
-        175px 6% 70px;
+        180px 6% 90px;
 }
 
 .hero-content h1 {
     max-width: 720px;
 
+    color: white;
+
     font-size:
-        clamp(38px, 5vw, 72px);
+        clamp(40px, 5vw, 72px);
 
     line-height: 1.05;
 
     letter-spacing: -2.5px;
 
     font-weight: 700;
+
+    text-shadow:
+        0 4px 30px
+        rgba(0,0,0,0.45);
 }
 
 .hero-content h1 span {
@@ -335,11 +384,12 @@ header {
         linear-gradient(
             90deg,
             #ffffff,
-            #aa91ff,
-            #6ca5ff
+            #ad94ff,
+            #72a8ff
         );
 
     -webkit-background-clip: text;
+
     background-clip: text;
 
     -webkit-text-fill-color: transparent;
@@ -350,11 +400,16 @@ header {
 
     margin-top: 20px;
 
-    color: #b5b9c9;
+    color:
+        rgba(224,227,239,0.86);
 
-    font-size: 16px;
+    font-size: 15px;
 
     line-height: 1.8;
+
+    text-shadow:
+        0 2px 15px
+        rgba(0,0,0,0.55);
 }
 
 
@@ -365,14 +420,17 @@ header {
 .search-section {
     position: relative;
 
-    z-index: 10;
+    z-index: 30;
 
     width: 100%;
+
     max-width: 1250px;
 
-    margin: -90px auto 0;
+    margin:
+        -95px auto 0;
 
-    padding: 0 6%;
+    padding:
+        0 6%;
 }
 
 
@@ -383,22 +441,26 @@ header {
 .search-card {
     position: relative;
 
+    z-index: 31;
+
     padding: 20px;
+
+    border:
+        1px solid
+        rgba(255,255,255,0.09);
 
     border-radius: 22px;
 
     background:
         linear-gradient(
             145deg,
-            rgba(22, 27, 49, 0.92),
-            rgba(10, 14, 28, 0.94)
+            rgba(22,27,49,0.94),
+            rgba(10,14,28,0.95)
         );
 
-    border:
-        1px solid rgba(255,255,255,0.09);
-
     box-shadow:
-        0 30px 80px rgba(0,0,0,0.45);
+        0 30px 80px
+        rgba(0,0,0,0.45);
 
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
@@ -421,7 +483,7 @@ header {
 
 
 /* =========================================================
-   SEARCH INPUT WRAP
+   SEARCH INPUT
    ========================================================= */
 
 .search-input-wrap {
@@ -440,15 +502,16 @@ header {
     padding:
         0 18px;
 
-    border-radius: 14px;
-
     border:
-        1px solid rgba(255,255,255,0.08);
+        1px solid
+        rgba(255,255,255,0.08);
+
+    border-radius: 14px;
 
     background:
         rgba(255,255,255,0.045);
 
-    color: white;
+    color: #ffffff;
 
     font-family: inherit;
 
@@ -459,8 +522,8 @@ header {
     box-shadow: none !important;
 
     transition:
-        border 0.2s ease,
-        background 0.2s ease;
+        background 0.2s ease,
+        border-color 0.2s ease;
 }
 
 .search-input-wrap input:hover {
@@ -475,14 +538,11 @@ header {
     box-shadow: none !important;
 
     border-color:
-        rgba(124,92,255,0.48);
-
-    background:
-        rgba(255,255,255,0.06);
+        rgba(118,90,255,0.45);
 }
 
 .search-input-wrap input::placeholder {
-    color: #777f96;
+    color: #7d8498;
 }
 
 
@@ -509,7 +569,7 @@ header {
             #4e82ff
         );
 
-    color: white;
+    color: #ffffff;
 
     font-family: inherit;
 
@@ -520,7 +580,8 @@ header {
     cursor: pointer;
 
     box-shadow:
-        0 10px 30px rgba(100,80,255,0.22);
+        0 10px 30px
+        rgba(100,80,255,0.24);
 
     transition:
         transform 0.2s ease,
@@ -539,9 +600,9 @@ header {
 }
 
 #searchBtn:disabled {
-    cursor: wait;
-
     opacity: 0.75;
+
+    cursor: wait;
 
     transform: none;
 }
@@ -555,7 +616,6 @@ header {
     display: inline-flex;
 
     align-items: center;
-
     justify-content: center;
 
     gap: 8px;
@@ -569,10 +629,10 @@ header {
 
     border:
         2px solid
-        rgba(255,255,255,0.28);
+        rgba(255,255,255,0.25);
 
     border-top-color:
-        white;
+        #ffffff;
 
     border-radius: 50%;
 
@@ -591,7 +651,9 @@ header {
 
     flex-wrap: wrap;
 
-    gap: 8px;
+    align-items: center;
+
+    gap: 9px;
 
     margin-top: 14px;
 }
@@ -600,10 +662,11 @@ header {
     padding:
         7px 12px;
 
-    border-radius: 999px;
-
     border:
-        1px solid rgba(255,255,255,0.07);
+        1px solid
+        rgba(255,255,255,0.07);
+
+    border-radius: 999px;
 
     background:
         rgba(255,255,255,0.035);
@@ -616,18 +679,18 @@ header {
 
     transition:
         background 0.2s ease,
-        color 0.2s ease,
-        border 0.2s ease;
+        border-color 0.2s ease,
+        color 0.2s ease;
 }
 
 .category-chip:hover {
-    color: white;
+    color: #ffffff;
 
     background:
-        rgba(124,92,255,0.12);
+        rgba(118,90,255,0.13);
 
     border-color:
-        rgba(124,92,255,0.28);
+        rgba(118,90,255,0.30);
 }
 
 
@@ -636,7 +699,7 @@ header {
    ========================================================= */
 
 #searchStatus {
-    margin-top: 16px;
+    margin-top: 15px;
 
     color: #9299ae;
 
@@ -651,13 +714,15 @@ header {
    ========================================================= */
 
 #searchResults {
-    display: flex;
+    display: flex !important;
 
-    flex-direction: column;
+    flex-direction: column !important;
 
-    gap: 14px;
+    gap: 14px !important;
 
-    width: 100%;
+    width: 100% !important;
+
+    max-width: 100% !important;
 
     margin-top: 16px;
 
@@ -666,23 +731,30 @@ header {
 
 
 /* =========================================================
-   RESULT CARD
+   SEARCH RESULT CARD
    ========================================================= */
 
-.search-result-card {
-    position: relative;
+#searchResults .search-result-card {
+    width: 100% !important;
 
-    width: 100%;
+    max-width: 100% !important;
 
-    min-width: 0;
+    min-width: 0 !important;
 
-    display: flex;
+    flex:
+        0 0 auto !important;
 
-    align-items: flex-start;
+    display: flex !important;
 
-    gap: 15px;
+    align-items: flex-start !important;
+
+    gap: 14px !important;
 
     padding: 14px;
+
+    border:
+        1px solid
+        rgba(255,255,255,0.07);
 
     border-radius: 16px;
 
@@ -693,71 +765,60 @@ header {
             rgba(11,15,30,0.92)
         );
 
-    border:
-        1px solid rgba(255,255,255,0.07);
-
-    box-shadow:
-        0 10px 35px rgba(0,0,0,0.18);
-
     overflow: hidden;
 
     transition:
         transform 0.2s ease,
-        border 0.2s ease,
-        background 0.2s ease;
+        border-color 0.2s ease;
 }
 
-.search-result-card:hover {
+#searchResults .search-result-card:hover {
     transform: translateY(-2px);
 
     border-color:
-        rgba(124,92,255,0.24);
-
-    background:
-        linear-gradient(
-            145deg,
-            rgba(24,29,53,0.92),
-            rgba(12,16,33,0.96)
-        );
+        rgba(118,90,255,0.28);
 }
 
 
 /* =========================================================
-   RESULT POSTER
+   POSTER
    ========================================================= */
 
-.result-poster {
-    width: 82px;
+#searchResults .result-poster {
+    width: 82px !important;
 
-    min-width: 82px;
-    max-width: 82px;
+    min-width: 82px !important;
 
-    height: 118px;
+    max-width: 82px !important;
 
-    min-height: 118px;
-    max-height: 118px;
+    height: 118px !important;
 
-    flex: 0 0 82px;
+    min-height: 118px !important;
 
-    object-fit: cover;
+    max-height: 118px !important;
+
+    flex:
+        0 0 82px !important;
+
+    object-fit: cover !important;
 
     display: block;
 
     border-radius: 10px;
 
     background:
-        rgba(255,255,255,0.04);
+        rgba(255,255,255,0.05);
 }
 
 .result-poster-empty {
-    display: flex;
+    display: flex !important;
 
     align-items: center;
     justify-content: center;
 
     color: #737b92;
 
-    font-size: 28px;
+    font-size: 27px;
 }
 
 
@@ -765,18 +826,19 @@ header {
    RESULT INFO
    ========================================================= */
 
-.result-info {
-    flex: 1 1 auto;
+#searchResults .result-info {
+    flex: 1 1 auto !important;
 
-    min-width: 0;
+    min-width: 0 !important;
 
-    overflow: hidden;
+    overflow: hidden !important;
 }
 
-.result-info h3 {
-    margin: 2px 0 7px;
+#searchResults .result-info h3 {
+    margin:
+        2px 0 7px;
 
-    color: white;
+    color: #ffffff;
 
     font-size: 15px;
 
@@ -788,6 +850,11 @@ header {
 
     word-break: break-word;
 }
+
+
+/* =========================================================
+   RESULT META
+   ========================================================= */
 
 .result-meta {
     display: flex;
@@ -830,6 +897,7 @@ header {
     display: inline-flex;
 
     align-items: center;
+
     justify-content: center;
 
     min-height: 34px;
@@ -837,13 +905,14 @@ header {
     padding:
         7px 12px;
 
+    border:
+        1px solid
+        rgba(118,90,255,0.28);
+
     border-radius: 9px;
 
-    border:
-        1px solid rgba(124,92,255,0.26);
-
     background:
-        rgba(124,92,255,0.11);
+        rgba(118,90,255,0.11);
 
     color: #d7d0ff;
 
@@ -856,44 +925,46 @@ header {
     cursor: pointer;
 
     transition:
+        transform 0.2s ease,
         background 0.2s ease,
-        border 0.2s ease,
-        transform 0.2s ease;
+        border-color 0.2s ease;
 }
 
 .select-title-btn:hover {
     transform: translateY(-1px);
 
     background:
-        rgba(124,92,255,0.20);
+        rgba(118,90,255,0.20);
 
     border-color:
-        rgba(124,92,255,0.45);
+        rgba(118,90,255,0.45);
 }
 
 
 /* =========================================================
    SINHALA STATUS
-   IMPORTANT:
-   NO UGLY BOX
    ========================================================= */
 
-.sinhala-status {
-    display: block;
+#searchResults .sinhala-status {
+    display: block !important;
 
-    width: 100%;
+    width: 100% !important;
 
-    min-width: 0;
+    min-width: 0 !important;
 
-    margin-top: 9px;
+    margin-top: 9px !important;
 
-    padding: 0;
+    padding: 0 !important;
 
-    background: transparent !important;
+    background:
+        transparent !important;
 
     border: 0 !important;
 
-    box-shadow: none !important;
+    border-radius: 0 !important;
+
+    box-shadow:
+        none !important;
 }
 
 
@@ -901,40 +972,40 @@ header {
    CHECKING
    ========================================================= */
 
-.sinhala-checking {
-    display: inline-flex;
+#searchResults .sinhala-checking {
+    display: inline-flex !important;
 
-    align-items: center;
+    align-items: center !important;
 
-    justify-content: flex-start;
+    gap: 7px !important;
 
-    gap: 7px;
+    width: auto !important;
 
-    width: auto;
+    max-width: 100% !important;
 
-    max-width: 100%;
+    min-width: 0 !important;
 
-    min-width: 0;
+    margin: 0 !important;
 
-    margin: 0;
+    padding: 0 !important;
 
-    padding: 0;
-
-    background: transparent !important;
+    background:
+        transparent !important;
 
     border: 0 !important;
 
-    box-shadow: none !important;
+    border-radius: 0 !important;
 
-    color: #9299ac;
+    box-shadow:
+        none !important;
 
-    font-size: 11px;
+    color: #9299ac !important;
 
-    line-height: 1.3;
+    font-size: 11px !important;
 
-    font-weight: 400;
+    line-height: 1.3 !important;
 
-    white-space: nowrap;
+    white-space: nowrap !important;
 }
 
 
@@ -942,29 +1013,30 @@ header {
    MINI SPINNER
    ========================================================= */
 
-.mini-spinner {
-    width: 12px;
+#searchResults .mini-spinner {
+    width: 12px !important;
 
-    min-width: 12px;
+    min-width: 12px !important;
 
-    max-width: 12px;
+    max-width: 12px !important;
 
-    height: 12px;
+    height: 12px !important;
 
-    flex: 0 0 12px;
+    flex:
+        0 0 12px !important;
 
     border:
         2px solid
-        rgba(255,255,255,0.12);
+        rgba(255,255,255,0.13) !important;
 
     border-top-color:
-        #9b7cff;
+        #9b7cff !important;
 
-    border-radius: 50%;
+    border-radius: 50% !important;
 
     animation:
         sublankaSpin
-        0.7s linear infinite;
+        0.7s linear infinite !important;
 }
 
 
@@ -972,26 +1044,28 @@ header {
    SINHALA AVAILABLE
    ========================================================= */
 
-.sinhala-available {
-    display: block;
+#searchResults .sinhala-available {
+    display: block !important;
 
-    width: 100%;
+    width: 100% !important;
 
-    margin: 0;
+    margin: 0 !important;
 
-    padding: 0;
+    padding: 0 !important;
 
-    background: transparent !important;
+    background:
+        transparent !important;
 
     border: 0 !important;
 
-    box-shadow: none !important;
+    box-shadow:
+        none !important;
 }
 
-.sinhala-available strong {
+#searchResults .sinhala-available strong {
     display: block;
 
-    color: var(--green);
+    color: #91ffca;
 
     font-size: 11px;
 
@@ -1002,55 +1076,53 @@ header {
 
 
 /* =========================================================
-   SOURCE LINKS
+   SINHALA SOURCE LINKS
    ========================================================= */
 
 .sinhala-source-links {
-    display: flex;
+    display: flex !important;
 
-    flex-wrap: wrap;
+    flex-wrap: wrap !important;
 
-    gap: 6px;
+    gap: 6px !important;
 
-    margin-top: 7px;
+    margin-top: 7px !important;
 }
 
 .sinhala-source-link {
-    display: inline-flex;
+    display: inline-flex !important;
 
     align-items: center;
+
     justify-content: center;
 
     padding:
         4px 8px;
 
+    border:
+        1px solid
+        rgba(118,90,255,0.24);
+
     border-radius: 6px;
 
-    border:
-        1px solid rgba(124,92,255,0.22);
-
     background:
-        rgba(124,92,255,0.10);
+        rgba(118,90,255,0.10);
 
-    color: #d6ceff;
+    color: #d8d1ff;
 
     text-decoration: none;
 
     font-size: 10px;
 
     line-height: 1.2;
-
-    transition:
-        background 0.2s ease,
-        border 0.2s ease;
 }
 
 .sinhala-source-link:hover {
     background:
-        rgba(124,92,255,0.20);
+        rgba(118,90,255,0.20);
 
     border-color:
-        rgba(124,92,255,0.4);
+        rgba(118,90,255,0.40);
 }
 
 
@@ -1058,18 +1130,22 @@ header {
    SINHALA NOT FOUND
    ========================================================= */
 
-.sinhala-not-found {
-    display: block;
+#searchResults .sinhala-not-found {
+    display: block !important;
 
-    margin: 0;
+    width: auto !important;
 
-    padding: 0;
+    margin: 0 !important;
 
-    background: transparent !important;
+    padding: 0 !important;
+
+    background:
+        transparent !important;
 
     border: 0 !important;
 
-    box-shadow: none !important;
+    box-shadow:
+        none !important;
 
     color: #858ca0;
 
@@ -1085,11 +1161,14 @@ header {
 
 .quick-actions {
     width: 100%;
+
     max-width: 1250px;
 
-    margin: 50px auto 0;
+    margin:
+        50px auto 0;
 
-    padding: 0 6%;
+    padding:
+        0 6%;
 
     display: grid;
 
@@ -1102,30 +1181,31 @@ header {
 .quick-action-card {
     padding: 22px;
 
+    border:
+        1px solid
+        rgba(255,255,255,0.07);
+
     border-radius: 17px;
 
     background:
         rgba(15,19,35,0.72);
 
-    border:
-        1px solid rgba(255,255,255,0.07);
-
     transition:
         transform 0.2s ease,
-        border 0.2s ease;
+        border-color 0.2s ease;
 }
 
 .quick-action-card:hover {
     transform: translateY(-3px);
 
     border-color:
-        rgba(124,92,255,0.25);
+        rgba(118,90,255,0.25);
 }
 
 .quick-action-card h3 {
     margin-bottom: 7px;
 
-    color: white;
+    color: #ffffff;
 
     font-size: 14px;
 }
@@ -1145,17 +1225,20 @@ header {
 
 .upload-section {
     width: 100%;
+
     max-width: 1250px;
 
-    margin: 60px auto 0;
+    margin:
+        60px auto 0;
 
-    padding: 0 6%;
+    padding:
+        0 6%;
 }
 
 .upload-section h2 {
     margin-bottom: 8px;
 
-    color: white;
+    color: #ffffff;
 
     font-size: 25px;
 
@@ -1182,28 +1265,28 @@ header {
 
     padding: 32px;
 
-    border-radius: 18px;
-
     border:
         1px dashed
-        rgba(124,92,255,0.30);
+        rgba(118,90,255,0.32);
+
+    border-radius: 18px;
 
     background:
-        rgba(124,92,255,0.045);
+        rgba(118,90,255,0.045);
 
     text-align: center;
 
     transition:
         background 0.2s ease,
-        border 0.2s ease;
+        border-color 0.2s ease;
 }
 
 .file-upload:hover {
     background:
-        rgba(124,92,255,0.075);
+        rgba(118,90,255,0.075);
 
     border-color:
-        rgba(124,92,255,0.5);
+        rgba(118,90,255,0.50);
 }
 
 .file-upload input[type="file"] {
@@ -1233,7 +1316,7 @@ header {
             #4e82ff
         );
 
-    color: white;
+    color: #ffffff;
 
     font-family: inherit;
 
@@ -1254,22 +1337,25 @@ header {
 
 
 /* =========================================================
-   SETTINGS SECTION
+   SETTINGS
    ========================================================= */
 
 .settings-section {
     width: 100%;
+
     max-width: 1250px;
 
-    margin: 45px auto 0;
+    margin:
+        45px auto 0;
 
-    padding: 0 6%;
+    padding:
+        0 6%;
 }
 
 .settings-section h2 {
     margin-bottom: 15px;
 
-    color: white;
+    color: #ffffff;
 
     font-size: 22px;
 }
@@ -1291,17 +1377,19 @@ header {
 
     height: 48px;
 
-    padding: 0 14px;
-
-    border-radius: 11px;
+    padding:
+        0 14px;
 
     border:
-        1px solid rgba(255,255,255,0.08);
+        1px solid
+        rgba(255,255,255,0.08);
+
+    border-radius: 11px;
 
     background:
         rgba(255,255,255,0.045);
 
-    color: white;
+    color: #ffffff;
 
     font-family: inherit;
 
@@ -1312,7 +1400,7 @@ header {
     outline: none;
 
     border-color:
-        rgba(124,92,255,0.4);
+        rgba(118,90,255,0.40);
 }
 
 
@@ -1339,7 +1427,7 @@ header {
             #4e82ff
         );
 
-    color: white;
+    color: #ffffff;
 
     font-family: inherit;
 
@@ -1350,7 +1438,8 @@ header {
     cursor: pointer;
 
     box-shadow:
-        0 10px 30px rgba(100,80,255,0.2);
+        0 10px 30px
+        rgba(100,80,255,0.20);
 
     transition:
         transform 0.2s ease,
@@ -1371,7 +1460,7 @@ header {
 
 
 /* =========================================================
-   PROGRESS CONTAINER
+   PROGRESS
    ========================================================= */
 
 #progressContainer {
@@ -1391,7 +1480,7 @@ header {
 }
 
 #progressPercent {
-    color: white;
+    color: #ffffff;
 
     font-size: 12px;
 
@@ -1432,10 +1521,11 @@ header {
 
     resize: vertical;
 
-    border-radius: 14px;
-
     border:
-        1px solid rgba(255,255,255,0.08);
+        1px solid
+        rgba(255,255,255,0.08);
+
+    border-radius: 14px;
 
     background:
         rgba(5,8,18,0.75);
@@ -1457,7 +1547,7 @@ header {
     outline: none;
 
     border-color:
-        rgba(124,92,255,0.35);
+        rgba(118,90,255,0.35);
 }
 
 
@@ -1479,10 +1569,9 @@ header {
 
     border-radius: 10px;
 
-    background:
-        #1eaf70;
+    background: #1eaf70;
 
-    color: white;
+    color: #ffffff;
 
     font-family: inherit;
 
@@ -1501,24 +1590,26 @@ header {
 .translation-status {
     width: 100%;
 
-    padding: 35px 25px;
+    padding:
+        35px 25px;
+
+    border:
+        1px solid
+        rgba(255,255,255,0.07);
 
     border-radius: 18px;
 
     background:
         rgba(17,21,39,0.82);
 
-    border:
-        1px solid rgba(255,255,255,0.07);
-
     text-align: center;
 }
 
 .translation-status h2,
 .translation-status h3 {
-    color: white;
-
     margin-bottom: 8px;
+
+    color: #ffffff;
 }
 
 .translation-status p {
@@ -1546,7 +1637,6 @@ header {
 
 .status-spinner {
     width: 25px;
-
     height: 25px;
 
     margin:
@@ -1568,7 +1658,7 @@ header {
 
 
 /* =========================================================
-   PROGRESS TRACK
+   TRANSLATION PROGRESS
    ========================================================= */
 
 .progress-track {
@@ -1576,7 +1666,8 @@ header {
 
     height: 8px;
 
-    margin: 16px 0;
+    margin:
+        16px 0;
 
     overflow: hidden;
 
@@ -1614,19 +1705,20 @@ header {
 
     padding: 28px;
 
+    border:
+        1px solid
+        rgba(255,255,255,0.07);
+
     border-radius: 18px;
 
     background:
         rgba(17,21,39,0.82);
-
-    border:
-        1px solid rgba(255,255,255,0.07);
 }
 
 .episode-selector h2 {
     margin-bottom: 5px;
 
-    color: white;
+    color: #ffffff;
 
     font-size: 20px;
 }
@@ -1666,17 +1758,19 @@ header {
 
     height: 45px;
 
-    padding: 0 12px;
-
-    border-radius: 9px;
+    padding:
+        0 12px;
 
     border:
-        1px solid rgba(255,255,255,0.08);
+        1px solid
+        rgba(255,255,255,0.08);
+
+    border-radius: 9px;
 
     background:
         rgba(255,255,255,0.045);
 
-    color: white;
+    color: #ffffff;
 
     font-family: inherit;
 
@@ -1687,23 +1781,18 @@ header {
     outline: none;
 
     border-color:
-        rgba(124,92,255,0.4);
+        rgba(118,90,255,0.4);
 }
 
 
 /* =========================================================
-   HISTORY HIDDEN
+   HIDE OLD SECTIONS
    ========================================================= */
 
 #historySection,
 .history-section {
     display: none !important;
 }
-
-
-/* =========================================================
-   MOVIE DETAILS HIDDEN
-   ========================================================= */
 
 .movie-details {
     display: none !important;
@@ -1727,11 +1816,12 @@ footer {
         28px 6%;
 
     border-top:
-        1px solid rgba(255,255,255,0.06);
-
-    text-align: center;
+        1px solid
+        rgba(255,255,255,0.06);
 
     color: #656d82;
+
+    text-align: center;
 
     font-size: 11px;
 }
@@ -1752,11 +1842,10 @@ footer a:hover {
    ========================================================= */
 
 body.light-mode {
+    color: #171a26;
+
     background:
         #f4f5fb;
-
-    color:
-        #171a26;
 }
 
 body.light-mode .search-card,
@@ -1765,16 +1854,17 @@ body.light-mode .quick-action-card,
 body.light-mode .translation-status,
 body.light-mode .episode-selector {
     background:
-        rgba(255,255,255,0.88);
+        rgba(255,255,255,0.92);
 
     border-color:
         rgba(20,25,45,0.08);
 
     box-shadow:
-        0 15px 45px rgba(30,35,60,0.08);
+        0 15px 45px
+        rgba(30,35,60,0.08);
 }
 
-body.light-mode .brand,
+body.light-mode .brand-title,
 body.light-mode .result-info h3,
 body.light-mode .upload-section h2,
 body.light-mode .settings-section h2,
@@ -1784,7 +1874,10 @@ body.light-mode .episode-selector h2 {
     color: #161927;
 }
 
-body.light-mode .brand-subtitle,
+body.light-mode .brand-subtitle {
+    color: #6654d9;
+}
+
 body.light-mode #searchStatus,
 body.light-mode .upload-section > p,
 body.light-mode .quick-action-card p,
@@ -1815,18 +1908,12 @@ body.light-mode .result-meta span {
     background:
         rgba(0,0,0,0.045);
 
-    color:
-        #6e7485;
+    color: #6e7485;
 }
 
-body.light-mode .sinhala-checking {
-    color:
-        #777d8d;
-}
-
+body.light-mode .sinhala-checking,
 body.light-mode .sinhala-not-found {
-    color:
-        #777d8d;
+    color: #777d8d !important;
 }
 
 body.light-mode .search-result-card:hover {
@@ -1855,12 +1942,42 @@ body.light-mode .search-result-card:hover {
 
     from {
         opacity: 0;
-        transform: translateY(12px);
+
+        transform:
+            translateY(12px);
     }
 
     to {
         opacity: 1;
-        transform: translateY(0);
+
+        transform:
+            translateY(0);
+    }
+
+}
+
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 900px) {
+
+    .hero {
+        min-height: 600px;
+    }
+
+    .hero-content {
+        padding:
+            165px 5% 80px;
+    }
+
+    .quick-actions {
+        grid-template-columns:
+            repeat(2, 1fr);
+
+        padding:
+            0 5%;
     }
 
 }
@@ -1870,288 +1987,728 @@ body.light-mode .search-result-card:hover {
    MOBILE
    ========================================================= */
 
-@media (max-width: 800px) {
+@media (max-width: 600px) {
+
+    /* -----------------------------------------
+       HERO
+    ----------------------------------------- */
+
+    .hero {
+        min-height: 560px;
+
+        overflow: hidden;
+    }
+
+
+    .hero-banner {
+        position: absolute;
+
+        inset: 0;
+
+        width: 100%;
+        height: 100%;
+
+        overflow: hidden;
+    }
+
+
+    .hero-banner img {
+        position: absolute;
+
+        inset: 0;
+
+        width: 100%;
+        height: 100%;
+
+        /*
+         * Important:
+         * Don't enlarge the banner.
+         */
+
+        transform: scale(1);
+
+        object-fit: cover;
+
+        object-position:
+            58% center;
+
+        filter:
+            brightness(0.43)
+            saturate(0.9);
+    }
+
+
+    /* -----------------------------------------
+       HERO OVERLAY
+    ----------------------------------------- */
+
+    .hero-overlay {
+        position: absolute;
+
+        inset: 0;
+
+        z-index: 2;
+
+        background:
+            linear-gradient(
+                180deg,
+                rgba(5,7,15,0.78) 0%,
+                rgba(5,7,15,0.43) 28%,
+                rgba(5,7,15,0.50) 55%,
+                rgba(5,7,15,0.97) 100%
+            );
+    }
+
+
+    /* -----------------------------------------
+       HEADER
+    ----------------------------------------- */
 
     header {
+        position: absolute;
+
+        top: 0;
+        left: 0;
+
+        z-index: 100;
+
+        width: 100%;
+
         height: 68px;
 
         padding:
-            0 18px;
+            0 17px;
+
+        background:
+            linear-gradient(
+                180deg,
+                rgba(4,6,14,0.82),
+                rgba(4,6,14,0)
+            );
     }
 
+
+    .brand {
+        z-index: 101;
+
+        gap: 9px;
+    }
+
+
     .brand-logo {
-        width: 38px;
-        height: 38px;
+        width: 37px;
+        height: 37px;
 
         border-radius: 10px;
     }
 
+
     .brand-title {
-        font-size: 16px;
-    }
+        color:
+            #ffffff !important;
 
-    .hero {
-        min-height: 560px;
-    }
+        font-size: 15px;
 
-    .hero-content {
-        padding:
-            150px 18px 60px;
-    }
+        font-weight: 700;
 
-    .hero-content h1 {
-        font-size:
-            clamp(36px, 11vw, 55px);
-
-        letter-spacing: -1.8px;
-    }
-
-    .hero-content p {
-        max-width: 480px;
-
-        font-size: 13px;
-
-        line-height: 1.7;
-    }
-
-    .search-section {
-        margin-top: -65px;
-
-        padding:
-            0 14px;
-    }
-
-    .search-card {
-        padding: 14px;
-
-        border-radius: 18px;
-    }
-
-    .search-row {
-        flex-direction: column;
-    }
-
-    #searchBtn {
-        width: 100%;
-    }
-
-    .quick-actions {
-        grid-template-columns:
-            1fr;
-
-        padding:
-            0 14px;
-
-        margin-top: 35px;
-    }
-
-    .upload-section,
-    .settings-section {
-        padding:
-            0 14px;
-    }
-
-    .upload-section {
-        margin-top: 45px;
-    }
-
-}
-
-
-/* =========================================================
-   SMALL MOBILE
-   ========================================================= */
-
-@media (max-width: 600px) {
-
-    .hero {
-        min-height: 530px;
-    }
-
-    .hero-banner img {
-        object-position:
-            center center;
-    }
-
-    .hero-overlay {
-        background:
-            linear-gradient(
-                180deg,
-                rgba(5,7,15,0.72) 0%,
-                rgba(5,7,15,0.35) 35%,
-                rgba(5,7,15,0.94) 100%
-            );
-    }
-
-    .hero-content {
-        padding:
-            145px 18px 55px;
-    }
-
-    .hero-content h1 {
-        font-size: 38px;
-
-        line-height: 1.06;
-    }
-
-    .hero-content p {
-        font-size: 12px;
-
-        max-width: 350px;
+        text-shadow:
+            0 2px 10px
+            rgba(0,0,0,0.7);
     }
 
 
-    /* RESULT CARDS */
+    .brand-subtitle {
+        color:
+            #b6a9ff !important;
 
-    #searchResults {
-        gap: 11px;
-    }
-
-    .search-result-card {
-        gap: 12px;
-
-        padding: 11px;
-
-        border-radius: 14px;
-    }
-
-    .result-poster {
-        width: 78px;
-
-        min-width: 78px;
-        max-width: 78px;
-
-        height: 112px;
-
-        min-height: 112px;
-        max-height: 112px;
-
-        flex-basis: 78px;
-    }
-
-    .result-info h3 {
-        margin-top: 1px;
-
-        font-size: 13px;
-    }
-
-    .result-meta {
-        gap: 4px;
-
-        margin-bottom: 8px;
-    }
-
-    .result-meta span {
         font-size: 9px;
 
-        padding:
-            3px 6px;
+        text-shadow:
+            0 2px 8px
+            rgba(0,0,0,0.7);
     }
 
-    .select-title-btn {
-        min-height: 31px;
 
-        padding:
-            6px 10px;
-
-        font-size: 10px;
-    }
-
-    .sinhala-checking {
-        font-size: 10px;
+    .header-actions {
+        z-index: 101;
 
         gap: 6px;
     }
 
-    .mini-spinner {
-        width: 11px;
-        height: 11px;
 
-        min-width: 11px;
-        max-width: 11px;
+    .settings-button,
+    #themeToggle {
+        width: 38px;
+        height: 38px;
 
-        flex-basis: 11px;
+        border-radius: 11px;
+
+        background:
+            rgba(8,11,23,0.50);
+
+        backdrop-filter:
+            blur(10px);
+
+        -webkit-backdrop-filter:
+            blur(10px);
     }
 
-    .sinhala-available strong,
-    .sinhala-not-found {
-        font-size: 10px;
+
+    /* -----------------------------------------
+       HERO CONTENT
+    ----------------------------------------- */
+
+    .hero-content {
+        position: relative;
+
+        z-index: 10;
+
+        width: 100%;
+
+        padding:
+            150px 18px 65px;
     }
+
+
+    .hero-content h1 {
+        max-width: 360px;
+
+        font-size:
+            38px;
+
+        line-height: 1.07;
+
+        letter-spacing:
+            -1.6px;
+
+        text-shadow:
+            0 4px 25px
+            rgba(0,0,0,0.75);
+    }
+
+
+    .hero-content p {
+        max-width: 350px;
+
+        margin-top: 17px;
+
+        color:
+            rgba(245,246,252,0.84);
+
+        font-size:
+            12px;
+
+        line-height:
+            1.75;
+
+        text-shadow:
+            0 2px 12px
+            rgba(0,0,0,0.8);
+    }
+
+
+    /* -----------------------------------------
+       SEARCH SECTION
+    ----------------------------------------- */
+
+    .search-section {
+        position: relative;
+
+        z-index: 30;
+
+        margin-top:
+            -55px;
+
+        padding:
+            0 14px;
+    }
+
+
+    .search-card {
+        padding:
+            14px;
+
+        border-radius:
+            20px;
+
+        background:
+            rgba(255,255,255,0.95);
+
+        border:
+            1px solid
+            rgba(255,255,255,0.75);
+
+        box-shadow:
+            0 25px 70px
+            rgba(0,0,0,0.32);
+
+        backdrop-filter:
+            blur(18px);
+
+        -webkit-backdrop-filter:
+            blur(18px);
+    }
+
+
+    .search-row {
+        flex-direction:
+            column;
+
+        gap: 10px;
+    }
+
+
+    .search-input-wrap input {
+        height:
+            56px;
+
+        background:
+            rgba(255,255,255,0.72);
+
+        color:
+            #2d3140;
+
+        border:
+            1px solid
+            rgba(25,30,50,0.10);
+
+        outline:
+            none !important;
+
+        box-shadow:
+            none !important;
+    }
+
+
+    .search-input-wrap input:focus,
+    .search-input-wrap input:focus-visible {
+        outline:
+            none !important;
+
+        box-shadow:
+            none !important;
+
+        border-color:
+            rgba(118,90,255,0.35);
+    }
+
+
+    .search-input-wrap input::placeholder {
+        color:
+            #9297a8;
+    }
+
+
+    #searchBtn {
+        width: 100%;
+
+        height:
+            56px;
+
+        min-width:
+            0;
+    }
+
+
+    .category-chips {
+        gap:
+            9px;
+
+        margin-top:
+            13px;
+    }
+
+
+    .category-chip {
+        padding:
+            5px 3px;
+
+        border:
+            0;
+
+        background:
+            transparent;
+
+        color:
+            #a4aabc;
+
+        font-size:
+            11px;
+    }
+
+
+    #searchStatus {
+        color:
+            #73798b;
+    }
+
+
+    /* -----------------------------------------
+       SEARCH RESULTS
+    ----------------------------------------- */
+
+    #searchResults {
+        gap:
+            11px !important;
+    }
+
+
+    #searchResults .search-result-card {
+        gap:
+            11px !important;
+
+        padding:
+            10px;
+
+        border-radius:
+            14px;
+    }
+
+
+    #searchResults .result-poster {
+        width:
+            78px !important;
+
+        min-width:
+            78px !important;
+
+        max-width:
+            78px !important;
+
+        height:
+            112px !important;
+
+        min-height:
+            112px !important;
+
+        max-height:
+            112px !important;
+
+        flex-basis:
+            78px !important;
+
+        border-radius:
+            9px;
+    }
+
+
+    #searchResults .result-info h3 {
+        margin:
+            1px 0 6px;
+
+        font-size:
+            13px;
+
+        line-height:
+            1.35;
+    }
+
+
+    .result-meta {
+        gap:
+            4px;
+
+        margin-bottom:
+            7px;
+    }
+
+
+    .result-meta span {
+        padding:
+            3px 6px;
+
+        font-size:
+            9px;
+    }
+
+
+    .select-title-btn {
+        min-height:
+            30px;
+
+        padding:
+            6px 10px;
+
+        font-size:
+            10px;
+    }
+
+
+    #searchResults .sinhala-status {
+        margin-top:
+            7px !important;
+    }
+
+
+    #searchResults .sinhala-checking {
+        gap:
+            6px !important;
+
+        font-size:
+            10px !important;
+
+        line-height:
+            1.2 !important;
+
+        background:
+            transparent !important;
+
+        border:
+            0 !important;
+
+        box-shadow:
+            none !important;
+    }
+
+
+    #searchResults .mini-spinner {
+        width:
+            11px !important;
+
+        min-width:
+            11px !important;
+
+        max-width:
+            11px !important;
+
+        height:
+            11px !important;
+
+        flex-basis:
+            11px !important;
+    }
+
+
+    #searchResults .sinhala-available strong,
+    #searchResults .sinhala-not-found {
+        font-size:
+            10px;
+    }
+
 
     .sinhala-source-links {
-        gap: 4px;
+        gap:
+            4px !important;
 
-        margin-top: 5px;
+        margin-top:
+            5px !important;
     }
+
 
     .sinhala-source-link {
         padding:
             4px 6px;
 
-        font-size: 9px;
+        font-size:
+            9px;
     }
 
 
-    /* UPLOAD */
+    /* -----------------------------------------
+       QUICK ACTIONS
+    ----------------------------------------- */
+
+    .quick-actions {
+        grid-template-columns:
+            1fr;
+
+        gap:
+            10px;
+
+        margin-top:
+            35px;
+
+        padding:
+            0 14px;
+    }
+
+
+    .quick-action-card {
+        padding:
+            18px;
+    }
+
+
+    /* -----------------------------------------
+       UPLOAD
+    ----------------------------------------- */
+
+    .upload-section {
+        margin-top:
+            45px;
+
+        padding:
+            0 14px;
+    }
+
+
+    .upload-section h2 {
+        font-size:
+            22px;
+    }
+
 
     .file-upload {
-        padding: 24px 15px;
+        padding:
+            24px 14px;
     }
 
+
+    /* -----------------------------------------
+       SETTINGS
+    ----------------------------------------- */
+
+    .settings-section {
+        padding:
+            0 14px;
+    }
+
+
+    .settings-section select {
+        max-width:
+            100%;
+    }
+
+
+    /* -----------------------------------------
+       EPISODES
+    ----------------------------------------- */
+
     .episode-fields {
-        gap: 8px;
+        gap:
+            8px;
+    }
+
+
+    .episode-selector {
+        padding:
+            22px 16px;
+    }
+
+
+    /* -----------------------------------------
+       FOOTER
+    ----------------------------------------- */
+
+    footer {
+        margin-top:
+            60px;
+
+        padding:
+            24px 14px;
     }
 
 }
 
 
 /* =========================================================
-   VERY SMALL MOBILE
+   SMALL PHONES
    ========================================================= */
 
 @media (max-width: 380px) {
 
     .brand-subtitle {
-        display: none;
+        display:
+            none;
     }
+
+
+    .hero {
+        min-height:
+            540px;
+    }
+
+
+    .hero-content {
+        padding:
+            145px 16px 60px;
+    }
+
 
     .hero-content h1 {
-        font-size: 34px;
+        font-size:
+            34px;
+
+        letter-spacing:
+            -1.3px;
     }
 
-    .result-poster {
-        width: 68px;
 
-        min-width: 68px;
-        max-width: 68px;
+    .hero-content p {
+        max-width:
+            315px;
 
-        height: 98px;
-
-        min-height: 98px;
-        max-height: 98px;
-
-        flex-basis: 68px;
+        font-size:
+            11px;
     }
 
-    .search-result-card {
-        gap: 9px;
 
-        padding: 9px;
+    .search-section {
+        padding:
+            0 11px;
     }
 
-    .result-info h3 {
-        font-size: 12px;
+
+    .search-card {
+        padding:
+            12px;
     }
+
+
+    #searchResults .search-result-card {
+        gap:
+            9px !important;
+
+        padding:
+            9px;
+    }
+
+
+    #searchResults .result-poster {
+        width:
+            68px !important;
+
+        min-width:
+            68px !important;
+
+        max-width:
+            68px !important;
+
+        height:
+            98px !important;
+
+        min-height:
+            98px !important;
+
+        max-height:
+            98px !important;
+
+        flex-basis:
+            68px !important;
+    }
+
+
+    #searchResults .result-info h3 {
+        font-size:
+            12px;
+    }
+
 
     .select-title-btn {
-        font-size: 9px;
+        min-height:
+            28px;
 
         padding:
             5px 8px;
+
+        font-size:
+            9px;
     }
 
-    .sinhala-checking {
-        font-size: 9px;
+
+    #searchResults .sinhala-checking {
+        font-size:
+            9px !important;
     }
 
 }
@@ -2168,43 +2725,54 @@ select:focus-visible,
 textarea:focus-visible {
     outline:
         2px solid
-        rgba(124,92,255,0.65);
+        rgba(118,90,255,0.65);
 
-    outline-offset: 2px;
+    outline-offset:
+        2px;
 }
 
 
 /* =========================================================
-   FINAL FIXES
+   FINAL OVERRIDES
    ========================================================= */
 
-/* Prevent old CSS from creating boxes around checking */
+/* Remove old ugly boxes */
 
 #searchResults .sinhala-status,
 #searchResults .sinhala-checking,
 #searchResults .sinhala-available,
 #searchResults .sinhala-not-found {
-    box-shadow: none !important;
+    box-shadow:
+        none !important;
 }
 
-/* Never allow search result content to overflow */
+
+/* Prevent result overflow */
 
 #searchResults,
 #searchResults * {
-    max-width: 100%;
+    max-width:
+        100%;
 }
 
-/* Keep poster from shrinking */
+
+/* Poster must never shrink */
 
 #searchResults .result-poster {
-    flex-shrink: 0 !important;
+    flex-shrink:
+        0 !important;
 }
 
-/* Remove ugly browser outline */
+
+/* Search input must not show browser outline */
 
 .search-input-wrap input,
 .search-input-wrap input:hover,
 .search-input-wrap input:focus,
 .search-input-wrap input:focus-visible {
-    outline: none !important;
+    outline:
+        none !important;
+
+    box-shadow:
+        none !important;
 }
