@@ -3668,3 +3668,715 @@ textarea:focus-visible {
 /* =========================================================
    END
 ========================================================= */
+/* =========================================================
+   FINAL MOBILE DESIGN
+   MATCH SECOND SCREENSHOT
+========================================================= */
+
+@media (max-width: 600px) {
+
+    html,
+    body {
+        width: 100%;
+        overflow-x: hidden;
+    }
+
+
+    /* =====================================================
+       HEADER
+    ===================================================== */
+
+    header {
+        position: relative !important;
+
+        width: 100% !important;
+        height: 140px !important;
+
+        padding: 20px 30px !important;
+
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+
+        background:
+            linear-gradient(
+                180deg,
+                #090a1d,
+                #0b0b22
+            ) !important;
+
+        z-index: 100 !important;
+    }
+
+
+    /* =====================================================
+       LOGO
+    ===================================================== */
+
+    .brand {
+        display: flex !important;
+
+        align-items: center !important;
+
+        gap: 18px !important;
+
+        text-decoration: none !important;
+    }
+
+
+    .brand-logo {
+        width: 100px !important;
+        height: 100px !important;
+
+        min-width: 100px !important;
+
+        border-radius: 22px !important;
+
+        overflow: hidden !important;
+
+        display: flex !important;
+
+        align-items: center !important;
+        justify-content: center !important;
+
+        background:
+            linear-gradient(
+                135deg,
+                #7058ff,
+                #4d86ff
+            ) !important;
+
+        box-shadow:
+            0 12px 40px
+            rgba(
+                90,
+                80,
+                255,
+                .30
+            ) !important;
+    }
+
+
+    .brand-logo img {
+        width: 100% !important;
+        height: 100% !important;
+
+        display: block !important;
+
+        object-fit: cover !important;
+
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+
+
+    /* =====================================================
+       BRAND TEXT
+    ===================================================== */
+
+    .brand-title {
+        color: #ffffff !important;
+
+        font-size: 25px !important;
+
+        font-weight: 700 !important;
+
+        line-height: 1.1 !important;
+
+        white-space: nowrap !important;
+    }
+
+
+    .brand-title span {
+        color: #a84cff !important;
+    }
+
+
+    .brand-subtitle {
+        margin-top: 6px !important;
+
+        color: #9894c5 !important;
+
+        font-size: 13px !important;
+    }
+
+
+    /* =====================================================
+       HEADER BUTTONS
+    ===================================================== */
+
+    .header-actions {
+        display: flex !important;
+
+        gap: 10px !important;
+    }
+
+
+    .settings-button,
+    #themeToggle {
+
+        width: 58px !important;
+        height: 58px !important;
+
+        min-width: 58px !important;
+
+        border-radius: 50% !important;
+
+        background:
+            rgba(
+                8,
+                10,
+                30,
+                .75
+            ) !important;
+
+        border:
+            1px solid
+            rgba(
+                110,
+                110,
+                255,
+                .25
+            ) !important;
+
+        color: #ffffff !important;
+    }
+
+
+    /* =====================================================
+       HERO
+    ===================================================== */
+
+    .hero {
+
+        position: relative !important;
+
+        width: 100% !important;
+
+        height: 720px !important;
+
+        min-height: 720px !important;
+
+        margin: 0 !important;
+
+        border-radius:
+            0 0 28px 28px !important;
+
+        overflow: hidden !important;
+
+        background: #050713 !important;
+    }
+
+
+    /* =====================================================
+       BANNER
+    ===================================================== */
+
+    .hero-banner {
+
+        position: absolute !important;
+
+        inset: 0 !important;
+
+        width: 100% !important;
+        height: 100% !important;
+
+        display: block !important;
+
+        overflow: hidden !important;
+    }
+
+
+    .hero-banner img {
+
+        position: absolute !important;
+
+        inset: 0 !important;
+
+        width: 100% !important;
+        height: 100% !important;
+
+        display: block !important;
+
+        object-fit: cover !important;
+
+        object-position:
+            center center !important;
+
+        transform:
+            scale(1.02) !important;
+
+        filter:
+            brightness(.48)
+            saturate(1.05) !important;
+    }
+
+
+    /* =====================================================
+       HERO OVERLAY
+    ===================================================== */
+
+    .hero-overlay {
+
+        position: absolute !important;
+
+        inset: 0 !important;
+
+        z-index: 2 !important;
+
+        background:
+
+            linear-gradient(
+                90deg,
+                rgba(
+                    3,
+                    5,
+                    16,
+                    .88
+                ) 0%,
+
+                rgba(
+                    3,
+                    5,
+                    16,
+                    .48
+                ) 55%,
+
+                rgba(
+                    3,
+                    5,
+                    16,
+                    .30
+                ) 100%
+            ),
+
+            linear-gradient(
+                180deg,
+                rgba(
+                    3,
+                    5,
+                    16,
+                    .05
+                ) 0%,
+
+                rgba(
+                    3,
+                    5,
+                    16,
+                    .15
+                ) 55%,
+
+                rgba(
+                    3,
+                    5,
+                    16,
+                    .98
+                ) 100%
+            ) !important;
+    }
+
+
+    /* =====================================================
+       HERO CONTENT
+    ===================================================== */
+
+    .hero-content {
+
+        position: relative !important;
+
+        z-index: 10 !important;
+
+        width: 100% !important;
+
+        height: 100% !important;
+
+        min-height: 720px !important;
+
+        padding:
+            0 35px !important;
+
+        margin: 0 !important;
+
+        display: flex !important;
+
+        flex-direction: column !important;
+
+        justify-content: center !important;
+
+        align-items: flex-start !important;
+    }
+
+
+    /* =====================================================
+       HERO TITLE
+    ===================================================== */
+
+    .hero-content h1 {
+
+        max-width: 650px !important;
+
+        margin: 70px 0 0 !important;
+
+        color: #ffffff !important;
+
+        font-size:
+            40px !important;
+
+        line-height:
+            1.08 !important;
+
+        letter-spacing:
+            -1.7px !important;
+
+        font-weight:
+            700 !important;
+    }
+
+
+    .hero-content h1 span {
+
+        display: inline !important;
+
+        background:
+            linear-gradient(
+                90deg,
+                #ffffff,
+                #a35cff,
+                #9b40ff
+            ) !important;
+
+        -webkit-background-clip:
+            text !important;
+
+        background-clip:
+            text !important;
+
+        -webkit-text-fill-color:
+            transparent !important;
+    }
+
+
+    /* =====================================================
+       HERO DESCRIPTION
+    ===================================================== */
+
+    .hero-content p {
+
+        max-width:
+            600px !important;
+
+        margin-top:
+            22px !important;
+
+        color:
+            rgba(
+                225,
+                228,
+                242,
+                .80
+            ) !important;
+
+        font-size:
+            13px !important;
+
+        line-height:
+            1.75 !important;
+    }
+
+
+    /* =====================================================
+       SEARCH SECTION
+    ===================================================== */
+
+    .search-section {
+
+        width:
+            100% !important;
+
+        max-width:
+            none !important;
+
+        margin:
+            0 !important;
+
+        padding:
+            0 18px !important;
+
+        position:
+            relative !important;
+
+        z-index:
+            20 !important;
+    }
+
+
+    .search-card {
+
+        width:
+            100% !important;
+
+        padding:
+            18px !important;
+
+        margin-top:
+            0 !important;
+
+        border-radius:
+            26px !important;
+
+        background:
+            linear-gradient(
+                145deg,
+                rgba(
+                    19,
+                    25,
+                    58,
+                    .96
+                ),
+                rgba(
+                    9,
+                    13,
+                    34,
+                    .98
+                )
+            ) !important;
+
+        border:
+            1px solid
+            rgba(
+                100,
+                120,
+                255,
+                .25
+            ) !important;
+
+        box-shadow:
+            0 25px 70px
+            rgba(
+                0,
+                0,
+                0,
+                .35
+            ) !important;
+    }
+
+
+    /* =====================================================
+       SEARCH ROW
+    ===================================================== */
+
+    .search-row {
+
+        display:
+            flex !important;
+
+        flex-direction:
+            row !important;
+
+        gap:
+            10px !important;
+    }
+
+
+    /* =====================================================
+       SEARCH INPUT
+    ===================================================== */
+
+    .search-input-wrap {
+        flex:
+            1 !important;
+
+        min-width:
+            0 !important;
+    }
+
+
+    .search-input-wrap input {
+
+        width:
+            100% !important;
+
+        height:
+            64px !important;
+
+        padding:
+            0 18px !important;
+
+        border-radius:
+            22px !important;
+
+        background:
+            rgba(
+                4,
+                8,
+                28,
+                .88
+            ) !important;
+
+        border:
+            1px solid
+            rgba(
+                100,
+                120,
+                255,
+                .20
+            ) !important;
+
+        color:
+            #ffffff !important;
+
+        outline:
+            none !important;
+
+        box-shadow:
+            none !important;
+    }
+
+
+    /* =====================================================
+       SEARCH BUTTON
+    ===================================================== */
+
+    #searchBtn {
+
+        width:
+            115px !important;
+
+        min-width:
+            115px !important;
+
+        height:
+            64px !important;
+
+        border-radius:
+            22px !important;
+
+        background:
+            linear-gradient(
+                135deg,
+                #7657ff,
+                #b23cff
+            ) !important;
+
+        font-size:
+            13px !important;
+    }
+
+
+    /* =====================================================
+       CATEGORY CHIPS
+    ===================================================== */
+
+    .category-chips {
+
+        display:
+            flex !important;
+
+        flex-wrap:
+            nowrap !important;
+
+        overflow-x:
+            auto !important;
+
+        gap:
+            9px !important;
+
+        margin-top:
+            14px !important;
+
+        scrollbar-width:
+            none !important;
+    }
+
+
+    .category-chips::-webkit-scrollbar {
+        display: none !important;
+    }
+
+
+    .category-chip {
+
+        flex:
+            0 0 auto !important;
+
+        height:
+            48px !important;
+
+        padding:
+            0 17px !important;
+
+        display:
+            flex !important;
+
+        align-items:
+            center !important;
+
+        justify-content:
+            center !important;
+
+        border:
+            1px solid
+            rgba(
+                100,
+                120,
+                255,
+                .20
+            ) !important;
+
+        border-radius:
+            999px !important;
+
+        background:
+            rgba(
+                7,
+                11,
+                31,
+                .65
+            ) !important;
+
+        color:
+            #a4aac0 !important;
+
+        font-size:
+            11px !important;
+    }
+
+
+    /* =====================================================
+       QUICK ACTIONS
+    ===================================================== */
+
+    .quick-actions {
+
+        width:
+            100% !important;
+
+        padding:
+            0 18px !important;
+
+        margin:
+            45px 0 0 !important;
+
+        grid-template-columns:
+            repeat(
+                2,
+                1fr
+            ) !important;
+
+        gap:
+            14px !important;
+    }
+
+
+    .quick-action-card {
+
+        min-height:
+            150px !important;
+
+        padding:
+            20px !important;
+
+        border-radius:
+            20px !important;
+    }
+}
