@@ -1,323 +1,755 @@
-// api/sinhala-search.js
+"use strict";
 
-const SOURCES = [
-    {
-        name: "Baiscope",
-        domain: "baiscope.lk",
-        search: title =>
-            `https://www.baiscope.lk/?s=${encodeURIComponent(title)}`
-    },
-    {
-        name: "SinhalaSub",
-        domain: "sinhalasub.lk",
-        search: title =>
-            `https://sinhalasub.lk/?s=${encodeURIComponent(title)}`
-    },
-    {
-        name: "Cineru",
-        domain: "cineru.lk",
-        search: title =>
-            `https://cineru.lk/?s=${encodeURIComponent(title)}`
-    }
-];
+/*
+========================================================
+SubLanka AI
+Exact Sinhala Subtitle Search
+========================================================
 
-function normalize(text = "") {
-    return text
-        .toLowerCase()
-        .replace(/&amp;/g, "&")
-        .replace(/[^\p{L}\p{N}]+/gu, " ")
-        .replace(/\s+/g, " ")
-        .trim();
-}
+Checks the exact movie / TV title separately.
 
-function titleWords(title) {
-    return normalize(title)
-        .split(" ")
-        .filter(w => w.length >= 2);
-}
+Sources:
+- Baiscope
+- SinhalaSub
+- Cineru
 
-function getScore(text, title, year) {
-    const haystack = normalize(text);
-    const words = titleWords(title);
+Important:
+- Does NOT return the same Sinhala page for every result
+- Checks title + year
+- Rejects unrelated titles
+========================================================
+*/
 
-    if (!words.length) return 0;
 
-    let matched = 0;
-
-    for (const word of words) {
-        if (haystack.includes(word)) {
-            matched++;
-        }
-    }
-
-    let score = matched / words.length;
-
-    // Strong bonus when exact title appears
-    if (haystack.includes(normalize(title))) {
-        score += 0.35;
-    }
-
-    // Year match
-    if (year && haystack.includes(String(year))) {
-        score += 0.15;
-    }
-
-    return Math.min(score, 1);
-}
-
-function looksLikeSinhalaSubtitle(text) {
-    const value = normalize(text);
-
-    return (
-        value.includes("sinhala subtitle") ||
-        value.includes("sinhala subtitles") ||
-        value.includes("sinhala sub") ||
-        value.includes("සිංහල උපසිරැසි") ||
-        value.includes("සිංහල උපසිරසි") ||
-        value.includes("සිංහල සබ්")
-    );
-}
-
-function extractLinks(html, source) {
-    const results = [];
-
-    /*
-     * Find links from HTML.
-     */
-    const regex =
-        /<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
-
-    let match;
-
-    while ((match = regex.exec(html)) !== null) {
-
-        let url = match[1];
-
-        const anchorText =
-            match[2]
-                .replace(/<[^>]+>/g, " ")
-                .replace(/\s+/g, " ")
-                .trim();
-
-        if (!url) continue;
-
-        // Convert relative URLs
-        if (url.startsWith("/")) {
-            url = `https://${source.domain}${url}`;
-        }
-
-        if (!url.startsWith("http")) {
-            continue;
-        }
-
-        try {
-            const hostname =
-                new URL(url).hostname
-                    .toLowerCase()
-                    .replace(/^www\./, "");
-
-            if (
-                hostname !== source.domain &&
-                !hostname.endsWith("." + source.domain)
-            ) {
-                continue;
-            }
-        } catch {
-            continue;
-        }
-
-        results.push({
-            url,
-            text: anchorText
-        });
-    }
-
-    return results;
-}
-
-async function searchSource(source, title, year, type) {
-
-    const searchUrl = source.search(title);
+module.exports = async function handler(req, res) {
 
     try {
 
-        const response = await fetch(searchUrl, {
-            headers: {
-                "User-Agent":
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131 Safari/537.36",
-                "Accept":
-                    "text/html,application/xhtml+xml"
-            }
-        });
+        if (req.method !== "GET") {
 
-        if (!response.ok) {
-            console.error(
-                source.name,
-                "HTTP",
-                response.status
+            return res.status(405).json({
+                error: "Method not allowed"
+            });
+
+        }
+
+
+        const title =
+            String(
+                req.query.title || ""
+            ).trim();
+
+
+        const year =
+            String(
+                req.query.year || ""
+            ).trim();
+
+
+        const type =
+            String(
+                req.query.type || "movie"
+            ).trim();
+
+
+        if (!title) {
+
+            return res.status(400).json({
+                error: "Title is required"
+            });
+
+        }
+
+
+        const GOOGLE_API_KEY =
+            process.env.GOOGLE_SEARCH_API_KEY;
+
+
+        const GOOGLE_CSE_ID =
+            process.env.GOOGLE_CSE_ID;
+
+
+        if (
+            !GOOGLE_API_KEY ||
+            !GOOGLE_CSE_ID
+        ) {
+
+            return res.status(500).json({
+                error:
+                    "Google Search API is not configured."
+            });
+
+        }
+
+
+        // ====================================================
+        // CLEAN TITLE
+        // ====================================================
+
+        const cleanTitle =
+            normalizeTitle(title);
+
+
+        if (!cleanTitle) {
+
+            return res.status(200).json({
+
+                found: false,
+
+                title,
+
+                year,
+
+                type,
+
+                sources: []
+
+            });
+
+        }
+
+
+        // ====================================================
+        // YEAR
+        // ====================================================
+
+        const releaseYear =
+            extractFirstYear(year);
+
+
+        // ====================================================
+        // SEARCH GOOGLE CSE
+        // ====================================================
+
+        const queryParts = [
+
+            `"${title}"`,
+
+            releaseYear
+                ? `"${releaseYear}"`
+                : "",
+
+            `"Sinhala subtitles"`
+
+        ].filter(Boolean);
+
+
+        const query =
+            queryParts.join(" ");
+
+
+        const url =
+            new URL(
+                "https://www.googleapis.com/customsearch/v1"
             );
 
-            return null;
+
+        url.searchParams.set(
+            "key",
+            GOOGLE_API_KEY
+        );
+
+
+        url.searchParams.set(
+            "cx",
+            GOOGLE_CSE_ID
+        );
+
+
+        url.searchParams.set(
+            "q",
+            query
+        );
+
+
+        url.searchParams.set(
+            "num",
+            "10"
+        );
+
+
+        url.searchParams.set(
+            "safe",
+            "active"
+        );
+
+
+        const response =
+            await fetch(
+                url.toString()
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            console.error(
+                "GOOGLE CSE ERROR:",
+                data
+            );
+
+
+            return res.status(
+                response.status
+            ).json({
+
+                error:
+                    data?.error?.message ||
+                    "Google subtitle search failed."
+
+            });
+
         }
 
-        const html = await response.text();
 
-        if (!html || html.length < 100) {
-            return null;
-        }
+        const items =
+            Array.isArray(data.items)
+                ? data.items
+                : [];
 
-        const links =
-            extractLinks(html, source);
 
-        const candidates = [];
+        // ====================================================
+        // SOURCE DEFINITIONS
+        // ====================================================
 
-        for (const link of links) {
+        const sourceRules = [
 
-            const combined =
-                `${link.text} ${link.url}`;
+            {
+                name: "Baiscope",
 
-            /*
-             * Ignore obvious navigation links.
-             */
+                hosts: [
+                    "baiscope.lk",
+                    "www.baiscope.lk"
+                ]
+
+            },
+
+            {
+                name: "SinhalaSub",
+
+                hosts: [
+                    "sinhalasub.lk",
+                    "www.sinhalasub.lk"
+                ]
+
+            },
+
+            {
+                name: "Cineru",
+
+                hosts: [
+                    "cineru.lk",
+                    "www.cineru.lk"
+                ]
+
+            }
+
+        ];
+
+
+        const foundSources = [];
+
+
+        // ====================================================
+        // CHECK EVERY GOOGLE RESULT
+        // ====================================================
+
+        for (
+            const item of items
+        ) {
+
             if (
-                link.url.includes("/category/") ||
-                link.url.includes("/tag/") ||
-                link.url.includes("/author/") ||
-                link.url.includes("/page/")
+                !item ||
+                !item.link
             ) {
                 continue;
             }
 
-            const score =
-                getScore(
-                    combined,
-                    title,
-                    year
+
+            const resultUrl =
+                item.link;
+
+
+            let hostname = "";
+
+
+            try {
+
+                hostname =
+                    new URL(
+                        resultUrl
+                    )
+                        .hostname
+                        .toLowerCase();
+
+            } catch {
+
+                continue;
+
+            }
+
+
+            // Find source
+
+            const sourceRule =
+                sourceRules.find(
+                    rule =>
+                        rule.hosts.some(
+                            host =>
+                                hostname === host ||
+                                hostname.endsWith(
+                                    "." + host
+                                )
+                        )
                 );
 
-            if (score < 0.75) {
+
+            if (!sourceRule) {
                 continue;
             }
 
-            /*
-             * We need a Sinhala subtitle indication.
-             */
+
+            // =================================================
+            // RESULT TEXT
+            // =================================================
+
+            const resultTitle =
+                String(
+                    item.title || ""
+                );
+
+
+            const snippet =
+                String(
+                    item.snippet || ""
+                );
+
+
+            const resultText =
+                `${resultTitle} ${snippet}`;
+
+
+            // =================================================
+            // EXACT TITLE MATCH
+            // =================================================
+
+            const titleScore =
+                calculateTitleScore(
+                    cleanTitle,
+                    resultTitle,
+                    resultText
+                );
+
+
+            // =================================================
+            // YEAR MATCH
+            // =================================================
+
+            const yearScore =
+                calculateYearScore(
+                    releaseYear,
+                    resultText,
+                    resultUrl
+                );
+
+
+            // =================================================
+            // TOTAL SCORE
+            // =================================================
+
+            const score =
+                titleScore +
+                yearScore;
+
+
+            console.log(
+                "SINHALA MATCH:",
+                {
+                    requestedTitle:
+                        title,
+
+                    requestedYear:
+                        releaseYear,
+
+                    resultTitle,
+
+                    resultUrl,
+
+                    titleScore,
+
+                    yearScore,
+
+                    score
+                }
+            );
+
+
+            // =================================================
+            // STRICT MATCH
+            // =================================================
+
             if (
-                !looksLikeSinhalaSubtitle(
-                    combined
-                )
+                score < 75
             ) {
+
+                continue;
+
+            }
+
+
+            // Avoid duplicate source
+
+            const alreadyFound =
+                foundSources.some(
+                    source =>
+                        source.source ===
+                        sourceRule.name
+                );
+
+
+            if (alreadyFound) {
                 continue;
             }
 
-            candidates.push({
-                source: source.name,
-                url: link.url,
+
+            foundSources.push({
+
+                source:
+                    sourceRule.name,
+
+                url:
+                    resultUrl,
+
                 title:
-                    link.text ||
-                    title,
-                score,
-                type
+                    resultTitle,
+
+                score:
+                    score
+
             });
+
         }
 
-        /*
-         * Sort best result first.
-         */
-        candidates.sort(
+
+        // ====================================================
+        // SORT
+        // ====================================================
+
+        foundSources.sort(
             (a, b) =>
                 b.score - a.score
         );
 
-        return candidates[0] || null;
 
-    } catch (error) {
-
-        console.error(
-            source.name,
-            error.message
-        );
-
-        return null;
-    }
-}
-
-module.exports = async function handler(req, res) {
-
-    if (req.method !== "GET") {
-        return res.status(405).json({
-            found: false,
-            sources: [],
-            error: "Method not allowed"
-        });
-    }
-
-    const title =
-        String(
-            req.query.title || ""
-        ).trim();
-
-    const year =
-        String(
-            req.query.year || ""
-        ).trim();
-
-    const type =
-        String(
-            req.query.type || "movie"
-        ).toLowerCase();
-
-    if (!title) {
-        return res.status(400).json({
-            found: false,
-            sources: [],
-            error: "Title is required"
-        });
-    }
-
-    try {
-
-        const results =
-            await Promise.all(
-                SOURCES.map(source =>
-                    searchSource(
-                        source,
-                        title,
-                        year,
-                        type
-                    )
-                )
-            );
-
-        const sources =
-            results.filter(Boolean);
+        // ====================================================
+        // RESPONSE
+        // ====================================================
 
         return res.status(200).json({
+
             found:
-                sources.length > 0,
+                foundSources.length > 0,
 
-            title,
-            year,
-            type,
+            title:
+                title,
 
-            sources
+            year:
+                year,
+
+            type:
+                type,
+
+            sources:
+                foundSources.slice(
+                    0,
+                    3
+                ),
+
+            error:
+                null
+
         });
+
 
     } catch (error) {
 
         console.error(
-            "Sinhala search error:",
+            "SINHALA SEARCH ERROR:",
             error
         );
 
+
         return res.status(500).json({
+
             found: false,
-            title,
-            year,
-            type,
+
             sources: [],
+
             error:
-                "Sinhala subtitle search failed"
+                error.message ||
+                "Sinhala subtitle search failed."
+
         });
+
     }
+
 };
+
+
+// ========================================================
+// NORMALIZE TITLE
+// ========================================================
+
+function normalizeTitle(value) {
+
+    return String(
+        value || ""
+    )
+        .toLowerCase()
+
+        .replace(
+            /&/g,
+            "and"
+        )
+
+        .replace(
+            /[^\p{L}\p{N}\s]/gu,
+            " "
+        )
+
+        .replace(
+            /\s+/g,
+            " "
+        )
+
+        .trim();
+
+}
+
+
+// ========================================================
+// EXTRACT FIRST YEAR
+// ========================================================
+
+function extractFirstYear(value) {
+
+    const match =
+        String(
+            value || ""
+        ).match(
+            /\b(19|20)\d{2}\b/
+        );
+
+
+    return match
+        ? match[0]
+        : "";
+
+}
+
+
+// ========================================================
+// TITLE SCORE
+// ========================================================
+
+function calculateTitleScore(
+    requestedTitle,
+    resultTitle,
+    resultText
+) {
+
+    const requested =
+        normalizeTitle(
+            requestedTitle
+        );
+
+
+    const result =
+        normalizeTitle(
+            resultTitle
+        );
+
+
+    const text =
+        normalizeTitle(
+            resultText
+        );
+
+
+    if (!requested) {
+        return 0;
+    }
+
+
+    // Exact full title
+
+    if (
+        result === requested
+    ) {
+
+        return 100;
+
+    }
+
+
+    // Result title starts with requested title
+
+    if (
+        result.startsWith(
+            requested + " "
+        )
+    ) {
+
+        return 85;
+
+    }
+
+
+    // Result contains exact requested phrase
+
+    if (
+        result.includes(
+            requested
+        )
+    ) {
+
+        return 75;
+
+    }
+
+
+    // Check individual words
+
+    const words =
+        requested
+            .split(" ")
+            .filter(
+                word =>
+                    word.length >= 2
+            );
+
+
+    if (!words.length) {
+        return 0;
+    }
+
+
+    let matched = 0;
+
+
+    for (
+        const word of words
+    ) {
+
+        if (
+            text.includes(
+                word
+            )
+        ) {
+
+            matched++;
+
+        }
+
+    }
+
+
+    const ratio =
+        matched /
+        words.length;
+
+
+    if (
+        ratio === 1
+    ) {
+
+        return 65;
+
+    }
+
+
+    if (
+        ratio >= 0.8
+    ) {
+
+        return 50;
+
+    }
+
+
+    return 0;
+
+}
+
+
+// ========================================================
+// YEAR SCORE
+// ========================================================
+
+function calculateYearScore(
+    year,
+    resultText,
+    resultUrl
+) {
+
+    if (!year) {
+
+        return 15;
+
+    }
+
+
+    const text =
+        `${resultText} ${resultUrl}`;
+
+
+    const years =
+        text.match(
+            /\b(19|20)\d{2}\b/g
+        ) || [];
+
+
+    if (
+        years.includes(
+            year
+        )
+    ) {
+
+        return 25;
+
+    }
+
+
+    // For TV series such as 2003-2006,
+    // allow the first year to appear.
+
+    const firstYear =
+        years[0];
+
+
+    if (
+        firstYear === year
+    ) {
+
+        return 20;
+
+    }
+
+
+    // Wrong year should strongly reduce confidence
+
+    if (
+        years.length
+    ) {
+
+        return -30;
+
+    }
+
+
+    return 0;
+
+}
