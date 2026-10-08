@@ -3,247 +3,115 @@
 function normalizeTitle(title = "") {
     return title
         .toLowerCase()
+        .replace(/&amp;/g, "&")
         .replace(/[^\p{L}\p{N}]+/gu, " ")
+        .replace(/\b(the|a|an)\b/g, "")
         .replace(/\s+/g, " ")
         .trim();
 }
 
-function cleanText(text = "") {
-    return text
-        .replace(/<script[\s\S]*?<\/script>/gi, " ")
-        .replace(/<style[\s\S]*?<\/style>/gi, " ")
-        .replace(/<[^>]+>/g, " ")
-        .replace(/&amp;/gi, "&")
-        .replace(/&#8217;|&#039;/gi, "'")
-        .replace(/&#8216;/gi, "'")
-        .replace(/&#8220;|&#8221;/gi, '"')
-        .replace(/&quot;/gi, '"')
-        .replace(/&nbsp;/gi, " ")
-        .replace(/\s+/g, " ")
-        .trim();
-}
+function titleMatch(resultTitle, movieTitle, year = "") {
+    const a = normalizeTitle(resultTitle);
+    const b = normalizeTitle(movieTitle);
 
-function decodeUrl(url = "") {
-    return url
-        .replace(/&amp;/gi, "&")
-        .replace(/&#038;/gi, "&");
-}
+    if (!a || !b) return false;
 
-function titleMatches(foundTitle, wantedTitle, year = "") {
-    const found = normalizeTitle(foundTitle);
-    const wanted = normalizeTitle(wantedTitle);
+    // Exact
+    if (a === b) return true;
 
-    if (!found || !wanted) return false;
+    // Remove year for comparison
+    const aNoYear = a.replace(/\b(19|20)\d{2}\b/g, "").trim();
+    const bNoYear = b.replace(/\b(19|20)\d{2}\b/g, "").trim();
 
-    // Exact match
-    if (found === wanted) return true;
+    if (aNoYear === bNoYear) return true;
 
-    // Remove common words
-    const removeWords = new Set([
-        "the",
-        "a",
-        "an",
-        "movie",
-        "film",
-        "sinhala",
-        "subtitle",
-        "subtitles",
-        "sub",
-        "සිංහල",
-        "උපසිරසි",
-        "උපසිරැසි"
-    ]);
-
-    const wantedWords = wanted
-        .split(" ")
-        .filter(word => word.length >= 2)
-        .filter(word => !removeWords.has(word));
-
-    const foundWords = found
-        .split(" ")
-        .filter(word => word.length >= 2);
-
-    if (!wantedWords.length) return false;
-
-    let matched = 0;
-
-    for (const word of wantedWords) {
-        if (foundWords.includes(word)) {
-            matched++;
-            continue;
-        }
-
-        // Partial match for words like sonic / sonics
-        if (
-            foundWords.some(
-                x => x.startsWith(word) || word.startsWith(x)
-            )
-        ) {
-            matched++;
-        }
-    }
-
-    const score = matched / wantedWords.length;
-
-    // Strong title match
-    if (score >= 0.75) {
+    // Movie title must be contained in result title
+    if (aNoYear.includes(bNoYear)) {
         return true;
     }
 
-    // Year match can help
-    if (year && found.includes(String(year))) {
-        if (score >= 0.6) {
-            return true;
-        }
-    }
+    // Check important words
+    const words = bNoYear
+        .split(" ")
+        .filter(x => x.length >= 2);
 
-    return false;
+    if (!words.length) return false;
+
+    const matched = words.filter(word =>
+        aNoYear.includes(word)
+    ).length;
+
+    return matched / words.length >= 0.8;
 }
 
-function extractLinks(html, baseUrl) {
-    const links = [];
-
-    const regex =
-        /<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
-
-    let match;
-
-    while ((match = regex.exec(html)) !== null) {
-        let href = decodeUrl(match[1]);
-        let text = cleanText(match[2]);
-
-        if (!href || !text) continue;
-
-        try {
-            href = new URL(href, baseUrl).href;
-        } catch {
-            continue;
-        }
-
-        links.push({
-            url: href,
-            text
-        });
-    }
-
-    return links;
-}
-
-function isSubtitlePage(text = "", url = "") {
-    const value = `${text} ${url}`.toLowerCase();
-
-    return (
-        value.includes("sinhala-subtitle") ||
-        value.includes("sinhala-subtitles") ||
-        value.includes("sinhala-sub") ||
-        value.includes("සිංහල උපසිරැසි") ||
-        value.includes("සිංහල උපසිරසි") ||
-        value.includes("සිංහල සබ්")
-    );
-}
-
-async function fetchPage(url) {
+async function fetchJSON(url) {
     try {
         const response = await fetch(url, {
             headers: {
                 "User-Agent":
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131 Safari/537.36",
-                "Accept":
-                    "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+                    "Mozilla/5.0 Chrome/131 Safari/537.36",
+                "Accept": "application/json"
             }
         });
 
-        if (!response.ok) {
-            return null;
-        }
+        if (!response.ok) return null;
 
-        return await response.text();
+        return await response.json();
+
     } catch (error) {
-        console.error("Fetch error:", url, error.message);
+        console.error("Fetch JSON error:", error.message);
         return null;
     }
 }
 
-async function searchSite({
+async function searchWordPress({
     source,
-    searchUrl,
     baseUrl,
     title,
     year,
     type
 }) {
     try {
-        console.log(`Searching ${source}: ${searchUrl}`);
+        const search = encodeURIComponent(title);
 
-        const searchHtml = await fetchPage(searchUrl);
+        const apiUrl =
+            `${baseUrl}/wp-json/wp/v2/search` +
+            `?search=${search}&per_page=20`;
 
-        if (!searchHtml) {
+        const data = await fetchJSON(apiUrl);
+
+        if (!Array.isArray(data)) {
             return null;
         }
 
-        const links = extractLinks(searchHtml, baseUrl);
+        for (const item of data) {
 
-        // Find candidate pages by TITLE first
-        const candidates = [];
+            const resultTitle =
+                item.title?.rendered ||
+                item.title ||
+                "";
 
-        for (const link of links) {
-            if (!titleMatches(link.text, title, year)) {
+            if (!titleMatch(resultTitle, title, year)) {
                 continue;
             }
 
-            // Ignore navigation/category links
-            if (
-                link.url.includes("/category/") ||
-                link.url.includes("/tag/") ||
-                link.url.includes("/page/")
-            ) {
+            // Ignore pages that obviously aren't subtitle posts
+            const combined =
+                `${resultTitle} ${item.url || ""}`.toLowerCase();
+
+            const subtitleRelated =
+                combined.includes("subtitle") ||
+                combined.includes("subtitles") ||
+                combined.includes("sub");
+
+            if (!subtitleRelated) {
                 continue;
             }
-
-            candidates.push(link);
-        }
-
-        // Remove duplicates
-        const uniqueCandidates = [];
-
-        for (const candidate of candidates) {
-            if (
-                !uniqueCandidates.some(
-                    x => x.url === candidate.url
-                )
-            ) {
-                uniqueCandidates.push(candidate);
-            }
-        }
-
-        // Check candidate pages
-        for (const candidate of uniqueCandidates.slice(0, 8)) {
-            const pageHtml = await fetchPage(candidate.url);
-
-            if (!pageHtml) {
-                continue;
-            }
-
-            const pageText = cleanText(pageHtml);
-
-            // Confirm this is actually a Sinhala subtitle page
-            if (!isSubtitlePage(pageText, candidate.url)) {
-                continue;
-            }
-
-            // Make sure requested title is also present on page
-            if (!titleMatches(pageText, title, year)) {
-                continue;
-            }
-
-            console.log(
-                `FOUND ${source}: ${candidate.url}`
-            );
 
             return {
                 source,
-                url: candidate.url,
-                title: candidate.text.trim(),
+                url: item.url,
+                title: resultTitle,
                 type
             };
         }
@@ -252,7 +120,7 @@ async function searchSite({
 
     } catch (error) {
         console.error(
-            `${source} search failed:`,
+            `${source} search error:`,
             error.message
         );
 
@@ -261,114 +129,21 @@ async function searchSite({
 }
 
 module.exports = async function handler(req, res) {
+
     if (req.method !== "GET") {
         return res.status(405).json({
             error: "Method not allowed"
         });
     }
 
-    const title = String(
-        req.query.title || ""
-    ).trim();
+    const title =
+        String(req.query.title || "").trim();
 
-    const year = String(
-        req.query.year || ""
-    ).trim();
+    const year =
+        String(req.query.year || "").trim();
 
-    const type = String(
-        req.query.type || "movie"
-    ).toLowerCase();
+    const type =
+        String(req.query.type || "movie").toLowerCase();
 
     if (!title) {
-        return res.status(400).json({
-            error: "Title is required",
-            found: false,
-            sources: []
-        });
-    }
-
-    try {
-        const encodedTitle =
-            encodeURIComponent(title);
-
-        const checks = await Promise.allSettled([
-
-            searchSite({
-                source: "Baiscope",
-                searchUrl:
-                    `https://www.baiscope.lk/?s=${encodedTitle}`,
-                baseUrl:
-                    "https://www.baiscope.lk",
-                title,
-                year,
-                type
-            }),
-
-            searchSite({
-                source: "SinhalaSub",
-                searchUrl:
-                    `https://sinhalasub.lk/?s=${encodedTitle}`,
-                baseUrl:
-                    "https://sinhalasub.lk",
-                title,
-                year,
-                type
-            }),
-
-            searchSite({
-                source: "Cineru",
-                searchUrl:
-                    `https://cineru.lk/cineru-search/?s=${encodedTitle}`,
-                baseUrl:
-                    "https://cineru.lk",
-                title,
-                year,
-                type
-            })
-
-        ]);
-
-        const sources = [];
-
-        for (const result of checks) {
-            if (
-                result.status === "fulfilled" &&
-                result.value
-            ) {
-                sources.push(result.value);
-            }
-        }
-
-        // Remove duplicate sources
-        const uniqueSources = sources.filter(
-            (item, index, array) =>
-                index ===
-                array.findIndex(
-                    x => x.source === item.source
-                )
-        );
-
-        return res.status(200).json({
-            found: uniqueSources.length > 0,
-            title,
-            year,
-            type,
-            sources: uniqueSources
-        });
-
-    } catch (error) {
-        console.error(
-            "Sinhala subtitle search error:",
-            error
-        );
-
-        return res.status(500).json({
-            found: false,
-            title,
-            year,
-            type,
-            sources: [],
-            error: "Search failed"
-        });
-    }
-};
+        return res
