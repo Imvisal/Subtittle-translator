@@ -3311,6 +3311,420 @@ if (translateBtn) {
 
 }
 
+// ========================================================
+// TMDB CATEGORY SYSTEM
+// ========================================================
+
+const categoryChips =
+    document.querySelectorAll(".category-chip");
+
+let categoryResultsContainer = null;
+
+
+// ========================================================
+// CREATE CATEGORY CONTAINER
+// ========================================================
+
+function createCategoryResultsContainer() {
+
+    if (categoryResultsContainer) {
+        return categoryResultsContainer;
+    }
+
+    categoryResultsContainer =
+        document.createElement("div");
+
+    categoryResultsContainer.id =
+        "categoryResults";
+
+    categoryResultsContainer.className =
+        "category-results";
+
+    const categorySection =
+        document.querySelector(".category-chips");
+
+    if (categorySection) {
+
+        categorySection.insertAdjacentElement(
+            "afterend",
+            categoryResultsContainer
+        );
+
+    } else if (searchResults) {
+
+        searchResults.insertAdjacentElement(
+            "beforebegin",
+            categoryResultsContainer
+        );
+
+    }
+
+    return categoryResultsContainer;
+}
+
+
+// ========================================================
+// LOAD CATEGORY
+// ========================================================
+
+async function loadCategory(category) {
+
+    const container =
+        createCategoryResultsContainer();
+
+    if (!container) {
+        return;
+    }
+
+
+    container.innerHTML = `
+
+        <div class="category-loading">
+
+            <div class="category-spinner"></div>
+
+            <span>
+                Loading ${getCategoryName(category)}...
+            </span>
+
+        </div>
+
+    `;
+
+
+    try {
+
+        const response =
+            await fetch(
+                `/api/categories?category=${encodeURIComponent(
+                    category
+                )}`
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.error ||
+                "Category loading failed."
+            );
+
+        }
+
+
+        const results =
+            Array.isArray(data.results)
+                ? data.results
+                : [];
+
+
+        if (!results.length) {
+
+            container.innerHTML = `
+
+                <div class="category-empty">
+
+                    🎬
+
+                    <p>
+                        No titles found right now.
+                    </p>
+
+                </div>
+
+            `;
+
+            return;
+        }
+
+
+        renderCategoryResults(
+            results.slice(0, 4),
+            container
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "CATEGORY ERROR:",
+            error
+        );
+
+
+        container.innerHTML = `
+
+            <div class="category-empty category-error">
+
+                ❌
+
+                <p>
+                    Could not load titles.
+                </p>
+
+                <button
+                    type="button"
+                    class="category-retry-btn"
+                    onclick="loadCategory('${escapeAttribute(
+                        category
+                    )}')"
+                >
+                    Try Again
+                </button>
+
+            </div>
+
+        `;
+
+    }
+
+}
+
+
+// ========================================================
+// CATEGORY NAME
+// ========================================================
+
+function getCategoryName(category) {
+
+    const names = {
+
+        trending: "Trending",
+        movie: "Movies",
+        tv: "TV Series",
+        anime: "Anime"
+
+    };
+
+    return names[category] || "titles";
+
+}
+
+
+// ========================================================
+// RENDER CATEGORY RESULTS
+// ========================================================
+
+function renderCategoryResults(
+    results,
+    container
+) {
+
+    container.innerHTML = "";
+
+
+    const grid =
+        document.createElement("div");
+
+    grid.className =
+        "category-results-grid";
+
+
+    results.forEach(
+        function (item) {
+
+            const card =
+                document.createElement("article");
+
+            card.className =
+                "category-card";
+
+
+            const poster =
+                item.poster &&
+                item.poster !== "N/A"
+
+                    ? `
+
+                        <img
+                            src="${escapeAttribute(
+                                item.poster
+                            )}"
+                            alt="${escapeAttribute(
+                                item.title
+                            )}"
+                            loading="lazy"
+                            class="category-poster"
+                        >
+
+                      `
+
+                    : `
+
+                        <div class="category-poster category-poster-empty">
+                            🎬
+                        </div>
+
+                      `;
+
+
+            const typeText =
+                item.type === "series"
+                    ? "TV Series"
+                    : "Movie";
+
+
+            card.innerHTML = `
+
+                <div class="category-poster-wrap">
+
+                    ${poster}
+
+                    <span class="category-type-badge">
+
+                        ${
+                            item.type === "series"
+                                ? "📺 TV"
+                                : "🎬 Movie"
+                        }
+
+                    </span>
+
+                </div>
+
+
+                <div class="category-card-info">
+
+                    <h3>
+                        ${escapeHTML(
+                            item.title
+                        )}
+                    </h3>
+
+                    <div class="category-card-meta">
+
+                        <span>
+                            ${escapeHTML(
+                                item.year || ""
+                            )}
+                        </span>
+
+                        <span>
+                            ${typeText}
+                        </span>
+
+                    </div>
+
+
+                    <button
+                        type="button"
+                        class="category-select-btn"
+                    >
+                        Select
+                    </button>
+
+                </div>
+
+            `;
+
+
+            const selectButton =
+                card.querySelector(
+                    ".category-select-btn"
+                );
+
+
+            if (selectButton) {
+
+                selectButton.addEventListener(
+                    "click",
+                    function () {
+
+                        selectSearchResult(
+                            item
+                        );
+
+                    }
+                );
+
+            }
+
+
+            grid.appendChild(
+                card
+            );
+
+        }
+    );
+
+
+    container.appendChild(
+        grid
+    );
+
+}
+
+
+// ========================================================
+// CATEGORY CHIP EVENTS
+// ========================================================
+
+categoryChips.forEach(
+    function (chip) {
+
+        chip.addEventListener(
+            "click",
+            function () {
+
+                categoryChips.forEach(
+                    function (item) {
+
+                        item.classList.remove(
+                            "active"
+                        );
+
+                    }
+                );
+
+
+                chip.classList.add(
+                    "active"
+                );
+
+
+                const category =
+                    chip.dataset.category ||
+                    "trending";
+
+
+                loadCategory(
+                    category
+                );
+
+            }
+        );
+
+    }
+);
+
+
+// ========================================================
+// LOAD TRENDING ON PAGE LOAD
+// ========================================================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        if (
+            document.querySelector(
+                ".category-chips"
+            )
+        ) {
+
+            loadCategory(
+                "trending"
+            );
+
+        }
+
+    }
+);
+
 
 // ========================================================
 // DEBUG
