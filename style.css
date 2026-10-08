@@ -5096,3 +5096,959 @@ textarea:focus-visible {
     }
 
 }
+
+/* =========================================================
+   SUBLANKA AI - FINAL MOBILE LIQUID GLASS UI
+   RESTORE THIRD SCREENSHOT STYLE
+========================================================= */
+
+@media (max-width: 600px) {
+
+    html,
+    body {
+        width: 100%;
+        min-width: 0;
+        overflow-x: hidden !important;
+    }
+
+
+    /* =====================================================
+       HEADER
+    ===================================================== */
+
+    header {
+        position: relative !important;
+
+        width: 100% !important;
+        height: 140px !important;
+        min-height: 140px !important;
+
+        padding: 18px 18px !important;
+
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+
+        background:
+            linear-gradient(
+                135deg,
+                #08091f 0%,
+                #0b0d28 50%,
+                #090a20 100%
+            ) !important;
+
+        border-bottom:
+            1px solid
+            rgba(105, 100, 255, .14) !important;
+
+        z-index: 100 !important;
+    }
+
+
+    /* =====================================================
+       BRAND
+    ===================================================== */
+
+    .brand {
+        display: flex !important;
+
+        align-items: center !important;
+
+        gap: 14px !important;
+
+        min-width: 0 !important;
+
+        overflow: visible !important;
+    }
+
+
+    /* LOGO */
+
+    .brand-logo {
+        width: 82px !important;
+        height: 82px !important;
+
+        min-width: 82px !important;
+        max-width: 82px !important;
+
+        border-radius: 22px !important;
+
+        overflow: hidden !important;
+
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+
+        background:
+            rgba(5, 7, 25, .92) !important;
+
+        border:
+            1px solid
+            rgba(108, 91, 255, .18) !important;
+
+        box-shadow:
+            0 0 35px
+            rgba(91, 70, 255, .20) !important;
+    }
+
+
+    .brand-logo img {
+        width: 100% !important;
+        height: 100% !important;
+
+        object-fit: contain !important;
+
+        display: block !important;
+
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+
+
+    /* BRAND TEXT */
+
+    .brand-title {
+        color: #ffffff !important;
+
+        font-size: 23px !important;
+
+        font-weight: 700 !important;
+
+        line-height: 1.1 !important;
+
+        white-space: nowrap !important;
+    }
+
+
+    .brand-title span {
+        color: #a34cff !important;
+    }
+
+
+    .brand-subtitle {
+        display: block !important;
+
+        margin-top: 5px !important;
+
+        color: #aaa5cf !important;
+
+        font-size: 12px !important;
+
+        line-height: 1.2 !important;
+
+        white-space: nowrap !important;
+    }
+
+
+    /* =====================================================
+       HEADER BUTTONS
+    ===================================================== */
+
+    .header-actions {
+        display: flex !important;
+
+        align-items: center !important;
+
+        gap: 8px !important;
+
+        flex-shrink: 0 !important;
+    }
+
+
+    .settings-button,
+    #themeToggle {
+
+        width: 58px !important;
+        height: 58px !important;
+
+        min-width: 58px !important;
+
+        border-radius: 50% !important;
+
+        background:
+            rgba(8, 10, 31, .60) !important;
+
+        border:
+            1px solid
+            rgba(110, 105, 255, .28) !important;
+
+        color: #ffffff !important;
+
+        backdrop-filter:
+            blur(18px) !important;
+
+        -webkit-backdrop-filter:
+            blur(18px) !important;
+
+        box-shadow:
+            inset 0 0 20px
+            rgba(120, 90, 255, .04),
+
+            0 0 25px
+            rgba(80, 60, 255, .08) !important;
+    }
+
+
+    /* =====================================================
+       HERO
+    ===================================================== */
+
+    .hero {
+
+        position: relative !important;
+
+        width: 100% !important;
+
+        height: 590px !important;
+
+        min-height: 590px !important;
+        max-height: 590px !important;
+
+        margin: 0 !important;
+
+        overflow: hidden !important;
+
+        border-radius:
+            0 0 28px 28px !important;
+    }
+
+
+    /* =====================================================
+       HERO IMAGE
+    ===================================================== */
+
+    .hero-banner {
+
+        position: absolute !important;
+
+        inset: 0 !important;
+
+        width: 100% !important;
+        height: 100% !important;
+
+        overflow: hidden !important;
+    }
+
+
+    .hero-banner img {
+
+        position: absolute !important;
+
+        inset: 0 !important;
+
+        width: 100% !important;
+        height: 100% !important;
+
+        object-fit: cover !important;
+
+        object-position:
+            58% center !important;
+
+        transform:
+            scale(1) !important;
+
+        filter:
+            brightness(.42)
+            saturate(1.05) !important;
+    }
+
+
+    /* =====================================================
+       HERO OVERLAY
+    ===================================================== */
+
+    .hero-overlay {
+
+        position: absolute !important;
+
+        inset: 0 !important;
+
+        z-index: 2 !important;
+
+        background:
+
+            linear-gradient(
+                90deg,
+                rgba(3, 5, 16, .90) 0%,
+                rgba(3, 5, 16, .48) 55%,
+                rgba(3, 5, 16, .25) 100%
+            ),
+
+            linear-gradient(
+                180deg,
+                rgba(3, 5, 16, .08) 0%,
+                rgba(3, 5, 16, .28) 50%,
+                rgba(3, 5, 16, .98) 100%
+            ) !important;
+    }
+
+
+    /* =====================================================
+       HERO CONTENT
+    ===================================================== */
+
+    .hero-content {
+
+        position: relative !important;
+
+        z-index: 10 !important;
+
+        width: 100% !important;
+        height: 100% !important;
+
+        min-height: 590px !important;
+
+        margin: 0 !important;
+
+        padding:
+            0 34px 52px !important;
+
+        display: flex !important;
+
+        flex-direction: column !important;
+
+        justify-content: flex-end !important;
+
+        align-items: flex-start !important;
+    }
+
+
+    /* =====================================================
+       HERO TITLE
+    ===================================================== */
+
+    .hero-content h1 {
+
+        max-width: 100% !important;
+
+        margin: 0 !important;
+
+        font-size: 39px !important;
+
+        line-height: 1.08 !important;
+
+        letter-spacing:
+            -1.7px !important;
+
+        color: #ffffff !important;
+
+        text-shadow:
+            0 5px 30px
+            rgba(0,0,0,.55) !important;
+    }
+
+
+    .hero-content h1 span {
+
+        display: inline !important;
+
+        background:
+            linear-gradient(
+                90deg,
+                #ffffff 0%,
+                #c5a8ff 35%,
+                #963cff 100%
+            ) !important;
+
+        -webkit-background-clip: text !important;
+
+        background-clip: text !important;
+
+        -webkit-text-fill-color:
+            transparent !important;
+    }
+
+
+    /* =====================================================
+       HERO DESCRIPTION
+    ===================================================== */
+
+    .hero-content p {
+
+        max-width: 100% !important;
+
+        margin-top: 18px !important;
+
+        color:
+            rgba(220, 223, 240, .75) !important;
+
+        font-size: 12px !important;
+
+        line-height: 1.7 !important;
+    }
+
+
+    /* =====================================================
+       SEARCH SECTION
+    ===================================================== */
+
+    .search-section {
+
+        position: relative !important;
+
+        z-index: 30 !important;
+
+        width: 100% !important;
+
+        max-width: none !important;
+
+        margin:
+            -2px 0 0 !important;
+
+        padding:
+            0 18px !important;
+    }
+
+
+    /* =====================================================
+       LIQUID GLASS SEARCH CARD
+    ===================================================== */
+
+    .search-card {
+
+        position: relative !important;
+
+        width: 100% !important;
+
+        margin: 0 !important;
+
+        padding:
+            18px !important;
+
+        border-radius:
+            26px !important;
+
+        background:
+
+            linear-gradient(
+                135deg,
+                rgba(35, 42, 93, .68),
+                rgba(15, 20, 57, .78)
+            ) !important;
+
+        border:
+            1px solid
+            rgba(116, 133, 255, .32) !important;
+
+        box-shadow:
+
+            inset 0 1px 0
+            rgba(255,255,255,.08),
+
+            inset 0 -20px 50px
+            rgba(58, 54, 180, .10),
+
+            0 20px 60px
+            rgba(0,0,0,.35),
+
+            0 0 40px
+            rgba(80,70,255,.08) !important;
+
+        backdrop-filter:
+            blur(24px)
+            saturate(140%) !important;
+
+        -webkit-backdrop-filter:
+            blur(24px)
+            saturate(140%) !important;
+
+        overflow: hidden !important;
+    }
+
+
+    /* liquid glow */
+
+    .search-card::before {
+
+        content: "";
+
+        position: absolute;
+
+        width: 180px;
+        height: 180px;
+
+        top: -100px;
+        right: -60px;
+
+        background:
+            radial-gradient(
+                circle,
+                rgba(129, 83, 255, .25),
+                transparent 70%
+            );
+
+        pointer-events: none;
+
+        filter: blur(10px);
+    }
+
+
+    .search-card::after {
+
+        content: "";
+
+        position: absolute;
+
+        width: 160px;
+        height: 160px;
+
+        bottom: -100px;
+        left: -70px;
+
+        background:
+            radial-gradient(
+                circle,
+                rgba(45, 119, 255, .18),
+                transparent 70%
+            );
+
+        pointer-events: none;
+
+        filter: blur(12px);
+    }
+
+
+    /* =====================================================
+       SEARCH ROW
+    ===================================================== */
+
+    .search-row {
+
+        position: relative;
+
+        z-index: 2;
+
+        display: flex !important;
+
+        flex-direction: row !important;
+
+        align-items: stretch !important;
+
+        gap: 10px !important;
+
+        width: 100% !important;
+    }
+
+
+    /* =====================================================
+       SEARCH INPUT
+    ===================================================== */
+
+    .search-input-wrap {
+
+        flex:
+            1 1 auto !important;
+
+        min-width: 0 !important;
+    }
+
+
+    .search-input-wrap input {
+
+        width: 100% !important;
+
+        height: 62px !important;
+
+        padding:
+            0 17px !important;
+
+        border-radius:
+            21px !important;
+
+        background:
+            rgba(3, 7, 29, .68) !important;
+
+        border:
+            1px solid
+            rgba(107, 126, 255, .24) !important;
+
+        color: #ffffff !important;
+
+        font-size: 12px !important;
+
+        outline: none !important;
+
+        box-shadow:
+
+            inset 0 1px 8px
+            rgba(0,0,0,.15),
+
+            0 0 20px
+            rgba(40,60,180,.05) !important;
+
+        backdrop-filter:
+            blur(18px) !important;
+
+        -webkit-backdrop-filter:
+            blur(18px) !important;
+    }
+
+
+    .search-input-wrap input:focus,
+    .search-input-wrap input:focus-visible {
+
+        outline: none !important;
+
+        border-color:
+            rgba(137, 105, 255, .45) !important;
+
+        box-shadow:
+
+            0 0 0 1px
+            rgba(137,105,255,.08),
+
+            0 0 25px
+            rgba(100,70,255,.10) !important;
+    }
+
+
+    .search-input-wrap input::placeholder {
+
+        color:
+            #858ca6 !important;
+    }
+
+
+    /* =====================================================
+       SEARCH BUTTON
+    ===================================================== */
+
+    #searchBtn {
+
+        position: relative;
+
+        z-index: 2;
+
+        width: 108px !important;
+
+        min-width: 108px !important;
+
+        height: 62px !important;
+
+        padding:
+            0 12px !important;
+
+        border: 0 !important;
+
+        border-radius:
+            21px !important;
+
+        background:
+            linear-gradient(
+                135deg,
+                #7058ff,
+                #b63dff
+            ) !important;
+
+        color: #ffffff !important;
+
+        font-size: 12px !important;
+
+        font-weight: 700 !important;
+
+        box-shadow:
+
+            0 12px 30px
+            rgba(116, 72, 255, .25) !important;
+    }
+
+
+    /* =====================================================
+       CATEGORY CHIPS
+    ===================================================== */
+
+    .category-chips {
+
+        position: relative;
+
+        z-index: 2;
+
+        display: flex !important;
+
+        flex-wrap: nowrap !important;
+
+        gap: 8px !important;
+
+        width: 100% !important;
+
+        margin-top: 13px !important;
+
+        overflow-x: auto !important;
+
+        scrollbar-width: none !important;
+    }
+
+
+    .category-chips::-webkit-scrollbar {
+        display: none !important;
+    }
+
+
+    .category-chip {
+
+        flex:
+            0 0 auto !important;
+
+        height: 43px !important;
+
+        padding:
+            0 14px !important;
+
+        border:
+            1px solid
+            rgba(110, 124, 255, .23) !important;
+
+        border-radius:
+            999px !important;
+
+        background:
+            rgba(5, 9, 30, .42) !important;
+
+        color:
+            #aeb3cb !important;
+
+        font-size:
+            10px !important;
+
+        backdrop-filter:
+            blur(12px) !important;
+
+        -webkit-backdrop-filter:
+            blur(12px) !important;
+    }
+
+
+    .category-chip:hover {
+
+        background:
+            rgba(100, 80, 255, .14) !important;
+
+        border-color:
+            rgba(125, 105, 255, .40) !important;
+
+        color: #ffffff !important;
+    }
+
+
+    /* =====================================================
+       QUICK ACTIONS
+    ===================================================== */
+
+    .quick-actions {
+
+        width: 100% !important;
+
+        max-width: none !important;
+
+        margin:
+            42px 0 0 !important;
+
+        padding:
+            0 18px !important;
+
+        display: grid !important;
+
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr)) !important;
+
+        gap: 14px !important;
+    }
+
+
+    .quick-action-card {
+
+        min-height:
+            185px !important;
+
+        padding:
+            20px !important;
+
+        border-radius:
+            22px !important;
+
+        background:
+
+            linear-gradient(
+                145deg,
+                rgba(25, 32, 70, .65),
+                rgba(12, 16, 40, .72)
+            ) !important;
+
+        border:
+            1px solid
+            rgba(103, 119, 255, .20) !important;
+
+        box-shadow:
+
+            inset 0 1px 0
+            rgba(255,255,255,.04),
+
+            0 15px 35px
+            rgba(0,0,0,.20) !important;
+
+        backdrop-filter:
+            blur(20px) !important;
+
+        -webkit-backdrop-filter:
+            blur(20px) !important;
+    }
+
+
+    .quick-action-card h3 {
+
+        margin-top: 15px !important;
+
+        color: #ffffff !important;
+
+        font-size: 14px !important;
+    }
+
+
+    .quick-action-card p {
+
+        color:
+            #8e95ad !important;
+
+        font-size: 11px !important;
+
+        line-height: 1.65 !important;
+    }
+
+
+    /* =====================================================
+       SEARCH STATUS
+    ===================================================== */
+
+    #searchStatus {
+
+        color:
+            #9299b0 !important;
+
+        font-size:
+            11px !important;
+    }
+
+}
+
+
+/* =========================================================
+   SMALL PHONES
+========================================================= */
+
+@media (max-width: 380px) {
+
+    header {
+
+        height: 120px !important;
+        min-height: 120px !important;
+
+        padding:
+            14px !important;
+    }
+
+
+    .brand-logo {
+
+        width: 68px !important;
+        height: 68px !important;
+
+        min-width: 68px !important;
+    }
+
+
+    .brand-title {
+        font-size: 19px !important;
+    }
+
+
+    .brand-subtitle {
+        font-size: 10px !important;
+    }
+
+
+    .settings-button,
+    #themeToggle {
+
+        width: 47px !important;
+        height: 47px !important;
+
+        min-width: 47px !important;
+    }
+
+
+    .hero {
+
+        height: 520px !important;
+
+        min-height: 520px !important;
+        max-height: 520px !important;
+    }
+
+
+    .hero-content {
+
+        min-height: 520px !important;
+
+        padding:
+            0 25px 38px !important;
+    }
+
+
+    .hero-content h1 {
+
+        font-size:
+            34px !important;
+    }
+
+
+    .hero-content p {
+
+        font-size:
+            11px !important;
+    }
+
+
+    .search-section {
+
+        padding:
+            0 12px !important;
+    }
+
+
+    .search-card {
+
+        padding:
+            14px !important;
+    }
+
+
+    #searchBtn {
+
+        width:
+            94px !important;
+
+        min-width:
+            94px !important;
+    }
+
+
+    .quick-actions {
+
+        padding:
+            0 12px !important;
+
+        gap:
+            10px !important;
+    }
+
+
+    .quick-action-card {
+
+        min-height:
+            165px !important;
+
+        padding:
+            16px !important;
+    }
+
+}
