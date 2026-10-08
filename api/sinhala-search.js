@@ -1,8 +1,15 @@
 // api/sinhala-search.js
 
+const SOURCES = {
+    Baiscope: "baiscope.lk",
+    SinhalaSub: "sinhalasub.lk",
+    Cineru: "cineru.lk"
+};
+
 function normalizeTitle(title = "") {
     return title
         .toLowerCase()
+        .replace(/&amp;/g, "&")
         .replace(/[^\p{L}\p{N}]+/gu, " ")
         .replace(/\b(the|a|an|movie|film)\b/g, " ")
         .replace(/\b(19|20)\d{2}\b/g, " ")
@@ -10,190 +17,304 @@ function normalizeTitle(title = "") {
         .trim();
 }
 
-function titleMatches(text, wantedTitle, year = "") {
-    const found = normalizeTitle(text);
+function titleScore(resultText, wantedTitle) {
+    const found = normalizeTitle(resultText);
     const wanted = normalizeTitle(wantedTitle);
 
-    if (!found || !wanted) return false;
+    if (!found || !wanted) return 0;
 
-    // Exact title
-    if (found === wanted) {
-        return true;
-    }
+    if (found === wanted) return 1;
 
-    // Full title contained
-    if (found.includes(wanted)) {
-        return true;
-    }
+    if (found.includes(wanted)) return 0.95;
 
-    // Important words comparison
-    const words = wanted
+    const wantedWords = wanted
         .split(" ")
-        .filter(w => w.length >= 2);
+        .filter(word => word.length >= 2);
 
-    if (!words.length) return false;
+    if (!wantedWords.length) return 0;
 
     let matched = 0;
 
-    for (const word of words) {
+    for (const word of wantedWords) {
         if (found.includes(word)) {
             matched++;
         }
     }
 
-    const score = matched / words.length;
-
-    // 80%+ title words must match
-    if (score >= 0.8) {
-        return true;
-    }
-
-    // If year is present, allow slightly weaker match
-    if (
-        year &&
-        String(text).includes(String(year)) &&
-        score >= 0.65
-    ) {
-        return true;
-    }
-
-    return false;
+    return matched / wantedWords.length;
 }
 
-function decodeHtml(str = "") {
-    return str
-        .replace(/&amp;/gi, "&")
-        .replace(/&#39;|&#039;/gi, "'")
-        .replace(/&quot;/gi, '"')
-        .replace(/&#8217;/gi, "'")
-        .replace(/&#8211;/gi, "-")
-        .replace(/&#8212;/gi, "-")
-        .replace(/&nbsp;/gi, " ");
-}
-
-function stripHtml(str = "") {
-    return decodeHtml(
-        str.replace(/<[^>]*>/g, " ")
-    )
-        .replace(/\s+/g, " ")
-        .trim();
-}
-
-function extractSearchResults(html = "") {
-    const results = [];
-
-    /*
-     * DuckDuckGo HTML result format
-     */
-    const regex =
-        /<a[^>]*class=["'][^"']*result__a[^"']*["'][^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
-
-    let match;
-
-    while ((match = regex.exec(html)) !== null) {
-        let url = decodeHtml(match[1]);
-        const title = stripHtml(match[2]);
-
-        if (!url || !title) continue;
-
-        // Decode DDG redirect URL
-        try {
-            const parsed = new URL(url);
-
-            if (
-                parsed.hostname.includes("duckduckgo.com") &&
-                parsed.searchParams.get("uddg")
-            ) {
-                url = decodeURIComponent(
-                    parsed.searchParams.get("uddg")
-                );
-            }
-        } catch {
-            // Ignore invalid URLs
-        }
-
-        results.push({
-            title,
-            url
-        });
-    }
-
-    return results;
-}
-
-async function duckSearch(query) {
+function getSourceFromUrl(url = "") {
     try {
-        const url =
-            "https://html.duckduckgo.com/html/?q=" +
-            encodeURIComponent(query);
+        const hostname = new URL(url).hostname
+            .toLowerCase()
+            .replace(/^www\./, "");
 
-        const response = await fetch(url, {
-            headers: {
-                "User-Agent":
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131 Safari/537.36",
-                "Accept":
-                    "text/html,application/xhtml+xml"
+        for (const [source, domain] of Object.entries(SOURCES)) {
+            if (
+                hostname === domain ||
+                hostname.endsWith("." + domain)
+            ) {
+                return {
+                    source,
+                    domain
+                };
             }
-        });
-
-        if (!response.ok) {
-            console.log(
-                "DuckDuckGo HTTP:",
-                response.status
-            );
-
-            return [];
         }
 
-        const html = await response.text();
+        return null;
+    } catch {
+        return null;
+    }
+}
 
-        return extractSearchResults(html);
+function looksLikeSinhalaSubtitle(result) {
+    const text = `
+        ${result.title || ""}
+        ${result.snippet || ""}
+        ${result.link || ""}
+    `.toLowerCase();
 
-    } catch (error) {
+    return (
+        text.includes("sinhala") ||
+        text.includes("subtitle") ||
+        text.includes("subtitles") ||
+        text.includes("සිංහල") ||
+        text.includes("උපසිරසි") ||
+        text.includes("උපසිරැසි")
+    );
+}
+
+async function googleSearch(query) {
+    const apiKey =
+        process.env.GOOGLE_SEARCH_API_KEY;
+
+    const cseId =
+        process.env.GOOGLE_CSE_ID;
+
+    if (!apiKey || !cseId) {
+        throw new Error(
+            "Google Search API environment variables are missing"
+        );
+    }
+
+    const url =
+        "https://www.googleapis.com/customsearch/v1" +
+        "?key=" + encodeURIComponent(apiKey) +
+        "&cx=" + encodeURIComponent(cseId) +
+        "&q=" + encodeURIComponent(query) +
+        "&num=10" +
+        "&hl=en" +
+        "&gl=lk";
+
+    const response = await fetch(url);
+
+    const data = await response.json();
+
+    if (!response.ok) {
         console.error(
-            "DuckDuckGo search error:",
-            error.message
+            "Google Search API error:",
+            data
         );
 
-        return [];
+        throw new Error(
+            data?.error?.message ||
+            "Google Search API request failed"
+        );
     }
+
+    return Array.isArray(data.items)
+        ? data.items
+        : [];
 }
 
-async function searchSource({
-    source,
-    domain,
+async function findSinhalaSubtitles({
     title,
     year,
     type
 }) {
-    try {
+    /*
+     * First search:
+     *
+     * "Sonic the Hedgehog" "Sinhala subtitle"
+     */
+    let results = await googleSearch(
+        `"${title}" "Sinhala subtitle"`
+    );
+
+    /*
+     * If Google doesn't return anything,
+     * try a second broader search.
+     */
+    if (!results.length) {
+        results = await googleSearch(
+            `"${title}" Sinhala`
+        );
+    }
+
+    const found = [];
+
+    for (const result of results) {
+
+        const sourceInfo =
+            getSourceFromUrl(result.link);
+
+        // Ignore sites outside our 3 sources
+        if (!sourceInfo) {
+            continue;
+        }
+
+        // Must look like a subtitle result
+        if (!looksLikeSinhalaSubtitle(result)) {
+            continue;
+        }
+
+        const combinedText = `
+            ${result.title || ""}
+            ${result.snippet || ""}
+        `;
+
+        const score =
+            titleScore(
+                combinedText,
+                title
+            );
+
         /*
-         * Search using the movie title itself.
+         * Require a strong title match.
          *
-         * Example:
-         * site:baiscope.lk
-         * "Sonic the Hedgehog"
-         * "Sinhala Subtitle"
+         * This prevents:
+         * Sonic Drone Home
+         *
+         * from being accepted for:
+         * Sonic the Hedgehog
          */
-        const queries = [
-            `site:${domain} "${title}" "Sinhala Subtitle"`,
-            `site:${domain} "${title}" Sinhala`,
-            `site:${domain} "${title}" ${year || ""}`
-        ];
+        if (score < 0.75) {
+            continue;
+        }
 
-        let allResults = [];
+        /*
+         * If year is available and Google result
+         * contains another year, reject it.
+         */
+        if (year) {
 
-        for (const query of queries) {
+            const years =
+                combinedText.match(
+                    /\b(19|20)\d{2}\b/g
+                ) || [];
 
-            const results =
-                await duckSearch(query);
+            const differentYear =
+                years.some(
+                    foundYear =>
+                        foundYear !== String(year)
+                );
 
-            allResults.push(...results);
-
-            if (allResults.length >= 20) {
-                break;
+            if (
+                differentYear &&
+                !combinedText.includes(String(year))
+            ) {
+                continue;
             }
         }
 
-        // Remove duplicates
-        allResults = allResults.filter(
+        found.push({
+            source: sourceInfo.source,
+            url: result.link,
+            title:
+                result.title ||
+                title,
+            snippet:
+                result.snippet || "",
+            type,
+            score
+        });
+    }
+
+    /*
+     * Keep only the best result from each source.
+     */
+    const bestBySource = {};
+
+    for (const item of found) {
+
+        const current =
+            bestBySource[item.source];
+
+        if (
+            !current ||
+            item.score > current.score
+        ) {
+            bestBySource[item.source] = item;
+        }
+    }
+
+    return Object.values(bestBySource);
+}
+
+module.exports = async function handler(req, res) {
+
+    if (req.method !== "GET") {
+        return res.status(405).json({
+            error: "Method not allowed"
+        });
+    }
+
+    const title =
+        String(
+            req.query.title || ""
+        ).trim();
+
+    const year =
+        String(
+            req.query.year || ""
+        ).trim();
+
+    const type =
+        String(
+            req.query.type || "movie"
+        ).toLowerCase();
+
+    if (!title) {
+        return res.status(400).json({
+            found: false,
+            sources: [],
+            error: "Title is required"
+        });
+    }
+
+    try {
+
+        const sources =
+            await findSinhalaSubtitles({
+                title,
+                year,
+                type
+            });
+
+        return res.status(200).json({
+            found: sources.length > 0,
+            title,
+            year,
+            type,
+            sources
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Sinhala subtitle search error:",
+            error
+        );
+
+        return res.status(500).json({
+            found: false,
+            title,
+            year,
+            type,
+            sources: [],
+            error:
+                "Sinhala subtitle search unavailable"
+        });
+    }
+};
