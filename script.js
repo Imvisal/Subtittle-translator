@@ -4,20 +4,23 @@
 ========================================================
 SUBLANKA AI — COMPLETE script.js
 ========================================================
+
 Features:
 - SRT upload
 - SRT preview
 - Sinhala translation
 - Movie / TV search
-- TMDB categories
-- 4 category cards
+- Search animation
 - Sinhala subtitle availability
-- Baiscope / SinhalaSub / Cineru links
 - TV Season / Episode
 - English subtitle search
 - English subtitle download
 - Automatic Sinhala translation
 - Friendly translation progress
+- Sinhala SRT download
+- TMDB category system
+- Category cards hide when searching
+- Category cards show when category tab clicked
 ========================================================
 */
 
@@ -72,6 +75,16 @@ let isTranslating = false;
 
 
 // ========================================================
+// CATEGORY STATE
+// ========================================================
+
+const categoryChips =
+    document.querySelectorAll(".category-chip");
+
+let categoryResultsContainer = null;
+
+
+// ========================================================
 // SEARCH EVENTS
 // ========================================================
 
@@ -92,7 +105,9 @@ if (searchInput) {
         function (event) {
 
             if (event.key === "Enter") {
+
                 searchMovies();
+
             }
 
         }
@@ -141,449 +156,11 @@ if (translateBtn) {
 
             setTimeout(
                 function () {
+
                     translateUploadedSubtitle();
+
                 },
                 350
-            );
-
-        }
-    );
-
-}
-
-
-// ========================================================
-// CATEGORY SYSTEM
-// ========================================================
-
-function setupCategories() {
-
-    const chips =
-        document.querySelectorAll(
-            ".category-chip"
-        );
-
-    if (!chips.length) {
-        return;
-    }
-
-
-    createCategoryContainer();
-
-
-    chips.forEach(
-        function (chip) {
-
-            chip.addEventListener(
-                "click",
-                function () {
-
-                    chips.forEach(
-                        function (item) {
-                            item.classList.remove(
-                                "active"
-                            );
-                        }
-                    );
-
-
-                    chip.classList.add(
-                        "active"
-                    );
-
-
-                    const category =
-                        chip.dataset.category ||
-                        "trending";
-
-
-                    loadCategory(
-                        category
-                    );
-
-                }
-            );
-
-        }
-    );
-
-
-    // Load Trending automatically
-    loadCategory("trending");
-
-}
-
-
-// ========================================================
-// CREATE CATEGORY CONTAINER
-// ========================================================
-
-function createCategoryContainer() {
-
-    if (
-        document.getElementById(
-            "categoryResults"
-        )
-    ) {
-        return;
-    }
-
-
-    const categoryChips =
-        document.querySelector(
-            ".category-chips"
-        );
-
-
-    if (!categoryChips) {
-        return;
-    }
-
-
-    const container =
-        document.createElement(
-            "div"
-        );
-
-
-    container.id =
-        "categoryResults";
-
-
-    container.className =
-        "category-results";
-
-
-    container.innerHTML = `
-
-        <div class="category-results-grid">
-
-        </div>
-
-    `;
-
-
-    categoryChips.insertAdjacentElement(
-        "afterend",
-        container
-    );
-
-}
-
-
-// ========================================================
-// LOAD TMDB CATEGORY
-// ========================================================
-
-async function loadCategory(
-    category
-) {
-
-    const container =
-        document.getElementById(
-            "categoryResults"
-        );
-
-
-    if (!container) {
-        return;
-    }
-
-
-    const grid =
-        container.querySelector(
-            ".category-results-grid"
-        );
-
-
-    if (!grid) {
-        return;
-    }
-
-
-    grid.innerHTML = `
-
-        <div class="category-loading">
-
-            <span class="category-spinner"></span>
-
-            <span>
-                Loading...
-            </span>
-
-        </div>
-
-    `;
-
-
-    try {
-
-        const response =
-            await fetch(
-                `/api/categories?category=${encodeURIComponent(
-                    category
-                )}`
-            );
-
-
-        const data =
-            await response.json();
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                data.error ||
-                "Could not load category."
-            );
-
-        }
-
-
-        const results =
-            Array.isArray(data.results)
-                ? data.results
-                : [];
-
-
-        if (!results.length) {
-
-            grid.innerHTML = `
-
-                <div class="category-empty">
-
-                    🎬
-
-                    <p>
-                        No titles found.
-                    </p>
-
-                </div>
-
-            `;
-
-            return;
-        }
-
-
-        // EXACTLY 4
-        renderCategoryCards(
-            results.slice(0, 4)
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "CATEGORY ERROR:",
-            error
-        );
-
-
-        grid.innerHTML = `
-
-            <div class="category-empty">
-
-                ⚠️
-
-                <p>
-                    Could not load titles.
-                </p>
-
-            </div>
-
-        `;
-
-    }
-
-}
-
-
-// ========================================================
-// RENDER CATEGORY CARDS
-// ========================================================
-
-function renderCategoryCards(
-    results
-) {
-
-    const container =
-        document.getElementById(
-            "categoryResults"
-        );
-
-
-    if (!container) {
-        return;
-    }
-
-
-    const grid =
-        container.querySelector(
-            ".category-results-grid"
-        );
-
-
-    if (!grid) {
-        return;
-    }
-
-
-    grid.innerHTML = "";
-
-
-    results.forEach(
-        function (item) {
-
-            const card =
-                document.createElement(
-                    "div"
-                );
-
-
-            card.className =
-                "category-card";
-
-
-            const poster =
-                item.poster &&
-                item.poster !== "N/A"
-
-                    ? `
-
-                        <img
-                            class="category-poster"
-                            src="${escapeAttribute(
-                                item.poster
-                            )}"
-                            alt=""
-                            loading="lazy"
-                        >
-
-                      `
-
-                    : `
-
-                        <div
-                            class="
-                                category-poster
-                                category-poster-empty
-                            "
-                        >
-                            🎬
-                        </div>
-
-                      `;
-
-
-            const typeText =
-                item.type === "series"
-                    ? "TV"
-                    : "Movie";
-
-
-            card.innerHTML = `
-
-                <div class="category-poster-wrap">
-
-                    ${poster}
-
-                    <span
-                        class="category-type-badge"
-                    >
-                        ${typeText}
-                    </span>
-
-                </div>
-
-
-                <div class="category-card-info">
-
-                    <h3>
-                        ${escapeHTML(
-                            item.title
-                        )}
-                    </h3>
-
-
-                    <div class="category-card-meta">
-
-                        <span>
-                            ${escapeHTML(
-                                item.year || ""
-                            )}
-                        </span>
-
-                        <span>
-                            ${typeText}
-                        </span>
-
-                    </div>
-
-
-                    <button
-                        type="button"
-                        class="category-select-btn"
-                    >
-                        Select
-                    </button>
-
-
-                    <!-- SINHALA SUBTITLE STATUS -->
-
-                    <div class="sinhala-status">
-
-                        <span class="sinhala-checking">
-
-                            🔎 Checking Sinhala subtitle...
-
-                        </span>
-
-                    </div>
-
-                </div>
-
-            `;
-
-
-            // =================================================
-            // SELECT BUTTON
-            // =================================================
-
-            const selectButton =
-                card.querySelector(
-                    ".category-select-btn"
-                );
-
-
-            if (selectButton) {
-
-                selectButton.addEventListener(
-                    "click",
-                    function () {
-
-                        selectSearchResult(
-                            item
-                        );
-
-                    }
-                );
-
-            }
-
-
-            grid.appendChild(
-                card
-            );
-
-
-            // =================================================
-            // CHECK SINHALA SUBTITLE
-            // =================================================
-
-            checkSinhalaSubtitles(
-                item,
-                card
             );
 
         }
@@ -596,13 +173,10 @@ function renderCategoryCards(
 // HANDLE FILE UPLOAD
 // ========================================================
 
-async function handleFileUpload(
-    event
-) {
+async function handleFileUpload(event) {
 
     const file =
         event.target.files?.[0];
-
 
     if (!file) {
         return;
@@ -620,6 +194,7 @@ async function handleFileUpload(
         );
 
         return;
+
     }
 
 
@@ -643,11 +218,8 @@ async function handleFileUpload(
         const text =
             await file.text();
 
-
         uploadedSubtitles =
-            parseSRT(
-                text
-            );
+            parseSRT(text);
 
 
         if (!uploadedSubtitles.length) {
@@ -657,6 +229,7 @@ async function handleFileUpload(
             );
 
             return;
+
         }
 
 
@@ -667,8 +240,7 @@ async function handleFileUpload(
 
         if (translateBtn) {
 
-            translateBtn.disabled =
-                false;
+            translateBtn.disabled = false;
 
         }
 
@@ -679,7 +251,6 @@ async function handleFileUpload(
             "FILE ERROR:",
             error
         );
-
 
         alert(
             "Could not read subtitle file."
@@ -694,19 +265,14 @@ async function handleFileUpload(
 // SHOW SRT PREVIEW
 // ========================================================
 
-function showSRTPreview(
-    subtitles
-) {
+function showSRTPreview(subtitles) {
 
     if (!subtitlePreview) {
         return;
     }
 
-
     subtitlePreview.textContent =
-        buildSRT(
-            subtitles
-        );
+        buildSRT(subtitles);
 
 }
 
@@ -732,6 +298,7 @@ async function translateUploadedSubtitle() {
         );
 
         return;
+
     }
 
 
@@ -740,8 +307,7 @@ async function translateUploadedSubtitle() {
 
     if (translateBtn) {
 
-        translateBtn.disabled =
-            true;
+        translateBtn.disabled = true;
 
         translateBtn.textContent =
             "Translating...";
@@ -758,9 +324,7 @@ async function translateUploadedSubtitle() {
 
 
         const sinhalaSRT =
-            buildSRT(
-                translated
-            );
+            buildSRT(translated);
 
 
         const filename =
@@ -786,7 +350,6 @@ async function translateUploadedSubtitle() {
             error
         );
 
-
         alert(
             "Translation failed:\n\n" +
             error.message
@@ -794,19 +357,59 @@ async function translateUploadedSubtitle() {
 
     } finally {
 
-        isTranslating =
-            false;
+        isTranslating = false;
 
 
         if (translateBtn) {
 
-            translateBtn.disabled =
-                false;
+            translateBtn.disabled = false;
 
             translateBtn.textContent =
                 "Translate Subtitle";
 
         }
+
+    }
+
+}
+
+
+// ========================================================
+// HIDE CATEGORY RESULTS
+// ========================================================
+
+function hideCategoryResults() {
+
+    const container =
+        document.getElementById(
+            "categoryResults"
+        );
+
+    if (container) {
+
+        container.style.display =
+            "none";
+
+    }
+
+}
+
+
+// ========================================================
+// SHOW CATEGORY RESULTS
+// ========================================================
+
+function showCategoryResults() {
+
+    const container =
+        document.getElementById(
+            "categoryResults"
+        );
+
+    if (container) {
+
+        container.style.display =
+            "block";
 
     }
 
@@ -838,24 +441,32 @@ async function searchMovies() {
         }
 
         return;
+
     }
+
+
+    /*
+    ======================================================
+    IMPORTANT
+
+    When searching:
+    Category 4 cards disappear.
+    Search results are shown instead.
+    ======================================================
+    */
+
+    hideCategoryResults();
 
 
     if (searchBtn) {
 
-        searchBtn.disabled =
-            true;
+        searchBtn.disabled = true;
 
         searchBtn.innerHTML = `
-
             <span class="search-loading">
-
                 <span class="search-spinner"></span>
-
                 Searching...
-
             </span>
-
         `;
 
     }
@@ -871,8 +482,7 @@ async function searchMovies() {
 
     if (searchResults) {
 
-        searchResults.innerHTML =
-            "";
+        searchResults.innerHTML = "";
 
     }
 
@@ -902,9 +512,7 @@ async function searchMovies() {
 
 
         const results =
-            Array.isArray(
-                data.results
-            )
+            Array.isArray(data.results)
                 ? data.results
                 : [];
 
@@ -919,7 +527,37 @@ async function searchMovies() {
             }
 
             return;
+
         }
+
+
+        results.sort(
+            function (a, b) {
+
+                if (
+                    a.type === "series" &&
+                    b.type !== "series"
+                ) {
+
+                    return -1;
+
+                }
+
+
+                if (
+                    a.type !== "series" &&
+                    b.type === "series"
+                ) {
+
+                    return 1;
+
+                }
+
+
+                return 0;
+
+            }
+        );
 
 
         if (searchStatus) {
@@ -955,8 +593,7 @@ async function searchMovies() {
 
         if (searchBtn) {
 
-            searchBtn.disabled =
-                false;
+            searchBtn.disabled = false;
 
             searchBtn.innerHTML =
                 "🔍 Search";
@@ -972,17 +609,14 @@ async function searchMovies() {
 // DISPLAY SEARCH RESULTS
 // ========================================================
 
-function displaySearchResults(
-    results
-) {
+function displaySearchResults(results) {
 
     if (!searchResults) {
         return;
     }
 
 
-    searchResults.innerHTML =
-        "";
+    searchResults.innerHTML = "";
 
 
     results
@@ -991,9 +625,7 @@ function displaySearchResults(
             function (item) {
 
                 const card =
-                    document.createElement(
-                        "div"
-                    );
+                    document.createElement("div");
 
 
                 card.className =
@@ -1005,7 +637,6 @@ function displaySearchResults(
                     item.poster !== "N/A"
 
                         ? `
-
                             <img
                                 class="result-poster"
                                 src="${escapeAttribute(
@@ -1013,11 +644,9 @@ function displaySearchResults(
                                 )}"
                                 alt=""
                             >
-
                           `
 
                         : `
-
                             <div
                                 class="result-poster"
                                 style="
@@ -1033,7 +662,6 @@ function displaySearchResults(
                             >
                                 🎬
                             </div>
-
                           `;
 
 
@@ -1055,7 +683,6 @@ function displaySearchResults(
                             )}
                         </h3>
 
-
                         <div class="result-meta">
 
                             <span>
@@ -1070,7 +697,6 @@ function displaySearchResults(
 
                         </div>
 
-
                         <button
                             type="button"
                             class="select-title-btn"
@@ -1078,13 +704,10 @@ function displaySearchResults(
                             Select
                         </button>
 
-
                         <div class="sinhala-status">
 
                             <span class="sinhala-checking">
-
                                 🔎 Checking Sinhala subtitle...
-
                             </span>
 
                         </div>
@@ -1193,9 +816,7 @@ async function checkSinhalaSubtitles(
 
         if (
             data.found &&
-            Array.isArray(
-                data.sources
-            ) &&
+            Array.isArray(data.sources) &&
             data.sources.length
         ) {
 
@@ -1222,9 +843,7 @@ async function checkSinhalaSubtitles(
                                     source.source ||
                                     "Source"
                                 )}
-
                                 ↗
-
                             </a>
 
                         `
@@ -1240,11 +859,8 @@ async function checkSinhalaSubtitles(
                         🇱🇰 Sinhala Subtitle Available
                     </strong>
 
-
                     <div class="sinhala-source-links">
-
                         ${links}
-
                     </div>
 
                 </div>
@@ -1293,20 +909,16 @@ async function checkSinhalaSubtitles(
 // SELECT MOVIE / TV
 // ========================================================
 
-async function selectSearchResult(
-    item
-) {
+async function selectSearchResult(item) {
 
-    if (
-        !item ||
-        !item.imdbID
-    ) {
+    if (!item || !item.imdbID) {
 
         alert(
             "IMDb ID is missing."
         );
 
         return;
+
     }
 
 
@@ -1318,9 +930,7 @@ async function selectSearchResult(
     }
 
 
-    if (
-        item.type === "movie"
-    ) {
+    if (item.type === "movie") {
 
         await searchSubtitles(
             item,
@@ -1328,12 +938,11 @@ async function selectSearchResult(
         );
 
         return;
+
     }
 
 
-    if (
-        item.type === "series"
-    ) {
+    if (item.type === "series") {
 
         showEpisodeSelector(
             item
@@ -1345,12 +954,10 @@ async function selectSearchResult(
 
 
 // ========================================================
-// TV SEASON / EPISODE SELECTOR
+// TV SEASON / EPISODE
 // ========================================================
 
-function showEpisodeSelector(
-    item
-) {
+function showEpisodeSelector(item) {
 
     if (!searchResults) {
         return;
@@ -1367,11 +974,9 @@ function showEpisodeSelector(
                 )}
             </h2>
 
-
             <p>
                 Select Season and Episode
             </p>
-
 
             <div class="episode-fields">
 
@@ -1390,7 +995,6 @@ function showEpisodeSelector(
 
                 </div>
 
-
                 <div>
 
                     <label>
@@ -1407,7 +1011,6 @@ function showEpisodeSelector(
                 </div>
 
             </div>
-
 
             <button
                 type="button"
@@ -1468,6 +1071,7 @@ function showEpisodeSelector(
                 }
 
                 return;
+
             }
 
 
@@ -1544,9 +1148,7 @@ async function searchSubtitles(
         );
 
 
-        if (
-            type === "episode"
-        ) {
+        if (type === "episode") {
 
             params.set(
                 "season",
@@ -1582,9 +1184,7 @@ async function searchSubtitles(
 
 
         const results =
-            Array.isArray(
-                data.results
-            )
+            Array.isArray(data.results)
                 ? data.results
                 : [];
 
@@ -1614,6 +1214,7 @@ async function searchSubtitles(
             }
 
             return;
+
         }
 
 
@@ -1653,7 +1254,9 @@ async function searchSubtitles(
 
             searchResults.innerHTML = `
 
-                <div class="translation-status error">
+                <div
+                    class="translation-status error"
+                >
 
                     ❌ ${escapeHTML(
                         error.message
@@ -1671,7 +1274,7 @@ async function searchSubtitles(
 
 
 // ========================================================
-// DISPLAY SUBTITLE RESULTS
+// DISPLAY SUBDL RESULTS
 // ========================================================
 
 function displaySubtitleResults(
@@ -1686,8 +1289,7 @@ function displaySubtitleResults(
     }
 
 
-    searchResults.innerHTML =
-        "";
+    searchResults.innerHTML = "";
 
 
     results
@@ -1736,7 +1338,6 @@ function displaySubtitleResults(
                             )}
                         </h3>
 
-
                         <div class="result-meta">
 
                             <span>
@@ -1769,11 +1370,9 @@ function displaySubtitleResults(
 
                         </div>
 
-
                         <p>
                             ${hi}
                         </p>
-
 
                         <button
                             type="button"
@@ -1823,8 +1422,7 @@ function displaySubtitleResults(
 
 
 // ========================================================
-// DOWNLOAD ENGLISH SUBTITLE
-// THEN TRANSLATE
+// DOWNLOAD ENGLISH → TRANSLATE
 // ========================================================
 
 async function selectSubtitle(
@@ -1962,9 +1560,7 @@ async function selectSubtitle(
         }
 
 
-        if (
-            isZipFile(bytes)
-        ) {
+        if (isZipFile(bytes)) {
 
             throw new Error(
                 "SubDL returned a ZIP subtitle package."
@@ -1974,14 +1570,10 @@ async function selectSubtitle(
 
 
         const englishSRT =
-            decodeSubtitleBytes(
-                bytes
-            );
+            decodeSubtitleBytes(bytes);
 
 
-        if (
-            !englishSRT.trim()
-        ) {
+        if (!englishSRT.trim()) {
 
             throw new Error(
                 "Subtitle file is empty."
@@ -1991,14 +1583,10 @@ async function selectSubtitle(
 
 
         const subtitles =
-            parseSRT(
-                englishSRT
-            );
+            parseSRT(englishSRT);
 
 
-        if (
-            !subtitles.length
-        ) {
+        if (!subtitles.length) {
 
             throw new Error(
                 "Downloaded file is not a valid SRT."
@@ -2025,16 +1613,13 @@ async function selectSubtitle(
                         ✨
                     </div>
 
-
                     <h3>
                         Translating to Sinhala
                     </h3>
 
-
                     <p class="translation-subtitle">
                         AI is creating your Sinhala subtitles
                     </p>
-
 
                     <div class="translation-progress-row">
 
@@ -2047,7 +1632,6 @@ async function selectSubtitle(
 
                         </div>
 
-
                         <span
                             id="autoTranslatePercent"
                             class="progress-percent"
@@ -2057,14 +1641,12 @@ async function selectSubtitle(
 
                     </div>
 
-
                     <div
                         id="autoTranslateCount"
                         class="translation-count"
                     >
                         0 of ${subtitles.length} subtitles
                     </div>
-
 
                     <p
                         id="autoTranslateStatus"
@@ -2087,9 +1669,7 @@ async function selectSubtitle(
 
 
         const sinhalaSRT =
-            buildSRT(
-                translated
-            );
+            buildSRT(translated);
 
 
         const baseName =
@@ -2122,35 +1702,32 @@ async function selectSubtitle(
 
             searchResults.innerHTML = `
 
-                <div class="translation-status success">
+                <div
+                    class="translation-status success"
+                >
 
                     <div class="translation-complete-icon">
                         ✓
                     </div>
 
-
                     <h2>
                         Translation Complete
                     </h2>
 
-
                     <p class="translation-subtitle">
                         Your Sinhala subtitle is ready
                     </p>
-
 
                     <div class="translation-count">
                         ${translated.length}
                         subtitles translated
                     </div>
 
-
                     <p class="translation-file-name">
                         ${escapeHTML(
                             filename
                         )}
                     </p>
-
 
                     <button
                         type="button"
@@ -2210,7 +1787,9 @@ async function selectSubtitle(
 
             searchResults.innerHTML = `
 
-                <div class="translation-status error">
+                <div
+                    class="translation-status error"
+                >
 
                     <h3>
                         ❌ Translation failed
@@ -2234,15 +1813,14 @@ async function selectSubtitle(
 
 
 // ========================================================
-// TRANSLATE SUBTITLES IN CHUNKS
+// TRANSLATE CHUNKS
 // ========================================================
 
 async function translateSubtitleChunks(
     subtitles
 ) {
 
-    const CHUNK_SIZE =
-        20;
+    const CHUNK_SIZE = 20;
 
 
     const totalChunks =
@@ -2283,12 +1861,9 @@ async function translateSubtitleChunks(
         );
 
 
-        let success =
-            false;
+        let success = false;
 
-
-        let lastError =
-            null;
+        let lastError = null;
 
 
         for (
@@ -2303,8 +1878,7 @@ async function translateSubtitleChunks(
                     await fetch(
                         "/api/translate",
                         {
-                            method:
-                                "POST",
+                            method: "POST",
 
                             headers: {
                                 "Content-Type":
@@ -2336,9 +1910,7 @@ async function translateSubtitleChunks(
                 try {
 
                     data =
-                        JSON.parse(
-                            raw
-                        );
+                        JSON.parse(raw);
 
                 } catch {
 
@@ -2349,9 +1921,7 @@ async function translateSubtitleChunks(
                 }
 
 
-                if (
-                    !response.ok
-                ) {
+                if (!response.ok) {
 
                     throw new Error(
                         data.error ||
@@ -2386,9 +1956,7 @@ async function translateSubtitleChunks(
                 );
 
 
-                success =
-                    true;
-
+                success = true;
 
                 break;
 
@@ -2493,16 +2061,12 @@ function validateTranslatedChunk(
             if (
                 sub &&
                 Number.isInteger(
-                    Number(
-                        sub.number
-                    )
+                    Number(sub.number)
                 )
             ) {
 
                 translatedMap.set(
-                    Number(
-                        sub.number
-                    ),
+                    Number(sub.number),
                     sub.text
                 );
 
@@ -2657,7 +2221,7 @@ function updateTranslationProgress(
 
 
 // ========================================================
-// STATUS TEXT
+// TRANSLATION STATUS
 // ========================================================
 
 function updateTranslationStatus(
@@ -2684,13 +2248,10 @@ function updateTranslationStatus(
 // SRT PARSER
 // ========================================================
 
-function parseSRT(
-    srt
-) {
+function parseSRT(srt) {
 
     if (
-        typeof srt !==
-        "string"
+        typeof srt !== "string"
     ) {
 
         return [];
@@ -2744,8 +2305,7 @@ function parseSRT(
             }
 
 
-            let numberIndex =
-                0;
+            let numberIndex = 0;
 
 
             while (
@@ -2775,9 +2335,7 @@ function parseSRT(
             if (
                 Number.isNaN(number) ||
                 !timestamp ||
-                !timestamp.includes(
-                    "-->"
-                )
+                !timestamp.includes("-->")
             ) {
 
                 return;
@@ -2823,9 +2381,7 @@ function parseSRT(
 // BUILD SRT
 // ========================================================
 
-function buildSRT(
-    subtitles
-) {
+function buildSRT(subtitles) {
 
     return subtitles
         .map(
@@ -2846,7 +2402,7 @@ function buildSRT(
 
 
 // ========================================================
-// DOWNLOAD TEXT
+// DOWNLOAD FILE
 // ========================================================
 
 function downloadTextFile(
@@ -2935,8 +2491,7 @@ function getSubtitleBaseName(
 
 
     if (
-        item?.type ===
-        "series"
+        item?.type === "series"
     ) {
 
         const s =
@@ -2971,9 +2526,7 @@ function getSubtitleBaseName(
 // DECODE SUBTITLE
 // ========================================================
 
-function decodeSubtitleBytes(
-    bytes
-) {
+function decodeSubtitleBytes(bytes) {
 
     try {
 
@@ -2983,42 +2536,30 @@ function decodeSubtitleBytes(
                 {
                     fatal: false
                 }
-            ).decode(
-                bytes
-            );
+            ).decode(bytes);
 
 
         if (
-            text.includes(
-                "-->"
-            )
+            text.includes("-->")
         ) {
 
             return text;
 
         }
 
-    } catch {
-
-        // Continue
-
-    }
+    } catch {}
 
 
     try {
 
         return new TextDecoder(
             "windows-1252"
-        ).decode(
-            bytes
-        );
+        ).decode(bytes);
 
     } catch {
 
         return new TextDecoder()
-            .decode(
-                bytes
-            );
+            .decode(bytes);
 
     }
 
@@ -3029,9 +2570,7 @@ function decodeSubtitleBytes(
 // ZIP CHECK
 // ========================================================
 
-function isZipFile(
-    bytes
-) {
+function isZipFile(bytes) {
 
     return (
 
@@ -3051,9 +2590,7 @@ function isZipFile(
 // ESCAPE HTML
 // ========================================================
 
-function escapeHTML(
-    value
-) {
+function escapeHTML(value) {
 
     return String(
         value ?? ""
@@ -3086,13 +2623,9 @@ function escapeHTML(
 // ESCAPE ATTRIBUTE
 // ========================================================
 
-function escapeAttribute(
-    value
-) {
+function escapeAttribute(value) {
 
-    return escapeHTML(
-        value
-    );
+    return escapeHTML(value);
 
 }
 
@@ -3101,9 +2634,7 @@ function escapeAttribute(
 // SLEEP
 // ========================================================
 
-function sleep(
-    ms
-) {
+function sleep(ms) {
 
     return new Promise(
         function (resolve) {
@@ -3120,7 +2651,7 @@ function sleep(
 
 
 // ========================================================
-// UI STYLES
+// SEARCH UI STYLES
 // ========================================================
 
 (function injectSearchUIStyles() {
@@ -3130,7 +2661,9 @@ function sleep(
             "sublankaSearchFixes"
         )
     ) {
+
         return;
+
     }
 
 
@@ -3163,7 +2696,8 @@ function sleep(
         }
 
 
-        #searchResults .search-result-card {
+        #searchResults
+        .search-result-card {
 
             width: 100% !important;
 
@@ -3179,13 +2713,19 @@ function sleep(
 
             gap: 14px !important;
 
+            flex: 0 0 auto !important;
+
             overflow: hidden !important;
 
         }
 
 
-        #searchResults .search-result-card > img,
-        #searchResults .search-result-card .result-poster {
+        #searchResults
+        .search-result-card > img,
+
+        #searchResults
+        .search-result-card
+        .result-poster {
 
             width: 82px !important;
 
@@ -3208,7 +2748,8 @@ function sleep(
         }
 
 
-        #searchResults .result-info {
+        #searchResults
+        .result-info {
 
             min-width: 0 !important;
 
@@ -3269,31 +2810,23 @@ function sleep(
 
             margin-top: 10px;
 
-            font-size: 12px;
-
-        }
-
-
-        .sinhala-checking {
-
-            color:
-                rgba(220,220,240,.60);
+            font-size: 13px;
 
         }
 
 
         .sinhala-available {
 
-            padding: 8px;
+            padding: 9px 10px;
 
-            border-radius: 9px;
+            border-radius: 10px;
 
             background:
-                rgba(34,197,94,.08);
+                rgba(34,197,94,.10);
 
             border:
                 1px solid
-                rgba(34,197,94,.20);
+                rgba(34,197,94,.24);
 
         }
 
@@ -3302,11 +2835,7 @@ function sleep(
 
             display: block;
 
-            margin-bottom: 6px;
-
-            color: #86efac;
-
-            font-size: 11px;
+            margin-bottom: 7px;
 
         }
 
@@ -3317,7 +2846,7 @@ function sleep(
 
             flex-wrap: wrap;
 
-            gap: 5px;
+            gap: 6px;
 
         }
 
@@ -3326,31 +2855,26 @@ function sleep(
 
             display: inline-flex;
 
-            padding: 4px 7px;
+            align-items: center;
 
-            border-radius: 6px;
+            padding: 5px 8px;
 
-            color: #d8c8ff;
+            border-radius: 7px;
 
             text-decoration: none;
 
             background:
                 rgba(124,58,237,.16);
 
-            border:
-                1px solid
-                rgba(139,92,246,.18);
-
-            font-size: 10px;
+            color: #ddd;
 
         }
 
 
-        .sinhala-not-found {
+        .sinhala-not-found,
+        .sinhala-checking {
 
-            color: #fbbf24;
-
-            font-size: 10px;
+            opacity: .82;
 
         }
 
@@ -3400,6 +2924,10 @@ function sleep(
                 1px solid
                 rgba(150,110,255,.28) !important;
 
+            box-shadow:
+                0 18px 45px
+                rgba(0,0,0,.25) !important;
+
         }
 
 
@@ -3409,7 +2937,8 @@ function sleep(
 
             height: 58px;
 
-            margin: 0 auto 14px;
+            margin:
+                0 auto 14px;
 
             display: flex;
 
@@ -3427,6 +2956,10 @@ function sleep(
                     rgba(125,92,255,.22),
                     rgba(185,70,255,.18)
                 );
+
+            border:
+                1px solid
+                rgba(155,110,255,.35);
 
             animation:
                 translationPulse
@@ -3448,7 +2981,8 @@ function sleep(
 
         .translation-subtitle {
 
-            margin: 8px 0 22px;
+            margin:
+                8px 0 22px;
 
             color:
                 rgba(220,220,240,.68);
@@ -3471,6 +3005,7 @@ function sleep(
         }
 
 
+        .translation-progress-row
         .progress-track {
 
             flex: 1;
@@ -3487,6 +3022,7 @@ function sleep(
         }
 
 
+        .translation-progress-row
         .progress-fill {
 
             width: 0%;
@@ -3514,11 +3050,11 @@ function sleep(
 
             text-align: right;
 
-            color: #c5a8ff;
-
             font-size: 13px;
 
             font-weight: 700;
+
+            color: #c5a8ff;
 
         }
 
@@ -3527,24 +3063,25 @@ function sleep(
 
             margin-top: 14px;
 
-            color:
-                rgba(235,235,250,.82);
-
             font-size: 14px;
 
             font-weight: 600;
+
+            color:
+                rgba(235,235,250,.82);
 
         }
 
 
         .translation-status-text {
 
-            margin-top: 7px;
+            margin:
+                7px 0 0;
+
+            font-size: 12px;
 
             color:
                 rgba(200,200,225,.55);
-
-            font-size: 12px;
 
         }
 
@@ -3555,7 +3092,8 @@ function sleep(
 
             height: 62px;
 
-            margin: 0 auto 14px;
+            margin:
+                0 auto 14px;
 
             display: flex;
 
@@ -3564,6 +3102,10 @@ function sleep(
             justify-content: center;
 
             border-radius: 50%;
+
+            font-size: 32px;
+
+            font-weight: 700;
 
             color: #fff;
 
@@ -3574,19 +3116,15 @@ function sleep(
                     #b04cff
                 );
 
-            font-size: 32px;
-
-            font-weight: 700;
-
         }
 
 
         .translation-file-name {
 
-            margin: 10px auto 18px;
+            margin:
+                10px auto 18px;
 
-            color:
-                rgba(220,220,240,.55);
+            max-width: 100%;
 
             font-size: 12px;
 
@@ -3597,7 +3135,7 @@ function sleep(
 
         @keyframes translationPulse {
 
-            0%,100% {
+            0%, 100% {
                 transform: scale(1);
             }
 
@@ -3610,7 +3148,8 @@ function sleep(
 
         @media (max-width:600px) {
 
-            #searchResults .search-result-card {
+            #searchResults
+            .search-result-card {
 
                 padding: 12px !important;
 
@@ -3619,8 +3158,12 @@ function sleep(
             }
 
 
-            #searchResults .search-result-card > img,
-            #searchResults .search-result-card .result-poster {
+            #searchResults
+            .search-result-card > img,
+
+            #searchResults
+            .search-result-card
+            .result-poster {
 
                 width: 78px !important;
 
@@ -3643,6 +3186,34 @@ function sleep(
 
                 padding:
                     24px 18px !important;
+
+            }
+
+        }
+
+
+        @media (max-width:380px) {
+
+            #searchResults
+            .search-result-card > img,
+
+            #searchResults
+            .search-result-card
+            .result-poster {
+
+                width: 68px !important;
+
+                min-width: 68px !important;
+
+                max-width: 68px !important;
+
+                height: 98px !important;
+
+                min-height: 98px !important;
+
+                max-height: 98px !important;
+
+                flex-basis: 68px !important;
 
             }
 
@@ -3689,14 +3260,470 @@ if (translateBtn) {
 
 
 // ========================================================
-// START CATEGORIES
+// CREATE CATEGORY CONTAINER
+// ========================================================
+
+function createCategoryResultsContainer() {
+
+    if (categoryResultsContainer) {
+
+        return categoryResultsContainer;
+
+    }
+
+
+    categoryResultsContainer =
+        document.createElement("div");
+
+
+    categoryResultsContainer.id =
+        "categoryResults";
+
+
+    categoryResultsContainer.className =
+        "category-results";
+
+
+    const categorySection =
+        document.querySelector(
+            ".category-chips"
+        );
+
+
+    if (categorySection) {
+
+        categorySection.insertAdjacentElement(
+            "afterend",
+            categoryResultsContainer
+        );
+
+    } else if (searchResults) {
+
+        searchResults.insertAdjacentElement(
+            "beforebegin",
+            categoryResultsContainer
+        );
+
+    }
+
+
+    return categoryResultsContainer;
+
+}
+
+
+// ========================================================
+// LOAD CATEGORY
+// ========================================================
+
+async function loadCategory(category) {
+
+    const container =
+        createCategoryResultsContainer();
+
+
+    if (!container) {
+        return;
+    }
+
+
+    container.style.display =
+        "block";
+
+
+    container.innerHTML = `
+
+        <div class="category-loading">
+
+            <div class="category-spinner"></div>
+
+            <span>
+                Loading ${getCategoryName(category)}...
+            </span>
+
+        </div>
+
+    `;
+
+
+    try {
+
+        const response =
+            await fetch(
+                `/api/categories?category=${encodeURIComponent(
+                    category
+                )}`
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.error ||
+                "Category loading failed."
+            );
+
+        }
+
+
+        const results =
+            Array.isArray(data.results)
+                ? data.results
+                : [];
+
+
+        if (!results.length) {
+
+            container.innerHTML = `
+
+                <div class="category-empty">
+
+                    🎬
+
+                    <p>
+                        No titles found right now.
+                    </p>
+
+                </div>
+
+            `;
+
+            return;
+
+        }
+
+
+        renderCategoryResults(
+            results.slice(0, 4),
+            container
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "CATEGORY ERROR:",
+            error
+        );
+
+
+        container.innerHTML = `
+
+            <div class="category-empty category-error">
+
+                ❌
+
+                <p>
+                    Could not load titles.
+                </p>
+
+                <button
+                    type="button"
+                    class="category-retry-btn"
+                    onclick="loadCategory('${escapeAttribute(
+                        category
+                    )}')"
+                >
+                    Try Again
+                </button>
+
+            </div>
+
+        `;
+
+    }
+
+}
+
+
+// ========================================================
+// CATEGORY NAME
+// ========================================================
+
+function getCategoryName(category) {
+
+    const names = {
+
+        trending: "Trending",
+        movie: "Movies",
+        tv: "TV Series",
+        anime: "Anime"
+
+    };
+
+
+    return names[category] ||
+        "titles";
+
+}
+
+
+// ========================================================
+// RENDER CATEGORY RESULTS
+// ========================================================
+
+function renderCategoryResults(
+    results,
+    container
+) {
+
+    container.innerHTML = "";
+
+
+    const grid =
+        document.createElement("div");
+
+
+    grid.className =
+        "category-results-grid";
+
+
+    results.forEach(
+        function (item) {
+
+            const card =
+                document.createElement(
+                    "article"
+                );
+
+
+            card.className =
+                "category-card";
+
+
+            const poster =
+                item.poster &&
+                item.poster !== "N/A"
+
+                    ? `
+
+                        <img
+                            src="${escapeAttribute(
+                                item.poster
+                            )}"
+                            alt="${escapeAttribute(
+                                item.title
+                            )}"
+                            loading="lazy"
+                            class="category-poster"
+                        >
+
+                      `
+
+                    : `
+
+                        <div
+                            class="
+                                category-poster
+                                category-poster-empty
+                            "
+                        >
+                            🎬
+                        </div>
+
+                      `;
+
+
+            card.innerHTML = `
+
+                <div class="category-poster-wrap">
+
+                    ${poster}
+
+                    <span
+                        class="category-type-badge"
+                    >
+
+                        ${
+                            item.type === "series"
+                                ? "📺 TV"
+                                : "🎬 Movie"
+                        }
+
+                    </span>
+
+                </div>
+
+
+                <div class="category-card-info">
+
+                    <h3>
+                        ${escapeHTML(
+                            item.title
+                        )}
+                    </h3>
+
+
+                    <div class="category-card-meta">
+
+                        <span>
+                            ${escapeHTML(
+                                item.year || ""
+                            )}
+                        </span>
+
+                        <span>
+                            ${
+                                item.type === "series"
+                                    ? "TV"
+                                    : "Movie"
+                            }
+                        </span>
+
+                    </div>
+
+
+                    <button
+                        type="button"
+                        class="category-select-btn"
+                    >
+                        Select
+                    </button>
+
+                </div>
+
+            `;
+
+
+            const selectButton =
+                card.querySelector(
+                    ".category-select-btn"
+                );
+
+
+            if (selectButton) {
+
+                selectButton.addEventListener(
+                    "click",
+                    function () {
+
+                        selectSearchResult(
+                            item
+                        );
+
+                    }
+                );
+
+            }
+
+
+            grid.appendChild(
+                card
+            );
+
+        }
+    );
+
+
+    container.appendChild(
+        grid
+    );
+
+}
+
+
+// ========================================================
+// CATEGORY CHIP EVENTS
+// ========================================================
+
+categoryChips.forEach(
+    function (chip) {
+
+        chip.addEventListener(
+            "click",
+            function () {
+
+                // Active tab
+
+                categoryChips.forEach(
+                    function (item) {
+
+                        item.classList.remove(
+                            "active"
+                        );
+
+                    }
+                );
+
+
+                chip.classList.add(
+                    "active"
+                );
+
+
+                const category =
+                    chip.dataset.category ||
+                    "trending";
+
+
+                /*
+                =================================================
+                IMPORTANT
+
+                When category is clicked:
+
+                1. Search results disappear
+                2. Category cards appear
+                3. Selected category loads
+                =================================================
+                */
+
+
+                if (searchResults) {
+
+                    searchResults.innerHTML =
+                        "";
+
+                }
+
+
+                if (searchStatus) {
+
+                    searchStatus.textContent =
+                        "";
+
+                }
+
+
+                showCategoryResults();
+
+
+                loadCategory(
+                    category
+                );
+
+            }
+        );
+
+    }
+);
+
+
+// ========================================================
+// LOAD TRENDING ON PAGE LOAD
 // ========================================================
 
 document.addEventListener(
     "DOMContentLoaded",
     function () {
 
-        setupCategories();
+        const categorySection =
+            document.querySelector(
+                ".category-chips"
+            );
+
+
+        if (categorySection) {
+
+            loadCategory(
+                "trending"
+            );
+
+        }
 
     }
 );
