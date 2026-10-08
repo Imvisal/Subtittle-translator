@@ -23,14 +23,14 @@ module.exports = async function handler(req, res) {
 
         if (!API_KEY || !CX) {
             return res.status(500).json({
-                error: "Google CSE configuration missing"
+                error: "Google CSE environment variables missing"
             });
         }
 
         const cleanTitle = normalizeTitle(title);
         const requestedYear = extractYear(year);
 
-        const sources = [
+        const sourceList = [
             {
                 name: "Baiscope",
                 domain: "baiscope.lk"
@@ -45,31 +45,20 @@ module.exports = async function handler(req, res) {
             }
         ];
 
-        /*
-         * Search all 3 Sinhala subtitle websites separately.
-         */
-        const searches = await Promise.all(
-            sources.map(source =>
-                searchGoogle({
-                    apiKey: API_KEY,
-                    cx: CX,
-                    title: cleanTitle,
-                    year: requestedYear,
-                    domain: source.domain
-                })
-            )
-        );
+        const allResults = [];
 
-        const foundSources = [];
+        // Search each source separately
+        for (const source of sourceList) {
 
-        for (let i = 0; i < searches.length; i++) {
+            const googleResults = await googleSearch({
+                apiKey: API_KEY,
+                cx: CX,
+                title: cleanTitle,
+                year: requestedYear,
+                domain: source.domain
+            });
 
-            const source = sources[i];
-            const items = searches[i];
-
-            let bestMatch = null;
-
-            for (const item of items) {
+            for (const item of googleResults) {
 
                 if (!item || !item.link) {
                     continue;
@@ -84,67 +73,89 @@ module.exports = async function handler(req, res) {
                 const url =
                     String(item.link || "");
 
-                /*
-                 * Make sure this result actually belongs
-                 * to the requested movie/show.
-                 */
+                // Make sure URL really belongs to this source
+                let parsedUrl;
+
+                try {
+                    parsedUrl = new URL(url);
+                } catch {
+                    continue;
+                }
+
                 if (
-                    !isCorrectTitle(
-                        cleanTitle,
-                        resultTitle,
-                        url
-                    )
+                    !parsedUrl.hostname
+                        .toLowerCase()
+                        .includes(source.domain)
                 ) {
                     continue;
                 }
 
-                /*
-                 * Year check.
-                 */
-                if (
-                    requestedYear &&
-                    !isCorrectYear(
+                // Check title
+                const titleScore =
+                    getTitleScore(
+                        cleanTitle,
+                        resultTitle,
+                        url
+                    );
+
+                if (titleScore < 60) {
+                    continue;
+                }
+
+                // Check year
+                const yearScore =
+                    getYearScore(
                         requestedYear,
                         resultTitle,
                         snippet,
                         url
-                    )
-                ) {
+                    );
+
+                /*
+                 * If a year was supplied, reject a clearly
+                 * different year.
+                 */
+                if (requestedYear && yearScore === -100) {
                     continue;
                 }
 
                 const score =
-                    calculateScore(
-                        cleanTitle,
-                        requestedYear,
-                        resultTitle,
-                        snippet
-                    );
+                    titleScore +
+                    Math.max(0, yearScore);
 
-                if (
-                    !bestMatch ||
-                    score > bestMatch.score
-                ) {
-                    bestMatch = {
-                        source: source.name,
-                        url,
-                        title: resultTitle,
-                        score
-                    };
-                }
-            }
-
-            if (bestMatch) {
-                foundSources.push(bestMatch);
+                allResults.push({
+                    source: source.name,
+                    url,
+                    title: resultTitle,
+                    score
+                });
             }
         }
 
+        // Best result per source
+        const bestBySource = {};
+
+        for (const result of allResults) {
+
+            if (
+                !bestBySource[result.source] ||
+                result.score >
+                    bestBySource[result.source].score
+            ) {
+                bestBySource[result.source] = result;
+            }
+        }
+
+        const sources =
+            Object.values(bestBySource)
+                .sort((a, b) => b.score - a.score);
+
         return res.status(200).json({
-            found: foundSources.length > 0,
+            found: sources.length > 0,
             title,
             year: requestedYear,
             type,
-            sources: foundSources,
+            sources,
             error: null
         });
 
@@ -167,10 +178,10 @@ module.exports = async function handler(req, res) {
 
 
 /* =====================================================
-   GOOGLE SEARCH
+   GOOGLE CSE SEARCH
 ===================================================== */
 
-async function searchGoogle({
+async function googleSearch({
     apiKey,
     cx,
     title,
@@ -178,62 +189,39 @@ async function searchGoogle({
     domain
 }) {
 
+    /*
+     * IMPORTANT:
+     * Don't use exactTerms/siteSearch/hq here.
+     *
+     * Put everything inside the normal Google query.
+     */
+    let query =
+        `"${title}" Sinhala subtitles`;
+
+    if (year) {
+        query += ` ${year}`;
+    }
+
+    query += ` site:${domain}`;
+
     const params = new URLSearchParams();
 
     params.set("key", apiKey);
     params.set("cx", cx);
+    params.set("q", query);
+    params.set("num", "10");
 
-    /*
-     * Search for Sinhala subtitles.
-     */
-    params.set(
-        "q",
-        `"Sinhala subtitles"`
-    );
-
-    /*
-     * Google exactTerms:
-     * every result must contain this phrase.
-     */
-    params.set(
-        "exactTerms",
-        title
-    );
-
-    /*
-     * Search only the current Sinhala subtitle website.
-     */
-    params.set(
-        "siteSearch",
-        domain
-    );
-
-    params.set(
-        "siteSearchFilter",
-        "i"
-    );
-
-    params.set(
-        "num",
-        "10"
-    );
-
-    /*
-     * Add year as an extra search hint.
-     */
-    if (year) {
-        params.set(
-            "hq",
-            year
-        );
-    }
-
-    const url =
+    const apiUrl =
         "https://www.googleapis.com/customsearch/v1?" +
         params.toString();
 
+    console.log(
+        "GOOGLE SEARCH:",
+        query
+    );
+
     const response =
-        await fetch(url);
+        await fetch(apiUrl);
 
     const data =
         await response.json();
@@ -241,7 +229,7 @@ async function searchGoogle({
     if (!response.ok) {
 
         console.error(
-            "GOOGLE CSE ERROR:",
+            "GOOGLE ERROR:",
             data
         );
 
@@ -255,19 +243,31 @@ async function searchGoogle({
 
 
 /* =====================================================
-   TITLE MATCHING
+   TITLE SCORE
 ===================================================== */
 
-function isCorrectTitle(
-    requested,
-    googleTitle,
+function getTitleScore(
+    requestedTitle,
+    resultTitle,
     url
 ) {
 
+    const requested =
+        normalizeTitle(requestedTitle);
+
     const result =
         normalizeTitle(
-            `${googleTitle} ${url}`
+            `${resultTitle} ${url}`
         );
+
+    if (!requested || !result) {
+        return 0;
+    }
+
+    // Exact phrase
+    if (result.includes(requested)) {
+        return 100;
+    }
 
     const requestedWords =
         requested
@@ -280,76 +280,51 @@ function isCorrectTitle(
             .filter(Boolean);
 
     if (!requestedWords.length) {
-        return false;
+        return 0;
     }
 
-    /*
-     * Every requested title word must exist.
-     */
+    let matched = 0;
+
     for (const word of requestedWords) {
 
-        if (!resultWords.includes(word)) {
-            return false;
+        if (resultWords.includes(word)) {
+            matched++;
         }
     }
 
-    /*
-     * Reject sequel numbers when the requested
-     * title doesn't contain one.
-     *
-     * Example:
-     *
-     * Sonic the Hedgehog
-     * ❌ Sonic the Hedgehog 2
-     */
-    if (!requested.match(/\b\d+\b/)) {
+    const percentage =
+        matched / requestedWords.length;
 
-        const titlePart =
-            normalizeTitle(
-                googleTitle
-            );
-
-        const meaningful =
-            titlePart
-                .split(/\s+/)
-                .filter(Boolean);
-
-        const extraNumbers =
-            meaningful.filter(word =>
-                /^\d+$/.test(word)
-            );
-
-        if (extraNumbers.length > 0) {
-
-            /*
-             * A year is allowed.
-             */
-            const nonYearNumbers =
-                extraNumbers.filter(
-                    number =>
-                        !/^(19|20)\d{2}$/.test(number)
-                );
-
-            if (nonYearNumbers.length > 0) {
-                return false;
-            }
-        }
+    if (percentage === 1) {
+        return 90;
     }
 
-    return true;
+    if (percentage >= 0.8) {
+        return 75;
+    }
+
+    if (percentage >= 0.6) {
+        return 60;
+    }
+
+    return 0;
 }
 
 
 /* =====================================================
-   YEAR MATCHING
+   YEAR SCORE
 ===================================================== */
 
-function isCorrectYear(
+function getYearScore(
     requestedYear,
     title,
     snippet,
     url
 ) {
+
+    if (!requestedYear) {
+        return 0;
+    }
 
     const text =
         `${title} ${snippet} ${url}`;
@@ -359,98 +334,32 @@ function isCorrectYear(
             /\b(19\d{2}|20\d{2})\b/g
         ) || [];
 
-    /*
-     * If the exact requested year appears,
-     * accept it.
-     */
-    if (years.includes(requestedYear)) {
-        return true;
+    const uniqueYears =
+        [...new Set(years)];
+
+    // Correct year
+    if (uniqueYears.includes(requestedYear)) {
+        return 40;
     }
 
     /*
-     * Some websites don't expose the year
-     * in Google's result.
-     *
-     * Don't immediately reject a very strong
-     * title match.
+     * If another movie year is clearly present,
+     * reject it.
      */
-    const normalized =
-        normalizeTitle(title);
+    if (uniqueYears.length > 0) {
+        return -100;
+    }
 
-    const requestedYearless =
-        normalized
-            .replace(
-                /\b(19\d{2}|20\d{2})\b/g,
-                ""
-            )
-            .replace(/\s+/g, " ")
-            .trim();
-
-    return requestedYearless.length > 0;
+    /*
+     * Google result didn't expose a year.
+     * Don't reject automatically.
+     */
+    return 0;
 }
 
 
 /* =====================================================
-   SCORE
-===================================================== */
-
-function calculateScore(
-    requestedTitle,
-    requestedYear,
-    title,
-    snippet
-) {
-
-    let score = 0;
-
-    const normalizedResult =
-        normalizeTitle(title);
-
-    const normalizedRequested =
-        normalizeTitle(requestedTitle);
-
-    /*
-     * Exact title phrase.
-     */
-    if (
-        normalizedResult.includes(
-            normalizedRequested
-        )
-    ) {
-        score += 60;
-    }
-
-    /*
-     * Requested year.
-     */
-    if (
-        requestedYear &&
-        `${title} ${snippet}`.includes(
-            requestedYear
-        )
-    ) {
-        score += 30;
-    }
-
-    /*
-     * Sinhala subtitle keyword.
-     */
-    const lower =
-        `${title} ${snippet}`.toLowerCase();
-
-    if (
-        lower.includes("sinhala subtitle") ||
-        lower.includes("sinhala subtitles")
-    ) {
-        score += 10;
-    }
-
-    return score;
-}
-
-
-/* =====================================================
-   NORMALIZE
+   NORMALIZE TITLE
 ===================================================== */
 
 function normalizeTitle(value) {
@@ -459,10 +368,7 @@ function normalizeTitle(value) {
         .toLowerCase()
         .replace(/&/g, "and")
         .replace(/[’']/g, "")
-        .replace(
-            /[^\p{L}\p{N}\s]/gu,
-            " "
-        )
+        .replace(/[^\p{L}\p{N}\s]/gu, " ")
         .replace(/\s+/g, " ")
         .trim();
 }
