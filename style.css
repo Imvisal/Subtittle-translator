@@ -4380,3 +4380,39 @@ textarea:focus-visible {
             20px !important;
     }
 }
+
+.brand-logo {
+    width: 100px !important;
+    height: 100px !important;
+    min-width: 100px !important;
+
+    padding: 0 !important;
+
+    overflow: hidden !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    border-radius: 22px !important;
+
+    background: transparent !important;
+
+    box-shadow:
+        0 10px 35px rgba(80, 70, 255, .25) !important;
+}
+
+.brand-logo img {
+    display: block !important;
+
+    width: 100% !important;
+    height: 100% !important;
+
+    object-fit: contain !important;
+
+    opacity: 1 !important;
+    visibility: visible !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+}
