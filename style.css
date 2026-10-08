@@ -4163,3 +4163,63 @@ html[data-theme="light"] .subtitle-type {
             0.01ms !important;
     }
 }
+
+/* =========================================================
+   SUBLANKA AI — FINAL MOBILE POSITION FIX
+   Hero Text + Search Card
+========================================================= */
+
+/* ================================
+   MOBILE
+================================ */
+
+@media (max-width: 600px) {
+
+    /* Hero text moves upward */
+    .hero-content {
+        padding:
+            175px
+            28px
+            80px !important;
+    }
+
+    /* Search card moves upward */
+    .search-section {
+        margin-top: -85px !important;
+    }
+}
+
+
+/* ================================
+   SMALL PHONES
+================================ */
+
+@media (max-width: 390px) {
+
+    .hero-content {
+        padding:
+            180px
+            23px
+            75px !important;
+    }
+
+    .search-section {
+        margin-top: -85px !important;
+    }
+}
+
+
+/* ================================
+   VERY SMALL PHONES
+================================ */
+
+@media (max-width: 350px) {
+
+    .hero-content {
+        padding-top: 165px !important;
+    }
+
+    .search-section {
+        margin-top: -80px !important;
+    }
+}
