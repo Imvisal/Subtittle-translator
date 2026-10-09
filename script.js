@@ -73,6 +73,12 @@ let uploadedFileName = "subtitle";
 
 let isTranslating = false;
 
+// Subtitle editor settings
+let selectedTranslationStyle = "natural";
+let subtitleEditorPage = 0;
+
+const SUBTITLE_EDITOR_PAGE_SIZE = 40;
+
 
 // ========================================================
 // CATEGORY STATE
@@ -265,15 +271,714 @@ async function handleFileUpload(event) {
 // SHOW SRT PREVIEW
 // ========================================================
 
-function showSRTPreview(subtitles) {
+// ========================================================
+// STRUCTURED SUBTITLE EDITOR
+// ========================================================
 
-    if (!subtitlePreview) {
-        return;
+function showSRTPreview(subtitles) {
+    if (!subtitlePreview) return;
+
+    // Hide the old raw-text preview.
+    subtitlePreview.style.display = "none";
+
+    let workspace = document.getElementById(
+        "subtitleEditorWorkspace"
+    );
+
+    if (!workspace) {
+        workspace = document.createElement("section");
+        workspace.id = "subtitleEditorWorkspace";
+        workspace.className = "sublanka-editor";
+
+        workspace.innerHTML = `
+            <div class="se-header">
+                <div class="se-tabs">
+                    <button type="button"
+                        class="se-tab active"
+                        data-tab="editor">
+                        ✏️ Subtitle Editor
+                    </button>
+
+                    <button type="button"
+                        class="se-tab"
+                        data-tab="raw">
+                        📄 SRT Preview
+                    </button>
+                </div>
+
+                <button
+                    type="button"
+                    id="seSettingsButton"
+                    class="se-settings-button"
+                    title="Translation settings"
+                    aria-label="Translation settings">
+                    ⚙️
+                </button>
+            </div>
+
+            <div id="seSettingsPanel" class="se-settings" hidden>
+                <h3>⚙️ AI Translation Settings</h3>
+
+                <label for="seTranslationStyle">
+                    Translation style
+                </label>
+
+                <select id="seTranslationStyle">
+                    <option value="natural">Natural Sinhala</option>
+                    <option value="comedy">Comedy / Funny</option>
+                    <option value="action">Action / Intense</option>
+                    <option value="formal">Formal Sinhala</option>
+                    <option value="casual">Casual / Everyday</option>
+                    <option value="literal">Closer to original meaning</option>
+                    <option value="anime">Anime / Dramatic</option>
+                </select>
+
+                <p class="se-help">
+                    The selected style is sent with each translation request.
+                </p>
+            </div>
+
+            <div class="se-sync">
+                <div>
+                    <strong>Subtitle Sync</strong>
+                    <p>Adjust all subtitle timings together.</p>
+                </div>
+
+                <label for="seSyncOffset">
+                    Offset in seconds
+                    <input
+                        id="seSyncOffset"
+                        type="number"
+                        step="0.1"
+                        value="0">
+                </label>
+
+                <button type="button" id="seApplySync">
+                    Apply Sync
+                </button>
+            </div>
+
+            <div id="seEditorPane">
+                <div class="se-search-row">
+                    <input
+                        type="search"
+                        id="seSearch"
+                        placeholder="Search subtitles or numbers...">
+
+                    <span id="seSubtitleCount"></span>
+                </div>
+
+                <div id="seEditorList" class="se-editor-list"></div>
+
+                <div class="se-pagination">
+                    <button type="button" id="sePrevPage">
+                        ← Previous
+                    </button>
+
+                    <span id="sePageLabel"></span>
+
+                    <button type="button" id="seNextPage">
+                        Next →
+                    </button>
+                </div>
+            </div>
+
+            <pre id="seRawPane" class="se-raw-pane" hidden></pre>
+        `;
+
+        injectSubtitleEditorStyles();
+
+        // Insert the editor where the old preview was.
+        subtitlePreview.insertAdjacentElement(
+            "afterend",
+            workspace
+        );
+
+        bindSubtitleEditorEvents(workspace);
     }
 
-    subtitlePreview.textContent =
-        buildSRT(subtitles);
+    subtitleEditorPage = 0;
+    renderSubtitleEditor();
+}
 
+// ========================================================
+// EDITOR DESIGN
+// ========================================================
+
+function injectSubtitleEditorStyles() {
+    if (document.getElementById("sublankaEditorStyles")) return;
+
+    const style = document.createElement("style");
+    style.id = "sublankaEditorStyles";
+
+    style.textContent = `
+        .sublanka-editor {
+            margin: 24px 0;
+            padding: 20px;
+            border: 1px solid rgba(129,102,255,.3);
+            border-radius: 18px;
+            background: linear-gradient(145deg,#10162b,#191337);
+            color: #f8fafc;
+            font-family: inherit;
+            box-sizing: border-box;
+            width: 100%;
+        }
+
+        .sublanka-editor * {
+            box-sizing: border-box;
+        }
+
+        .se-header, .se-tabs, .se-sync,
+        .se-search-row, .se-pagination,
+        .se-row-heading, .se-time-fields {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .se-header, .se-sync, .se-search-row,
+        .se-pagination, .se-row-heading {
+            justify-content: space-between;
+        }
+
+        .se-tabs {
+            flex-wrap: wrap;
+        }
+
+        .se-tab, .se-settings-button,
+        .se-pagination button, #seApplySync {
+            border: 1px solid rgba(255,255,255,.12);
+            border-radius: 10px;
+            padding: 10px 14px;
+            color: #e5e7eb;
+            background: rgba(255,255,255,.05);
+            cursor: pointer;
+            font: inherit;
+        }
+
+        .se-tab.active {
+            background: linear-gradient(120deg,#7657ff,#bd39e7);
+            border-color: transparent;
+            color: white;
+        }
+
+        .se-settings-button {
+            font-size: 20px;
+            min-width: 44px;
+        }
+
+        .se-settings {
+            margin-top: 16px;
+            padding: 16px;
+            background: rgba(255,255,255,.045);
+            border: 1px solid rgba(255,255,255,.1);
+            border-radius: 12px;
+        }
+
+        .se-settings h3 {
+            margin: 0 0 14px;
+        }
+
+        .se-settings label, .se-sync label {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            color: #cbd5e1;
+            font-size: 13px;
+        }
+
+        .se-settings select, .se-sync input,
+        .se-search-row input, .se-time-fields input,
+        .se-subtitle-text {
+            width: 100%;
+            min-width: 0;
+            border: 1px solid rgba(255,255,255,.13);
+            border-radius: 9px;
+            padding: 10px;
+            background: #0b1020;
+            color: #f8fafc;
+            font: inherit;
+        }
+
+        .se-settings select {
+            margin-top: 8px;
+        }
+
+        .se-help, .se-sync p {
+            font-size: 12px;
+            line-height: 1.5;
+            color: #a5b4cf;
+            margin: 8px 0 0;
+        }
+
+        .se-sync {
+            align-items: flex-end;
+            flex-wrap: wrap;
+            margin: 18px 0;
+            padding: 14px;
+            border: 1px solid rgba(255,255,255,.09);
+            border-radius: 12px;
+            background: rgba(255,255,255,.035);
+        }
+
+        .se-sync > div {
+            flex: 1 1 160px;
+        }
+
+        .se-sync label {
+            width: 125px;
+        }
+
+        #seApplySync {
+            background: #4f46e5;
+            border-color: transparent;
+        }
+
+        .se-search-row {
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .se-search-row input {
+            flex: 1 1 220px;
+        }
+
+        #seSubtitleCount {
+            color: #a5b4cf;
+            font-size: 12px;
+        }
+
+        .se-editor-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 650px;
+            overflow-y: auto;
+            padding-right: 3px;
+        }
+
+        .se-subtitle-row {
+            padding: 14px;
+            border: 1px solid rgba(255,255,255,.09);
+            border-radius: 12px;
+            background: rgba(255,255,255,.035);
+        }
+
+        .se-row-heading {
+            align-items: flex-start;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .se-row-number {
+            color: #c4b5fd;
+            font-weight: 700;
+            font-size: 13px;
+            padding-top: 8px;
+        }
+
+        .se-time-fields {
+            flex: 1 1 360px;
+            flex-wrap: wrap;
+        }
+
+        .se-time-fields input {
+            flex: 1 1 135px;
+            font-size: 12px;
+        }
+
+        .se-subtitle-text {
+            display: block;
+            min-height: 72px;
+            resize: vertical;
+            line-height: 1.6;
+        }
+
+        .se-pagination {
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        #sePageLabel {
+            font-size: 13px;
+            color: #cbd5e1;
+        }
+
+        .se-pagination button:disabled {
+            opacity: .4;
+            cursor: not-allowed;
+        }
+
+        .se-raw-pane {
+            margin-top: 16px;
+            max-height: 650px;
+            overflow: auto;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            padding: 14px;
+            border-radius: 12px;
+            background: #080d1b;
+            color: #e2e8f0;
+            font: 13px/1.7 monospace;
+        }
+
+        @media(max-width:600px) {
+            .sublanka-editor {
+                padding: 12px;
+            }
+
+            .se-sync label {
+                width: 100%;
+            }
+
+            .se-row-heading {
+                flex-direction: column;
+            }
+
+            .se-time-fields {
+                width: 100%;
+            }
+        }
+    `;
+
+    document.head.appendChild(style);
+}
+
+
+// ========================================================
+// DRAW EDITABLE SUBTITLE ROWS
+// ========================================================
+
+function renderSubtitleEditor() {
+    const list = document.getElementById("seEditorList");
+    if (!list) return;
+
+    const searchText = (
+        document.getElementById("seSearch")?.value || ""
+    ).trim().toLowerCase();
+
+    const filtered = uploadedSubtitles
+        .map((subtitle, index) => ({ subtitle, index }))
+        .filter(({ subtitle }) => {
+            return (
+                String(subtitle.number).includes(searchText) ||
+                String(subtitle.text).toLowerCase().includes(searchText)
+            );
+        });
+
+    const pageCount = Math.max(
+        1,
+        Math.ceil(filtered.length / SUBTITLE_EDITOR_PAGE_SIZE)
+    );
+
+    subtitleEditorPage = Math.min(
+        subtitleEditorPage,
+        pageCount - 1
+    );
+
+    const start = subtitleEditorPage * SUBTITLE_EDITOR_PAGE_SIZE;
+    const pageItems = filtered.slice(
+        start,
+        start + SUBTITLE_EDITOR_PAGE_SIZE
+    );
+
+    list.innerHTML = pageItems.map(({ subtitle, index }) => {
+        const times = String(subtitle.timestamp || "")
+            .split("-->")
+            .map(value => value.trim());
+
+        const startTime = times[0] || "00:00:00,000";
+        const endTime = times[1] || "00:00:00,000";
+
+        return `
+            <article class="se-subtitle-row" data-index="${index}">
+                <div class="se-row-heading">
+                    <span class="se-row-number">
+                        Subtitle ${escapeHTML(subtitle.number)}
+                    </span>
+
+                    <div class="se-time-fields">
+                        <input
+                            class="se-start-time"
+                            aria-label="Subtitle start time"
+                            title="Start time"
+                            value="${escapeAttribute(startTime)}">
+
+                        <input
+                            class="se-end-time"
+                            aria-label="Subtitle end time"
+                            title="End time"
+                            value="${escapeAttribute(endTime)}">
+                    </div>
+                </div>
+
+                <textarea
+                    class="se-subtitle-text"
+                    aria-label="Edit subtitle text"
+                    spellcheck="true">${escapeHTML(subtitle.text)}</textarea>
+            </article>
+        `;
+    }).join("");
+
+    const count = document.getElementById("seSubtitleCount");
+    if (count) {
+        count.textContent =
+            `${filtered.length} subtitles · ${uploadedSubtitles.length} total`;
+    }
+
+    const pageLabel = document.getElementById("sePageLabel");
+    if (pageLabel) {
+        pageLabel.textContent =
+            `Page ${subtitleEditorPage + 1} / ${pageCount}`;
+    }
+
+    const prev = document.getElementById("sePrevPage");
+    const next = document.getElementById("seNextPage");
+
+    if (prev) prev.disabled = subtitleEditorPage <= 0;
+    if (next) next.disabled = subtitleEditorPage >= pageCount - 1;
+
+    const rawPane = document.getElementById("seRawPane");
+    if (rawPane) {
+        rawPane.textContent = buildSRT(uploadedSubtitles);
+    }
+}
+
+// ========================================================
+// EDITOR TAB AND SETTINGS EVENTS
+// ========================================================
+
+function bindSubtitleEditorEvents(workspace) {
+    const settingsButton =
+        workspace.querySelector("#seSettingsButton");
+
+    const settingsPanel =
+        workspace.querySelector("#seSettingsPanel");
+
+    const styleSelect =
+        workspace.querySelector("#seTranslationStyle");
+
+    const search = workspace.querySelector("#seSearch");
+    const list = workspace.querySelector("#seEditorList");
+
+    settingsButton?.addEventListener("click", function () {
+        settingsPanel.hidden = !settingsPanel.hidden;
+    });
+
+    styleSelect?.addEventListener("change", function () {
+        selectedTranslationStyle = styleSelect.value;
+    });
+
+    search?.addEventListener("input", function () {
+        subtitleEditorPage = 0;
+        renderSubtitleEditor();
+    });
+
+    // Keep edits in uploadedSubtitles while typing.
+    list?.addEventListener("input", function (event) {
+        const row = event.target.closest(".se-subtitle-row");
+        if (!row) return;
+
+        const index = Number(row.dataset.index);
+        const subtitle = uploadedSubtitles[index];
+
+        if (!subtitle) return;
+
+        const textInput = row.querySelector(".se-subtitle-text");
+        const startInput = row.querySelector(".se-start-time");
+        const endInput = row.querySelector(".se-end-time");
+
+        if (event.target === textInput) {
+            subtitle.text = textInput.value;
+        }
+
+        if (
+            event.target === startInput ||
+            event.target === endInput
+        ) {
+            subtitle.timestamp =
+                `${startInput.value.trim()} --> ${endInput.value.trim()}`;
+        }
+
+        // Keep the raw SRT preview in sync.
+        const rawPane = document.getElementById("seRawPane");
+        if (rawPane) {
+            rawPane.textContent = buildSRT(uploadedSubtitles);
+        }
+    });
+
+    workspace.querySelector("#sePrevPage")?.addEventListener(
+        "click",
+        function () {
+            if (subtitleEditorPage > 0) {
+                subtitleEditorPage--;
+                renderSubtitleEditor();
+            }
+        }
+    );
+
+    workspace.querySelector("#seNextPage")?.addEventListener(
+        "click",
+        function () {
+            subtitleEditorPage++;
+            renderSubtitleEditor();
+        }
+    );
+
+    workspace.querySelectorAll(".se-tab").forEach(function (button) {
+        button.addEventListener("click", function () {
+            const tab = button.dataset.tab;
+
+            workspace.querySelectorAll(".se-tab").forEach(btn => {
+                btn.classList.toggle("active", btn === button);
+            });
+
+            const editorPane = workspace.querySelector("#seEditorPane");
+            const rawPane = workspace.querySelector("#seRawPane");
+
+            if (tab === "raw") {
+                rawPane.textContent = buildSRT(uploadedSubtitles);
+                rawPane.hidden = false;
+                editorPane.hidden = true;
+            } else {
+                rawPane.hidden = true;
+                editorPane.hidden = false;
+            }
+        });
+    });
+
+    workspace.querySelector("#seApplySync")?.addEventListener(
+        "click",
+        function () {
+            const input = workspace.querySelector("#seSyncOffset");
+            const seconds = Number(input.value);
+
+            if (!Number.isFinite(seconds)) {
+                alert("Enter a valid sync offset in seconds.");
+                return;
+            }
+
+            const shifted = shiftAllSubtitleTimes(seconds);
+
+            if (!shifted) {
+                alert(
+                    "Some subtitle timestamps are invalid. " +
+                    "Please check the start and end times."
+                );
+                return;
+            }
+
+            // Apply once, then reset the offset field.
+            input.value = "0";
+            renderSubtitleEditor();
+
+            const rawPane = document.getElementById("seRawPane");
+            if (rawPane) {
+                rawPane.textContent = buildSRT(uploadedSubtitles);
+            }
+
+            alert(
+                `Sync adjustment applied: ${
+                    seconds > 0 ? "+" : ""
+                }${seconds} seconds`
+            );
+        }
+    );
+}
+
+
+// ========================================================
+// SHIFT ALL SUBTITLE TIMESTAMPS
+// ========================================================
+
+function shiftAllSubtitleTimes(seconds) {
+    const offsetMilliseconds = Math.round(seconds * 1000);
+
+    // Validate every timestamp before changing anything.
+    const converted = [];
+
+    for (const subtitle of uploadedSubtitles) {
+        const parts = String(subtitle.timestamp || "")
+            .split("-->")
+            .map(part => part.trim());
+
+        if (parts.length !== 2) return false;
+
+        const start = srtTimeToMilliseconds(parts[0]);
+        const end = srtTimeToMilliseconds(parts[1]);
+
+        if (
+            start === null ||
+            end === null ||
+            start + offsetMilliseconds < 0 ||
+            end + offsetMilliseconds < 0
+        ) {
+            return false;
+        }
+
+        converted.push({
+            start: millisecondsToSrtTime(
+                start + offsetMilliseconds
+            ),
+            end: millisecondsToSrtTime(
+                end + offsetMilliseconds
+            )
+        });
+    }
+
+    uploadedSubtitles.forEach((subtitle, index) => {
+        subtitle.timestamp =
+            `${converted[index].start} --> ${converted[index].end}`;
+    });
+
+    return true;
+}
+
+
+function srtTimeToMilliseconds(value) {
+    const match = String(value).trim().match(
+        /^(\d{1,2}):(\d{2}):(\d{2})[,.](\d{1,3})$/
+    );
+
+    if (!match) return null;
+
+    const hours = Number(match[1]);
+    const minutes = Number(match[2]);
+    const seconds = Number(match[3]);
+    const milliseconds = Number(
+        match[4].padEnd(3, "0")
+    );
+
+    if (
+        minutes > 59 ||
+        seconds > 59
+    ) {
+        return null;
+    }
+
+    return (
+        hours * 3600000 +
+        minutes * 60000 +
+        seconds * 1000 +
+        milliseconds
+    );
+}
+
+
+function millisecondsToSrtTime(value) {
+    const total = Math.max(0, Math.round(value));
+
+    const hours = Math.floor(total / 3600000);
+    const minutes = Math.floor((total % 3600000) / 60000);
+    const seconds = Math.floor((total % 60000) / 1000);
+    const milliseconds = total % 1000;
+
+    return (
+        String(hours).padStart(2, "0") + ":" +
+        String(minutes).padStart(2, "0") + ":" +
+        String(seconds).padStart(2, "0") + "," +
+        String(milliseconds).padStart(3, "0")
+    );
 }
 
 // ========================================================
@@ -2262,16 +2967,12 @@ async function translateSubtitleChunks(
                                     "application/json"
                             },
 
-                            body:
-                                JSON.stringify({
-
-                                    subtitles:
-                                        chunk,
-
-                                    language:
-                                        "si"
-
-                                })
+                            
+                            body: JSON.stringify({
+    subtitles: chunk,
+    language: "si",
+    style: selectedTranslationStyle
+})
 
                         }
                     );
