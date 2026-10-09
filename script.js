@@ -120,13 +120,11 @@ if (searchInput) {
 // FILE UPLOAD
 // ========================================================
 
-if (fileInput) {
-
-    fileInput.addEventListener(
-        "change",
-        handleFileUpload
-    );
-
+if (fileName) {
+    fileName.textContent = "Selected: " + file.name;
+    fileName.style.display = "block";
+    fileName.style.visibility = "visible";
+    fileName.style.opacity = "1";
 }
 
 
