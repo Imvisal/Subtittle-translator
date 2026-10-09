@@ -243,6 +243,22 @@ async function handleFileUpload(event) {
             uploadedSubtitles
         );
 
+        // Automatically scroll to the subtitle editor
+requestAnimationFrame(() => {
+    setTimeout(() => {
+        const editor = document.getElementById(
+            "subtitleEditorWorkspace"
+        );
+
+        if (editor) {
+            editor.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+        }
+    }, 300);
+});
+
 
         if (translateBtn) {
 
@@ -1128,6 +1144,99 @@ uploadProgressUI.status.textContent =
                 uploadedSubtitles
             );
 
+// ========================================================
+// LOAD ENGLISH SUBTITLES INTO EDITOR FIRST
+// DO NOT AUTO-TRANSLATE
+// ========================================================
+
+uploadedSubtitles = subtitles;
+
+uploadedFileName = getSubtitleBaseName(
+    item,
+    season,
+    episode
+);
+
+// Open/populate the subtitle editor.
+showSRTPreview(uploadedSubtitles);
+
+if (searchStatus) {
+    searchStatus.textContent =
+        "English subtitles ready. Edit them before translating.";
+}
+
+// Show editor actions instead of automatic translation progress.
+if (searchResults) {
+    searchResults.innerHTML = `
+        <div class="translation-status">
+            <div class="translation-icon">✏️</div>
+
+            <h2>English Subtitle Ready to Edit</h2>
+
+            <p>
+                ${subtitles.length} subtitle entries downloaded.
+            </p>
+
+            <p>
+                You can edit subtitle text and timing before translating.
+            </p>
+
+            <div style="
+                display:flex;
+                flex-wrap:wrap;
+                justify-content:center;
+                gap:12px;
+                margin-top:20px;
+            ">
+                <button
+                    type="button"
+                    id="openSubtitleEditorBtn"
+                    class="select-title-btn"
+                >
+                    ✏️ Open Subtitle Editor
+                </button>
+
+                <button
+                    type="button"
+                    id="translateEditedSubtitlesBtn"
+                    class="select-title-btn"
+                >
+                    🌐 Translate Edited Subtitles
+                </button>
+            </div>
+        </div>
+    `;
+
+    // Scroll to the editor.
+    document
+        .getElementById("openSubtitleEditorBtn")
+        ?.addEventListener("click", function () {
+            const editor = document.getElementById(
+                "subtitleEditorWorkspace"
+            );
+
+            if (editor) {
+                editor.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start"
+                });
+            } else if (subtitlePreview) {
+                subtitlePreview.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start"
+                });
+            }
+        });
+
+    // Translate only when the user clicks this button.
+    document
+        .getElementById("translateEditedSubtitlesBtn")
+        ?.addEventListener("click", function () {
+            translateUploadedSubtitle();
+        });
+}
+
+return;
 
         const sinhalaSRT =
             buildSRT(translated);
