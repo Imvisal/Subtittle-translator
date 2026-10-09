@@ -168,110 +168,23 @@ if (translateBtn) {
 
 }
 
-// ========================================================
-// CREATE UPLOAD TRANSLATION PROGRESS UI
-// ========================================================
+// Place progress bar directly below the upload area.
+const uploadArea =
+    fileInput?.closest(".upload-section") ||
+    fileInput?.closest(".upload-area") ||
+    fileInput?.closest(".upload-container") ||
+    fileInput?.parentElement?.parentElement;
 
-function createUploadProgressUI() {
-
-    let container = document.getElementById(
-        "uploadTranslationProgress"
-    );
-
-    if (!container) {
-
-        container = document.createElement("div");
-        container.id = "uploadTranslationProgress";
-
-        container.style.cssText = `
-            display: none;
-            width: 100%;
-            max-width: 600px;
-            margin: 20px auto;
-            padding: 20px;
-            border-radius: 14px;
-            background: #111827;
-            color: #ffffff;
-            box-sizing: border-box;
-            font-family: Arial, sans-serif;
-        `;
-
-        container.innerHTML = `
-            <div style="
-                display:flex;
-                justify-content:space-between;
-                align-items:center;
-                gap:12px;
-                margin-bottom:12px;
-            ">
-                <strong>🇱🇰 Translating to Sinhala</strong>
-
-                <span
-                    id="uploadTranslatePercent"
-                    style="
-                        font-size:20px;
-                        font-weight:bold;
-                        color:#38bdf8;
-                    "
-                >0%</span>
-            </div>
-
-            <div style="
-                width:100%;
-                height:12px;
-                background:#374151;
-                border-radius:20px;
-                overflow:hidden;
-            ">
-                <div
-                    id="uploadTranslateFill"
-                    style="
-                        width:0%;
-                        height:100%;
-                        background:linear-gradient(
-                            90deg,
-                            #06b6d4,
-                            #3b82f6
-                        );
-                        border-radius:20px;
-                        transition:width 0.35s ease;
-                    "
-                ></div>
-            </div>
-
-            <p
-                id="uploadTranslateStatus"
-                style="
-                    margin:12px 0 0;
-                    color:#d1d5db;
-                    font-size:14px;
-                "
-            >Preparing translation...</p>
-        `;
-
-        // Place progress UI near the upload/preview section.
-        if (subtitlePreview && subtitlePreview.parentElement) {
-
-            subtitlePreview.parentElement.appendChild(container);
-
-        } else if (translateBtn && translateBtn.parentElement) {
-
-            translateBtn.parentElement.appendChild(container);
-
-        } else {
-
-            document.body.appendChild(container);
-        }
-    }
-
-    return {
+if (uploadArea) {
+    uploadArea.insertAdjacentElement("afterend", container);
+} else if (translateBtn?.parentElement) {
+    translateBtn.parentElement.insertBefore(
         container,
-        fill: document.getElementById("uploadTranslateFill"),
-        percent: document.getElementById("uploadTranslatePercent"),
-        status: document.getElementById("uploadTranslateStatus")
-    };
+        translateBtn
+    );
+} else {
+    document.body.appendChild(container);
 }
-
 
 // ========================================================
 // HANDLE FILE UPLOAD
