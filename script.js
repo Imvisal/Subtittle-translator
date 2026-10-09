@@ -116,16 +116,7 @@ if (searchInput) {
 }
 
 
-// ========================================================
-// FILE UPLOAD
-// ========================================================
 
-if (fileName) {
-    fileName.textContent = "Selected: " + file.name;
-    fileName.style.display = "block";
-    fileName.style.visibility = "visible";
-    fileName.style.opacity = "1";
-}
 
 
 // ========================================================
@@ -221,11 +212,11 @@ async function handleFileUpload(event) {
 
 
     if (fileName) {
-
-        fileName.textContent =
-            file.name;
-
-    }
+    fileName.textContent = "Selected: " + file.name;
+    fileName.style.display = "block";
+    fileName.style.visibility = "visible";
+    fileName.style.opacity = "1";
+}
 
 
     try {
