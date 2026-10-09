@@ -276,6 +276,99 @@ function showSRTPreview(subtitles) {
 
 }
 
+// ========================================================
+// UPLOADED SRT PROGRESS BAR
+// ========================================================
+
+function createUploadProgressUI() {
+    let container = document.getElementById(
+        "uploadTranslationProgress"
+    );
+
+    if (!container) {
+        container = document.createElement("div");
+        container.id = "uploadTranslationProgress";
+
+        container.style.cssText = `
+            display: none;
+            box-sizing: border-box;
+            width: 100%;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid rgba(129,102,255,.35);
+            border-radius: 16px;
+            background: linear-gradient(135deg,#111827,#191337);
+            color: #fff;
+            font-family: inherit;
+        `;
+
+        container.innerHTML = `
+            <div style="
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+                gap:12px;
+                margin-bottom:14px;
+            ">
+                <strong>🇱🇰 Translating to Sinhala</strong>
+
+                <span id="uploadTranslatePercent" style="
+                    color:#38bdf8;
+                    font-size:22px;
+                    font-weight:700;
+                ">0%</span>
+            </div>
+
+            <div style="
+                width:100%;
+                height:12px;
+                background:#374151;
+                border-radius:20px;
+                overflow:hidden;
+            ">
+                <div id="uploadTranslateFill" style="
+                    width:0%;
+                    height:100%;
+                    background:linear-gradient(90deg,#06b6d4,#8b5cf6);
+                    border-radius:20px;
+                    transition:width .3s ease;
+                "></div>
+            </div>
+
+            <p id="uploadTranslateStatus" style="
+                margin:12px 0 0;
+                color:#cbd5e1;
+                font-size:13px;
+            ">Preparing translation...</p>
+        `;
+
+        // Insert above the Translation Language section.
+        const settingsSection =
+            document.querySelector(".settings-section");
+
+        const languageElement =
+            languageSelect?.closest(".settings-card") ||
+            languageSelect?.parentElement?.parentElement?.parentElement;
+
+        const target = settingsSection || languageElement;
+
+        if (target?.parentElement) {
+            target.parentElement.insertBefore(container, target);
+        } else if (fileInput?.parentElement) {
+            fileInput.parentElement.appendChild(container);
+        } else {
+            document.body.appendChild(container);
+        }
+    }
+
+    return {
+        container,
+        fill: document.getElementById("uploadTranslateFill"),
+        percent: document.getElementById("uploadTranslatePercent"),
+        status: document.getElementById("uploadTranslateStatus")
+    };
+}
+
 
 // ========================================================
 // TRANSLATE UPLOADED SRT
@@ -303,6 +396,14 @@ async function translateUploadedSubtitle() {
 
 
     isTranslating = true;
+    
+    const uploadProgressUI = createUploadProgressUI();
+
+uploadProgressUI.container.style.display = "block";
+uploadProgressUI.fill.style.width = "0%";
+uploadProgressUI.percent.textContent = "0%";
+uploadProgressUI.status.textContent =
+    `Preparing ${uploadedSubtitles.length} subtitles...`;
 
 
     if (translateBtn) {
@@ -330,6 +431,10 @@ async function translateUploadedSubtitle() {
         const filename =
             `${uploadedFileName}.Sinhala.SubLankaAI.srt`;
 
+            uploadProgressUI.fill.style.width = "100%";
+uploadProgressUI.percent.textContent = "100%";
+uploadProgressUI.status.textContent =
+    `Translation complete! ${translated.length} subtitles translated.`;
 
         downloadTextFile(
             sinhalaSRT,
@@ -344,6 +449,9 @@ async function translateUploadedSubtitle() {
 
 
     } catch (error) {
+
+        uploadProgressUI.status.textContent =
+    "Translation failed: " + error.message;
 
         console.error(
             "UPLOAD TRANSLATION ERROR:",
@@ -2378,7 +2486,7 @@ function validateTranslatedChunk(
 
 
 // ========================================================
-// TRANSLATION PROGRESS
+// UPDATE BOTH TRANSLATION PROGRESS BARS
 // ========================================================
 
 function updateTranslationProgress(
@@ -2387,108 +2495,64 @@ function updateTranslationProgress(
     completed,
     total
 ) {
+    const percent = total > 0
+        ? Math.min(100, Math.round((completed / total) * 100))
+        : 0;
 
-    const percent =
-        total > 0
-            ? Math.min(
-                100,
-                Math.round(
-                    (
-                        completed /
-                        total
-                    ) * 100
-                )
-            )
-            : 0;
+    // Existing movie / TV subtitle progress.
+    const autoProgress =
+        document.getElementById("autoTranslateProgress");
 
+    const autoPercent =
+        document.getElementById("autoTranslatePercent");
 
-    const progress =
-        document.getElementById(
-            "autoTranslateProgress"
-        );
+    const autoStatus =
+        document.getElementById("autoTranslateStatus");
 
+    const autoCount =
+        document.getElementById("autoTranslateCount");
 
-    const status =
-        document.getElementById(
-            "autoTranslateStatus"
-        );
-
-
-    const percentText =
-        document.getElementById(
-            "autoTranslatePercent"
-        );
-
-
-    const countText =
-        document.getElementById(
-            "autoTranslateCount"
-        );
-
-
-    if (progress) {
-
-        progress.style.width =
-            `${percent}%`;
-
+    if (autoProgress) {
+        autoProgress.style.width = `${percent}%`;
     }
 
-
-    if (percentText) {
-
-        percentText.textContent =
-            `${percent}%`;
-
+    if (autoPercent) {
+        autoPercent.textContent = `${percent}%`;
     }
 
+    if (autoStatus) {
+        autoStatus.textContent =
+            `Translated ${completed}/${total} subtitles — chunk ${chunkNumber}/${totalChunks}`;
+    }
 
-    if (countText) {
-
-        countText.textContent =
+    if (autoCount) {
+        autoCount.textContent =
             `${completed} of ${total} subtitles`;
-
     }
 
+    // Uploaded SRT progress.
+    const uploadProgress =
+        document.getElementById("uploadTranslateFill");
 
-    if (status) {
+    const uploadPercent =
+        document.getElementById("uploadTranslatePercent");
 
-        if (percent === 0) {
+    const uploadStatus =
+        document.getElementById("uploadTranslateStatus");
 
-            status.textContent =
-                "Preparing your Sinhala subtitles...";
-
-        } else if (percent < 25) {
-
-            status.textContent =
-                "Getting things started...";
-
-        } else if (percent < 50) {
-
-            status.textContent =
-                "Translating your subtitles...";
-
-        } else if (percent < 75) {
-
-            status.textContent =
-                "Sinhala translation is in progress...";
-
-        } else if (percent < 100) {
-
-            status.textContent =
-                "Almost there...";
-
-        } else {
-
-            status.textContent =
-                "Translation complete!";
-
-        }
-
+    if (uploadProgress) {
+        uploadProgress.style.width = `${percent}%`;
     }
 
+    if (uploadPercent) {
+        uploadPercent.textContent = `${percent}%`;
+    }
+
+    if (uploadStatus) {
+        uploadStatus.textContent =
+            `Translated ${completed}/${total} subtitles — chunk ${chunkNumber}/${totalChunks}`;
+    }
 }
-
-
 // ========================================================
 // TRANSLATION STATUS
 // ========================================================
