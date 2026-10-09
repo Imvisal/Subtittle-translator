@@ -314,56 +314,27 @@ async function translateUploadedSubtitle() {
         translateBtn.textContent = "Translating...";
     }
 
-    // Create progress UI
-    const progressUI = createUploadProgressUI();
+    // Find the upload area using the file input.
+const uploadArea =
+    fileInput?.closest("section") ||
+    fileInput?.closest(".upload-card") ||
+    fileInput?.closest(".upload-section") ||
+    fileInput?.closest(".upload-area");
 
-    progressUI.container.style.display = "block";
-    progressUI.fill.style.width = "0%";
-    progressUI.percent.textContent = "0%";
-    progressUI.status.textContent = "Preparing translation...";
+if (uploadArea) {
+    uploadArea.insertAdjacentElement("afterend", container);
+} else {
+    // Fallback: place it before the language selector.
+    const languageElement =
+        languageSelect?.closest("section") ||
+        languageSelect?.parentElement?.parentElement;
 
-    try {
-
-        const translated = await translateSubtitleChunks(
-            uploadedSubtitles
-        );
-
-        const sinhalaSRT = buildSRT(translated);
-
-        const filename =
-            `${uploadedFileName}.Sinhala.SubLankaAI.srt`;
-
-        downloadTextFile(sinhalaSRT, filename);
-
-        progressUI.fill.style.width = "100%";
-        progressUI.percent.textContent = "100%";
-        progressUI.status.textContent =
-            `Translation complete! ${translated.length} subtitles translated.`;
-
-        alert(
-            "Translation completed!\n\n" + filename
-        );
-
-    } catch (error) {
-
-        console.error("UPLOAD TRANSLATION ERROR:", error);
-
-        progressUI.status.textContent =
-            "Translation failed: " + error.message;
-
-        alert("Translation failed:\n\n" + error.message);
-
-    } finally {
-
-        isTranslating = false;
-
-        if (translateBtn) {
-            translateBtn.disabled = false;
-            translateBtn.textContent = "Translate Subtitle";
-        }
+    if (languageElement) {
+        languageElement.insertAdjacentElement("beforebegin", container);
+    } else if (translateBtn?.parentElement) {
+        translateBtn.parentElement.insertBefore(container, translateBtn);
     }
 }
-
 
 
 // ========================================================
