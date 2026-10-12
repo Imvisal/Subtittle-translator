@@ -5012,6 +5012,8 @@ async function loadCategory(category) {
                     Could not load titles.
                 </p>
 
+                <small class="category-error-detail" style="opacity:.6;display:block;margin-bottom:10px;max-width:420px;word-break:break-word"></small>
+
                 <button
                     type="button"
                     class="category-retry-btn"
@@ -5025,6 +5027,9 @@ async function loadCategory(category) {
             </div>
 
         `;
+
+        const detail = container.querySelector(".category-error-detail");
+        if (detail) detail.textContent = String((error && error.message) || "").slice(0, 160);
 
     }
 

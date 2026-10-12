@@ -26,23 +26,21 @@ module.exports = async function handler(req, res) {
         // Fetch TMDB
         // --------------------------------
         async function tmdbFetch(endpoint) {
-            const separator = endpoint.includes("?")
-                ? "&"
-                : "?";
-
+            // Works with both a v3 API key and a v4 "Read Access Token" (eyJ...)
+            const isToken = apiKey.length > 40;
+            const separator = endpoint.includes("?") ? "&" : "?";
             const url =
-                `${TMDB_BASE}${endpoint}` +
-                `${separator}api_key=${encodeURIComponent(apiKey)}` +
-                `&language=en-US`;
+                `${TMDB_BASE}${endpoint}${separator}language=en-US` +
+                (isToken ? "" : `&api_key=${encodeURIComponent(apiKey)}`);
 
-            const response = await fetch(url);
+            const response = await fetch(url, {
+                headers: isToken ? { Authorization: `Bearer ${apiKey}` } : {},
+                signal: AbortSignal.timeout(7000)
+            });
 
             if (!response.ok) {
                 const errorText = await response.text();
-
-                throw new Error(
-                    `TMDB API error ${response.status}: ${errorText}`
-                );
+                throw new Error(`TMDB API error ${response.status}: ${errorText}`);
             }
 
             return response.json();
@@ -202,25 +200,17 @@ module.exports = async function handler(req, res) {
         // --------------------------------
         // Convert items + get IMDb IDs
         // --------------------------------
-        const results = [];
+        // Discover results have no media_type, so the type must be forced here.
+        // (Before: TV/Anime items were treated as movies -> wrong IMDb lookups -> empty list.)
+        const forced =
+            category === "movie" ? "movie" :
+            (category === "tv" || category === "anime") ? "series" : null;
 
-        for (const item of items) {
+        // All IMDb lookups in parallel instead of one after another
+        const normalized = await Promise.all(items.map(item => normalizeItem(item, forced)));
+        const results = normalized.filter(n => n.imdbID).slice(0, 4);
 
-            const normalized =
-                await normalizeItem(item);
-
-            // Existing subtitle system requires IMDb ID
-            if (!normalized.imdbID) {
-                continue;
-            }
-
-            results.push(normalized);
-
-            // We only need 4 cards
-            if (results.length >= 4) {
-                break;
-            }
-        }
+        res.setHeader("Cache-Control", "s-maxage=1800, stale-while-revalidate=86400");
 
         return res.status(200).json({
             success: true,

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 
 <head>
 
@@ -25,18 +25,29 @@
     <link
         rel="icon"
         type="image/png"
-        href="sublanka-logo.png"
+        href="logo.png"
     >
 
-    <link
-        rel="stylesheet"
-        href="style.css"
-    >
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script>
+        (function () {
+            try {
+                var t = localStorage.getItem("sublanka-theme");
+                if (t === "light" || t === "dark") {
+                    document.documentElement.setAttribute("data-theme", t);
+                }
+            } catch (e) {}
+        })();
+    </script>
+
 
 </head>
 
 
-<body>
+<body class="legal-page">
 
 <main class="legal-container">
 
@@ -52,7 +63,7 @@
         <div class="legal-logo">
 
             <img
-                src="sublanka-logo.png"
+                src="logo.png"
                 alt="SubLanka AI"
             >
 
@@ -89,7 +100,7 @@
 
             <a
                 class="contact-card"
-                href="mailto:YOUR_EMAIL@example.com"
+                href="mailto:visaludyogi2002@gmail.com"
             >
 
                 <div class="contact-icon">

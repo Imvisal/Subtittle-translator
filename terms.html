@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,93 +8,28 @@
 
     <meta name="description"
           content="Read the terms for using SubLanka AI subtitle search, editing and translation tools.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script>
+        (function () {
+            try {
+                var t = localStorage.getItem("sublanka-theme");
+                if (t === "light" || t === "dark") {
+                    document.documentElement.setAttribute("data-theme", t);
+                }
+            } catch (e) {}
+        })();
+    </script>
 
-    <style>
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            padding: 30px 16px;
-            min-height: 100vh;
-            font-family: Arial, sans-serif;
-            color: #f1f5f9;
-            background: linear-gradient(
-                135deg,
-                #090d1b,
-                #171235,
-                #071a32
-            );
-            line-height: 1.75;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 900px;
-            margin: 0 auto;
-        }
-
-        nav {
-            margin-bottom: 25px;
-        }
-
-        nav a {
-            color: #c4b5fd;
-            text-decoration: none;
-        }
-
-        .card {
-            padding: 30px;
-            border: 1px solid rgba(255,255,255,.12);
-            border-radius: 20px;
-            background: rgba(17,24,48,.88);
-        }
-
-        h1 {
-            font-size: clamp(28px, 5vw, 40px);
-            line-height: 1.2;
-        }
-
-        h2 {
-            margin-top: 30px;
-            font-size: 20px;
-            color: #c4b5fd;
-        }
-
-        p, li {
-            color: #cbd5e1;
-        }
-
-        a {
-            color: #a5b4fc;
-        }
-
-        .updated {
-            font-size: 13px;
-            color: #94a3b8;
-        }
-
-        footer {
-            margin-top: 25px;
-            text-align: center;
-            font-size: 13px;
-            color: #94a3b8;
-        }
-
-        @media (max-width: 600px) {
-            .card {
-                padding: 20px;
-            }
-        }
-    </style>
 </head>
 
-<body>
+<body class="legal-page">
 <div class="container">
 
     <nav>
-        <a href="/">← Back to SubLanka AI</a>
+        <a href="index.html">← Back to SubLanka AI</a>
     </nav>
 
     <main class="card">
@@ -205,7 +140,7 @@
         <p>
             For questions about these terms, contact:
             <a href="mailto:visaludyogi2002@gmail.com">
-                YOUR_EMAIL@example.com
+                visaludyogi2002@gmail.com
             </a>
         </p>
     </main>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="dark" class="no-js">
 
 <head>
     <meta charset="UTF-8">
@@ -19,16 +19,16 @@
         content="Sinhala subtitles, English to Sinhala subtitles, subtitle translator, SubLanka AI, Sinhala subtitle translator"
     >
 
-    <meta name="theme-color" content="#070b17">
+    <meta name="theme-color" content="#07080d">
 
     <title>SubLanka AI - English to Sinhala Subtitle Translator</title>
 
-    <!-- Google Font -->
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
     <link
-        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap"
         rel="stylesheet"
     >
 
@@ -40,10 +40,25 @@
 
     <!-- Main CSS -->
     <link rel="stylesheet" href="style.css">
+
+    <!-- Apply the saved theme before first paint (no flash) -->
+    <script>
+        (function () {
+            try {
+                var saved = localStorage.getItem("sublanka-theme");
+                if (saved === "light" || saved === "dark") {
+                    document.documentElement.setAttribute("data-theme", saved);
+                }
+            } catch (e) {}
+        })();
+    </script>
 </head>
 
 
 <body>
+
+    <!-- Scroll progress -->
+    <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
 
     <!-- =========================================
          AMBIENT BACKGROUND
@@ -55,78 +70,81 @@
 
 
     <!-- =========================================
+         HEADER
+    ========================================== -->
+
+    <header class="top-header" id="topHeader">
+
+        <a class="brand" href="index.html" aria-label="SubLanka AI home">
+
+            <div class="brand-logo">
+                <img src="logo.png" alt="SubLanka AI Logo">
+            </div>
+
+            <div class="brand-text">
+
+                <div class="brand-title">
+                    SubLanka <span>AI</span>
+                </div>
+
+                <div class="brand-subtitle">
+                    Subtitle Translator
+                </div>
+
+            </div>
+
+        </a>
+
+
+        <nav class="header-nav" aria-label="Main">
+            <a href="#search">Search</a>
+            <a href="#upload">Upload</a>
+            <a href="#how">How it works</a>
+            <a href="about.html">About</a>
+            <a href="contact.html">Contact</a>
+        </nav>
+
+
+        <div class="header-actions">
+
+            <!-- Theme Toggle -->
+            <button
+                id="themeToggle"
+                class="theme-toggle"
+                type="button"
+                aria-label="Toggle theme"
+            >
+
+                <span class="theme-sun">
+                    <i class="fa-solid fa-sun"></i>
+                </span>
+
+                <span class="theme-moon">
+                    <i class="fa-solid fa-moon"></i>
+                </span>
+
+            </button>
+
+
+            <!-- Settings (jumps to translation settings) -->
+            <button
+                class="settings-button"
+                type="button"
+                aria-label="Translation settings"
+            >
+                <i class="fa-solid fa-gear"></i>
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- =========================================
          MAIN APP
     ========================================== -->
 
     <main class="app">
-
-
-        <!-- =====================================
-             HEADER
-        ====================================== -->
-
-        <header class="top-header">
-
-            <!-- Brand -->
-            <div class="brand">
-
-                <div class="brand-logo">
-                    <img
-                        src="logo.png"
-                        alt="SubLanka AI Logo"
-                    >
-                </div>
-
-                <div class="brand-text">
-
-                    <div class="brand-title">
-                        SubLanka <span>AI</span>
-                    </div>
-
-                    <div class="brand-subtitle">
-                        Subtitle Translator
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <!-- Header Actions -->
-            <div class="header-actions">
-
-                <!-- Theme Toggle -->
-                <button
-                    id="themeToggle"
-                    class="theme-toggle"
-                    type="button"
-                    aria-label="Toggle theme"
-                >
-
-                    <span class="theme-sun">
-                        <i class="fa-solid fa-sun"></i>
-                    </span>
-
-                    <span class="theme-moon">
-                        <i class="fa-solid fa-moon"></i>
-                    </span>
-
-                </button>
-
-
-                <!-- Settings -->
-                <button
-                    class="settings-button"
-                    type="button"
-                    aria-label="Settings"
-                >
-                    <i class="fa-solid fa-gear"></i>
-                </button>
-
-            </div>
-
-        </header>
-
 
 
         <!-- =====================================
@@ -135,39 +153,69 @@
 
         <section class="hero">
 
-            <!-- Cinematic Banner -->
             <div class="hero-banner">
-
                 <img
                     src="hero-banner.png"
                     alt="SubLanka AI cinematic movie banner"
                 >
-
             </div>
 
-
-            <!-- Dark Overlay -->
             <div class="hero-overlay"></div>
 
-
-            <!-- Hero Content -->
             <div class="hero-content">
 
-                <div class="hero-star">
-                    ✦
+                <div class="hero-copy">
+
+                    <div class="hero-star">
+                        AI Sinhala Subtitles
+                    </div>
+
+                    <h1>
+                        English to
+                        <span>Sinhala</span>
+                        <br>
+                        Subtitle Translator
+                    </h1>
+
+                    <p>
+                        Translate English movie and TV subtitles
+                        into natural Sinhala with AI.
+                    </p>
+
+                    <div class="hero-actions">
+
+                        <a class="btn btn-primary" href="#search">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            Find Subtitles
+                        </a>
+
+                        <a class="btn btn-ghost" href="#upload">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            Upload SRT
+                        </a>
+
+                    </div>
+
                 </div>
 
-                <h1>
-                    English to
-                    <span>Sinhala</span>
-                    <br>
-                    Subtitle Translator
-                </h1>
 
-                <p>
-                    Translate English movie and TV subtitles
-                    into natural Sinhala with AI.
-                </p>
+                <!-- Animated subtitle demo (decorative) -->
+                <div class="hero-stage" aria-hidden="true">
+
+                    <div class="stage-bar">
+                        <i></i><i></i><i></i>
+                        <span class="stage-badge">EN → සිං</span>
+                    </div>
+
+                    <div class="stage-play">
+                        <i class="fa-solid fa-play"></i>
+                    </div>
+
+                    <div class="stage-subs" id="stageSubs"></div>
+
+                    <div class="stage-timeline"></div>
+
+                </div>
 
             </div>
 
@@ -179,7 +227,7 @@
              SEARCH
         ====================================== -->
 
-        <section class="search-section">
+        <section class="search-section" id="search">
 
             <div class="search-card">
 
@@ -284,63 +332,90 @@
 
         <section class="quick-actions">
 
-
             <!-- Find Subtitles -->
-            <div class="quick-action-card">
+            <div class="quick-action-card reveal">
 
                 <div class="quick-action-icon">
-
                     <i class="fa-solid fa-clapperboard"></i>
-
                 </div>
-
 
                 <h3>
                     Find Subtitles
                 </h3>
-
 
                 <p>
                     Search for English subtitles
                     for movies and TV series.
                 </p>
 
-
                 <div class="arrow">
-
                     <i class="fa-solid fa-arrow-right"></i>
-
                 </div>
 
             </div>
 
 
-
             <!-- Translate with AI -->
-            <div class="quick-action-card">
+            <div class="quick-action-card reveal" style="--d: .12s">
 
                 <div class="quick-action-icon">
-
                     <i class="fa-solid fa-language"></i>
-
                 </div>
-
 
                 <h3>
                     Translate with AI
                 </h3>
-
 
                 <p>
                     Get natural and accurate
                     Sinhala translations.
                 </p>
 
-
                 <div class="arrow">
-
                     <i class="fa-solid fa-arrow-right"></i>
+                </div>
 
+            </div>
+
+        </section>
+
+
+
+        <!-- =====================================
+             HOW IT WORKS
+        ====================================== -->
+
+        <section class="steps" id="how">
+
+            <div class="section-head reveal">
+                <span class="section-eyebrow">How it works</span>
+                <h2>From English subtitle to Sinhala in four steps</h2>
+            </div>
+
+            <div class="steps-grid">
+
+                <div class="step-card reveal">
+                    <div class="step-num">1</div>
+                    <h3>Search</h3>
+                    <p>Pick a movie, series or anime.</p>
+                </div>
+
+                <div class="step-card reveal" style="--d: .1s">
+                    <div class="step-num">2</div>
+                    <h3>Select</h3>
+                    <p>Choose an English subtitle file.</p>
+                </div>
+
+                <div class="step-card reveal" style="--d: .2s">
+                    <div class="step-num">3</div>
+                    <h3>Translate</h3>
+                    <p>AI converts it to natural Sinhala.</p>
+                </div>
+
+                <div class="step-card reveal" style="--d: .3s">
+                    <div class="step-num">4</div>
+                    <h3>Download</h3>
+                    <p>Get your Sinhala SRT file.</p>
                 </div>
 
             </div>
@@ -353,13 +428,11 @@
              UPLOAD SUBTITLE
         ====================================== -->
 
-        <section class="upload-section">
+        <section class="upload-section reveal" id="upload">
 
             <!-- Upload Icon -->
             <div class="upload-icon">
-
                 <i class="fa-solid fa-cloud-arrow-up"></i>
-
             </div>
 
 
@@ -406,7 +479,7 @@
 
         <!-- =====================================
              MOVIE DETAILS
-             
+
              Hidden intentionally.
              JavaScript can still use these IDs
              if required by the existing script.
@@ -622,7 +695,7 @@
              SEO / INFORMATION
         ====================================== -->
 
-        <section class="seo-info">
+        <section class="seo-info reveal">
 
             <h2>
                 SubLanka AI Subtitle Translator
@@ -676,40 +749,53 @@
             <p>
                 English to Sinhala Subtitle Translator
             </p>
-<div class="legal-links" style="
-    display:flex;
-    justify-content:center;
-    flex-wrap:wrap;
-    gap:20px;
-    margin:16px 0;
-">
-    <a href="/privacy.html" style="color:#a5b4fc;text-decoration:none;">
-        Privacy Policy
-    </a>
 
-    <a href="/terms.html" style="color:#a5b4fc;text-decoration:none;">
-        Terms of Service
-    </a>
+            <div class="legal-links">
 
-    <a href="mailto:visaludyogi2002@gmail.com"
-       style="color:#a5b4fc;text-decoration:none;">
-        Contact
-    </a>
-</div>
+                <a href="about.html">
+                    About
+                </a>
+
+                <a href="privacy.html">
+                    Privacy Policy
+                </a>
+
+                <a href="terms.html">
+                    Terms of Service
+                </a>
+
+                <a href="contact.html">
+                    Contact
+                </a>
+
+            </div>
+
         </footer>
 
     </main>
 
 
+    <!-- Back to top -->
+    <button
+        class="to-top"
+        id="toTop"
+        type="button"
+        aria-label="Back to top"
+    >
+        <i class="fa-solid fa-arrow-up"></i>
+    </button>
+
+
 
     <!-- =========================================
          JAVASCRIPT
-         
-         IMPORTANT:
-         Keep your existing script.js.
+
+         script.js  = existing app logic (unchanged)
+         ui.js      = theme toggle + animations only
     ========================================== -->
 
     <script src="script.js"></script>
+    <script src="ui.js"></script>
 
 </body>
 
