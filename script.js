@@ -2913,7 +2913,39 @@ async function selectSubtitle(
 // TRANSLATE CHUNKS
 // ========================================================
 
+// Wrapper: lets the Android / desktop apps show notifications
+// (window.__appNotify is only defined by app-shim.js / desktop-shim.js).
 async function translateSubtitleChunks(
+    subtitles
+) {
+
+    const notify = window.__appNotify;
+
+    try {
+
+        const result =
+            await translateSubtitleChunksImpl(subtitles);
+
+        if (notify) {
+            try { notify.done(result.length); } catch (e) { /* ignore */ }
+        }
+
+        return result;
+
+    } catch (error) {
+
+        if (notify) {
+            try { notify.failed(error && error.message); } catch (e) { /* ignore */ }
+        }
+
+        throw error;
+
+    }
+
+}
+
+
+async function translateSubtitleChunksImpl(
     subtitles
 ) {
 
@@ -3267,6 +3299,11 @@ function updateTranslationProgress(
     if (uploadStatus) {
         uploadStatus.textContent =
             `Translated ${completed}/${total} subtitles — chunk ${chunkNumber}/${totalChunks}`;
+    }
+
+    // App notifications (Android / desktop only)
+    if (window.__appNotify) {
+        try { window.__appNotify.progress(percent, completed, total); } catch (e) { /* ignore */ }
     }
 }
 // ========================================================

@@ -1,0 +1,56 @@
+{
+  "name": "sublanka-ai-desktop",
+  "version": "1.0.0",
+  "description": "SubLanka AI - English to Sinhala subtitle translator (Windows desktop app)",
+  "author": "SubLanka AI",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "prepare:app": "node build-app.js",
+    "start": "node build-app.js && electron .",
+    "dist": "node build-app.js && electron-builder --win --publish never"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.visal.sublanka.desktop",
+    "productName": "SubLanka AI",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "app/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "artifactName": "SubLanka-AI-Setup.exe"
+    },
+    "portable": {
+      "artifactName": "SubLanka-AI-Portable.exe"
+    }
+  }
+}

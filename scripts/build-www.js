@@ -11,7 +11,7 @@ const out = path.join(root, "www");
 
 const files = [
     "index.html", "about.html", "contact.html", "privacy.html", "terms.html",
-    "style.css", "script.js", "ui.js", "sync.js", "app-shim.js",
+    "style.css", "script.js", "ui.js", "sync.js", "app-update.js", "app-shim.js",
     "logo.png", "hero-banner.png",
     "favicon.svg", "favicon.ico", "apple-touch-icon.png"
 ];
@@ -34,7 +34,18 @@ const marker = '<script src="script.js"></script>';
 if (!html.includes(marker)) {
     throw new Error("index.html: could not find " + marker);
 }
-html = html.replace(marker, '<script src="app-shim.js"></script>\n    ' + marker);
+html = html.replace(
+    marker,
+    '<script src="app-update.js"></script>\n    <script src="app-shim.js"></script>\n    ' + marker
+);
 fs.writeFileSync(indexPath, html);
+
+// tell the app which version it was built as (used by the update check)
+const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
+const shimPath = path.join(out, "app-shim.js");
+fs.writeFileSync(
+    shimPath,
+    fs.readFileSync(shimPath, "utf8").replace("__APP_VERSION__", pkg.version)
+);
 
 console.log("www/ built:", fs.readdirSync(out).length, "files");
