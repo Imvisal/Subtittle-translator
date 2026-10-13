@@ -12,6 +12,7 @@ const out = path.join(root, "www");
 const files = [
     "index.html", "about.html", "contact.html", "privacy.html", "terms.html",
     "style.css", "script.js", "ui.js", "sync.js", "app-update.js", "app-shim.js",
+    "app-ui.js", "app-ui.css",
     "logo.png", "hero-banner.png",
     "favicon.svg", "favicon.ico", "apple-touch-icon.png"
 ];
@@ -37,6 +38,20 @@ if (!html.includes(marker)) {
 html = html.replace(
     marker,
     '<script src="app-update.js"></script>\n    <script src="app-shim.js"></script>\n    ' + marker
+);
+
+
+// app-only UI: bottom tabs, translation progress panel, settings tab
+// (the website never loads these files)
+const syncMarker = '<script src="sync.js"></script>';
+if (!html.includes(syncMarker)) {
+    throw new Error("index.html: could not find " + syncMarker);
+}
+html = html.replace(syncMarker, syncMarker + '\n    <script src="app-ui.js"></script>');
+html = html.replace(
+    "</head>",
+    '    <link rel="stylesheet" href="app-ui.css">\n' +
+    '    <script>document.documentElement.classList.add("app-mode");</script>\n</head>'
 );
 
 // full-screen layout: let the page draw behind the status / navigation bars
@@ -73,6 +88,12 @@ const shimPath = path.join(out, "app-shim.js");
 fs.writeFileSync(
     shimPath,
     fs.readFileSync(shimPath, "utf8").replace("__APP_VERSION__", pkg.version)
+);
+
+const uiPath = path.join(out, "app-ui.js");
+fs.writeFileSync(
+    uiPath,
+    fs.readFileSync(uiPath, "utf8").replace("__APP_VERSION__", pkg.version)
 );
 
 console.log("www/ built:", fs.readdirSync(out).length, "files");

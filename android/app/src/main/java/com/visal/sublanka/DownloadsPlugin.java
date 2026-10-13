@@ -8,6 +8,8 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
+import android.os.PowerManager;
+import android.provider.Settings;
 import android.provider.MediaStore;
 import android.view.View;
 import android.view.Window;
@@ -205,6 +207,77 @@ public class DownloadsPlugin extends Plugin {
         } catch (Exception e) {
             call.reject("Could not open the link: " + e.getMessage());
         }
+    }
+
+    // ---- Settings tab helpers -------------------------------------------
+
+    /** Storage status for the Settings tab: Android 10+ needs no permission. */
+    @PluginMethod
+    public void getStorageStatus(PluginCall call) {
+        JSObject r = new JSObject();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            r.put("state", "not-needed");
+        } else {
+            r.put("state", getPermissionState("storage") == PermissionState.GRANTED ? "granted" : "prompt");
+        }
+        r.put("folder", "Download/" + FOLDER);
+        call.resolve(r);
+    }
+
+    /** Asks for storage access (only Android 7-9 need it), then reports the status. */
+    @PluginMethod
+    public void requestStorage(PluginCall call) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
+                && getPermissionState("storage") != PermissionState.GRANTED) {
+            requestPermissionForAlias("storage", call, "storageStatusCallback");
+            return;
+        }
+        getStorageStatus(call);
+    }
+
+    @PermissionCallback
+    private void storageStatusCallback(PluginCall call) {
+        getStorageStatus(call);
+    }
+
+    /** Opens this app's page in Android Settings (notifications, permissions...). */
+    @PluginMethod
+    public void openAppSettings(PluginCall call) {
+        try {
+            Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+            intent.setData(Uri.fromParts("package", getContext().getPackageName(), null));
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(intent);
+            call.resolve();
+        } catch (Exception e) {
+            call.reject("Could not open the app settings: " + e.getMessage());
+        }
+    }
+
+    /** Opens the system battery-optimisation list (no extra permission needed). */
+    @PluginMethod
+    public void openBatterySettings(PluginCall call) {
+        try {
+            Intent intent = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(intent);
+            call.resolve();
+        } catch (Exception e) {
+            call.reject("Could not open the battery settings: " + e.getMessage());
+        }
+    }
+
+    /** true when Android does not restrict this app in the background. */
+    @PluginMethod
+    public void isBatteryUnrestricted(PluginCall call) {
+        JSObject r = new JSObject();
+        boolean free = true;
+        PowerManager pm = (PowerManager) getContext().getSystemService(Context.POWER_SERVICE);
+        if (pm != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            free = pm.isIgnoringBatteryOptimizations(getContext().getPackageName());
+        }
+        r.put("unrestricted", free);
+        call.resolve(r);
     }
 
     // ---- Translation notification + keep-alive service ------------------
