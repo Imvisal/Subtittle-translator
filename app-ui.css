@@ -125,7 +125,7 @@ html.app-kb #appTabs {
     display: none;
 }
 
-/* ---------- progress ring button (header) ---------- */
+/* ---------- notification bell + progress pill (header) ---------- */
 #appJobsBtn {
     position: relative;
     width: 46px;
@@ -139,36 +139,40 @@ html.app-kb #appTabs {
     -webkit-tap-highlight-color: transparent;
 }
 
-#appJobsBtn .aj-ring {
+#appJobsBtn .aj-icon {
+    font-size: 19px;
+}
+
+#appJobsBtn.run {
+    background: rgba(143, 134, 255, 0.22);
+    border-color: #8f86ff;
+    color: #fff;
+}
+
+#appJobsBtn .aj-badge {
+    display: none;
     position: absolute;
-    inset: -1px;
-    border-radius: 50%;
-    background: conic-gradient(#8f86ff calc(var(--p, 0) * 1%), transparent 0);
-    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
-    mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
-    opacity: 0;
-}
-
-#appJobsBtn.run .aj-ring {
-    opacity: 1;
-}
-
-#appJobsBtn .aj-label {
+    top: -3px;
+    right: -3px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 9px;
+    background: #36e0c8;
+    border: 2px solid var(--bg);
+    color: #06352e;
     font-size: 11px;
     font-weight: 800;
-    letter-spacing: -0.2px;
+    line-height: 14px;
+    text-align: center;
+    box-sizing: border-box;
 }
 
-#appJobsBtn .aj-icon {
-    font-size: 16px;
+#appJobsBtn.run .aj-badge {
+    display: block;
 }
 
-#appJobsBtn.run .aj-icon,
-#appJobsBtn:not(.run) .aj-label {
-    display: none;
-}
-
-#appJobsBtn.has-new::after {
+#appJobsBtn.has-new:not(.run)::after {
     content: "";
     position: absolute;
     top: 2px;
@@ -178,6 +182,47 @@ html.app-kb #appTabs {
     border-radius: 50%;
     background: #36e0c8;
     border: 2px solid var(--bg);
+}
+
+#appJobsPill {
+    display: none;
+    align-items: center;
+    gap: 7px;
+    height: 34px;
+    margin-right: 8px;
+    padding: 0 12px;
+    border-radius: 999px;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    -webkit-tap-highlight-color: transparent;
+}
+
+#appJobsPill.run {
+    display: inline-flex;
+}
+
+#appJobsPill .aj-pbar {
+    width: 38px;
+    height: 5px;
+    border-radius: 3px;
+    background: rgba(143, 134, 255, 0.25);
+    overflow: hidden;
+}
+
+#appJobsPill .aj-pbar i {
+    display: block;
+    height: 100%;
+    width: 0;
+    border-radius: 3px;
+    background: #8f86ff;
+    transition: width 0.4s ease;
+}
+
+#appJobsPill .aj-ptxt {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: -0.2px;
 }
 
 /* ---------- translations panel ---------- */

@@ -213,18 +213,27 @@
     // =====================================================
     // UI: header ring, tabs, panel
     // =====================================================
-    var jobsBtn, tabsEl, jobsEl, settingsEl;
+    var jobsBtn, pillBtn, tabsEl, jobsEl, settingsEl;
 
     function updateRing(isNew) {
         if (!jobsBtn) { return; }
         var running = !!cur;
         jobsBtn.classList.toggle("run", running);
-        jobsBtn.style.setProperty("--p", running ? cur.percent : 0);
-        var label = jobsBtn.querySelector(".aj-label");
-        if (label) { label.textContent = running ? cur.percent + "%" : ""; }
+        var badge = jobsBtn.querySelector(".aj-badge");
+        if (badge) { badge.textContent = running ? "1" : ""; }
+        if (pillBtn) {
+            pillBtn.classList.toggle("run", running);
+            var bar = pillBtn.querySelector(".aj-pbar i");
+            if (bar) { bar.style.width = (running ? cur.percent : 0) + "%"; }
+            var txt = pillBtn.querySelector(".aj-ptxt");
+            if (txt) { txt.textContent = running ? cur.percent + "%" : ""; }
+            pillBtn.setAttribute("aria-label", running
+                ? "Translation in progress, " + cur.percent + " percent"
+                : "Translations");
+        }
         jobsBtn.setAttribute("aria-label", running
-            ? "Translation in progress, " + cur.percent + " percent"
-            : "Translations");
+            ? "Notifications, translation in progress, " + cur.percent + " percent"
+            : "Notifications");
         if (isNew && !jobsOpen) { jobsBtn.classList.add("has-new"); }
     }
 
@@ -587,16 +596,27 @@
     // INIT
     // =====================================================
     function init() {
-        // header: progress ring button
+        // header: progress pill (left) + notification bell (right)
         var actions = document.querySelector(".header-actions");
-        jobsBtn = make("button", "", '<span class="aj-ring"></span><i class="fa-solid fa-list-check aj-icon"></i><span class="aj-label"></span>');
+        function toggleJobs() {
+            if (jobsOpen) { window.history.back(); } else { navigate(curTab, true); }
+        }
+        jobsBtn = make("button", "", '<i class="fa-solid fa-bell aj-icon"></i><span class="aj-badge"></span>');
         jobsBtn.id = "appJobsBtn";
         jobsBtn.type = "button";
-        jobsBtn.setAttribute("aria-label", "Translations");
-        jobsBtn.addEventListener("click", function () {
-            if (jobsOpen) { window.history.back(); } else { navigate(curTab, true); }
-        });
-        if (actions) { actions.insertBefore(jobsBtn, actions.firstChild); }
+        jobsBtn.setAttribute("aria-label", "Notifications");
+        jobsBtn.addEventListener("click", toggleJobs);
+
+        pillBtn = make("button", "", '<span class="aj-pbar"><i></i></span><span class="aj-ptxt"></span>');
+        pillBtn.id = "appJobsPill";
+        pillBtn.type = "button";
+        pillBtn.setAttribute("aria-label", "Translations");
+        pillBtn.addEventListener("click", toggleJobs);
+
+        if (actions) {
+            actions.insertBefore(jobsBtn, actions.firstChild);
+            actions.insertBefore(pillBtn, jobsBtn);
+        }
 
         // bottom tab bar
         tabsEl = make("nav");
@@ -613,12 +633,12 @@
 
         // translations panel
         jobsEl = make("div", "",
-            '<div class="aj-top"><h2>Translations</h2>' +
+            '<div class="aj-top"><h2>Notifications</h2>' +
             '<button type="button" class="aj-close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button></div>' +
             '<div class="aj-body"></div>');
         jobsEl.id = "appJobs";
         jobsEl.setAttribute("role", "dialog");
-        jobsEl.setAttribute("aria-label", "Translations");
+        jobsEl.setAttribute("aria-label", "Notifications");
         jobsEl.querySelector(".aj-close").addEventListener("click", function () { window.history.back(); });
         document.body.appendChild(jobsEl);
 
