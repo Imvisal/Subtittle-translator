@@ -27,20 +27,20 @@
     --line: rgba(255, 255, 255, 0.09);
     --line-strong: rgba(255, 255, 255, 0.18);
 
-    --text: #f5f1ea;
+    --text: #f2f4fa;
     --text-2: #c9c5d4;
     --muted: #9391a3;
     --muted-2: #6f6d80;
 
-    --amber: #ffb84d;
-    --rose: #ff5c7a;
-    --violet: #b36bff;
+    --amber: #8ab4ff;
+    --rose: #9a8bff;
+    --violet: #c58bff;
     --teal: #36e0c8;
 
-    --grad: linear-gradient(135deg, #ffb84d 0%, #ff6a6a 55%, #ff5c9a 100%);
+    --grad: linear-gradient(135deg, #7fb4ff 0%, #8f86ff 55%, #c58bff 100%);
     --grad-cool: linear-gradient(135deg, #36e0c8, #4aa8ff);
 
-    --glow: rgba(255, 120, 90, 0.35);
+    --glow: rgba(120, 140, 255, 0.35);
 
     --radius-lg: 28px;
     --radius: 20px;
@@ -53,23 +53,28 @@
 }
 
 html[data-theme="light"] {
-    --bg: #f7f3ec;
-    --bg-soft: #efe9de;
+    --bg: #f4f6fc;
+    --bg-soft: #e9eef9;
 
     --surface: rgba(255, 255, 255, 0.72);
     --surface-2: rgba(255, 255, 255, 0.92);
     --surface-solid: #ffffff;
 
-    --line: rgba(40, 30, 20, 0.11);
-    --line-strong: rgba(40, 30, 20, 0.22);
+    --line: rgba(30, 40, 80, 0.11);
+    --line-strong: rgba(30, 40, 80, 0.22);
 
-    --text: #1b1722;
+    --text: #141828;
     --text-2: #3d3748;
     --muted: #6b6578;
     --muted-2: #8a8497;
 
-    --glow: rgba(255, 110, 80, 0.28);
-    --shadow: 0 24px 60px rgba(60, 40, 20, 0.14);
+    --glow: rgba(100, 120, 240, 0.28);
+
+    --amber: #3f5bdc;
+    --rose: #6a55e8;
+    --violet: #8b4fe0;
+    --teal: #0aa392;
+    --shadow: 0 24px 60px rgba(30, 40, 90, 0.14);
 }
 
 /* ---------------------------------------------------------
@@ -127,7 +132,7 @@ a {
 }
 
 ::selection {
-    background: rgba(255, 106, 106, 0.4);
+    background: rgba(143, 134, 255, 0.4);
     color: #fff;
 }
 
@@ -146,42 +151,45 @@ a {
    AMBIENT BACKGROUND + FILM GRAIN
 --------------------------------------------------------- */
 
+/* Soft glow made with a radial gradient instead of filter: blur().
+   A 110px blur on fixed, animated layers is re-rasterised while
+   scrolling and is the main cause of lag on phones. */
 .ambient {
     position: fixed;
     z-index: -3;
     border-radius: 50%;
-    filter: blur(110px);
-    opacity: 0.38;
+    background: radial-gradient(circle at center, var(--c) 0%, transparent 68%);
+    opacity: 0.3;
     pointer-events: none;
     will-change: transform;
 }
 
 .ambient-one {
-    width: 460px;
-    height: 460px;
-    top: -120px;
-    left: -140px;
-    background: #ff6a3d;
+    --c: #2f6bff;
+    width: 640px;
+    height: 640px;
+    top: -220px;
+    left: -240px;
     animation: drift 26s ease-in-out infinite alternate;
 }
 
 .ambient-two {
-    width: 420px;
-    height: 420px;
+    --c: #7a4bff;
+    width: 600px;
+    height: 600px;
     top: 38%;
-    right: -160px;
-    background: #7a4bff;
-    opacity: 0.3;
+    right: -260px;
+    opacity: 0.24;
     animation: drift 32s ease-in-out infinite alternate-reverse;
 }
 
 .ambient-three {
-    width: 360px;
-    height: 360px;
-    bottom: -120px;
+    --c: #00bfd0;
+    width: 520px;
+    height: 520px;
+    bottom: -200px;
     left: 30%;
-    background: #ff3d8b;
-    opacity: 0.22;
+    opacity: 0.16;
     animation: drift 28s ease-in-out infinite alternate;
 }
 
@@ -510,7 +518,7 @@ html[data-theme="light"] .hero-overlay {
 
 /* over the dark hero the header keeps light text until it turns solid */
 html[data-theme="light"] .top-header:not(.scrolled) {
-    --text: #f5f1ea;
+    --text: #f2f4fa;
     --text-2: #e3dfeb;
     --muted: #c3bfd0;
     --surface: rgba(255, 255, 255, 0.1);
@@ -529,7 +537,7 @@ html[data-theme="light"] .top-header:not(.scrolled) {
     left: -50%;
     transform: skewX(-18deg);
     pointer-events: none;
-    background: linear-gradient(90deg, transparent, rgba(255, 190, 120, 0.1), transparent);
+    background: linear-gradient(90deg, transparent, rgba(143, 180, 255, 0.1), transparent);
     animation: beam 9s ease-in-out infinite;
 }
 
@@ -567,8 +575,8 @@ html[data-theme="light"] .top-header:not(.scrolled) {
     letter-spacing: 1.4px;
     text-transform: uppercase;
     color: var(--amber);
-    background: rgba(255, 184, 77, 0.1);
-    border: 1px solid rgba(255, 184, 77, 0.3);
+    background: rgba(127, 180, 255, 0.1);
+    border: 1px solid rgba(127, 180, 255, 0.3);
 }
 
 .hero-star::before {
@@ -577,12 +585,12 @@ html[data-theme="light"] .top-header:not(.scrolled) {
     height: 7px;
     border-radius: 50%;
     background: var(--amber);
-    box-shadow: 0 0 0 0 rgba(255, 184, 77, 0.7);
+    box-shadow: 0 0 0 0 rgba(127, 180, 255, 0.7);
     animation: ping 2s ease-out infinite;
 }
 
 @keyframes ping {
-    to { box-shadow: 0 0 0 10px rgba(255, 184, 77, 0); }
+    to { box-shadow: 0 0 0 10px rgba(127, 180, 255, 0); }
 }
 
 .hero h1 {
@@ -596,7 +604,7 @@ html[data-theme="light"] .top-header:not(.scrolled) {
 
 .hero h1 span {
     display: inline-block;
-    background: linear-gradient(100deg, #ffb84d, #ff6a6a, #ff5c9a, #ffb84d);
+    background: linear-gradient(100deg, #7fb4ff, #8f86ff, #c58bff, #7fb4ff);
     background-size: 250% 100%;
     -webkit-background-clip: text;
     background-clip: text;
@@ -639,7 +647,7 @@ html[data-theme="light"] .top-header:not(.scrolled) {
 }
 
 .btn-primary {
-    color: #1a0f08;
+    color: #0b0d1f;
     background: var(--grad);
     box-shadow: 0 10px 32px var(--glow);
 }
@@ -709,11 +717,11 @@ html[data-theme="light"] .top-header:not(.scrolled) {
     border-radius: 22px;
     overflow: hidden;
     background:
-        radial-gradient(80% 90% at 30% 20%, rgba(255, 140, 90, 0.5), transparent 60%),
+        radial-gradient(80% 90% at 30% 20%, rgba(110, 140, 255, 0.5), transparent 60%),
         radial-gradient(70% 80% at 90% 90%, rgba(122, 75, 255, 0.55), transparent 60%),
         #10121c;
     border: 1px solid rgba(255, 255, 255, 0.16);
-    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55), 0 0 60px rgba(255, 100, 90, 0.18);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55), 0 0 60px rgba(120, 130, 255, 0.18);
     transform: perspective(1000px) rotateY(-8deg) rotateX(3deg);
     animation: floatStage 7s ease-in-out infinite;
 }
@@ -815,7 +823,7 @@ html[data-theme="light"] .top-header:not(.scrolled) {
 .stage-line.si {
     margin-top: 5px;
     font-weight: 600;
-    color: #ffd58a;
+    color: #cfe0ff;
 }
 
 .stage-line.is-in {
@@ -891,9 +899,9 @@ html[data-theme="light"] .top-header:not(.scrolled) {
     padding: 1.5px;
     border-radius: inherit;
     background: conic-gradient(from var(--angle, 0deg),
-        rgba(255, 184, 77, 0.9), rgba(255, 92, 122, 0.15) 25%,
-        rgba(179, 107, 255, 0.8) 50%, rgba(255, 92, 122, 0.15) 75%,
-        rgba(255, 184, 77, 0.9));
+        rgba(127, 180, 255, 0.9), rgba(143, 134, 255, 0.15) 25%,
+        rgba(197, 139, 255, 0.8) 50%, rgba(143, 134, 255, 0.15) 75%,
+        rgba(127, 180, 255, 0.9));
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     -webkit-mask-composite: xor;
     mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
@@ -957,7 +965,7 @@ html[data-theme="light"] .top-header:not(.scrolled) {
 .search-input-wrap input:focus {
     border-color: var(--amber);
     background: var(--surface-2);
-    box-shadow: 0 0 0 4px rgba(255, 184, 77, 0.14);
+    box-shadow: 0 0 0 4px rgba(127, 180, 255, 0.14);
 }
 
 #searchBtn {
@@ -973,7 +981,7 @@ html[data-theme="light"] .top-header:not(.scrolled) {
     gap: 10px;
     font-weight: 700;
     font-size: 16px;
-    color: #1a0f08;
+    color: #0b0d1f;
     background: var(--grad);
     box-shadow: 0 10px 28px var(--glow);
     transition: transform 0.3s var(--ease), box-shadow 0.3s ease, opacity 0.3s ease;
@@ -1032,7 +1040,7 @@ html[data-theme="light"] .top-header:not(.scrolled) {
 }
 
 .category-chip.active {
-    color: #1a0f08;
+    color: #0b0d1f;
     background: var(--grad);
     border-color: transparent;
     box-shadow: 0 8px 24px var(--glow);
@@ -1109,8 +1117,8 @@ html[data-theme="light"] .top-header:not(.scrolled) {
 
 .category-card:hover {
     transform: translateY(-8px);
-    border-color: rgba(255, 184, 77, 0.55);
-    box-shadow: 0 22px 46px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 184, 77, 0.2);
+    border-color: rgba(127, 180, 255, 0.55);
+    box-shadow: 0 22px 46px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(127, 180, 255, 0.2);
 }
 
 .category-poster-wrap {
@@ -1205,7 +1213,7 @@ html[data-theme="light"] .top-header:not(.scrolled) {
     border-radius: 10px;
     font-size: 12px;
     font-weight: 700;
-    color: #1a0f08;
+    color: #0b0d1f;
     background: var(--grad);
     transition: transform 0.25s var(--ease), filter 0.25s ease;
 }
@@ -1244,7 +1252,7 @@ html[data-theme="light"] .top-header:not(.scrolled) {
     width: 17px;
     height: 17px;
     border-color: rgba(26, 15, 8, 0.25);
-    border-top-color: #1a0f08;
+    border-top-color: #0b0d1f;
 }
 
 @keyframes spin {
@@ -1269,7 +1277,7 @@ html[data-theme="light"] .top-header:not(.scrolled) {
     border-radius: 999px;
     font-weight: 700;
     font-size: 13px;
-    color: #1a0f08;
+    color: #0b0d1f;
     background: var(--grad);
 }
 
@@ -1295,7 +1303,7 @@ html[data-theme="light"] .top-header:not(.scrolled) {
 
 .app .search-result-card:hover {
     transform: translateY(-3px);
-    border-color: rgba(255, 184, 77, 0.5);
+    border-color: rgba(127, 180, 255, 0.5);
     box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
 }
 
@@ -1336,7 +1344,7 @@ html[data-theme="light"] .top-header:not(.scrolled) {
     border-radius: 999px;
     font-size: 13px;
     font-weight: 700;
-    color: #1a0f08;
+    color: #0b0d1f;
     background: var(--grad);
     box-shadow: 0 6px 18px var(--glow);
     transition: transform 0.3s var(--ease), box-shadow 0.3s ease;
@@ -1377,8 +1385,8 @@ html[data-theme="light"] .top-header:not(.scrolled) {
     border-radius: var(--radius-sm);
     font-size: 13px;
     color: var(--amber);
-    background: rgba(255, 184, 77, 0.08);
-    border: 1px solid rgba(255, 184, 77, 0.22);
+    background: rgba(127, 180, 255, 0.08);
+    border: 1px solid rgba(127, 180, 255, 0.22);
 }
 
 .app .sinhala-first-not-found {
@@ -1461,7 +1469,7 @@ html[data-theme="light"] .app .sinhala-first-header strong {
 
 .app .subtitle-result-card:hover {
     transform: translateX(4px);
-    border-color: rgba(255, 184, 77, 0.5);
+    border-color: rgba(127, 180, 255, 0.5);
 }
 
 .app .subtitle-result-info strong {
@@ -1476,7 +1484,7 @@ html[data-theme="light"] .app .sinhala-first-header strong {
 .app .subtitle-select-btn {
     border-radius: 999px;
     padding: 9px 18px;
-    color: #1a0f08;
+    color: #0b0d1f;
     background: var(--grad);
 }
 
@@ -1554,8 +1562,8 @@ html[data-theme="light"] .app .sinhala-first-header strong {
     justify-content: center;
     border-radius: 20px;
     font-size: 28px;
-    background: rgba(255, 184, 77, 0.12);
-    border: 1px solid rgba(255, 184, 77, 0.35);
+    background: rgba(127, 180, 255, 0.12);
+    border: 1px solid rgba(127, 180, 255, 0.35);
     animation: translationPulse 2s ease-in-out infinite;
 }
 
@@ -1572,8 +1580,8 @@ html[data-theme="light"] .app .sinhala-first-header strong {
 }
 
 @keyframes translationPulse {
-    0%, 100% { transform: scale(1);    box-shadow: 0 0 0 rgba(255, 184, 77, 0); }
-    50%      { transform: scale(1.05); box-shadow: 0 0 30px rgba(255, 184, 77, 0.25); }
+    0%, 100% { transform: scale(1);    box-shadow: 0 0 0 rgba(127, 180, 255, 0); }
+    50%      { transform: scale(1.05); box-shadow: 0 0 30px rgba(127, 180, 255, 0.25); }
 }
 
 .app .translation-subtitle {
@@ -1708,7 +1716,7 @@ html[data-theme="light"] .app .sinhala-first-header strong {
 #seasonInput:focus,
 #episodeInput:focus {
     border-color: var(--amber);
-    box-shadow: 0 0 0 4px rgba(255, 184, 77, 0.14);
+    box-shadow: 0 0 0 4px rgba(127, 180, 255, 0.14);
 }
 
 #findSubtitleBtn {
@@ -1748,7 +1756,7 @@ html[data-theme="light"] .app .sinhala-first-header strong {
     right: -80px;
     bottom: -110px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(255, 106, 90, 0.5), transparent 70%);
+    background: radial-gradient(circle, rgba(143, 134, 255, 0.5), transparent 70%);
     transition: transform 0.7s var(--ease), opacity 0.4s ease;
     opacity: 0.6;
 }
@@ -1779,8 +1787,8 @@ html[data-theme="light"] .app .sinhala-first-header strong {
     border-radius: 18px;
     font-size: 24px;
     color: var(--amber);
-    background: rgba(255, 184, 77, 0.12);
-    border: 1px solid rgba(255, 184, 77, 0.3);
+    background: rgba(127, 180, 255, 0.12);
+    border: 1px solid rgba(127, 180, 255, 0.3);
     transition: transform 0.5s var(--ease);
 }
 
@@ -1831,7 +1839,7 @@ html[data-theme="light"] .app .sinhala-first-header strong {
 
 .quick-action-card:hover .arrow {
     transform: translateX(4px);
-    color: #1a0f08;
+    color: #0b0d1f;
     background: var(--grad);
     border-color: transparent;
 }
@@ -1912,7 +1920,7 @@ html[data-theme="light"] .app .sinhala-first-header strong {
     font-family: var(--font-display);
     font-weight: 800;
     font-size: 17px;
-    color: #1a0f08;
+    color: #0b0d1f;
     background: var(--grad);
     box-shadow: 0 8px 24px var(--glow);
 }
@@ -1952,7 +1960,7 @@ html[data-theme="light"] .app .sinhala-first-header strong {
 .upload-section:hover,
 .upload-section.drag-over {
     border-color: var(--amber);
-    background: rgba(255, 184, 77, 0.06);
+    background: rgba(127, 180, 255, 0.06);
 }
 
 .upload-section.drag-over {
@@ -1968,7 +1976,7 @@ html[data-theme="light"] .app .sinhala-first-header strong {
     top: 50%;
     transform: translate(-50%, -50%);
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(255, 106, 90, 0.18), transparent 65%);
+    background: radial-gradient(circle, rgba(143, 134, 255, 0.18), transparent 65%);
     pointer-events: none;
 }
 
@@ -1982,8 +1990,8 @@ html[data-theme="light"] .app .sinhala-first-header strong {
     border-radius: 24px;
     font-size: 30px;
     color: var(--amber);
-    background: rgba(255, 184, 77, 0.12);
-    border: 1px solid rgba(255, 184, 77, 0.32);
+    background: rgba(127, 180, 255, 0.12);
+    border: 1px solid rgba(127, 180, 255, 0.32);
     animation: bob 3.2s ease-in-out infinite;
 }
 
@@ -2041,7 +2049,7 @@ html[data-theme="light"] .app .sinhala-first-header strong {
     gap: 10px;
     border-radius: 999px;
     font-weight: 700;
-    color: #1a0f08;
+    color: #0b0d1f;
     background: var(--grad);
     box-shadow: 0 10px 30px var(--glow);
     cursor: pointer;
@@ -2094,7 +2102,7 @@ html[data-theme="light"] .app .sinhala-first-header strong {
 
 #language:focus {
     border-color: var(--amber);
-    box-shadow: 0 0 0 4px rgba(255, 184, 77, 0.14);
+    box-shadow: 0 0 0 4px rgba(127, 180, 255, 0.14);
 }
 
 #language option {
@@ -2120,7 +2128,7 @@ html[data-theme="light"] .app .sinhala-first-header strong {
 }
 
 #translateBtn {
-    color: #1a0f08;
+    color: #0b0d1f;
     background: var(--grad);
     box-shadow: 0 12px 34px var(--glow);
 }
@@ -2142,7 +2150,7 @@ html[data-theme="light"] .app .sinhala-first-header strong {
 
 @keyframes readyGlow {
     0%, 100% { box-shadow: 0 12px 34px var(--glow); }
-    50%      { box-shadow: 0 12px 56px rgba(255, 106, 90, 0.6); }
+    50%      { box-shadow: 0 12px 56px rgba(143, 134, 255, 0.6); }
 }
 
 #translateBtn:disabled,
@@ -2227,7 +2235,7 @@ html[data-theme="light"] .app .sinhala-first-header strong {
 
 .app .sublanka-editor .se-tab.active,
 .app .sublanka-editor #seApplySync {
-    color: #1a0f08;
+    color: #0b0d1f;
     background: var(--grad);
     border-color: transparent;
     font-weight: 700;
@@ -2264,7 +2272,7 @@ html[data-theme="light"] .app .sinhala-first-header strong {
 .app .sublanka-editor select:focus {
     outline: none;
     border-color: var(--amber);
-    box-shadow: 0 0 0 3px rgba(255, 184, 77, 0.14);
+    box-shadow: 0 0 0 3px rgba(127, 180, 255, 0.14);
 }
 
 .app .sublanka-editor .se-row-number {
@@ -2398,7 +2406,7 @@ footer p + p {
     display: grid;
     place-items: center;
     border-radius: 50%;
-    color: #1a0f08;
+    color: #0b0d1f;
     background: var(--grad);
     box-shadow: 0 10px 28px var(--glow);
     opacity: 0;
@@ -2598,7 +2606,7 @@ footer p + p {
     border-radius: 16px;
     font-family: var(--font-display);
     font-size: 17px;
-    color: #1a0f08;
+    color: #0b0d1f;
     background: var(--grad);
 }
 
@@ -2644,8 +2652,8 @@ footer p + p {
     border-radius: 16px;
     font-size: 22px;
     color: var(--amber);
-    background: rgba(255, 184, 77, 0.12);
-    border: 1px solid rgba(255, 184, 77, 0.3);
+    background: rgba(127, 180, 255, 0.12);
+    border: 1px solid rgba(127, 180, 255, 0.3);
 }
 
 .contact-card h3 {
@@ -2795,6 +2803,64 @@ footer p + p {
         flex-direction: column;
         align-items: flex-start;
     }
+}
+
+/* ---------------------------------------------------------
+   PERFORMANCE — phones / touch screens
+   Heavy GPU effects are what make scrolling stutter on mobile,
+   so they are switched off here. Desktop keeps the full look.
+--------------------------------------------------------- */
+
+@media (max-width: 960px), (hover: none) {
+
+    /* live blur of whatever is behind an element */
+    *,
+    *::before,
+    *::after {
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+    }
+
+    /* header was glass; make it (almost) solid instead */
+    .top-header.scrolled {
+        background: color-mix(in srgb, var(--bg) 94%, transparent);
+    }
+
+    /* full-screen film grain with mix-blend-mode */
+    body::after {
+        display: none;
+    }
+
+    /* endless decorative animations that repaint every frame */
+    .ambient {
+        animation: none;
+        will-change: auto;
+    }
+
+    .hero-banner img,
+    .hero::before,
+    .hero-star::before,
+    .search-card::before,
+    .upload-icon,
+    #translateBtn:not(:disabled),
+    .legal-logo {
+        animation: none;
+        will-change: auto;
+    }
+
+    .hero h1 span {
+        animation: none;
+        background-size: 100% 100%;
+    }
+}
+
+/* skip painting sections that are far off-screen */
+.steps,
+.settings-section,
+.seo-info,
+footer {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 560px;
 }
 
 /* ---------------------------------------------------------
