@@ -8,7 +8,7 @@ module.exports = async function handler(req, res) {
             });
         }
 
-        const { subtitles, language = "si" } =
+        const { subtitles, language = "si", style = "natural" } =
             req.body || {};
 
         if (
@@ -32,7 +32,27 @@ module.exports = async function handler(req, res) {
         const targetLanguage =
             language === "ta"
                 ? "natural Sri Lankan Tamil"
-                : "natural Sri Lankan Sinhala";
+                : "SPOKEN Sri Lankan Sinhala (කතා කරන භාෂාව / ව්‍යවහාර භාෂාව)";
+
+        const styleNotes = {
+            natural:
+                "Everyday spoken tone, like real people talking in a Sri Lankan film or teledrama.",
+            casual:
+                "Very relaxed street-level spoken Sinhala, friendly and short.",
+            comedy:
+                "Spoken Sinhala with a playful, funny tone. Keep jokes landing the way a Sri Lankan viewer would find them funny.",
+            action:
+                "Short, sharp, punchy spoken Sinhala. Intense lines stay tight.",
+            anime:
+                "Dramatic spoken Sinhala with strong emotion, still colloquial.",
+            literal:
+                "Stay close to the original meaning, but still in spoken Sinhala, not bookish.",
+            formal:
+                "Polite and respectful spoken Sinhala (still conversational, not textbook-written Sinhala)."
+        };
+
+        const styleNote =
+            styleNotes[style] || styleNotes.natural;
 
 
         const input = subtitles.map((sub, index) => ({
@@ -56,7 +76,19 @@ Rules:
 - Do not skip any subtitle.
 - Do not add any subtitle.
 - Keep every index exactly.
-- Use natural conversational Sri Lankan language.
+- Write the way Sri Lankans actually SPEAK, not the way they write.
+- Use spoken forms (කතා කරන වචන), NOT literary/written Sinhala (ලිඛිත භාෂාව).
+  Examples: "මම යනවා" not "මම යමි"; "මොකද්ද?" not "කුමක්ද?";
+  "ඕනේ" not "අවශ්‍යයි"; "කොහොමද?" not "කෙසේද?";
+  "ඇයි?" not "මන්ද?"; "හරි" not "එසේය"; "ඉන්නවා" not "සිටිමි";
+  "මේක" not "මෙය"; "ඒක" not "එය"; "දැන්ම" not "වහාම".
+- Avoid stiff verb endings like -මි, -යි, -න්නෙමි, -ඇත. Use -නවා / -නේ / -ද / -ලා.
+- Pick pronouns by context: ඔයා / උඹ / තෝ / ඔබ only when formal;
+  අම්මා, තාත්තා, අයියා, අක්කා, මල්ලි, නංගි, මචං, බං, යාලුවා where natural.
+- Keep subtitles short and easy to read quickly on screen.
+- Write Sinhala in Sinhala script only (no Singlish/English letters),
+  except proper names which can be transliterated into Sinhala.
+- Tone: ${styleNote}
 - Preserve names, emotions, jokes and meaning.
 - You may change line breaks naturally.
 - Return ONLY valid JSON.

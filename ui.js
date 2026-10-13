@@ -198,13 +198,13 @@ same DOM events a user would (e.g. the file input's
 
         const lines = [
             ["Hello, how are you?",
-                "හෙලෝ, ඔයාට කොහොමද?"],
+                "හලෝ, කොහොමද ඔයාට?"],
             ["We have to leave now.",
-                "අපි දැන්ම යන්න ඕනේ."],
+                "අපි දැන්ම යන්න ඕනේ බං."],
             ["I will always find you.",
-                "මම ඔයාව හැමවිටම හොයාගන්නවා."],
+                "මම ඔයාව ඕනම තැනක හොයාගන්නවා."],
             ["This is only the beginning.",
-                "මේක ආරම්භය විතරයි."]
+                "මේක ඉස්සරහට එන දේවල්වල පටන් ගැන්ම විතරයි."]
         ];
 
         let index = 0;
