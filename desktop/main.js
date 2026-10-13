@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, Menu, Notification, Tray, nativeImage } = require("electron");
+const { app, BrowserWindow, ipcMain, shell, Menu, Notification, Tray, nativeImage, dialog } = require("electron");
 const path = require("path");
 const fs = require("fs");
 
@@ -137,6 +137,50 @@ ipcMain.handle("save-file", async (_event, text, filename) => {
     fs.writeFileSync(file, "\uFEFF" + text, "utf8");
 
     toast("Subtitle saved to Downloads", file, false, () => shell.showItemInFolder(file));
+    return { path: file };
+});
+
+// ---- Play tab: pick a video, play it with a subtitle, save the subtitle next to it ----
+// The video path stays here in the main process. The page only gets a file:// URL to play.
+let currentVideo = null;
+
+ipcMain.handle("pick-video", async () => {
+    const r = await dialog.showOpenDialog(win, {
+        title: "Choose a movie or episode",
+        properties: ["openFile"],
+        filters: [
+            { name: "Video", extensions: ["mp4", "mkv", "webm", "m4v", "mov", "avi", "ogv"] },
+            { name: "All files", extensions: ["*"] }
+        ]
+    });
+    if (r.canceled || !r.filePaths.length) return null;
+    currentVideo = r.filePaths[0];
+    return {
+        name: path.basename(currentVideo),
+        url: require("url").pathToFileURL(currentVideo).href
+    };
+});
+
+ipcMain.handle("pick-subtitle", async () => {
+    const r = await dialog.showOpenDialog(win, {
+        title: "Choose a subtitle (.srt)",
+        properties: ["openFile"],
+        filters: [{ name: "Subtitles", extensions: ["srt"] }]
+    });
+    if (r.canceled || !r.filePaths.length) return null;
+    const file = r.filePaths[0];
+    if (fs.statSync(file).size > 5 * 1024 * 1024) throw new Error("That file is too big for a subtitle.");
+    return { name: path.basename(file), text: fs.readFileSync(file, "utf8") };
+});
+
+// "Movie.mkv" -> "Movie.si.srt" in the same folder (VLC, MPC-HC, PotPlayer... load it automatically)
+ipcMain.handle("save-sub-next-to-video", async (_event, text) => {
+    if (!currentVideo) throw new Error("Choose a video first.");
+    if (typeof text !== "string" || !text.length) throw new Error("No subtitle to save.");
+    const dir = path.dirname(currentVideo);
+    const base = path.basename(currentVideo, path.extname(currentVideo));
+    const file = path.join(dir, base + ".si.srt");
+    fs.writeFileSync(file, "\uFEFF" + text, "utf8");
     return { path: file };
 });
 

@@ -35,6 +35,7 @@ if (deskPkg.version !== rootPkg.version) {
 }
 
 fs.copyFileSync(path.join(__dirname, "desktop-ui.css"), path.join(out, "desktop-ui.css"));
+fs.copyFileSync(path.join(__dirname, "desktop-player.js"), path.join(out, "desktop-player.js"));
 fs.writeFileSync(
     path.join(out, "app-ui.js"),
     fs.readFileSync(path.join(out, "app-ui.js"), "utf8").replace("__APP_VERSION__", rootPkg.version)
@@ -64,7 +65,10 @@ html = html.replace(
 // sidebar layout + Notifications tab (app-ui.js runs in desktop mode when desktopApi exists)
 const syncMarker = '<script src="sync.js"></script>';
 if (!html.includes(syncMarker)) throw new Error("index.html: could not find " + syncMarker);
-html = html.replace(syncMarker, syncMarker + '\n    <script src="app-ui.js"></script>');
+html = html.replace(
+    syncMarker,
+    syncMarker + '\n    <script src="app-ui.js"></script>\n    <script src="desktop-player.js"></script>'
+);
 html = html.replace(
     "</head>",
     '    <link rel="stylesheet" href="app-ui.css">\n' +

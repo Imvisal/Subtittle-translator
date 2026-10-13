@@ -34,6 +34,11 @@
         { id: "settings", label: "Settings", icon: "fa-gear" }
     ];
 
+    // Windows app only: play a movie with a subtitle (desktop-player.js)
+    if (isDesktop) {
+        TABS.splice(3, 0, { id: "play", label: "Play", icon: "fa-circle-play" });
+    }
+
     var root = document.documentElement;
     root.classList.add("app-mode");
     if (isDesktop) { root.classList.add("desk-mode"); }
