@@ -1,5 +1,5 @@
 {
-  "version": "1.1.10",
+  "version": "1.1.11",
   "notes": "Windows app: new Play tab. Choose a movie and a subtitle and watch with the subtitle on, adjust delay and size, or save the subtitle next to the video.",
   "android": {
     "url": "https://github.com/Imvisal/Subtittle-translator/releases/latest/download/SinSubz.apk"
