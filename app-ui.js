@@ -34,9 +34,9 @@
         { id: "settings", label: "Settings", icon: "fa-gear" }
     ];
 
-    // Windows app only: play a movie with a subtitle (desktop-player.js)
+    // Windows app only: preview a movie with a subtitle and merge the subtitle into the video (desktop-player.js)
     if (isDesktop) {
-        TABS.splice(3, 0, { id: "play", label: "Play", icon: "fa-circle-play" });
+        TABS.splice(3, 0, { id: "play", label: "Merge", icon: "fa-film" });
     }
 
     var root = document.documentElement;
