@@ -1,5 +1,11 @@
 {
   "appId": "com.visal.sublanka",
   "appName": "SubLanka AI",
-  "webDir": "www"
+  "webDir": "www",
+  "backgroundColor": "#07080d",
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
 }

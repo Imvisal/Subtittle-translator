@@ -3459,6 +3459,13 @@ function downloadTextFile(
     filename
 ) {
 
+    // Inside the Android app, blob downloads do not work in the WebView.
+    // app-shim.js (only included in the app build) saves + shares the file.
+    if (typeof window.__appSaveTextFile === "function") {
+        window.__appSaveTextFile(text, filename);
+        return;
+    }
+
     const blob =
         new Blob(
             [
