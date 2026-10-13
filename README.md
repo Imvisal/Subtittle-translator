@@ -1,8 +1,8 @@
-# 🇱🇰 SinSubz AI — Subtitle Translator
+# 🇱🇰 SinSubz — Subtitle Translator
 
 **Translate English movie and TV subtitles into Sinhala with AI.**
 
-SinSubz AI is a web-based subtitle translation project designed to help users search for subtitles, upload SRT files, and translate English subtitle dialogue into natural Sinhala using Google Gemini AI.
+SinSubz is a web-based subtitle translation project designed to help users search for subtitles, upload SRT files, and translate English subtitle dialogue into natural Sinhala using Google Gemini AI.
 
 🌐 **Live Website:** https://subtitle-translator.vercel.app/
 
@@ -121,7 +121,7 @@ Read the website's [Privacy Policy](https://subtitle-translator.vercel.app/priva
 
 ## 🎯 Project Goal
 
-The goal of SinSubz AI is to make Sinhala subtitles more accessible by providing an easy-to-use platform for subtitle search, AI translation, and SRT file processing.
+The goal of SinSubz is to make Sinhala subtitles more accessible by providing an easy-to-use platform for subtitle search, AI translation, and SRT file processing.
 
 ## 👨‍💻 Author
 

@@ -1,5 +1,5 @@
 /* =========================================================
-   SinSubz AI — in-app update check (Android + Windows apps only)
+   SinSubz — in-app update check (Android + Windows apps only)
    Included by scripts/build-www.js and desktop/build-app.js.
    The website itself never loads this file.
 
@@ -76,7 +76,7 @@
         card.appendChild(el("span", "upd-badge", "NEW VERSION " + info.latest));
         card.appendChild(el("h3", "", "Update available"));
         card.appendChild(el("p", "",
-            "A new version of SinSubz AI is ready (you have " + cfg.currentVersion + ")."));
+            "A new version of SinSubz is ready (you have " + cfg.currentVersion + ")."));
         if (info.notes) { card.appendChild(el("p", "", info.notes)); }
 
         var actions = el("div", "upd-actions");
@@ -114,7 +114,7 @@
                 try {
                     cfg.notify(
                         "Update available — v" + info.latest,
-                        info.notes || "A new version of SinSubz AI is ready. Open the app to update."
+                        info.notes || "A new version of SinSubz is ready. Open the app to update."
                     );
                 } catch (e) { /* ignore */ }
             }

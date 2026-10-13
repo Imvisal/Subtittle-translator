@@ -1,4 +1,4 @@
-/* SinSubz AI — new release alerts (Windows app).
+/* SinSubz — new release alerts (Windows app).
 
    Every few hours (and when the app starts) this asks /api/new-releases for
    newly released movies / TV series and shows a notification:
@@ -60,7 +60,7 @@
                             title: (item.type === "series" ? "New series available: " : "New movie available: ") + label(item),
                             body: sinhala
                                 ? "Sinhala subtitle is already available (" + item.sinhala.source + ")."
-                                : "Open SinSubz AI to find or translate subtitles."
+                                : "Open SinSubz to find or translate subtitles."
                         });
                     }
                 } else if (sinhala && !known.sinhala) {
@@ -68,7 +68,7 @@
                     if (state.init) {
                         toasts.push({
                             title: "Sinhala subtitle available: " + label(item),
-                            body: "Found on " + (item.sinhala.source || "a Sinhala subtitle site") + ". Open SinSubz AI to get it."
+                            body: "Found on " + (item.sinhala.source || "a Sinhala subtitle site") + ". Open SinSubz to get it."
                         });
                     }
                 }
@@ -84,7 +84,7 @@
             if (toasts.length > MAX_TOASTS) {
                 window.desktopApi.notify({
                     type: "toast",
-                    title: "SinSubz AI",
+                    title: "SinSubz",
                     body: "+" + (toasts.length - MAX_TOASTS) + " more new releases. Open the app to see them."
                 });
             }

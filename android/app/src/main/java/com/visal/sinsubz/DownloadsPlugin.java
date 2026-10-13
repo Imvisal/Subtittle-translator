@@ -39,7 +39,7 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * Saves a text file (the translated / synced .srt) straight into the
- * public Downloads folder: Download/SinSubz AI/<filename>.
+ * public Downloads folder: Download/SinSubz/<filename>.
  *
  * Android 10+ : MediaStore (no permission needed)
  * Android 7-9 : direct write, needs WRITE_EXTERNAL_STORAGE
@@ -52,7 +52,7 @@ import java.nio.charset.StandardCharsets;
 )
 public class DownloadsPlugin extends Plugin {
 
-    private static final String FOLDER = "SinSubz AI";
+    private static final String FOLDER = "SinSubz";
 
     @PluginMethod
     public void saveText(PluginCall call) {

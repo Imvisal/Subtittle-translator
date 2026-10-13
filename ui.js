@@ -2,7 +2,7 @@
 
 /*
 ========================================================
-SINSUBZ AI — ui.js
+SINSUBZ — ui.js
 Presentation-only behaviour: theme toggle, scroll effects,
 reveal animations, hero subtitle demo, ripples, drag & drop.
 

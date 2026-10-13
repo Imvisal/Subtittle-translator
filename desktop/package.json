@@ -1,8 +1,8 @@
 {
-  "name": "sinsubz-ai-desktop",
+  "name": "sinsubz-desktop",
   "version": "1.0.0",
-  "description": "SinSubz AI - English to Sinhala subtitle translator (Windows desktop app)",
-  "author": "SinSubz AI",
+  "description": "SinSubz - English to Sinhala subtitle translator (Windows desktop app)",
+  "author": "SinSubz",
   "main": "main.js",
   "private": true,
   "scripts": {
@@ -16,7 +16,7 @@
   },
   "build": {
     "appId": "com.visal.sinsubz.desktop",
-    "productName": "SinSubz AI",
+    "productName": "SinSubz",
     "directories": {
       "output": "dist",
       "buildResources": "build"
@@ -47,10 +47,10 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "artifactName": "SinSubz-AI-Setup.exe"
+      "artifactName": "SinSubz-Setup.exe"
     },
     "portable": {
-      "artifactName": "SinSubz-AI-Portable.exe"
+      "artifactName": "SinSubz-Portable.exe"
     }
   }
 }

@@ -105,7 +105,7 @@ public class ReleaseCheckWorker extends Worker {
                             (series ? "New series available: " : "New movie available: ") + name,
                             sinhala
                                 ? "Sinhala subtitle is already available" + (source.isEmpty() ? "." : " (" + source + ").")
-                                : "Open SinSubz AI to find or translate subtitles.",
+                                : "Open SinSubz to find or translate subtitles.",
                             poster
                         });
                     }
@@ -117,7 +117,7 @@ public class ReleaseCheckWorker extends Worker {
                         toShow.add(new String[] {
                             key,
                             "Sinhala subtitle available: " + name,
-                            "Found on " + (source.isEmpty() ? "a Sinhala subtitle site" : source) + ". Open SinSubz AI to get it.",
+                            "Found on " + (source.isEmpty() ? "a Sinhala subtitle site" : source) + ". Open SinSubz to get it.",
                             poster
                         });
                     }
@@ -207,7 +207,7 @@ public class ReleaseCheckWorker extends Worker {
         if (list.size() > MAX_NOTIFICATIONS) {
             nm.notify(
                 SUMMARY_ID,
-                build(ctx, open, "SinSubz AI",
+                build(ctx, open, "SinSubz",
                     "+" + (list.size() - MAX_NOTIFICATIONS) + " more new releases. Open the app to see them.", ""));
         }
     }

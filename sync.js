@@ -2,7 +2,7 @@
 
 /*
 ========================================================
-SINSUBZ AI — sync.js
+SINSUBZ — sync.js
 Sync a Sinhala SRT to a movie release:
 
  1. user uploads a Sinhala .srt

@@ -458,7 +458,7 @@ async function checkPage(
                     method: "GET",
                     headers: {
                         "User-Agent":
-                            "Mozilla/5.0 (compatible; SinSubzAI/1.0)"
+                            "Mozilla/5.0 (compatible; SinSubz/1.0)"
                     },
                     redirect: "follow"
                 }

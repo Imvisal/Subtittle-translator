@@ -126,7 +126,7 @@ module.exports = async function handler(req, res) {
 
                     headers: {
                         "User-Agent":
-                            "Mozilla/5.0 SinSubzAI"
+                            "Mozilla/5.0 SinSubz"
                     }
                 }
             );

@@ -12,7 +12,6 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.graphics.drawable.ColorDrawable;
 
-import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -43,12 +42,12 @@ public class MainActivity extends BridgeActivity {
         scheduleReleaseChecks();
     }
 
-    // The keyboard must resize the page exactly ONCE. On Android 11+ we do it
-    // ourselves (WebView bottom margin = keyboard height, see goEdgeToEdge), so
-    // the system must not resize the window as well - doing both squeezed the
-    // page into a thin strip with a grey gap above the keyboard.
-    // On older Android the system resize is used and we add no margin.
+    // Keyboard: Capacitor's own SystemBars plugin already shrinks the page by
+    // the keyboard height (bottom padding on the window's root view). We must
+    // NOT shrink it a second time - doing both made the page 2x the keyboard
+    // height too small (a thin strip at the top and a grey gap above the keys).
     private void configureKeyboard() {
+        // Android 11+: the system must not resize the window either (insets only).
         getWindow().setSoftInputMode(Build.VERSION.SDK_INT >= 30
             ? WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING
             : WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
@@ -92,24 +91,13 @@ public class MainActivity extends BridgeActivity {
             parent = v.getParent();
         }
 
-        // The only space the page leaves is the on-screen keyboard.
-        ViewCompat.setOnApplyWindowInsetsListener(web, (view, insets) -> {
-            Insets ime = Build.VERSION.SDK_INT >= 30
-                ? insets.getInsets(WindowInsetsCompat.Type.ime())
-                : Insets.NONE;
-            ViewGroup.LayoutParams lp = view.getLayoutParams();
-            if (lp instanceof ViewGroup.MarginLayoutParams) {
-                ViewGroup.MarginLayoutParams m = (ViewGroup.MarginLayoutParams) lp;
-                if (m.leftMargin != 0 || m.topMargin != 0 || m.rightMargin != 0
-                        || m.bottomMargin != ime.bottom) {
-                    m.setMargins(0, 0, 0, ime.bottom);
-                    view.setLayoutParams(lp);
-                }
-            }
-            // keep the WebView's own inset handling (safe-area values for CSS)
-            return ViewCompat.onApplyWindowInsets(view, insets);
-        });
-        ViewCompat.requestApplyInsets(web);
+        // No margins here: the keyboard space is handled by Capacitor (see above).
+        // Make sure no old margin is left on the WebView.
+        ViewGroup.LayoutParams lp = web.getLayoutParams();
+        if (lp instanceof ViewGroup.MarginLayoutParams) {
+            ((ViewGroup.MarginLayoutParams) lp).setMargins(0, 0, 0, 0);
+            web.setLayoutParams(lp);
+        }
     }
 
     // Android 13+ needs a runtime permission before any notification can show.

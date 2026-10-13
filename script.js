@@ -2,7 +2,7 @@
 
 /*
 ========================================================
-SINSUBZ AI — COMPLETE script.js
+SINSUBZ — COMPLETE script.js
 ========================================================
 
 Features:
@@ -1149,7 +1149,7 @@ uploadProgressUI.status.textContent =
 
 
         const filename =
-            `${uploadedFileName}.Sinhala.SinSubzAI.srt`;
+            `${uploadedFileName}.Sinhala.SinSubz.srt`;
 
             uploadProgressUI.fill.style.width = "100%";
 uploadProgressUI.percent.textContent = "100%";
@@ -2778,7 +2778,7 @@ async function selectSubtitle(
 
 
         const filename =
-            `${baseName}.Sinhala.SinSubzAI.srt`;
+            `${baseName}.Sinhala.SinSubz.srt`;
 
 
         downloadTextFile(
@@ -5269,5 +5269,5 @@ document.addEventListener(
 // ========================================================
 
 console.log(
-    "SinSubz AI script loaded successfully."
+    "SinSubz script loaded successfully."
 );
