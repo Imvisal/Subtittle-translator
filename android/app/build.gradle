@@ -23,21 +23,24 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
-    // Every build is signed with the same key, so a new APK can be installed
-    // over the old one as an update. (Sideload key; for the Play Store use a
-    // private upload key kept in GitHub secrets instead.)
+    // Release builds are signed with a key that is NOT stored in the repo.
+    // The GitHub workflow decodes it from secrets and passes these variables.
     signingConfigs {
-        debug {
-            storeFile file('sinsubz.keystore')
-            storePassword 'sublanka-android'
-            keyAlias 'sublanka'
-            keyPassword 'sublanka-android'
+        release {
+            def ksPath = System.getenv("KEYSTORE_PATH")
+            if (ksPath) {
+                storeFile file(ksPath)
+                storePassword System.getenv("KEYSTORE_PASSWORD")
+                keyAlias System.getenv("KEY_ALIAS")
+                keyPassword System.getenv("KEY_PASSWORD") ?: System.getenv("KEYSTORE_PASSWORD")
+            }
         }
     }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
         }
     }
 }
