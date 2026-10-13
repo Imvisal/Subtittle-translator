@@ -49,14 +49,23 @@ jobs:
           distribution: temurin
           java-version: 21
 
+      - name: Decode keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+
       - name: Build APK
         working-directory: android
+        env:
+          KEYSTORE_PATH: ${{ runner.temp }}/release.keystore
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
           chmod +x ./gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleRelease
 
       - name: Name the APK like version.json expects
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk SinSubz.apk
+        run: cp android/app/build/outputs/apk/release/app-release.apk SinSubz.apk
 
       - name: Release notes from version.json
         run: node -p "require('./version.json').notes" > release-notes.txt
