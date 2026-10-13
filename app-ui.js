@@ -13,13 +13,15 @@
 (function () {
     "use strict";
 
-    var cap = window.Capacitor;
-    var isApp = !!(cap && (
+    var cap = window.Capacitor || {};
+    var isAndroid = !!(window.Capacitor && (
         (typeof cap.isNativePlatform === "function" && cap.isNativePlatform()) ||
         (typeof cap.getPlatform === "function" && cap.getPlatform() !== "web")
     ));
+    // Windows desktop app (Electron): same screens, sidebar layout (desktop-ui.css)
+    var isDesktop = !isAndroid && !!window.desktopApi;
 
-    if (!isApp) {
+    if (!isAndroid && !isDesktop) {
         return;
     }
 
@@ -34,6 +36,7 @@
 
     var root = document.documentElement;
     root.classList.add("app-mode");
+    if (isDesktop) { root.classList.add("desk-mode"); }
     if (!root.getAttribute("data-app-tab")) {
         root.setAttribute("data-app-tab", "find");
     }
@@ -219,10 +222,44 @@
     var inboxSeen = 0;       // "seen" time as stored natively
     var inboxMarkAt = 0;     // items newer than this are highlighted while the panel is open
 
-    function loadInbox() {
+    // Desktop: release-alerts.js keeps the list in localStorage
+    var DESK_INBOX = "sinsubz_inbox";
+    function deskInbox() {
+        try {
+            var o = JSON.parse(localStorage.getItem(DESK_INBOX) || "null");
+            if (o && Array.isArray(o.items)) { return o; }
+        } catch (e) { /* ignore */ }
+        return { items: [], seen: 0 };
+    }
+    function deskSave(o) {
+        try { localStorage.setItem(DESK_INBOX, JSON.stringify(o)); } catch (e) { /* ignore */ }
+    }
+
+    function inboxApi() {
+        if (isDesktop) {
+            return {
+                get: function () {
+                    var o = deskInbox();
+                    var unread = o.items.filter(function (it) { return it.t > (o.seen || 0); }).length;
+                    return Promise.resolve({ items: o.items, seen: o.seen || 0, unread: unread });
+                },
+                seen: function () { var o = deskInbox(); o.seen = Date.now(); deskSave(o); return Promise.resolve(); },
+                clear: function () { deskSave({ items: [], seen: Date.now() }); return Promise.resolve(); }
+            };
+        }
         var D = plug("Downloads");
-        if (!D || !D.getReleaseInbox) { return; }
-        D.getReleaseInbox().then(function (r) {
+        if (!D || !D.getReleaseInbox) { return null; }
+        return {
+            get: function () { return D.getReleaseInbox(); },
+            seen: function () { return D.markReleaseInboxSeen ? D.markReleaseInboxSeen() : Promise.resolve(); },
+            clear: function () { return D.clearReleaseInbox ? D.clearReleaseInbox() : Promise.resolve(); }
+        };
+    }
+
+    function loadInbox() {
+        var api = inboxApi();
+        if (!api) { return; }
+        api.get().then(function (r) {
             inbox = (r && r.items) || [];
             inboxSeen = (r && r.seen) || 0;
             inboxUnread = (r && r.unread) || 0;
@@ -237,8 +274,8 @@
     }
 
     function markInboxSeen() {
-        var D = plug("Downloads");
-        if (D && D.markReleaseInboxSeen) { D.markReleaseInboxSeen().catch(function () { /* ignore */ }); }
+        var api = inboxApi();
+        if (api) { api.seen().catch(function () { /* ignore */ }); }
     }
 
     function inboxLine(it) {
@@ -278,6 +315,33 @@
             ? "Notifications, translation in progress, " + cur.percent + " percent"
             : (inboxUnread ? "Notifications, " + inboxUnread + " new" : "Notifications"));
         if (isNew && !jobsOpen) { jobsBtn.classList.add("has-new"); }
+        if (isDesktop) { deskSync(); }
+    }
+
+    // Desktop sidebar: Notifications tab (badge) + the running translation card
+    function deskSync() {
+        var nb = $("deskNotifTab");
+        if (nb) {
+            nb.classList.toggle("on", jobsOpen);
+            var bd = nb.querySelector(".dk-badge");
+            if (bd) {
+                var n = (!jobsOpen && inboxUnread > 0) ? (inboxUnread > 9 ? "9+" : String(inboxUnread)) : "";
+                bd.textContent = n;
+                bd.style.display = n ? "inline-block" : "none";
+            }
+        }
+        if (jobsOpen && tabsEl) {
+            Array.prototype.forEach.call(tabsEl.querySelectorAll("button[data-tab]"), function (b) { b.classList.remove("on"); });
+        }
+        var jc = $("deskJob");
+        if (jc) {
+            jc.classList.toggle("run", !!cur);
+            if (cur) {
+                jc.querySelector("p").textContent = cur.title;
+                jc.querySelector(".dk-bar i").style.width = cur.percent + "%";
+                jc.querySelector(".dk-pct").textContent = cur.percent + "% · " + etaText();
+            }
+        }
     }
 
     function etaText() {
@@ -357,8 +421,8 @@
             clrNew.addEventListener("click", function () {
                 inbox = [];
                 inboxUnread = 0;
-                var D = plug("Downloads");
-                if (D && D.clearReleaseInbox) { D.clearReleaseInbox().catch(function () { /* ignore */ }); }
+                var api = inboxApi();
+                if (api) { api.clear().catch(function () { /* ignore */ }); }
                 updateRing();
                 renderJobs();
             });
@@ -452,7 +516,22 @@
             '<span class="ap-meta" style="display:block">Easier on the eyes at night</span></span>' +
             '<span class="ap-switch" id="setDarkSw"></span></button></div>' +
 
-            '<div class="ap-sec">Permissions</div>' +
+            (isDesktop
+            ? '<div class="ap-sec">Notifications</div>' +
+              '<div class="ap-card">' +
+              '<button type="button" class="ap-item" id="setNotif" role="switch">' +
+              '<span class="ap-ic"><i class="fa-solid fa-bell"></i></span>' +
+              '<span class="ap-main"><span class="ap-title">Release alerts</span>' +
+              '<span class="ap-meta" style="display:block">Pop-up when a new movie, series or Sinhala subtitle is out</span></span>' +
+              '<span class="ap-switch" id="setNotifSw"></span></button>' +
+              '<div class="ap-item" id="setStorage">' +
+              '<span class="ap-ic"><i class="fa-solid fa-folder-open"></i></span>' +
+              '<span class="ap-main"><span class="ap-title">Saved subtitles</span>' +
+              '<span class="ap-meta" style="display:block">Downloads\\SinSubz</span></span></div>' +
+              '</div>'
+            : '') +
+
+            (isDesktop ? '' : '<div class="ap-sec">Permissions</div>' +
             '<div class="ap-card">' +
             '<button type="button" class="ap-item" id="setNotif" role="switch">' +
             '<span class="ap-ic"><i class="fa-solid fa-bell"></i></span>' +
@@ -471,7 +550,7 @@
             '<span class="ap-main"><span class="ap-title">Background translation</span>' +
             '<span class="ap-meta" style="display:block">Keep translating when the screen is off</span></span>' +
             '<span class="ap-state" id="setBatteryState"></span></button>' +
-            '</div>' +
+            '</div>') +
 
             '<div class="ap-sec">About</div>' +
             '<div class="ap-card">' +
@@ -490,6 +569,14 @@
             refreshSettings();
         });
 
+        if (isDesktop) {
+            $("setNotif").addEventListener("click", function () {
+                var off = alertsOff();
+                try { localStorage.setItem("sinsubz_alerts_off", off ? "" : "1"); } catch (e) { /* ignore */ }
+                refreshSettings();
+            });
+            return;
+        }
         $("setNotif").addEventListener("click", onNotifTap);
         $("setStorage").addEventListener("click", onStorageTap);
         $("setBattery").addEventListener("click", function () {
@@ -559,10 +646,18 @@
         }
     }
 
+    function alertsOff() {
+        try { return localStorage.getItem("sinsubz_alerts_off") === "1"; } catch (e) { return false; }
+    }
+
     function refreshSettings() {
         if (!settingsEl) { return; }
 
         setSwitch("setDark", "setDarkSw", root.getAttribute("data-theme") !== "light");
+        if (isDesktop) {
+            setSwitch("setNotif", "setNotifSw", !alertsOff());
+            return;
+        }
 
         notifStatus().then(function (s) {
             setSwitch("setNotif", "setNotifSw", s === "granted");
@@ -718,6 +813,26 @@
             b.addEventListener("click", function () { navigate(t.id, false); });
             tabsEl.appendChild(b);
         });
+        if (isDesktop) {
+            var brand = make("div", "", '<img src="logo.png" alt=""><div><b>Sin<i>Subz</i></b><small>SUBTITLE TRANSLATOR</small></div>');
+            brand.id = "deskBrand";
+            tabsEl.insertBefore(brand, tabsEl.firstChild);
+
+            var nb = make("button", "", '<i class="fa-solid fa-bell"></i><span>Notifications</span><em class="dk-badge"></em>');
+            nb.type = "button";
+            nb.id = "deskNotifTab";
+            nb.addEventListener("click", toggleJobs);
+            tabsEl.insertBefore(nb, tabsEl.querySelector('button[data-tab="settings"]'));
+
+            var jc = make("div", "", '<small>TRANSLATING</small><p></p><div class="dk-bar"><i></i></div><small class="dk-pct"></small>');
+            jc.id = "deskJob";
+            jc.addEventListener("click", function () { if (!jobsOpen) { navigate(curTab, true); } });
+            tabsEl.appendChild(jc);
+
+            var ver = make("div", "", "v" + esc(VERSION) + " · Windows");
+            ver.id = "deskVer";
+            tabsEl.appendChild(ver);
+        }
         document.body.appendChild(tabsEl);
 
         // translations panel

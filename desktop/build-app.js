@@ -10,7 +10,7 @@ const out = path.join(__dirname, "app");
 
 const files = [
     "index.html", "about.html", "contact.html", "privacy.html", "terms.html",
-    "style.css", "script.js", "ui.js", "sync.js", "app-update.js",
+    "style.css", "script.js", "ui.js", "sync.js", "app-update.js", "app-ui.js", "app-ui.css",
     "logo.png", "hero-banner.png",
     "favicon.svg", "favicon.ico", "apple-touch-icon.png"
 ];
@@ -34,6 +34,12 @@ if (deskPkg.version !== rootPkg.version) {
     fs.writeFileSync(deskPkgPath, JSON.stringify(deskPkg, null, 2) + "\n");
 }
 
+fs.copyFileSync(path.join(__dirname, "desktop-ui.css"), path.join(out, "desktop-ui.css"));
+fs.writeFileSync(
+    path.join(out, "app-ui.js"),
+    fs.readFileSync(path.join(out, "app-ui.js"), "utf8").replace("__APP_VERSION__", rootPkg.version)
+);
+
 fs.copyFileSync(path.join(__dirname, "release-alerts.js"), path.join(out, "release-alerts.js"));
 
 fs.writeFileSync(
@@ -53,6 +59,17 @@ if (!html.includes(marker)) throw new Error("index.html: could not find " + mark
 html = html.replace(
     marker,
     '<script src="app-update.js"></script>\n    <script src="desktop-shim.js"></script>\n    <script src="release-alerts.js"></script>\n    ' + marker
+);
+
+// sidebar layout + Notifications tab (app-ui.js runs in desktop mode when desktopApi exists)
+const syncMarker = '<script src="sync.js"></script>';
+if (!html.includes(syncMarker)) throw new Error("index.html: could not find " + syncMarker);
+html = html.replace(syncMarker, syncMarker + '\n    <script src="app-ui.js"></script>');
+html = html.replace(
+    "</head>",
+    '    <link rel="stylesheet" href="app-ui.css">\n' +
+    '    <link rel="stylesheet" href="desktop-ui.css">\n' +
+    '    <script>document.documentElement.classList.add("app-mode","desk-mode");</script>\n</head>'
 );
 fs.writeFileSync(indexPath, html);
 
