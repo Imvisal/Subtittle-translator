@@ -2,7 +2,7 @@
 
 /*
 ========================================================
-SUBLANKA AI — COMPLETE script.js
+SINSUBZ AI — COMPLETE script.js
 ========================================================
 
 Features:
@@ -304,7 +304,7 @@ function showSRTPreview(subtitles) {
     if (!workspace) {
         workspace = document.createElement("section");
         workspace.id = "subtitleEditorWorkspace";
-        workspace.className = "sublanka-editor";
+        workspace.className = "sinsubz-editor";
 
         workspace.innerHTML = `
             <div class="se-header">
@@ -422,13 +422,13 @@ function showSRTPreview(subtitles) {
 // ========================================================
 
 function injectSubtitleEditorStyles() {
-    if (document.getElementById("sublankaEditorStyles")) return;
+    if (document.getElementById("sinsubzEditorStyles")) return;
 
     const style = document.createElement("style");
-    style.id = "sublankaEditorStyles";
+    style.id = "sinsubzEditorStyles";
 
     style.textContent = `
-        .sublanka-editor {
+        .sinsubz-editor {
             margin: 24px 0;
             padding: 20px;
             border: 1px solid rgba(129,102,255,.3);
@@ -440,7 +440,7 @@ function injectSubtitleEditorStyles() {
             width: 100%;
         }
 
-        .sublanka-editor * {
+        .sinsubz-editor * {
             box-sizing: border-box;
         }
 
@@ -639,7 +639,7 @@ function injectSubtitleEditorStyles() {
         }
 
         @media(max-width:600px) {
-            .sublanka-editor {
+            .sinsubz-editor {
                 padding: 12px;
             }
 
@@ -1149,7 +1149,7 @@ uploadProgressUI.status.textContent =
 
 
         const filename =
-            `${uploadedFileName}.Sinhala.SubLankaAI.srt`;
+            `${uploadedFileName}.Sinhala.SinSubzAI.srt`;
 
             uploadProgressUI.fill.style.width = "100%";
 uploadProgressUI.percent.textContent = "100%";
@@ -2778,7 +2778,7 @@ async function selectSubtitle(
 
 
         const filename =
-            `${baseName}.Sinhala.SubLankaAI.srt`;
+            `${baseName}.Sinhala.SinSubzAI.srt`;
 
 
         downloadTextFile(
@@ -3755,7 +3755,7 @@ function sleep(ms) {
 
     if (
         document.getElementById(
-            "sublankaSearchFixes"
+            "sinsubzSearchFixes"
         )
     ) {
 
@@ -3771,7 +3771,7 @@ function sleep(ms) {
 
 
     style.id =
-        "sublankaSearchFixes";
+        "sinsubzSearchFixes";
 
 
     style.textContent = `
@@ -3884,13 +3884,13 @@ function sleep(ms) {
             border-radius: 50%;
 
             animation:
-                sublankaSearchSpin
+                sinsubzSearchSpin
                 .7s linear infinite;
 
         }
 
 
-        @keyframes sublankaSearchSpin {
+        @keyframes sinsubzSearchSpin {
 
             from {
                 transform: rotate(0deg);
@@ -3992,7 +3992,7 @@ function sleep(ms) {
             border-radius: 50%;
 
             animation:
-                sublankaSearchSpin
+                sinsubzSearchSpin
                 .7s linear infinite;
 
         }
@@ -5269,5 +5269,5 @@ document.addEventListener(
 // ========================================================
 
 console.log(
-    "SubLanka AI script loaded successfully."
+    "SinSubz AI script loaded successfully."
 );

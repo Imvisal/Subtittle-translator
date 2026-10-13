@@ -1,8 +1,8 @@
 {
-  "name": "sublanka-ai-desktop",
+  "name": "sinsubz-ai-desktop",
   "version": "1.0.0",
-  "description": "SubLanka AI - English to Sinhala subtitle translator (Windows desktop app)",
-  "author": "SubLanka AI",
+  "description": "SinSubz AI - English to Sinhala subtitle translator (Windows desktop app)",
+  "author": "SinSubz AI",
   "main": "main.js",
   "private": true,
   "scripts": {
@@ -15,8 +15,8 @@
     "electron-builder": "^25.1.8"
   },
   "build": {
-    "appId": "com.visal.sublanka.desktop",
-    "productName": "SubLanka AI",
+    "appId": "com.visal.sinsubz.desktop",
+    "productName": "SinSubz AI",
     "directories": {
       "output": "dist",
       "buildResources": "build"
@@ -47,10 +47,10 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "artifactName": "SubLanka-AI-Setup.exe"
+      "artifactName": "SinSubz-AI-Setup.exe"
     },
     "portable": {
-      "artifactName": "SubLanka-AI-Portable.exe"
+      "artifactName": "SinSubz-AI-Portable.exe"
     }
   }
 }

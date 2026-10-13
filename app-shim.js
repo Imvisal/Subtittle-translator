@@ -1,12 +1,12 @@
 /* =========================================================
-   SubLanka AI — Android app shim
+   SinSubz AI — Android app shim
    Only included in the app build (scripts/build-www.js adds it
    to www/index.html). The website itself never loads this file.
 
    1. The app has no server, so relative /api/... calls are sent
       to the deployed site instead.
    2. Blob downloads do not work in an Android WebView, so SRT
-      files are saved straight into Download/SubLanka AI/ (native
+      files are saved straight into Download/SinSubz AI/ (native
       Downloads plugin). If that fails, the share sheet opens instead.
    3. Notifications (translating / finished / failed / update available).
    4. Update check against /version.json (app-update.js).
@@ -79,7 +79,7 @@
         }
 
         Downloads.saveText({ text: text, filename: filename }).then(function (result) {
-            var where = (result && result.path) || ("Download/SubLanka AI/" + filename);
+            var where = (result && result.path) || ("Download/SinSubz AI/" + filename);
             prepareNotes().then(function (ok) {
                 if (!ok) { return; }
                 return notes().schedule({
@@ -130,7 +130,7 @@
                 LN.createChannel({
                     id: "app-updates",
                     name: "App updates",
-                    description: "Shown when a new version of SubLanka AI is available",
+                    description: "Shown when a new version of SinSubz AI is available",
                     importance: 3
                 }),
                 LN.createChannel({
@@ -363,7 +363,7 @@
 
         card.appendChild(mk("div", "net-icon", "\uD83D\uDCE1"));
         card.appendChild(mk("h3", "", "No internet connection"));
-        card.appendChild(mk("p", "", "SubLanka AI needs the internet to search and translate subtitles. Please check your connection and try again."));
+        card.appendChild(mk("p", "", "SinSubz AI needs the internet to search and translate subtitles. Please check your connection and try again."));
         card.appendChild(mk("p", "", "\u0D85\u0DB1\u0DCA\u0DAD\u0DBB\u0DCA\u0DA2\u0DCF\u0DBD \u0DC3\u0DB8\u0DCA\u0DB6\u0DB1\u0DCA\u0DB0\u0DAD\u0DCF\u0DC0\u0DBA\u0D9A\u0DCA \u0DB1\u0DD0\u0DAD."));
 
         var status = mk("div", "net-status");

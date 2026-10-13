@@ -1,4 +1,4 @@
-package com.visal.sublanka;
+package com.visal.sinsubz;
 
 import android.Manifest;
 import android.content.pm.PackageManager;

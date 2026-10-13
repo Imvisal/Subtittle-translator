@@ -1,5 +1,5 @@
 /* =========================================================
-   SUBLANKA AI — "PROJECTION ROOM" REDESIGN
+   SINSUBZ AI — "PROJECTION ROOM" REDESIGN
    Warm cinema palette · glass surfaces · motion
 
    NOTE: script.js injects some of its own styles at runtime
@@ -2205,7 +2205,7 @@ html[data-theme="light"] .app .sinhala-first-header strong {
     keep it consistent with the theme)
 --------------------------------------------------------- */
 
-.app .sublanka-editor {
+.app .sinsubz-editor {
     margin: 26px 0;
     padding: 22px;
     border-radius: var(--radius-lg);
@@ -2216,10 +2216,10 @@ html[data-theme="light"] .app .sinhala-first-header strong {
     animation: fadeUp 0.6s var(--ease);
 }
 
-.app .sublanka-editor .se-tab,
-.app .sublanka-editor .se-settings-button,
-.app .sublanka-editor .se-pagination button,
-.app .sublanka-editor #seApplySync {
+.app .sinsubz-editor .se-tab,
+.app .sinsubz-editor .se-settings-button,
+.app .sinsubz-editor .se-pagination button,
+.app .sinsubz-editor #seApplySync {
     border-radius: 999px;
     color: var(--text-2);
     background: var(--surface);
@@ -2227,68 +2227,68 @@ html[data-theme="light"] .app .sinhala-first-header strong {
     transition: transform 0.25s var(--ease), background 0.25s ease, border-color 0.25s ease;
 }
 
-.app .sublanka-editor .se-tab:hover,
-.app .sublanka-editor .se-pagination button:hover:not(:disabled) {
+.app .sinsubz-editor .se-tab:hover,
+.app .sinsubz-editor .se-pagination button:hover:not(:disabled) {
     transform: translateY(-2px);
     border-color: var(--amber);
 }
 
-.app .sublanka-editor .se-tab.active,
-.app .sublanka-editor #seApplySync {
+.app .sinsubz-editor .se-tab.active,
+.app .sinsubz-editor #seApplySync {
     color: #0b0d1f;
     background: var(--grad);
     border-color: transparent;
     font-weight: 700;
 }
 
-.app .sublanka-editor .se-settings,
-.app .sublanka-editor .se-sync,
-.app .sublanka-editor .se-subtitle-row {
+.app .sinsubz-editor .se-settings,
+.app .sinsubz-editor .se-sync,
+.app .sinsubz-editor .se-subtitle-row {
     background: var(--surface);
     border: 1px solid var(--line);
 }
 
-.app .sublanka-editor .se-subtitle-row {
+.app .sinsubz-editor .se-subtitle-row {
     transition: border-color 0.25s ease;
 }
 
-.app .sublanka-editor .se-subtitle-row:focus-within {
+.app .sinsubz-editor .se-subtitle-row:focus-within {
     border-color: var(--amber);
 }
 
-.app .sublanka-editor .se-settings select,
-.app .sublanka-editor .se-sync input,
-.app .sublanka-editor .se-search-row input,
-.app .sublanka-editor .se-time-fields input,
-.app .sublanka-editor .se-subtitle-text {
+.app .sinsubz-editor .se-settings select,
+.app .sinsubz-editor .se-sync input,
+.app .sinsubz-editor .se-search-row input,
+.app .sinsubz-editor .se-time-fields input,
+.app .sinsubz-editor .se-subtitle-text {
     color: var(--text);
     background: var(--bg-soft);
     border: 1px solid var(--line);
     font-family: var(--font-body);
 }
 
-.app .sublanka-editor .se-subtitle-text:focus,
-.app .sublanka-editor input:focus,
-.app .sublanka-editor select:focus {
+.app .sinsubz-editor .se-subtitle-text:focus,
+.app .sinsubz-editor input:focus,
+.app .sinsubz-editor select:focus {
     outline: none;
     border-color: var(--amber);
     box-shadow: 0 0 0 3px rgba(127, 180, 255, 0.14);
 }
 
-.app .sublanka-editor .se-row-number {
+.app .sinsubz-editor .se-row-number {
     color: var(--amber);
 }
 
-.app .sublanka-editor .se-settings label,
-.app .sublanka-editor .se-sync label,
-.app .sublanka-editor #sePageLabel,
-.app .sublanka-editor .se-help,
-.app .sublanka-editor .se-sync p,
-.app .sublanka-editor #seSubtitleCount {
+.app .sinsubz-editor .se-settings label,
+.app .sinsubz-editor .se-sync label,
+.app .sinsubz-editor #sePageLabel,
+.app .sinsubz-editor .se-help,
+.app .sinsubz-editor .se-sync p,
+.app .sinsubz-editor #seSubtitleCount {
     color: var(--muted);
 }
 
-.app .sublanka-editor .se-raw-pane {
+.app .sinsubz-editor .se-raw-pane {
     color: var(--text-2);
     background: var(--bg-soft);
     border: 1px solid var(--line);
@@ -2790,7 +2790,7 @@ footer p + p {
         grid-template-columns: 1fr;
     }
 
-    .app .sublanka-editor {
+    .app .sinsubz-editor {
         padding: 14px;
     }
 

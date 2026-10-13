@@ -1,5 +1,5 @@
 /* =========================================================
-   SubLanka AI — in-app update check (Android + Windows apps only)
+   SinSubz AI — in-app update check (Android + Windows apps only)
    Included by scripts/build-www.js and desktop/build-app.js.
    The website itself never loads this file.
 
@@ -76,7 +76,7 @@
         card.appendChild(el("span", "upd-badge", "NEW VERSION " + info.latest));
         card.appendChild(el("h3", "", "Update available"));
         card.appendChild(el("p", "",
-            "A new version of SubLanka AI is ready (you have " + cfg.currentVersion + ")."));
+            "A new version of SinSubz AI is ready (you have " + cfg.currentVersion + ")."));
         if (info.notes) { card.appendChild(el("p", "", info.notes)); }
 
         var actions = el("div", "upd-actions");
@@ -109,12 +109,12 @@
             var entry = data[cfg.platform] || {};
             var info = { latest: data.version, notes: data.notes || "", url: entry.url || "" };
 
-            if (getFlag("sublanka_update_notified") !== info.latest) {
-                setFlag("sublanka_update_notified", info.latest);
+            if (getFlag("sinsubz_update_notified") !== info.latest) {
+                setFlag("sinsubz_update_notified", info.latest);
                 try {
                     cfg.notify(
                         "Update available — v" + info.latest,
-                        info.notes || "A new version of SubLanka AI is ready. Open the app to update."
+                        info.notes || "A new version of SinSubz AI is ready. Open the app to update."
                     );
                 } catch (e) { /* ignore */ }
             }

@@ -2,7 +2,7 @@
 
 /*
 ========================================================
-SUBLANKA AI — ui.js
+SINSUBZ AI — ui.js
 Presentation-only behaviour: theme toggle, scroll effects,
 reveal animations, hero subtitle demo, ripples, drag & drop.
 
@@ -58,7 +58,7 @@ same DOM events a user would (e.g. the file input's
             applyTheme(next);
 
             try {
-                localStorage.setItem("sublanka-theme", next);
+                localStorage.setItem("sinsubz-theme", next);
             } catch (e) {
                 /* storage can be unavailable (private mode) */
             }

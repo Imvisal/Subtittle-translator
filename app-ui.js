@@ -1,5 +1,5 @@
 /* =========================================================
-   SubLanka AI — Android app UI
+   SinSubz AI — Android app UI
    Only included in the app build (scripts/build-www.js adds it,
    with app-ui.css, to www/index.html). The website never loads
    this file, and it does not change script.js / ui.js / sync.js.
@@ -24,7 +24,7 @@
     }
 
     var VERSION = "__APP_VERSION__";
-    var JOBS_KEY = "sublanka-app-jobs";
+    var JOBS_KEY = "sinsubz-app-jobs";
     var TABS = [
         { id: "find",     label: "Find",     icon: "fa-magnifying-glass" },
         { id: "upload",   label: "Upload",   icon: "fa-cloud-arrow-up" },
@@ -161,7 +161,7 @@
     function attachFile(filename) {
         if (!lastDone || lastDone.file || Date.now() - lastDone.t > 90000 || !filename) { return; }
         lastDone.file = filename;
-        var t = String(filename).replace(/\.Sinhala\.SubLankaAI\.srt$/i, "").replace(/\.srt$/i, "");
+        var t = String(filename).replace(/\.Sinhala\.SinSubzAI\.srt$/i, "").replace(/\.srt$/i, "");
         if (lastDone.kind === "search") { t = t.replace(/[._]+/g, " ").trim(); }
         if (t) { lastDone.title = t; }
         saveHistory();
@@ -268,7 +268,7 @@
             jobHistory.forEach(function (j) {
                 var ok = j.status === "done";
                 var meta = ok
-                    ? (j.count ? j.count + " subtitles · " : "") + (j.file ? "Saved to Download/SubLanka AI · " : "") + timeAgo(j.t)
+                    ? (j.count ? j.count + " subtitles · " : "") + (j.file ? "Saved to Download/SinSubz AI · " : "") + timeAgo(j.t)
                     : esc(j.msg || "Failed") + " · " + timeAgo(j.t);
                 html += '<div class="ap-card"><div class="ap-row">' +
                     '<div class="ap-tile ' + (ok ? "ok" : "bad") + '"><i class="fa-solid ' +
@@ -346,7 +346,7 @@
         root.setAttribute("data-theme", theme);
         var meta = document.querySelector('meta[name="theme-color"]');
         if (meta) { meta.setAttribute("content", theme === "light" ? "#f4f6fc" : "#07080d"); }
-        try { localStorage.setItem("sublanka-theme", theme); } catch (e) { /* ignore */ }
+        try { localStorage.setItem("sinsubz-theme", theme); } catch (e) { /* ignore */ }
     }
 
     function buildSettings() {
@@ -374,7 +374,7 @@
             '<button type="button" class="ap-item" id="setStorage">' +
             '<span class="ap-ic"><i class="fa-solid fa-folder-open"></i></span>' +
             '<span class="ap-main"><span class="ap-title">Storage access</span>' +
-            '<span class="ap-meta" style="display:block" id="setStorageMeta">Subtitles are saved to Download/SubLanka AI</span></span>' +
+            '<span class="ap-meta" style="display:block" id="setStorageMeta">Subtitles are saved to Download/SinSubz AI</span></span>' +
             '<span class="ap-state" id="setStorageState"></span></button>' +
 
             '<button type="button" class="ap-item" id="setBattery" hidden>' +
@@ -386,12 +386,12 @@
 
             '<div class="ap-sec">About</div>' +
             '<div class="ap-card">' +
-            '<a class="ap-item" href="about.html"><span class="ap-ic"><i class="fa-solid fa-circle-info"></i></span><span class="ap-main"><span class="ap-title">About SubLanka AI</span></span></a>' +
+            '<a class="ap-item" href="about.html"><span class="ap-ic"><i class="fa-solid fa-circle-info"></i></span><span class="ap-main"><span class="ap-title">About SinSubz AI</span></span></a>' +
             '<a class="ap-item" href="privacy.html"><span class="ap-ic"><i class="fa-solid fa-shield-halved"></i></span><span class="ap-main"><span class="ap-title">Privacy Policy</span></span></a>' +
             '<a class="ap-item" href="terms.html"><span class="ap-ic"><i class="fa-solid fa-file-contract"></i></span><span class="ap-main"><span class="ap-title">Terms of Service</span></span></a>' +
             '<a class="ap-item" href="contact.html"><span class="ap-ic"><i class="fa-solid fa-envelope"></i></span><span class="ap-main"><span class="ap-title">Contact</span></span></a>' +
             '</div>' +
-            '<div class="ap-version">SubLanka AI · version ' + esc(VERSION) + '</div>';
+            '<div class="ap-version">SinSubz AI · version ' + esc(VERSION) + '</div>';
 
         var main = document.querySelector("main.app") || document.body;
         main.appendChild(settingsEl);
@@ -417,11 +417,11 @@
         var D = plug("Downloads");
         if (D && D.openAppSettings) {
             D.openAppSettings().catch(function () {
-                toast("Open Android Settings → Apps → SubLanka AI");
+                toast("Open Android Settings → Apps → SinSubz AI");
             });
             if (msg) { toast(msg); }
         } else {
-            toast("Open Android Settings → Apps → SubLanka AI");
+            toast("Open Android Settings → Apps → SinSubz AI");
         }
     }
 
@@ -459,14 +459,14 @@
         if (D && D.requestStorage) {
             D.requestStorage().then(function (r) {
                 if (r && r.state === "not-needed") {
-                    toast("No permission needed. Files save to Download/SubLanka AI");
+                    toast("No permission needed. Files save to Download/SinSubz AI");
                 } else if (r && r.state !== "granted") {
                     openAppSettings("Allow storage in the app settings");
                 }
                 refreshSettings();
             }).catch(function () { openAppSettings(); });
         } else {
-            toast("Files save to Download/SubLanka AI");
+            toast("Files save to Download/SinSubz AI");
         }
     }
 
@@ -498,7 +498,7 @@
                     st.className = "ap-state warn";
                 }
                 var m = $("setStorageMeta");
-                if (m) { m.textContent = "Subtitles are saved to " + ((r && r.folder) || "Download/SubLanka AI"); }
+                if (m) { m.textContent = "Subtitles are saved to " + ((r && r.folder) || "Download/SinSubz AI"); }
             }).catch(function () { st.textContent = ""; });
         } else if (st) {
             st.textContent = "Ready";

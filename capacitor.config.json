@@ -1,6 +1,6 @@
 {
-  "appId": "com.visal.sublanka",
-  "appName": "SubLanka AI",
+  "appId": "com.visal.sinsubz",
+  "appName": "SinSubz AI",
   "webDir": "www",
   "backgroundColor": "#07080d",
   "plugins": {
@@ -8,7 +8,7 @@
       "enabled": true
     },
     "LocalNotifications": {
-      "smallIcon": "ic_stat_sublanka",
+      "smallIcon": "ic_stat_sinsubz",
       "iconColor": "#7c7cff"
     }
   }

@@ -2,7 +2,7 @@
 
 /*
 ========================================================
-SUBLANKA AI — sync.js
+SINSUBZ AI — sync.js
 Sync a Sinhala SRT to a movie release:
 
  1. user uploads a Sinhala .srt

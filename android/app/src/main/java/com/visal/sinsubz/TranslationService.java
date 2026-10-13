@@ -1,4 +1,4 @@
-package com.visal.sublanka;
+package com.visal.sinsubz;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -26,7 +26,7 @@ import androidx.core.app.ServiceCompat;
  */
 public class TranslationService extends Service {
 
-    static final String ACTION_STOP = "com.visal.sublanka.STOP_TRANSLATION";
+    static final String ACTION_STOP = "com.visal.sinsubz.STOP_TRANSLATION";
     static final String EXTRA_PERCENT = "percent";
     static final String EXTRA_COMPLETED = "completed";
     static final String EXTRA_TOTAL = "total";
@@ -51,7 +51,7 @@ public class TranslationService extends Service {
         String body = total > 0 ? completed + " / " + total + " lines" : "Starting...";
 
         return new NotificationCompat.Builder(ctx, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_stat_sublanka)
+            .setSmallIcon(R.drawable.ic_stat_sinsubz)
             .setLargeIcon(logo)
             .setColor(0xFF7C7CFF)
             .setContentTitle("Translating subtitle... " + percent + "%")
@@ -104,7 +104,7 @@ public class TranslationService extends Service {
         if (wakeLock == null) {
             PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
             if (pm != null) {
-                wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "sublanka:translation");
+                wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "sinsubz:translation");
                 wakeLock.acquire(MAX_WAKE_MS);
             }
         }

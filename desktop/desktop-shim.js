@@ -1,4 +1,4 @@
-/* SubLanka AI — Windows desktop shim.
+/* SinSubz AI — Windows desktop shim.
    Only included in the desktop build (desktop/build-app.js adds it to
    app/index.html). The website itself never loads this file.
 
@@ -52,7 +52,7 @@
         }
     };
 
-    // Save the translated / synced SRT straight into Downloads\SubLanka AI
+    // Save the translated / synced SRT straight into Downloads\SinSubz AI
     window.__appSaveTextFile = function (text, filename) {
         window.desktopApi.saveFile(text, filename).catch(function (error) {
             alert("Could not save the file:\n\n" + String((error && error.message) || error));

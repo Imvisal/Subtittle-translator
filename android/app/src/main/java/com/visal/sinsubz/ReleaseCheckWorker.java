@@ -1,4 +1,4 @@
-package com.visal.sublanka;
+package com.visal.sinsubz;
 
 import android.Manifest;
 import android.app.NotificationChannel;
@@ -41,7 +41,7 @@ public class ReleaseCheckWorker extends Worker {
 
     private static final String API = "https://subtittle-translator.vercel.app/api/new-releases";
     private static final String CHANNEL_ID = "new-releases";
-    private static final String PREFS = "sublanka_releases";
+    private static final String PREFS = "sinsubz_releases";
     private static final int MAX_NOTIFICATIONS = 3;
     private static final int SUMMARY_ID = 2999;
 
@@ -104,7 +104,7 @@ public class ReleaseCheckWorker extends Worker {
                             (series ? "New series available: " : "New movie available: ") + name,
                             sinhala
                                 ? "Sinhala subtitle is already available" + (source.isEmpty() ? "." : " (" + source + ").")
-                                : "Open SubLanka AI to find or translate subtitles.",
+                                : "Open SinSubz AI to find or translate subtitles.",
                             poster
                         });
                     }
@@ -115,7 +115,7 @@ public class ReleaseCheckWorker extends Worker {
                         toShow.add(new String[] {
                             key,
                             "Sinhala subtitle available: " + name,
-                            "Found on " + (source.isEmpty() ? "a Sinhala subtitle site" : source) + ". Open SubLanka AI to get it.",
+                            "Found on " + (source.isEmpty() ? "a Sinhala subtitle site" : source) + ". Open SinSubz AI to get it.",
                             poster
                         });
                     }
@@ -166,7 +166,7 @@ public class ReleaseCheckWorker extends Worker {
         if (list.size() > MAX_NOTIFICATIONS) {
             nm.notify(
                 SUMMARY_ID,
-                build(ctx, open, "SubLanka AI",
+                build(ctx, open, "SinSubz AI",
                     "+" + (list.size() - MAX_NOTIFICATIONS) + " more new releases. Open the app to see them.", ""));
         }
     }
@@ -175,7 +175,7 @@ public class ReleaseCheckWorker extends Worker {
             Context ctx, PendingIntent open, String title, String body, String posterUrl) {
 
         NotificationCompat.Builder b = new NotificationCompat.Builder(ctx, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_stat_sublanka)
+            .setSmallIcon(R.drawable.ic_stat_sinsubz)
             // our own logo instead of a generic icon
             .setLargeIcon(BitmapFactory.decodeResource(ctx.getResources(), R.drawable.ic_logo_large))
             .setColor(0xFF7C7CFF)

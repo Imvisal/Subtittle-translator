@@ -1,7 +1,7 @@
 name: Release Android App
 
 # Push a tag like v1.1.0 (see scripts/bump-version.js) and this builds the APK
-# and publishes it to GitHub Releases as SubLanka-AI.apk, which is the file
+# and publishes it to GitHub Releases as SinSubz-AI.apk, which is the file
 # version.json points the installed apps to.
 on:
   push:
@@ -56,7 +56,7 @@ jobs:
           ./gradlew assembleDebug
 
       - name: Name the APK like version.json expects
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk SubLanka-AI.apk
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk SinSubz-AI.apk
 
       - name: Release notes from version.json
         run: node -p "require('./version.json').notes" > release-notes.txt
@@ -65,7 +65,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "$GITHUB_REF_NAME" SubLanka-AI.apk \
-            --title "SubLanka AI $GITHUB_REF_NAME" \
+          gh release create "$GITHUB_REF_NAME" SinSubz-AI.apk \
+            --title "SinSubz AI $GITHUB_REF_NAME" \
             --notes-file release-notes.txt \
-          || gh release upload "$GITHUB_REF_NAME" SubLanka-AI.apk --clobber
+          || gh release upload "$GITHUB_REF_NAME" SinSubz-AI.apk --clobber

@@ -21,7 +21,7 @@ function createWindow() {
         minWidth: 900,
         minHeight: 600,
         backgroundColor: "#07080d",
-        title: "SubLanka AI",
+        title: "SinSubz AI",
         icon: path.join(__dirname, "app", "logo.png"),
         autoHideMenuBar: true,
         webPreferences: {
@@ -45,7 +45,7 @@ function createWindow() {
         if (!trayHintShown) {
             trayHintShown = true;
             toast(
-                "SubLanka AI is still running",
+                "SinSubz AI is still running",
                 "It stays in the system tray to tell you about new movies and Sinhala subtitles. Right-click the tray icon to quit.",
                 true
             );
@@ -114,7 +114,7 @@ function toast(title, body, silent, onClick) {
 
 let startedToast = false;
 
-// Save the translated / synced .srt into Downloads\SubLanka AI\
+// Save the translated / synced .srt into Downloads\SinSubz AI\
 ipcMain.handle("save-file", async (_event, text, filename) => {
     if (typeof text !== "string" || typeof filename !== "string") {
         throw new Error("Invalid file");
@@ -123,7 +123,7 @@ ipcMain.handle("save-file", async (_event, text, filename) => {
     const safeName =
         path.basename(filename).replace(/[<>:"/\\|?*\x00-\x1f]/g, "_").trim() || "subtitle.srt";
 
-    const dir = path.join(app.getPath("downloads"), "SubLanka AI");
+    const dir = path.join(app.getPath("downloads"), "SinSubz AI");
     fs.mkdirSync(dir, { recursive: true });
 
     const ext = path.extname(safeName);
@@ -160,16 +160,16 @@ ipcMain.on("notify", (_event, msg) => {
         if (win) win.setProgressBar(pct / 100);
         if (!startedToast) {
             startedToast = true;
-            toast("Translating subtitle...", "SubLanka AI is translating " + msg.total + " lines. We'll tell you when it's done.", true);
+            toast("Translating subtitle...", "SinSubz AI is translating " + msg.total + " lines. We'll tell you when it's done.", true);
         }
-        if (win) win.setTitle("SubLanka AI - Translating " + pct + "%");
+        if (win) win.setTitle("SinSubz AI - Translating " + pct + "%");
     }
 
     if (msg.type === "done" || msg.type === "failed") {
         startedToast = false;
         if (win) {
             win.setProgressBar(-1);
-            win.setTitle("SubLanka AI");
+            win.setTitle("SinSubz AI");
             if (!win.isFocused()) win.flashFrame(true);
         }
         if (msg.type === "done") {
@@ -180,7 +180,7 @@ ipcMain.on("notify", (_event, msg) => {
     }
 });
 
-app.setAppUserModelId("com.visal.sublanka.desktop");
+app.setAppUserModelId("com.visal.sinsubz.desktop");
 
 function showWindow() {
     if (!win) return;
@@ -195,10 +195,10 @@ function createTray() {
         .resize({ width: 24, height: 24 });
 
     tray = new Tray(icon);
-    tray.setToolTip("SubLanka AI");
+    tray.setToolTip("SinSubz AI");
 
     const menu = () => Menu.buildFromTemplate([
-        { label: "Open SubLanka AI", click: showWindow },
+        { label: "Open SinSubz AI", click: showWindow },
         {
             label: "Start with Windows",
             type: "checkbox",

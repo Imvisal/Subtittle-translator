@@ -8,10 +8,10 @@ def verParts = pkgJson.version.tokenize('.')
 def appVersionCode = verParts[0].toInteger() * 10000 + verParts[1].toInteger() * 100 + verParts[2].toInteger()
 
 android {
-    namespace = "com.visal.sublanka"
+    namespace = "com.visal.sinsubz"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.visal.sublanka"
+        applicationId "com.visal.sinsubz"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode appVersionCode
@@ -28,7 +28,7 @@ android {
     // private upload key kept in GitHub secrets instead.)
     signingConfigs {
         debug {
-            storeFile file('sublanka.keystore')
+            storeFile file('sinsubz.keystore')
             storePassword 'sublanka-android'
             keyAlias 'sublanka'
             keyPassword 'sublanka-android'
