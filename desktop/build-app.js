@@ -55,6 +55,8 @@ fs.copyFileSync(path.join(root, "logo.png"), path.join(__dirname, "build", "icon
 // load the shim before the site's own scripts
 const indexPath = path.join(out, "index.html");
 let html = fs.readFileSync(indexPath, "utf8");
+// website-only bits (download page link, popup) must not end up in the app
+html = html.replace(/[ \t]*<!--WEBONLY-->[\s\S]*?<!--\/WEBONLY-->[ \t]*\r?\n?/g, "");
 const marker = '<script src="script.js"></script>';
 if (!html.includes(marker)) throw new Error("index.html: could not find " + marker);
 html = html.replace(
