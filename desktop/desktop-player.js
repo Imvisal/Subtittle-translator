@@ -1,6 +1,7 @@
-/* SinSubz — Windows app: "Play" tab.
+/* SinSubz — Windows app: "Merge" tab.
    Pick a movie / episode and a subtitle (the one you just translated or synced,
-   or any .srt) and watch it with the subtitle already on.
+   or any .srt), preview it, then MERGE the subtitle into the video and save a new
+   video file that shows the subtitle in any player (ffmpeg, see export-video.js).
    - subtitle delay and size can be changed while playing
    - "Save next to video" writes Movie.si.srt beside the video file so VLC,
      MPC-HC, PotPlayer etc. load it automatically
@@ -21,6 +22,8 @@
     var raf = 0;
     var shown = "";
     var stageW = 0;
+    var making = false;
+    var lastOut = "";
 
     // remember the last SRT the user saved from Upload / Find / Sync
     var origSave = window.__appSaveTextFile;
@@ -82,8 +85,8 @@
         var sec = document.createElement("section");
         sec.id = "deskPlayer";
         sec.innerHTML =
-            '<h2>Play with subtitles</h2>' +
-            '<p class="dp-lead">Choose the movie file and a subtitle. The subtitle is shown on the video while it plays.</p>' +
+            '<h2>Merge subtitle into video</h2>' +
+            '<p class="dp-lead">Choose the movie and a subtitle, check it in the preview, then save a new video that already has the subtitle in it. You never have to add the subtitle again.</p>' +
 
             '<div class="dp-row">' +
             '<div class="ap-card dp-pick"><div class="dp-k">1 · Video</div>' +
@@ -114,6 +117,17 @@
             '<button type="button" class="dp-btn alt" id="dpSave" disabled>Save next to video</button>' +
             '<button type="button" class="dp-btn alt" id="dpFull">Full screen</button></div>' +
             '</div>' +
+            '<div class="ap-card dp-export">' +
+            '<div class="dp-k">3 · Make the new video</div>' +
+            '<label class="dp-opt"><input type="radio" name="dpMode" value="burn" checked>' +
+            '<span><b>Burn into the picture</b><em>Shows in every player, TV and phone. Takes longer (the video is re-encoded).</em></span></label>' +
+            '<label class="dp-opt"><input type="radio" name="dpMode" value="soft">' +
+            '<span><b>Subtitle track (fast)</b><em>Done in a minute. Works in VLC, MPC-HC, PotPlayer and most phones; some TVs ignore it.</em></span></label>' +
+            '<div class="dp-btns"><button type="button" class="dp-btn" id="dpMake" disabled>Save video with subtitle…</button>' +
+            '<button type="button" class="dp-btn alt" id="dpCancel" hidden>Cancel</button>' +
+            '<button type="button" class="dp-btn alt" id="dpShow" hidden>Show in folder</button></div>' +
+            '<div class="dp-prog" id="dpProg" hidden><div class="dp-prog-bar"><i id="dpProgFill"></i></div><span id="dpProgTxt"></span></div>' +
+            '</div>' +
             '<div id="dpMsg" role="status"></div>';
         main.appendChild(sec);
 
@@ -129,6 +143,10 @@
         $("dpSp").addEventListener("click", function () { setSize(size + 2); });
         $("dpSave").addEventListener("click", saveNext);
         $("dpFull").addEventListener("click", fullscreen);
+        $("dpMake").addEventListener("click", makeVideo);
+        $("dpCancel").addEventListener("click", function () { window.desktopApi.cancelExport(); });
+        $("dpShow").addEventListener("click", function () { if (lastOut) { window.desktopApi.showInFolder(lastOut); } });
+        window.desktopApi.onExportProgress(showProgress);
 
         var v = $("dpVideo");
         v.addEventListener("play", loop);
@@ -181,6 +199,7 @@
 
     function refreshButtons() {
         $("dpSave").disabled = !(haveVideo && cues.length);
+        $("dpMake").disabled = !(haveVideo && cues.length) || making;
     }
 
     function setSub(text, name) {
@@ -293,6 +312,46 @@
         window.desktopApi.saveSubNextToVideo(shiftedSrt()).then(function (r) {
             msg("Saved: " + r.path + " . Open the movie in any player and the subtitle loads by itself.");
         }).catch(function (e) { msg(String((e && e.message) || e), true); });
+    }
+
+    function fmtEta(sec) {
+        if (sec == null || !isFinite(sec)) { return ""; }
+        var m = Math.floor(sec / 60), s = sec % 60;
+        return m >= 60 ? Math.floor(m / 60) + " h " + (m % 60) + " min left" : m ? m + " min " + s + " s left" : s + " s left";
+    }
+
+    function showProgress(p) {
+        if (!making) { return; }
+        $("dpProgFill").style.width = p.percent + "%";
+        var t = p.percent + "%";
+        if (p.speed) { t += " · " + p.speed.toFixed(1) + "x"; }
+        var e = fmtEta(p.etaSec);
+        $("dpProgTxt").textContent = t + (e ? " · " + e : "");
+    }
+
+    function setMaking(on) {
+        making = on;
+        $("dpProg").hidden = !on;
+        $("dpCancel").hidden = !on;
+        if (on) { $("dpShow").hidden = true; $("dpProgFill").style.width = "0%"; $("dpProgTxt").textContent = "Starting…"; }
+        refreshButtons();
+    }
+
+    function makeVideo() {
+        if (making || !haveVideo || !cues.length) { return; }
+        var mode = (document.querySelector('input[name="dpMode"]:checked') || {}).value || "burn";
+        setMaking(true);
+        msg(mode === "burn" ? "Making the video. Keep SinSubz open; you can use other apps meanwhile." : "Adding the subtitle track…");
+        window.desktopApi.exportVideo({ srtText: shiftedSrt(), mode: mode, size: size }).then(function (r) {
+            setMaking(false);
+            if (!r || r.cancelled) { msg("Cancelled. Nothing was saved."); return; }
+            lastOut = r.path;
+            $("dpShow").hidden = false;
+            msg("Done! Saved: " + r.path + " . Play it in any player and the subtitle is already there.");
+        }).catch(function (e) {
+            setMaking(false);
+            msg(String((e && e.message) || e).replace(/^Error invoking remote method '[^']+':\s*(Error:\s*)?/, ""), true);
+        });
     }
 
     if (document.readyState === "loading") {

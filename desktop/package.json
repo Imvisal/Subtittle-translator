@@ -1,6 +1,6 @@
 {
   "name": "sinsubz-desktop",
-  "version": "1.0.0",
+  "version": "1.1.6",
   "description": "SinSubz - English to Sinhala subtitle translator (Windows desktop app)",
   "author": "SinSubz",
   "main": "main.js",
@@ -9,6 +9,9 @@
     "prepare:app": "node build-app.js",
     "start": "node build-app.js && electron .",
     "dist": "node build-app.js && electron-builder --win --publish never"
+  },
+  "dependencies": {
+    "ffmpeg-static": "^5.2.0"
   },
   "devDependencies": {
     "electron": "^33.2.0",
@@ -24,6 +27,7 @@
     "files": [
       "main.js",
       "preload.js",
+      "export-video.js",
       "app/**/*"
     ],
     "win": {
@@ -51,6 +55,9 @@
     },
     "portable": {
       "artifactName": "SinSubz-Portable.exe"
-    }
+    },
+    "asarUnpack": [
+      "node_modules/ffmpeg-static/**"
+    ]
   }
 }

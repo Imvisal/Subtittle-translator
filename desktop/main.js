@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, shell, Menu, Notification, Tray, nativeImage, dialog } = require("electron");
 const path = require("path");
 const fs = require("fs");
+const { runExport } = require("./export-video");
 
 // The desktop app has no server of its own: /api/... calls go to the deployed site.
 const API_ORIGIN = "https://subtittle-translator.vercel.app";
@@ -182,6 +183,73 @@ ipcMain.handle("save-sub-next-to-video", async (_event, text) => {
     const file = path.join(dir, base + ".si.srt");
     fs.writeFileSync(file, "\uFEFF" + text, "utf8");
     return { path: file };
+});
+
+// ---- Merge tab: put the subtitle INTO the video file (ffmpeg) and save a new video ----
+function ffmpegBinary() {
+    // ffmpeg-static lives in app.asar.unpacked once the app is packaged
+    return require("ffmpeg-static").replace("app.asar", "app.asar.unpacked");
+}
+
+let exportJob = null;
+
+ipcMain.handle("export-video", async (_event, opts) => {
+    if (!currentVideo) throw new Error("Choose a video first.");
+    if (exportJob) throw new Error("A video is already being made.");
+    if (!opts || typeof opts.srtText !== "string" || !opts.srtText.length) throw new Error("No subtitle to add.");
+
+    const mode = opts.mode === "soft" ? "soft" : "burn";
+    const vExt = path.extname(currentVideo).toLowerCase();
+    const outExt = mode === "soft" && vExt === ".mkv" ? ".mkv" : ".mp4";
+    const base = path.basename(currentVideo, path.extname(currentVideo));
+
+    const r = await dialog.showSaveDialog(win, {
+        title: "Save the new video",
+        defaultPath: path.join(path.dirname(currentVideo), base + ".Sinhala" + outExt),
+        filters: outExt === ".mkv"
+            ? [{ name: "MKV video", extensions: ["mkv"] }]
+            : [{ name: "MP4 video", extensions: ["mp4"] }]
+    });
+    if (r.canceled || !r.filePath) return { cancelled: true };
+
+    let out = r.filePath;
+    if (path.extname(out).toLowerCase() !== outExt) out += outExt;
+    if (path.resolve(out).toLowerCase() === path.resolve(currentVideo).toLowerCase()) {
+        throw new Error("Save it under a different name. The original video is not touched.");
+    }
+
+    exportJob = runExport({
+        ffmpegPath: ffmpegBinary(),
+        video: currentVideo,
+        srtText: opts.srtText,
+        mode,
+        size: Number(opts.size) || 30,
+        out,
+        onProgress: (p) => {
+            if (win && !win.isDestroyed()) {
+                win.webContents.send("export-progress", p);
+                win.setProgressBar(p.percent / 100);
+            }
+        }
+    });
+
+    try {
+        await exportJob.promise;
+        if (win) win.setProgressBar(-1);
+        toast("Video is ready \u2713", out, false, () => shell.showItemInFolder(out));
+        return { path: out };
+    } catch (e) {
+        if (win) win.setProgressBar(-1);
+        if (e && e.cancelled) return { cancelled: true };
+        throw e;
+    } finally {
+        exportJob = null;
+    }
+});
+
+ipcMain.on("export-cancel", () => { if (exportJob) exportJob.cancel(); });
+ipcMain.on("show-in-folder", (_event, p) => {
+    if (typeof p === "string" && fs.existsSync(p)) shell.showItemInFolder(p);
 });
 
 // Only the update download links are allowed to open in the browser

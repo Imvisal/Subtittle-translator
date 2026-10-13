@@ -218,3 +218,19 @@ html.desk-mode[data-app-tab="play"] #deskPlayer { display: block; }
 #dpMsg { margin-top: 12px; font-size: 13px; color: var(--muted); min-height: 18px; word-break: break-word; }
 #dpMsg.bad { color: #ff9aa8; }
 #deskPlayer .dp-row .ap-card { margin-top: 0; }
+
+/* ---------- Merge tab: make the new video ---------- */
+#deskPlayer .dp-export { margin-top: 16px; display: flex; flex-direction: column; gap: 10px; }
+#deskPlayer .dp-opt {
+    display: flex; gap: 12px; align-items: flex-start; cursor: pointer;
+    padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line);
+}
+#deskPlayer .dp-opt:has(input:checked) { border-color: rgba(143,134,255,.7); background: var(--surface); }
+#deskPlayer .dp-opt input { margin-top: 4px; accent-color: #8f86ff; }
+#deskPlayer .dp-opt b { display: block; font-size: 14px; }
+#deskPlayer .dp-opt em { display: block; font-style: normal; font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+#deskPlayer .dp-prog { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--muted); }
+#deskPlayer .dp-prog[hidden], #deskPlayer .dp-btn[hidden] { display: none; }
+#deskPlayer .dp-prog-bar { flex: 1; height: 8px; border-radius: 99px; background: var(--surface-2, rgba(255,255,255,.075)); overflow: hidden; }
+#deskPlayer .dp-prog-bar i { display: block; height: 100%; width: 0; background: var(--grad, linear-gradient(135deg,#7fb4ff,#c58bff)); transition: width .4s; }
+#deskPlayer .dp-prog span { min-width: 200px; text-align: right; }
