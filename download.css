@@ -1,0 +1,145 @@
+/* SinSubz — Download page + "app available" popup (website only).
+   Not included in the Android / Windows app builds. */
+
+.header-nav a.active { color: var(--text); background: var(--surface-2); }
+
+.dl-hdr-btn {
+    width: 44px; height: 44px; border-radius: 999px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text); background: var(--surface); border: 1px solid var(--line);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    transition: transform 0.3s var(--ease), border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.dl-hdr-btn:hover { transform: translateY(-2px); border-color: var(--amber); box-shadow: 0 8px 26px var(--glow); }
+
+.dl-main { max-width: 980px; margin: 0 auto; padding-top: calc(var(--header-h) + 36px); }
+
+/* ---------- hero ---------- */
+.dl-hero { text-align: center; padding: 30px 0 34px; }
+.dl-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 7px 16px; border-radius: 999px;
+    font-size: 12px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;
+    color: var(--amber); background: var(--surface); border: 1px solid var(--line);
+}
+.dl-hero h1 {
+    margin: 18px 0 14px;
+    font-family: var(--font-display);
+    font-size: clamp(32px, 6vw, 54px); line-height: 1.12; font-weight: 800;
+}
+.dl-hero h1 span { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.dl-hero p { max-width: 560px; margin: 0 auto; color: var(--muted); }
+.dl-jump { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 26px; }
+.dl-meta { margin-top: 16px; font-size: 13px; color: var(--muted); }
+.dl-meta b { color: var(--text); }
+
+/* ---------- platform cards ---------- */
+.dl-card {
+    margin-top: 26px; padding: 30px;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius-lg); box-shadow: var(--shadow);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    scroll-margin-top: calc(var(--header-h) + 20px);
+}
+.dl-card.dl-flash { animation: dlFlash 1.6s ease; }
+@keyframes dlFlash {
+    0%, 100% { border-color: var(--line); box-shadow: var(--shadow); }
+    25%, 70% { border-color: var(--amber); box-shadow: 0 0 0 4px var(--glow), var(--shadow); }
+}
+.dl-card-head { display: flex; align-items: center; gap: 18px; }
+.dl-card-head h2 { font-family: var(--font-display); font-size: 24px; line-height: 1.2; }
+.dl-card-head p { margin-top: 4px; color: var(--muted); font-size: 14.5px; }
+.dl-icon {
+    flex: none; width: 64px; height: 64px; border-radius: 20px;
+    display: grid; place-items: center; font-size: 32px; color: #fff;
+}
+.dl-icon-android { background: linear-gradient(135deg, #36e0c8, #2fa86a); }
+.dl-icon-windows { background: linear-gradient(135deg, #4aa8ff, #5b6cff); }
+
+.dl-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 24px 0 8px; }
+.dl-btn { min-height: 48px; }
+.dl-note { font-size: 13px; color: var(--muted); }
+
+.dl-card h3 {
+    margin: 26px 0 12px; font-family: var(--font-display);
+    font-size: 13px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted);
+}
+
+.dl-features { list-style: none; display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.dl-features li {
+    display: flex; gap: 14px; padding: 14px 16px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm);
+}
+.dl-features li > i {
+    flex: none; width: 38px; height: 38px; border-radius: 12px;
+    display: grid; place-items: center; font-size: 16px;
+    color: var(--amber); background: var(--glow);
+}
+.dl-features b { display: block; font-size: 15px; }
+.dl-features span { display: block; font-size: 13.5px; color: var(--muted); line-height: 1.45; margin-top: 2px; }
+
+.dl-steps { list-style: none; display: grid; gap: 10px; }
+.dl-steps li { display: flex; align-items: flex-start; gap: 14px; font-size: 15px; }
+.dl-steps li > span {
+    flex: none; width: 30px; height: 30px; border-radius: 50%;
+    display: grid; place-items: center; font-weight: 800; font-size: 14px;
+    color: #fff; background: var(--grad);
+}
+.dl-steps li > div { padding-top: 3px; }
+
+.dl-foot-note { margin: 26px 4px 0; font-size: 13px; color: var(--muted); text-align: center; }
+.dl-foot-note i { margin-right: 6px; }
+
+/* ---------- popup on the main site ---------- */
+.dl-pop-backdrop {
+    position: fixed; inset: 0; z-index: 9990;
+    display: flex; align-items: flex-end; justify-content: center;
+    padding: 16px; background: rgba(4, 5, 10, 0.6);
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    opacity: 0; transition: opacity 0.3s ease;
+}
+.dl-pop-backdrop.show { opacity: 1; }
+.dl-pop {
+    position: relative; width: 100%; max-width: 420px;
+    padding: 26px 22px 20px; text-align: center;
+    background: var(--surface-solid); color: var(--text);
+    border: 1px solid var(--line-strong); border-radius: 26px; box-shadow: var(--shadow);
+    transform: translateY(40px); transition: transform 0.4s var(--ease);
+    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+}
+.dl-pop-backdrop.show .dl-pop { transform: none; }
+.dl-pop-x {
+    position: absolute; top: 12px; right: 12px; width: 34px; height: 34px;
+    border: 0; border-radius: 50%; cursor: pointer;
+    color: var(--muted); background: var(--surface);
+}
+.dl-pop-icon {
+    width: 62px; height: 62px; margin: 0 auto 14px; border-radius: 20px;
+    display: grid; place-items: center; font-size: 30px; color: #fff;
+}
+.dl-pop h2 { font-family: var(--font-display); font-size: 21px; line-height: 1.25; }
+.dl-pop p { margin: 8px 0 18px; font-size: 14.5px; color: var(--muted); }
+.dl-pop-go { width: 100%; justify-content: center; min-height: 50px; }
+.dl-pop-later {
+    margin-top: 8px; padding: 10px; border: 0; background: none; cursor: pointer;
+    font: inherit; font-size: 13.5px; color: var(--muted);
+}
+
+@media (min-width: 640px) {
+    .dl-pop-backdrop { align-items: center; }
+}
+
+@media (max-width: 720px) {
+    .dl-main { padding-top: calc(var(--header-h) + 16px); }
+    .dl-features { grid-template-columns: 1fr; }
+    .dl-card { padding: 22px 18px; }
+    .dl-card-head { align-items: flex-start; }
+    .dl-icon { width: 54px; height: 54px; font-size: 27px; border-radius: 17px; }
+    .dl-card-head h2 { font-size: 21px; }
+    .dl-actions .btn { width: 100%; justify-content: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dl-pop, .dl-pop-backdrop { transition: none; }
+    .dl-card.dl-flash { animation: none; }
+}

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta
+        name="description"
+        content="Download the SinSubz Android app or Windows app. Translate English subtitles into Sinhala on your phone or PC."
+    >
+    <meta name="theme-color" content="#07080d">
+    <title>Download SinSubz | Android &amp; Windows Apps</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap"
+        rel="stylesheet"
+    >
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    >
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="download.css">
+
+    <script>
+        (function () {
+            try {
+                var saved = localStorage.getItem("sinsubz-theme");
+                if (saved === "light" || saved === "dark") {
+                    document.documentElement.setAttribute("data-theme", saved);
+                }
+            } catch (e) {}
+        })();
+    </script>
+
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="favicon.ico" sizes="any">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+</head>
+
+<body class="dl-page">
+
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+    <div class="ambient ambient-three"></div>
+
+    <header class="top-header" id="topHeader">
+
+        <a class="brand" href="index.html" aria-label="SinSubz home">
+            <div class="brand-logo">
+                <img src="logo.png" alt="SinSubz Logo">
+            </div>
+            <div class="brand-text">
+                <div class="brand-title">Sin<span>Subz</span></div>
+                <div class="brand-subtitle">Subtitle Translator</div>
+            </div>
+        </a>
+
+        <nav class="header-nav" aria-label="Main">
+            <a href="index.html#search">Search</a>
+            <a href="index.html#upload">Upload</a>
+            <a href="index.html#sync">Sync</a>
+            <a href="download.html" class="active">Download</a>
+            <a href="about.html">About</a>
+            <a href="contact.html">Contact</a>
+        </nav>
+
+        <div class="header-actions">
+            <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle theme">
+                <span class="theme-sun"><i class="fa-solid fa-sun"></i></span>
+                <span class="theme-moon"><i class="fa-solid fa-moon"></i></span>
+            </button>
+            <a class="dl-hdr-btn" href="index.html" aria-label="Back to the website">
+                <i class="fa-solid fa-house"></i>
+            </a>
+        </div>
+
+    </header>
+
+    <main class="app dl-main">
+
+        <!-- HERO -->
+        <section class="dl-hero">
+            <span class="dl-eyebrow"><i class="fa-solid fa-download"></i> Free downloads</span>
+            <h1>Get <span>SinSubz</span> on your<br>phone and PC</h1>
+            <p>
+                Translate English subtitles into Sinhala, get new release alerts and
+                keep everything in one place. Pick your device below.
+            </p>
+
+            <div class="dl-jump">
+                <a class="btn btn-primary" href="#android">
+                    <i class="fa-brands fa-android"></i> Android app
+                </a>
+                <a class="btn btn-ghost" href="#windows">
+                    <i class="fa-brands fa-windows"></i> Windows app
+                </a>
+            </div>
+
+            <div class="dl-meta" id="dlMeta" hidden>
+                Latest version <b id="dlVersion">-</b>
+            </div>
+        </section>
+
+
+        <!-- ANDROID -->
+        <section class="dl-card" id="android" data-platform="android">
+
+            <div class="dl-card-head">
+                <div class="dl-icon dl-icon-android"><i class="fa-brands fa-android"></i></div>
+                <div>
+                    <h2>SinSubz for Android</h2>
+                    <p>Easy to use on your phone. Search, translate and download Sinhala subtitles in a few taps.</p>
+                </div>
+            </div>
+
+            <div class="dl-actions">
+                <a class="btn btn-primary dl-btn" id="dlAndroid" href="https://github.com/Imvisal/Subtittle-translator/releases/latest/download/SinSubz.apk" download>
+                    <i class="fa-solid fa-download"></i> Download APK
+                </a>
+                <span class="dl-note">Android 7.0+ &middot; free</span>
+            </div>
+
+            <h3>What you get</h3>
+            <ul class="dl-features">
+                <li><i class="fa-solid fa-magnifying-glass"></i><div><b>Find subtitles</b><span>Search movies and TV series, trending, anime and more.</span></div></li>
+                <li><i class="fa-solid fa-cloud-arrow-up"></i><div><b>Upload SRT</b><span>Translate your own .srt file into Sinhala with AI.</span></div></li>
+                <li><i class="fa-solid fa-arrows-rotate"></i><div><b>Sync subtitles</b><span>Fix subtitle timing so it matches your video.</span></div></li>
+                <li><i class="fa-solid fa-bell"></i><div><b>New release alerts</b><span>Get notified when a new movie or Sinhala subtitle appears.</span></div></li>
+                <li><i class="fa-solid fa-gauge-high"></i><div><b>Background translation</b><span>Translation keeps running with a progress notification.</span></div></li>
+                <li><i class="fa-solid fa-gear"></i><div><b>Settings</b><span>Dark mode, notifications, storage and battery options.</span></div></li>
+            </ul>
+
+            <h3>How to install</h3>
+            <ol class="dl-steps">
+                <li><span>1</span><div>Tap <b>Download APK</b> and wait for the file to finish.</div></li>
+                <li><span>2</span><div>Open the downloaded <b>SinSubz.apk</b> from your notifications or Files app.</div></li>
+                <li><span>3</span><div>If Android asks, allow <b>Install unknown apps</b> for your browser, then tap <b>Install</b>.</div></li>
+                <li><span>4</span><div>Open <b>SinSubz</b> and allow notifications to get release alerts.</div></li>
+            </ol>
+        </section>
+
+
+        <!-- WINDOWS -->
+        <section class="dl-card" id="windows" data-platform="windows">
+
+            <div class="dl-card-head">
+                <div class="dl-icon dl-icon-windows"><i class="fa-brands fa-windows"></i></div>
+                <div>
+                    <h2>SinSubz for Windows</h2>
+                    <p>The full desktop experience with a sidebar, system tray alerts and video merging.</p>
+                </div>
+            </div>
+
+            <div class="dl-actions">
+                <a class="btn btn-primary dl-btn" id="dlWindows" href="https://github.com/Imvisal/Subtittle-translator/releases/latest/download/SinSubz-Setup.exe" download>
+                    <i class="fa-solid fa-download"></i> Download installer
+                </a>
+                <a class="btn btn-ghost dl-btn" id="dlPortable" href="https://github.com/Imvisal/Subtittle-translator/releases/latest/download/SinSubz-Portable.exe" download>
+                    <i class="fa-solid fa-box"></i> Portable (no install)
+                </a>
+                <span class="dl-note">Windows 10 / 11 &middot; 64-bit &middot; free</span>
+            </div>
+
+            <h3>What you get</h3>
+            <ul class="dl-features">
+                <li><i class="fa-solid fa-magnifying-glass"></i><div><b>Find subtitles</b><span>Search movies and TV series, trending, anime and more.</span></div></li>
+                <li><i class="fa-solid fa-cloud-arrow-up"></i><div><b>Upload SRT</b><span>Translate your own .srt file into Sinhala with AI.</span></div></li>
+                <li><i class="fa-solid fa-arrows-rotate"></i><div><b>Sync subtitles</b><span>Fix subtitle timing so it matches your video.</span></div></li>
+                <li><i class="fa-solid fa-film"></i><div><b>Merge into video</b><span>Choose a movie and subtitle, adjust delay and size, then save a new video with the subtitle built in.</span></div></li>
+                <li><i class="fa-solid fa-bell"></i><div><b>New release alerts</b><span>Windows notifications for new movies and Sinhala subtitles.</span></div></li>
+                <li><i class="fa-solid fa-window-minimize"></i><div><b>Runs in the tray</b><span>Keeps checking in the background, with an optional start with Windows.</span></div></li>
+            </ul>
+
+            <h3>How to install</h3>
+            <ol class="dl-steps">
+                <li><span>1</span><div>Click <b>Download installer</b> and save <b>SinSubz-Setup.exe</b>.</div></li>
+                <li><span>2</span><div>Run the file. If Windows SmartScreen appears, click <b>More info</b> then <b>Run anyway</b>.</div></li>
+                <li><span>3</span><div>Choose the install folder and finish the setup.</div></li>
+                <li><span>4</span><div>Open <b>SinSubz</b> from the desktop shortcut. Prefer no install? Use the <b>Portable</b> file instead.</div></li>
+            </ol>
+        </section>
+
+
+        <p class="dl-foot-note">
+            <i class="fa-solid fa-circle-info"></i>
+            The apps are not signed with a paid publisher certificate, so Android and Windows may show a one-time warning.
+            Only download SinSubz from this page.
+        </p>
+
+
+        <footer>
+            <p>© 2026 SinSubz. All rights reserved.</p>
+            <p>English to Sinhala Subtitle Translator</p>
+            <div class="legal-links">
+                <a href="about.html">About</a>
+                <a href="privacy.html">Privacy Policy</a>
+                <a href="terms.html">Terms of Service</a>
+                <a href="contact.html">Contact</a>
+            </div>
+        </footer>
+
+    </main>
+
+    <script src="download.js"></script>
+</body>
+
+</html>
