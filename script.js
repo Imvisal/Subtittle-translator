@@ -2921,6 +2921,10 @@ async function translateSubtitleChunks(
 
     const notify = window.__appNotify;
 
+    if (notify && typeof notify.start === "function") {
+        try { notify.start(); } catch (e) { /* ignore */ }
+    }
+
     try {
 
         const result =

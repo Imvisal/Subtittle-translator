@@ -38,7 +38,34 @@ html = html.replace(
     marker,
     '<script src="app-update.js"></script>\n    <script src="app-shim.js"></script>\n    ' + marker
 );
+
+// full-screen layout: let the page draw behind the status / navigation bars
+// (app build only, the website keeps its normal viewport)
+const viewportRe = /(<meta\s+name="viewport"\s+content=")([^"]*)(")/;
+if (!viewportRe.test(html)) {
+    throw new Error("index.html: could not find the viewport meta tag");
+}
+html = html.replace(viewportRe, (m, a, b, c) =>
+    /viewport-fit/.test(b) ? m : a + b + ", viewport-fit=cover" + c
+);
 fs.writeFileSync(indexPath, html);
+
+// keep the fixed header and the page content clear of the system bars
+const edgeCss = `
+
+/* ===== Android app: full-screen layout (added by scripts/build-www.js) ===== */
+:root {
+    --sat: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px), var(--native-sat, 0px));
+    --sab: max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px), var(--native-sab, 0px));
+}
+html { scroll-padding-top: calc(84px + var(--sat)); }
+body { padding-top: var(--sat); padding-bottom: var(--sab); }
+.top-header { padding-top: var(--sat); height: calc(var(--header-h) + var(--sat)); }
+.top-header.scrolled { height: calc(62px + var(--sat)); }
+.scroll-progress { top: var(--sat); }
+.to-top { bottom: calc(20px + var(--sab)); }
+`;
+fs.appendFileSync(path.join(out, "style.css"), edgeCss);
 
 // tell the app which version it was built as (used by the update check)
 const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));

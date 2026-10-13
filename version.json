@@ -1,6 +1,6 @@
 {
-  "version": "1.0.0",
-  "notes": "First release.",
+  "version": "1.0.2",
+  "notes": "Translation keeps running in the background with one live % notification, poster notifications with the SubLanka logo, full-screen layout and a no-internet popup.",
   "android": {
     "url": "https://github.com/Imvisal/Subtittle-translator/releases/latest/download/SubLanka-AI.apk"
   },
