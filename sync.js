@@ -275,6 +275,11 @@ and the existing /api/search, /api/subtitles and
     // STEP 2 — movie file name -> release info
     // ====================================================
 
+    const JUNK = "english|sinhala|tamil|hindi|dubbed|subbed|multi|dual|audio|" +
+        "web[- ]?dl|webrip|web|blu[- ]?ray|bdrip|brrip|hdrip|hdtv|dvdrip|hdcam|" +
+        "cam|hdts|telesync|x264|x265|hevc|h[ .]?264|h[ .]?265|aac|ddp?5?|10bit|" +
+        "2160p|4k|1080p|720p|480p|S\\d{1,2}E\\d{1,3}";
+
     function parseRelease(fileName) {
 
         const base = fileName.replace(/\.[^.]+$/, "");
@@ -288,16 +293,38 @@ and the existing /api/search, /api/subtitles and
         const resolution = pick(/\b(2160p|4k|1080p|720p|480p)\b/i);
         let source = pick(/\b(blu[- ]?ray|bdrip|brrip|web[- ]?dl|webrip|web|hdrip|hdtv|dvdrip|hdcam|cam|hdts|telesync)\b/i);
         const codec = pick(/\b(x264|x265|h[ .]?264|h[ .]?265|hevc|av1|xvid)\b/i);
-        const year = pick(/\b(19|20)\d{2}\b/);
         const episode = pick(/\bS\d{1,2}E\d{1,3}\b/i);
-        const group = (/-\s*([A-Za-z0-9]+)\s*$/.exec(base) || [])[1] || null;
+
+        // a year inside (...) or [...] is the most reliable one
+        const parenYear = (/[(\[]\s*((?:19|20)\d{2})\s*[)\]]/.exec(base) || [])[1] || null;
+        const year = parenYear || pick(/\b(19|20)\d{2}\b/);
+
+        let group = (/-\s*([A-Za-z0-9]+)\s*$/.exec(base) || [])[1] || null;
+
+        if (group && (/^\d{3,4}p$/i.test(group) ||
+                      new RegExp("^(" + JUNK + ")$", "i").test(group))) {
+            group = null;
+        }
 
         if (source) { source = source.replace(/\s+/g, "").toUpperCase(); }
 
-        const cut = clean.search(
-            /\b((19|20)\d{2}|S\d{1,2}E\d{1,3}|2160p|4k|1080p|720p|480p)\b/i
-        );
-        const title = (cut > 0 ? clean.slice(0, cut) : clean).trim();
+        // title: drop [site tags] and (...) groups, then cut at the
+        // first release word / year / season marker
+        const titleSrc = base
+            .replace(/\[[^\]]*\]/g, " ")
+            .replace(/\([^)]*\)/g, " ")
+            .replace(/[._]+/g, " ");
+
+        const cutRe = parenYear
+            ? new RegExp("\\b(" + JUNK + ")\\b", "i")
+            : new RegExp("\\b((19|20)\\d{2}|" + JUNK + ")\\b", "i");
+
+        const cut = titleSrc.search(cutRe);
+
+        const title = (cut > 0 ? titleSrc.slice(0, cut) : titleSrc)
+            .replace(/[-–—:,]+\s*$/g, "")
+            .replace(/\s+/g, " ")
+            .trim();
 
         return { title: title, year: year, episode: episode,
                  resolution: resolution && resolution.toLowerCase(),
@@ -349,6 +376,7 @@ and the existing /api/search, /api/subtitles and
         state.selected = null;
         resetResult();
         clear(listBox);
+        titleBar.hidden = true;
         setState(step2, state.sinhala ? "open" : "locked");
 
         if (!file) { refresh(); return; }
@@ -387,6 +415,34 @@ and the existing /api/search, /api/subtitles and
 
     });
 
+
+    // editable title box (shown once a movie file is chosen)
+    const titleBar = document.createElement("div");
+    titleBar.className = "sync-titlebar";
+    titleBar.hidden = true;
+
+    const titleInput = document.createElement("input");
+    titleInput.type = "text";
+    titleInput.className = "sync-select";
+    titleInput.placeholder = "Movie or series title";
+    titleInput.setAttribute("aria-label", "Movie or series title");
+
+    const titleBtn = document.createElement("button");
+    titleBtn.type = "button";
+    titleBtn.textContent = "Search";
+
+    titleBar.appendChild(titleInput);
+    titleBar.appendChild(titleBtn);
+    listBox.parentNode.insertBefore(titleBar, listBox);
+
+    function searchTyped() {
+        if (state.sinhala && state.movie) { loadCandidates(titleInput.value); }
+    }
+
+    titleBtn.addEventListener("click", searchTyped);
+    titleInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") { e.preventDefault(); searchTyped(); }
+    });
 
     // ====================================================
     // STEP 3 — find + rank English subtitles for this release
@@ -461,39 +517,76 @@ and the existing /api/search, /api/subtitles and
 
     }
 
-    async function loadCandidates() {
+    function queryVariants(title) {
+
+        const words = title.split(/\s+/).filter(Boolean);
+        const out = [];
+
+        for (let n = words.length; n >= 1 && out.length < 3; n--) {
+            out.push(words.slice(0, n).join(" "));
+        }
+
+        return out;
+
+    }
+
+    async function loadCandidates(titleOverride) {
 
         const token = ++state.loadToken;
-        const release = state.movie.release;
+        const base = state.movie.release;
+        const typed = (titleOverride || base.title || "").trim();
+
+        // used for ranking: the typed title plus year/episode from the file
+        const release = { title: typed, year: base.year, episode: base.episode };
 
         state.candidates = [];
         state.selected = null;
         resetResult();
         refresh();
 
+        titleBar.hidden = false;
+        titleInput.value = typed;
+
         clear(listBox);
         listBox.appendChild(spinner("Finding this title…"));
 
         try {
 
-            if (!release.title) {
-                throw new Error("Could not read a title from the file name.");
+            if (!typed) {
+                throw new Error("Could not read a title from the file name. Type it above.");
             }
 
-            const found = await apiJson(
-                "/api/search?query=" + encodeURIComponent(release.title)
-            );
+            let results = [];
 
-            if (token !== state.loadToken) { return; }
+            for (const q of queryVariants(typed)) {
 
-            const titles = (found.results || []).slice()
+                try {
+
+                    const found = await apiJson(
+                        "/api/search?query=" + encodeURIComponent(q)
+                    );
+
+                    results = found.results || [];
+
+                } catch (e) {
+                    results = [];       // "not found" – try a shorter title
+                }
+
+                if (token !== state.loadToken) { return; }
+
+                if (results.length) { break; }
+
+            }
+
+            const titles = results.slice()
                 .sort(function (x, y) {
                     return titleScore(y, release) - titleScore(x, release);
                 })
                 .slice(0, 6);
 
             if (!titles.length) {
-                throw new Error("No matching title found for “" + release.title + "”.");
+                throw new Error("Couldn't find “" + typed +
+                    "”. Check the spelling above and press Search.");
             }
 
             state.titles = titles;

@@ -3363,3 +3363,31 @@ footer {
     margin-right: 6px;
     color: var(--teal);
 }
+
+.sync-titlebar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.sync-titlebar[hidden] {
+    display: none;
+}
+
+.sync-titlebar .sync-select {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.sync-titlebar button {
+    flex: none;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 12px;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 13px;
+    color: #0b0d1f;
+    background: var(--grad-cool);
+    cursor: pointer;
+}
