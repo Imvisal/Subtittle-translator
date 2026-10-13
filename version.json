@@ -1,0 +1,10 @@
+{
+  "version": "1.1.1",
+  "notes": "Notes methana",
+  "android": {
+    "url": "https://github.com/Imvisal/Subtittle-translator/releases/latest/download/SubLanka-AI.apk"
+  },
+  "windows": {
+    "url": "https://github.com/Imvisal/Subtittle-translator/releases/latest/download/SubLanka-AI-Setup.exe"
+  }
+}

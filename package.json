@@ -1,0 +1,19 @@
+{
+  "name": "sublanka-ai",
+  "version": "1.1.1",
+  "private": true,
+  "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/filesystem": "^8.1.4",
+    "@capacitor/local-notifications": "^8.0.0",
+    "@capacitor/share": "^8.0.3",
+    "@google/genai": "latest",
+    "adm-zip": "^0.5.16"
+  },
+  "scripts": {
+    "build:www": "node scripts/build-www.js",
+    "cap:sync": "node scripts/build-www.js && cap sync android"
+  }
+}

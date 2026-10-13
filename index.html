@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" class="no-js">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    >
+
+    <meta
+        name="description"
+        content="SubLanka AI - Translate English movie and TV subtitles into natural Sinhala using AI."
+    >
+
+    <meta
+        name="keywords"
+        content="Sinhala subtitles, English to Sinhala subtitles, subtitle translator, SubLanka AI, Sinhala subtitle translator"
+    >
+
+    <meta name="theme-color" content="#07080d">
+
+    <title>SubLanka AI - English to Sinhala Subtitle Translator</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap"
+        rel="stylesheet"
+    >
+
+    <!-- Font Awesome -->
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    >
+
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Apply the saved theme before first paint (no flash) -->
+    <script>
+        (function () {
+            try {
+                var saved = localStorage.getItem("sublanka-theme");
+                if (saved === "light" || saved === "dark") {
+                    document.documentElement.setAttribute("data-theme", saved);
+                }
+            } catch (e) {}
+        })();
+    </script>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="favicon.ico" sizes="any">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+</head>
+
+
+<body>
+
+    <!-- Scroll progress -->
+    <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
+
+    <!-- =========================================
+         AMBIENT BACKGROUND
+    ========================================== -->
+
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+    <div class="ambient ambient-three"></div>
+
+
+    <!-- =========================================
+         HEADER
+    ========================================== -->
+
+    <header class="top-header" id="topHeader">
+
+        <a class="brand" href="index.html" aria-label="SubLanka AI home">
+
+            <div class="brand-logo">
+                <img src="logo.png" alt="SubLanka AI Logo">
+            </div>
+
+            <div class="brand-text">
+
+                <div class="brand-title">
+                    SubLanka <span>AI</span>
+                </div>
+
+                <div class="brand-subtitle">
+                    Subtitle Translator
+                </div>
+
+            </div>
+
+        </a>
+
+
+        <nav class="header-nav" aria-label="Main">
+            <a href="#search">Search</a>
+            <a href="#upload">Upload</a>
+            <a href="#sync">Sync</a>
+            <a href="#how">How it works</a>
+            <a href="about.html">About</a>
+            <a href="contact.html">Contact</a>
+        </nav>
+
+
+        <div class="header-actions">
+
+            <!-- Theme Toggle -->
+            <button
+                id="themeToggle"
+                class="theme-toggle"
+                type="button"
+                aria-label="Toggle theme"
+            >
+
+                <span class="theme-sun">
+                    <i class="fa-solid fa-sun"></i>
+                </span>
+
+                <span class="theme-moon">
+                    <i class="fa-solid fa-moon"></i>
+                </span>
+
+            </button>
+
+
+            <!-- Settings (jumps to translation settings) -->
+            <button
+                class="settings-button"
+                type="button"
+                aria-label="Translation settings"
+            >
+                <i class="fa-solid fa-gear"></i>
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- =========================================
+         MAIN APP
+    ========================================== -->
+
+    <main class="app">
+
+
+        <!-- =====================================
+             HERO
+        ====================================== -->
+
+        <section class="hero">
+
+            <div class="hero-banner">
+                <img
+                    src="hero-banner.png"
+                    alt="SubLanka AI cinematic movie banner"
+                    decoding="async"
+                >
+            </div>
+
+            <div class="hero-overlay"></div>
+
+            <div class="hero-content">
+
+                <div class="hero-copy">
+
+                    <div class="hero-star">
+                        AI Sinhala Subtitles
+                    </div>
+
+                    <h1>
+                        English to
+                        <span>Sinhala</span>
+                        <br>
+                        Subtitle Translator
+                    </h1>
+
+                    <p>
+                        Translate English movie and TV subtitles
+                        into natural Sinhala with AI.
+                    </p>
+
+                    <div class="hero-actions">
+
+                        <a class="btn btn-primary" href="#search">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            Find Subtitles
+                        </a>
+
+                        <a class="btn btn-ghost" href="#upload">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            Upload SRT
+                        </a>
+
+                        <a class="btn btn-sync" href="#sync" id="syncHeroBtn">
+                            <span class="sync-ring" aria-hidden="true"></span>
+                            <i class="fa-solid fa-arrows-rotate"></i>
+                            Sync Subtitles
+                        </a>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Animated subtitle demo (decorative) -->
+                <div class="hero-stage" aria-hidden="true">
+
+                    <div class="stage-bar">
+                        <i></i><i></i><i></i>
+                        <span class="stage-badge">EN → සිං</span>
+                    </div>
+
+                    <div class="stage-play">
+                        <i class="fa-solid fa-play"></i>
+                    </div>
+
+                    <div class="stage-subs" id="stageSubs"></div>
+
+                    <div class="stage-timeline"></div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =====================================
+             SEARCH
+        ====================================== -->
+
+        <section class="search-section" id="search">
+
+            <div class="search-card">
+
+                <!-- Search Row -->
+                <div class="search-row">
+
+                    <div class="search-input-wrap">
+
+                        <i class="fa-solid fa-magnifying-glass"></i>
+
+                        <input
+                            type="text"
+                            id="searchInput"
+                            placeholder="Enter movie or TV series name..."
+                            autocomplete="off"
+                            aria-label="Movie or TV series name"
+                        >
+
+                    </div>
+
+
+                    <button
+                        id="searchBtn"
+                        type="button"
+                    >
+
+                        <i class="fa-solid fa-magnifying-glass"></i>
+
+                        <span>
+                            Search
+                        </span>
+
+                    </button>
+
+                </div>
+
+
+                <!-- Category Chips -->
+                <div class="category-chips">
+
+                    <button
+                        class="category-chip active"
+                        type="button"
+                        data-category="trending"
+                    >
+                        <i class="fa-solid fa-fire"></i>
+                        Trending
+                    </button>
+
+
+                    <button
+                        class="category-chip"
+                        type="button"
+                        data-category="movie"
+                    >
+                        <i class="fa-solid fa-circle-play"></i>
+                        Movies
+                    </button>
+
+
+                    <button
+                        class="category-chip"
+                        type="button"
+                        data-category="tv"
+                    >
+                        <i class="fa-solid fa-tv"></i>
+                        TV Series
+                    </button>
+
+
+                    <button
+                        class="category-chip"
+                        type="button"
+                        data-category="anime"
+                    >
+                        <i class="fa-solid fa-gamepad"></i>
+                        Anime
+                    </button>
+
+                </div>
+
+
+                <!-- Search Status -->
+                <div
+                    id="searchStatus"
+                    aria-live="polite"
+                ></div>
+
+
+                <!-- Dynamic Search Results -->
+                <div id="searchResults"></div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =====================================
+             QUICK ACTIONS
+        ====================================== -->
+
+        <section class="quick-actions">
+
+            <!-- Find Subtitles -->
+            <div class="quick-action-card reveal">
+
+                <div class="quick-action-icon">
+                    <i class="fa-solid fa-clapperboard"></i>
+                </div>
+
+                <h3>
+                    Find Subtitles
+                </h3>
+
+                <p>
+                    Search for English subtitles
+                    for movies and TV series.
+                </p>
+
+                <div class="arrow">
+                    <i class="fa-solid fa-arrow-right"></i>
+                </div>
+
+            </div>
+
+
+            <!-- Translate with AI -->
+            <div class="quick-action-card reveal" style="--d: .12s">
+
+                <div class="quick-action-icon">
+                    <i class="fa-solid fa-language"></i>
+                </div>
+
+                <h3>
+                    Translate with AI
+                </h3>
+
+                <p>
+                    Get natural and accurate
+                    Sinhala translations.
+                </p>
+
+                <div class="arrow">
+                    <i class="fa-solid fa-arrow-right"></i>
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =====================================
+             HOW IT WORKS
+        ====================================== -->
+
+        <section class="steps" id="how">
+
+            <div class="section-head reveal">
+                <span class="section-eyebrow">How it works</span>
+                <h2>From English subtitle to Sinhala in four steps</h2>
+            </div>
+
+            <div class="steps-grid">
+
+                <div class="step-card reveal">
+                    <div class="step-num">1</div>
+                    <h3>Search</h3>
+                    <p>Pick a movie, series or anime.</p>
+                </div>
+
+                <div class="step-card reveal" style="--d: .1s">
+                    <div class="step-num">2</div>
+                    <h3>Select</h3>
+                    <p>Choose an English subtitle file.</p>
+                </div>
+
+                <div class="step-card reveal" style="--d: .2s">
+                    <div class="step-num">3</div>
+                    <h3>Translate</h3>
+                    <p>AI converts it to natural Sinhala.</p>
+                </div>
+
+                <div class="step-card reveal" style="--d: .3s">
+                    <div class="step-num">4</div>
+                    <h3>Download</h3>
+                    <p>Get your Sinhala SRT file.</p>
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =====================================
+             UPLOAD SUBTITLE
+        ====================================== -->
+
+        <section class="upload-section reveal" id="upload">
+
+            <!-- Upload Icon -->
+            <div class="upload-icon">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+            </div>
+
+
+            <h3>
+                Or Upload Your Subtitle File
+            </h3>
+
+
+            <p>
+                Upload an SRT file to translate it to Sinhala.
+            </p>
+
+
+            <!-- Hidden File Input -->
+            <input
+                type="file"
+                id="subtitleFile"
+                accept=".srt"
+                aria-label="Choose SRT subtitle file"
+            >
+
+
+            <!-- File Name -->
+            <div id="fileName"></div>
+
+
+            <!-- Choose File -->
+            <label
+                for="subtitleFile"
+                class="upload-btn"
+            >
+
+                <i class="fa-regular fa-file-lines"></i>
+
+                <span>
+                    Choose SRT File
+                </span>
+
+            </label>
+
+        </section>
+
+
+
+        <!-- =====================================
+             SYNC SINHALA SUBTITLE
+        ====================================== -->
+
+        <section class="sync-section reveal" id="sync">
+
+            <div class="section-head">
+                <span class="section-eyebrow">Subtitle Sync</span>
+                <h2>Sync a Sinhala subtitle to your movie file</h2>
+                <p class="sync-lead">
+                    Your movie file never leaves your device.
+                    Only its file name is used to find the matching release.
+                </p>
+            </div>
+
+            <div class="sync-steps">
+
+                <!-- STEP 1 -->
+                <div class="sync-card" id="syncStep1">
+                    <div class="sync-card-head">
+                        <span class="sync-num">1</span>
+                        <h3>Upload Sinhala subtitle</h3>
+                    </div>
+
+                    <input type="file" id="syncSinhalaFile" accept=".srt" hidden>
+
+                    <label for="syncSinhalaFile" class="sync-pick">
+                        <i class="fa-regular fa-file-lines"></i>
+                        <span>Choose Sinhala .srt</span>
+                    </label>
+
+                    <div class="sync-info" id="syncSinhalaInfo" aria-live="polite"></div>
+                </div>
+
+                <!-- STEP 2 -->
+                <div class="sync-card is-locked" id="syncStep2">
+                    <div class="sync-card-head">
+                        <span class="sync-num">2</span>
+                        <h3>Select your movie file</h3>
+                    </div>
+
+                    <input
+                        type="file"
+                        id="syncMovieFile"
+                        accept="video/*,.mkv,.mp4,.avi,.mov,.wmv,.webm,.m4v,.ts"
+                        hidden
+                    >
+
+                    <label for="syncMovieFile" class="sync-pick">
+                        <i class="fa-solid fa-film"></i>
+                        <span>Choose movie file</span>
+                    </label>
+
+                    <p class="sync-privacy">
+                        <i class="fa-solid fa-lock"></i>
+                        Don't worry — your movie stays on your device.
+                        We only read the file name and length to find the
+                        matching subtitle. Nothing is uploaded.
+                    </p>
+
+                    <div class="sync-info" id="syncMovieInfo" aria-live="polite"></div>
+                </div>
+
+                <!-- STEP 3 -->
+                <div class="sync-card is-locked" id="syncStep3">
+                    <div class="sync-card-head">
+                        <span class="sync-num">3</span>
+                        <h3>Pick the matching English subtitle</h3>
+                    </div>
+
+                    <div class="sync-list" id="syncEnglishList">
+                        <p class="sync-empty">
+                            Matching English subtitles for your release
+                            will be listed here.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+
+            <button id="syncBtn" class="sync-go" type="button" disabled>
+                <i class="fa-solid fa-arrows-rotate"></i>
+                Sync Subtitle
+            </button>
+
+            <div class="sync-note" id="syncNote"></div>
+
+            <!-- RESULT -->
+            <div class="sync-result" id="syncResult" hidden>
+
+                <h3>Sync result</h3>
+
+                <div class="sync-stats" id="syncStats"></div>
+
+                <div class="sync-warn" id="syncWarn"></div>
+
+                <div class="sync-tune">
+                    <span>Fine-tune</span>
+                    <button type="button" data-ms="-500">−500</button>
+                    <button type="button" data-ms="-100">−100</button>
+                    <button type="button" data-ms="100">+100</button>
+                    <button type="button" data-ms="500">+500</button>
+                    <button type="button" data-ms="0">Reset</button>
+                    <strong id="syncTuneVal">0 ms</strong>
+                </div>
+
+                <div class="sync-preview" id="syncPreview"></div>
+
+                <button id="syncDownload" class="sync-go" type="button">
+                    <i class="fa-solid fa-download"></i>
+                    Download synced Sinhala subtitle
+                </button>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =====================================
+             MOVIE DETAILS
+
+             Hidden intentionally.
+             JavaScript can still use these IDs
+             if required by the existing script.
+        ====================================== -->
+
+        <section
+            id="movieDetails"
+            class="movie-details"
+            hidden
+        >
+
+            <div class="movie-poster-wrap">
+
+                <img
+                    id="moviePoster"
+                    src=""
+                    alt="Movie poster"
+                >
+
+            </div>
+
+
+            <div class="movie-info">
+
+                <h2 id="movieTitle"></h2>
+
+                <div class="movie-meta">
+
+                    <span id="movieYear"></span>
+
+                    <span id="movieRating"></span>
+
+                    <span id="movieRuntime"></span>
+
+                </div>
+
+
+                <p id="movieGenre"></p>
+
+                <p id="moviePlot"></p>
+
+                <p id="movieDirector"></p>
+
+                <p id="movieActors"></p>
+
+
+                <button
+                    id="findMovieSubtitles"
+                    type="button"
+                >
+                    Find Subtitles
+                </button>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =====================================
+             AD CONTAINER
+        ====================================== -->
+
+        <div class="ad-container">
+
+            <!-- Google AdSense can be added here later -->
+
+        </div>
+
+
+
+        <!-- =====================================
+             TRANSLATION SETTINGS
+        ====================================== -->
+
+        <section class="settings-section">
+
+            <label for="language">
+                Translation Language
+            </label>
+
+
+            <select id="language">
+
+                <option value="si">
+                    Sinhala
+                </option>
+
+            </select>
+
+        </section>
+
+
+
+        <!-- =====================================
+             TRANSLATE BUTTON
+        ====================================== -->
+
+        <button
+            id="translateBtn"
+            type="button"
+            disabled
+        >
+
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+
+            Translate with AI
+
+        </button>
+
+
+
+        <!-- =====================================
+             TRANSLATION PROGRESS
+        ====================================== -->
+
+        <div
+            id="progressContainer"
+            style="display: none;"
+        >
+
+            <div>
+
+                <span id="progressText">
+                    Preparing translation...
+                </span>
+
+                <span id="progressPercent">
+                    0%
+                </span>
+
+            </div>
+
+
+            <div class="progress-bar">
+
+                <div
+                    id="progressFill"
+                ></div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- =====================================
+             SUBTITLE PREVIEW
+        ====================================== -->
+
+        <section id="preview">
+
+            <!-- JavaScript will insert preview here -->
+
+        </section>
+
+
+
+        <!-- =====================================
+             DOWNLOAD BUTTON
+        ====================================== -->
+
+        <button
+            id="downloadBtn"
+            type="button"
+            disabled
+        >
+
+            <i class="fa-solid fa-download"></i>
+
+            Download Sinhala Subtitle
+
+        </button>
+
+
+
+        <!-- =====================================
+             HISTORY
+
+             Hidden by CSS.
+             Kept for existing JavaScript
+             compatibility.
+        ====================================== -->
+
+        <section
+            id="historySection"
+            class="history-section"
+        >
+
+            <div class="history-header">
+
+                <h2>
+                    Recent Searches
+                </h2>
+
+                <button
+                    id="clearHistoryBtn"
+                    type="button"
+                >
+                    Clear
+                </button>
+
+            </div>
+
+
+            <div id="historyList"></div>
+
+        </section>
+
+
+
+        <!-- =====================================
+             SEO / INFORMATION
+        ====================================== -->
+
+        <section class="seo-info reveal">
+
+            <h2>
+                SubLanka AI Subtitle Translator
+            </h2>
+
+
+            <p>
+                SubLanka AI helps you translate English
+                movie and TV subtitles into natural Sinhala
+                using artificial intelligence.
+            </p>
+
+
+            <h3>
+                English to Sinhala Subtitle Translation
+            </h3>
+
+
+            <p>
+                Upload your SRT subtitle file or search for
+                subtitles for your favorite movies and TV
+                series. Translate them into Sinhala with AI
+                and download the translated subtitle file.
+            </p>
+
+
+            <h3>
+                Supported Subtitle Format
+            </h3>
+
+
+            <p>
+                SubLanka AI currently supports SRT subtitle
+                files for translation.
+            </p>
+
+        </section>
+
+
+
+        <!-- =====================================
+             FOOTER
+        ====================================== -->
+
+        <footer>
+
+            <p>
+                © 2026 SubLanka AI. All rights reserved.
+            </p>
+
+            <p>
+                English to Sinhala Subtitle Translator
+            </p>
+
+            <div class="legal-links">
+
+                <a href="about.html">
+                    About
+                </a>
+
+                <a href="privacy.html">
+                    Privacy Policy
+                </a>
+
+                <a href="terms.html">
+                    Terms of Service
+                </a>
+
+                <a href="contact.html">
+                    Contact
+                </a>
+
+            </div>
+
+        </footer>
+
+    </main>
+
+
+    <!-- Back to top -->
+    <button
+        class="to-top"
+        id="toTop"
+        type="button"
+        aria-label="Back to top"
+    >
+        <i class="fa-solid fa-arrow-up"></i>
+    </button>
+
+
+
+    <!-- =========================================
+         JAVASCRIPT
+
+         script.js  = existing app logic (unchanged)
+         ui.js      = theme toggle + animations only
+    ========================================== -->
+
+    <script src="script.js"></script>
+    <script src="ui.js"></script>
+    <script src="sync.js"></script>
+
+</body>
+
+</html>

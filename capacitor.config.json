@@ -1,0 +1,15 @@
+{
+  "appId": "com.visal.sublanka",
+  "appName": "SubLanka AI",
+  "webDir": "www",
+  "backgroundColor": "#07080d",
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    },
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_sublanka",
+      "iconColor": "#7c7cff"
+    }
+  }
+}

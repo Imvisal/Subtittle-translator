@@ -1,0 +1,552 @@
+/* =========================================================
+   SubLanka AI — Android app UI (bottom tabs, translation
+   progress panel, settings tab).
+   Only copied into the app build by scripts/build-www.js.
+   The website never loads this file.
+========================================================= */
+
+/* ---------- things the app does not need ---------- */
+html.app-mode .hero,
+html.app-mode .quick-actions,
+html.app-mode .steps,
+html.app-mode .seo-info,
+html.app-mode footer,
+html.app-mode .ad-container,
+html.app-mode .header-nav,
+html.app-mode #themeToggle,
+html.app-mode .settings-button,
+html.app-mode .history-section,
+html.app-mode .to-top,
+html.app-mode .scroll-progress,
+html.app-mode .brand-subtitle {
+    display: none !important;
+}
+
+html.app-mode .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+}
+
+/* ---------- layout ---------- */
+html.app-mode .app {
+    padding-top: calc(var(--header-h, 72px) + 6px);
+    padding-bottom: calc(112px + var(--sab, 0px));
+}
+
+html.app-mode .top-header,
+html.app-mode .top-header.scrolled {
+    background: color-mix(in srgb, var(--bg) 78%, transparent);
+    backdrop-filter: blur(18px) saturate(1.4);
+    -webkit-backdrop-filter: blur(18px) saturate(1.4);
+    border-bottom-color: var(--line);
+}
+
+html.app-mode .search-section {
+    margin-top: 0;
+}
+
+/* ---------- tab visibility ---------- */
+html.app-mode:not([data-app-tab="find"]) .search-section,
+html.app-mode:not([data-app-tab="find"]) #appReleases {
+    display: none !important;
+}
+
+html.app-mode:not([data-app-tab="upload"]) #upload,
+html.app-mode:not([data-app-tab="upload"]) .settings-section,
+html.app-mode:not([data-app-tab="upload"]) #translateBtn,
+html.app-mode:not([data-app-tab="upload"]) #progressContainer,
+html.app-mode:not([data-app-tab="upload"]) #uploadTranslationProgress,
+html.app-mode:not([data-app-tab="upload"]) #preview,
+html.app-mode:not([data-app-tab="upload"]) #downloadBtn {
+    display: none !important;
+}
+
+html.app-mode:not([data-app-tab="sync"]) #sync {
+    display: none !important;
+}
+
+#appSettings {
+    display: none;
+}
+
+html.app-mode[data-app-tab="settings"] #appSettings {
+    display: block;
+}
+
+html.app-mode.app-jobs-open #appJobs {
+    display: flex;
+}
+
+/* ---------- bottom tab bar ---------- */
+#appTabs {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(10px + var(--sab, 0px));
+    z-index: 95;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    padding: 7px;
+    border-radius: 26px;
+    background: color-mix(in srgb, var(--surface-solid) 93%, transparent);
+    border: 1px solid var(--line-strong);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.32);
+}
+
+#appTabs button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 9px 0 8px;
+    border-radius: 19px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.1;
+    color: var(--muted);
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.25s ease, color 0.25s ease;
+}
+
+#appTabs button i {
+    font-size: 18px;
+}
+
+#appTabs button.on {
+    color: var(--text);
+    background: linear-gradient(135deg, rgba(127, 180, 255, 0.26), rgba(197, 139, 255, 0.26));
+    box-shadow: inset 0 0 0 1px rgba(160, 150, 255, 0.45);
+}
+
+html.app-kb #appTabs {
+    display: none;
+}
+
+/* ---------- progress ring button (header) ---------- */
+#appJobsBtn {
+    position: relative;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    -webkit-tap-highlight-color: transparent;
+}
+
+#appJobsBtn .aj-ring {
+    position: absolute;
+    inset: -1px;
+    border-radius: 50%;
+    background: conic-gradient(#8f86ff calc(var(--p, 0) * 1%), transparent 0);
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+    mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+    opacity: 0;
+}
+
+#appJobsBtn.run .aj-ring {
+    opacity: 1;
+}
+
+#appJobsBtn .aj-label {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: -0.2px;
+}
+
+#appJobsBtn .aj-icon {
+    font-size: 16px;
+}
+
+#appJobsBtn.run .aj-icon,
+#appJobsBtn:not(.run) .aj-label {
+    display: none;
+}
+
+#appJobsBtn.has-new::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: #36e0c8;
+    border: 2px solid var(--bg);
+}
+
+/* ---------- translations panel ---------- */
+#appJobs {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: calc(var(--header-h, 72px) + var(--sat, 0px));
+    bottom: 0;
+    z-index: 80;
+    display: none;
+    flex-direction: column;
+    background: var(--bg);
+}
+
+#appJobs .aj-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 16px calc(112px + var(--sab, 0px));
+    -webkit-overflow-scrolling: touch;
+}
+
+#appJobs h2,
+#appSettings h2 {
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    padding: 6px 4px 2px;
+}
+
+.aj-top {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 4px 0;
+}
+
+.aj-top h2 {
+    flex: 1;
+    padding: 0;
+}
+
+.aj-close {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    color: var(--text);
+}
+
+.ap-sec {
+    margin: 20px 6px 8px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    color: var(--amber);
+    text-transform: uppercase;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ap-sec button {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.ap-card {
+    border-radius: var(--radius);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    padding: 14px 16px;
+}
+
+.ap-card + .ap-card {
+    margin-top: 10px;
+}
+
+.ap-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ap-tile {
+    width: 46px;
+    height: 46px;
+    flex: 0 0 46px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    font-size: 18px;
+    color: #fff;
+    background: var(--grad);
+}
+
+.ap-tile.ok {
+    background: linear-gradient(135deg, #36e0c8, #4aa8ff);
+}
+
+.ap-tile.bad {
+    background: linear-gradient(135deg, #ff7a90, #c55a8a);
+}
+
+.ap-main {
+    min-width: 0;
+    flex: 1;
+}
+
+.ap-title {
+    font-weight: 700;
+    font-size: 15px;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ap-meta {
+    margin-top: 2px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.4;
+}
+
+.ap-bar {
+    height: 8px;
+    margin-top: 12px;
+    border-radius: 8px;
+    background: var(--line);
+    overflow: hidden;
+}
+
+.ap-bar i {
+    display: block;
+    height: 100%;
+    width: 0;
+    border-radius: 8px;
+    background: var(--grad);
+    transition: width 0.3s ease;
+}
+
+.ap-pct {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 18px;
+}
+
+.ap-empty {
+    text-align: center;
+    padding: 34px 18px;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.ap-empty button,
+.ap-btn {
+    margin-top: 14px;
+    padding: 12px 22px;
+    border-radius: 999px;
+    font-weight: 700;
+    color: #10122a;
+    background: var(--grad);
+}
+
+/* ---------- settings tab ---------- */
+.ap-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 0;
+    text-align: left;
+    color: var(--text);
+    border-bottom: 1px solid var(--line);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.ap-item:last-child {
+    border-bottom: 0;
+}
+
+.ap-ic {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    font-size: 15px;
+    color: var(--rose);
+    background: color-mix(in srgb, var(--rose) 16%, transparent);
+}
+
+.ap-item .ap-title {
+    white-space: normal;
+}
+
+.ap-state {
+    margin-left: auto;
+    flex: none;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--teal);
+}
+
+.ap-state.warn {
+    color: #ffb347;
+}
+
+.ap-switch {
+    margin-left: auto;
+    flex: none;
+    position: relative;
+    width: 48px;
+    height: 28px;
+    border-radius: 20px;
+    background: color-mix(in srgb, var(--muted) 45%, transparent);
+    transition: background 0.25s ease;
+}
+
+.ap-switch::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.25s var(--ease);
+}
+
+.ap-switch.on {
+    background: #6f67ff;
+}
+
+.ap-switch.on::after {
+    transform: translateX(20px);
+}
+
+.ap-version {
+    text-align: center;
+    margin-top: 22px;
+    font-size: 12px;
+    color: var(--muted);
+}
+
+/* ---------- New releases rail (Find tab) ---------- */
+#appReleases {
+    margin: 18px 0 4px;
+}
+
+#appReleases[hidden] {
+    display: none !important;
+}
+
+.ar-head {
+    padding: 0 4px 10px;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 18px;
+}
+
+.ar-rail {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 2px 4px 8px;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.ar-rail::-webkit-scrollbar {
+    display: none;
+}
+
+.ar-card {
+    flex: 0 0 108px;
+    text-align: left;
+    scroll-snap-align: start;
+    color: var(--text);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.ar-poster {
+    position: relative;
+    width: 108px;
+    height: 156px;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    background: var(--surface-solid);
+}
+
+.ar-poster img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.ar-tag {
+    position: absolute;
+    left: 6px;
+    bottom: 6px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 800;
+    color: #062b26;
+    background: #36e0c8;
+}
+
+.ar-name {
+    margin-top: 7px;
+    font-size: 12.5px;
+    font-weight: 700;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.ar-sub {
+    font-size: 11px;
+    color: var(--muted);
+}
+
+.ar-skel .ar-poster {
+    animation: arPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes arPulse {
+    50% { opacity: 0.45; }
+}
+
+/* ---------- toast ---------- */
+#appToast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(100px + var(--sab, 0px));
+    z-index: 120;
+    max-width: calc(100% - 40px);
+    transform: translate(-50%, 12px);
+    opacity: 0;
+    pointer-events: none;
+    padding: 11px 18px;
+    border-radius: 16px;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    color: var(--text);
+    background: var(--surface-solid);
+    border: 1px solid var(--line-strong);
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.4);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+#appToast.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}

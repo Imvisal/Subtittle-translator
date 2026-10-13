@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Monochrome version of the SubLanka AI logo (play button + two bars).
+     Android only allows single-colour small icons in the status bar. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="380"
+    android:viewportHeight="380">
+    <group
+        android:translateX="-66"
+        android:translateY="-80">
+        <path
+            android:fillColor="#FFFFFF"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="30"
+            android:strokeLineJoin="round"
+            android:pathData="M170,108 L170,292 L342,200 Z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M125,352 H387 A19,19 0 0 1 387,390 H125 A19,19 0 0 1 125,352 Z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M175,410 H337 A19,19 0 0 1 337,448 H175 A19,19 0 0 1 175,410 Z" />
+    </group>
+</vector>

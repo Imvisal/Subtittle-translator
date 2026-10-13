@@ -1,0 +1,59 @@
+/* Builds desktop/app/ from the website files in the repo root,
+   and adds desktop-shim.js (desktop build only; the website never loads it).
+
+   Usage: node build-app.js */
+const fs = require("fs");
+const path = require("path");
+
+const root = path.join(__dirname, "..");
+const out = path.join(__dirname, "app");
+
+const files = [
+    "index.html", "about.html", "contact.html", "privacy.html", "terms.html",
+    "style.css", "script.js", "ui.js", "sync.js", "app-update.js",
+    "logo.png", "hero-banner.png",
+    "favicon.svg", "favicon.ico", "apple-touch-icon.png"
+];
+
+fs.rmSync(out, { recursive: true, force: true });
+fs.mkdirSync(out, { recursive: true });
+
+for (const f of files) {
+    const src = path.join(root, f);
+    if (!fs.existsSync(src)) throw new Error("Missing file for desktop build: " + f);
+    fs.copyFileSync(src, path.join(out, f));
+}
+
+// version comes from the root package.json (scripts/bump-version.js)
+const rootPkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
+
+const deskPkgPath = path.join(__dirname, "package.json");
+const deskPkg = JSON.parse(fs.readFileSync(deskPkgPath, "utf8"));
+if (deskPkg.version !== rootPkg.version) {
+    deskPkg.version = rootPkg.version;
+    fs.writeFileSync(deskPkgPath, JSON.stringify(deskPkg, null, 2) + "\n");
+}
+
+fs.copyFileSync(path.join(__dirname, "release-alerts.js"), path.join(out, "release-alerts.js"));
+
+fs.writeFileSync(
+    path.join(out, "desktop-shim.js"),
+    fs.readFileSync(path.join(__dirname, "desktop-shim.js"), "utf8").replace("__APP_VERSION__", rootPkg.version)
+);
+
+// installer / window icon
+fs.mkdirSync(path.join(__dirname, "build"), { recursive: true });
+fs.copyFileSync(path.join(root, "logo.png"), path.join(__dirname, "build", "icon.png"));
+
+// load the shim before the site's own scripts
+const indexPath = path.join(out, "index.html");
+let html = fs.readFileSync(indexPath, "utf8");
+const marker = '<script src="script.js"></script>';
+if (!html.includes(marker)) throw new Error("index.html: could not find " + marker);
+html = html.replace(
+    marker,
+    '<script src="app-update.js"></script>\n    <script src="desktop-shim.js"></script>\n    <script src="release-alerts.js"></script>\n    ' + marker
+);
+fs.writeFileSync(indexPath, html);
+
+console.log("desktop/app built:", fs.readdirSync(out).length, "files");

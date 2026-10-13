@@ -1,0 +1,5 @@
+{
+  "functions": {
+    "api/new-releases.js": { "maxDuration": 30 }
+  }
+}
