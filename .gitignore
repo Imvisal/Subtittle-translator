@@ -15,3 +15,5 @@ desktop/app/
 desktop/build/
 desktop/dist/
 desktop/node_modules/
+*.keystore
+*.jks
