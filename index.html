@@ -102,6 +102,7 @@
         <nav class="header-nav" aria-label="Main">
             <a href="#search">Search</a>
             <a href="#upload">Upload</a>
+            <a href="#sync">Sync</a>
             <a href="#how">How it works</a>
             <a href="about.html">About</a>
             <a href="contact.html">Contact</a>
@@ -196,6 +197,12 @@
                         <a class="btn btn-ghost" href="#upload">
                             <i class="fa-solid fa-cloud-arrow-up"></i>
                             Upload SRT
+                        </a>
+
+                        <a class="btn btn-sync" href="#sync" id="syncHeroBtn">
+                            <span class="sync-ring" aria-hidden="true"></span>
+                            <i class="fa-solid fa-arrows-rotate"></i>
+                            Sync Subtitles
                         </a>
 
                     </div>
@@ -476,6 +483,118 @@
                 </span>
 
             </label>
+
+        </section>
+
+
+
+        <!-- =====================================
+             SYNC SINHALA SUBTITLE
+        ====================================== -->
+
+        <section class="sync-section reveal" id="sync">
+
+            <div class="section-head">
+                <span class="section-eyebrow">Subtitle Sync</span>
+                <h2>Sync a Sinhala subtitle to your movie file</h2>
+                <p class="sync-lead">
+                    Your movie file never leaves your device.
+                    Only its file name is used to find the matching release.
+                </p>
+            </div>
+
+            <div class="sync-steps">
+
+                <!-- STEP 1 -->
+                <div class="sync-card" id="syncStep1">
+                    <div class="sync-card-head">
+                        <span class="sync-num">1</span>
+                        <h3>Upload Sinhala subtitle</h3>
+                    </div>
+
+                    <input type="file" id="syncSinhalaFile" accept=".srt" hidden>
+
+                    <label for="syncSinhalaFile" class="sync-pick">
+                        <i class="fa-regular fa-file-lines"></i>
+                        <span>Choose Sinhala .srt</span>
+                    </label>
+
+                    <div class="sync-info" id="syncSinhalaInfo" aria-live="polite"></div>
+                </div>
+
+                <!-- STEP 2 -->
+                <div class="sync-card is-locked" id="syncStep2">
+                    <div class="sync-card-head">
+                        <span class="sync-num">2</span>
+                        <h3>Select your movie file</h3>
+                    </div>
+
+                    <input
+                        type="file"
+                        id="syncMovieFile"
+                        accept="video/*,.mkv,.mp4,.avi,.mov,.wmv,.webm,.m4v,.ts"
+                        hidden
+                    >
+
+                    <label for="syncMovieFile" class="sync-pick">
+                        <i class="fa-solid fa-film"></i>
+                        <span>Choose movie file</span>
+                    </label>
+
+                    <div class="sync-info" id="syncMovieInfo" aria-live="polite"></div>
+                </div>
+
+                <!-- STEP 3 -->
+                <div class="sync-card is-locked" id="syncStep3">
+                    <div class="sync-card-head">
+                        <span class="sync-num">3</span>
+                        <h3>Pick the matching English subtitle</h3>
+                    </div>
+
+                    <div class="sync-list" id="syncEnglishList">
+                        <p class="sync-empty">
+                            Matching English subtitles for your release
+                            will be listed here.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+
+            <button id="syncBtn" class="sync-go" type="button" disabled>
+                <i class="fa-solid fa-arrows-rotate"></i>
+                Sync Subtitle
+            </button>
+
+            <div class="sync-note" id="syncNote"></div>
+
+            <!-- RESULT -->
+            <div class="sync-result" id="syncResult" hidden>
+
+                <h3>Sync result</h3>
+
+                <div class="sync-stats" id="syncStats"></div>
+
+                <div class="sync-warn" id="syncWarn"></div>
+
+                <div class="sync-tune">
+                    <span>Fine-tune</span>
+                    <button type="button" data-ms="-500">−500</button>
+                    <button type="button" data-ms="-100">−100</button>
+                    <button type="button" data-ms="100">+100</button>
+                    <button type="button" data-ms="500">+500</button>
+                    <button type="button" data-ms="0">Reset</button>
+                    <strong id="syncTuneVal">0 ms</strong>
+                </div>
+
+                <div class="sync-preview" id="syncPreview"></div>
+
+                <button id="syncDownload" class="sync-go" type="button">
+                    <i class="fa-solid fa-download"></i>
+                    Download synced Sinhala subtitle
+                </button>
+
+            </div>
 
         </section>
 
@@ -800,6 +919,7 @@
 
     <script src="script.js"></script>
     <script src="ui.js"></script>
+    <script src="sync.js"></script>
 
 </body>
 
