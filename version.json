@@ -1,6 +1,6 @@
 {
-  "version": "1.1.2",
-  "notes": "New notification bell in the header with a separate translation progress bar, plus the Translations panel is now called Notifications.",
+  "version": "1.1.3",
+  "notes": "Fixed the page squeezing when the keyboard opens on the search bar. New movie / TV series alerts now also show inside the notification bell.",
   "android": {
     "url": "https://github.com/Imvisal/Subtittle-translator/releases/latest/download/SinSubz-AI.apk"
   },

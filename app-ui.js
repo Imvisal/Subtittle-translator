@@ -211,6 +211,47 @@
     }
 
     // =====================================================
+    // NEW RELEASE INBOX (the same alerts the phone notification shows)
+    // Recorded natively by ReleaseCheckWorker, even while the app is closed.
+    // =====================================================
+    var inbox = [];
+    var inboxUnread = 0;
+    var inboxSeen = 0;       // "seen" time as stored natively
+    var inboxMarkAt = 0;     // items newer than this are highlighted while the panel is open
+
+    function loadInbox() {
+        var D = plug("Downloads");
+        if (!D || !D.getReleaseInbox) { return; }
+        D.getReleaseInbox().then(function (r) {
+            inbox = (r && r.items) || [];
+            inboxSeen = (r && r.seen) || 0;
+            inboxUnread = (r && r.unread) || 0;
+            if (jobsOpen) {
+                // panel is open right now: nothing is "unread" any more
+                if (inboxUnread) { markInboxSeen(); }
+                inboxUnread = 0;
+            }
+            updateRing();
+            renderJobs();
+        }).catch(function () { /* old native build: no inbox */ });
+    }
+
+    function markInboxSeen() {
+        var D = plug("Downloads");
+        if (D && D.markReleaseInboxSeen) { D.markReleaseInboxSeen().catch(function () { /* ignore */ }); }
+    }
+
+    function inboxLine(it) {
+        var name = it.title + (it.year ? " (" + it.year + ")" : "");
+        if (it.kind === "sinhala") {
+            return { title: "Sinhala subtitle available: " + name,
+                     meta: "Found on " + (it.source || "a Sinhala subtitle site") };
+        }
+        return { title: (it.type === "series" ? "New series available: " : "New movie available: ") + name,
+                 meta: it.sinhala ? "Sinhala subtitle is already available" : "Find or translate subtitles" };
+    }
+
+    // =====================================================
     // UI: header ring, tabs, panel
     // =====================================================
     var jobsBtn, pillBtn, tabsEl, jobsEl, settingsEl;
@@ -220,7 +261,9 @@
         var running = !!cur;
         jobsBtn.classList.toggle("run", running);
         var badge = jobsBtn.querySelector(".aj-badge");
-        if (badge) { badge.textContent = running ? "1" : ""; }
+        var unread = !running && inboxUnread > 0 && !jobsOpen;
+        jobsBtn.classList.toggle("unread", unread);
+        if (badge) { badge.textContent = running ? "1" : (unread ? (inboxUnread > 9 ? "9+" : String(inboxUnread)) : ""); }
         if (pillBtn) {
             pillBtn.classList.toggle("run", running);
             var bar = pillBtn.querySelector(".aj-pbar i");
@@ -233,7 +276,7 @@
         }
         jobsBtn.setAttribute("aria-label", running
             ? "Notifications, translation in progress, " + cur.percent + " percent"
-            : "Notifications");
+            : (inboxUnread ? "Notifications, " + inboxUnread + " new" : "Notifications"));
         if (isNew && !jobsOpen) { jobsBtn.classList.add("has-new"); }
     }
 
@@ -263,6 +306,21 @@
                 '</div></div>';
         }
 
+        if (inbox.length) {
+            html += '<div class="ap-sec"><span>New releases</span><button type="button" id="ajClearNew">Clear</button></div>';
+            inbox.forEach(function (it, idx) {
+                var ln = inboxLine(it);
+                var fresh = it.t > inboxMarkAt && inboxMarkAt > 0;
+                var tile = it.poster
+                    ? '<div class="ap-tile poster"><img loading="lazy" alt="" src="' + esc(it.poster) + '"></div>'
+                    : '<div class="ap-tile"><i class="fa-solid ' + (it.type === "series" ? "fa-tv" : "fa-film") + '"></i></div>';
+                html += '<div class="ap-card ap-click' + (fresh ? " fresh" : "") + '" data-inbox="' + idx + '" role="button" tabindex="0">' +
+                    '<div class="ap-row">' + tile +
+                    '<div class="ap-main"><div class="ap-title">' + esc(ln.title) + '</div>' +
+                    '<div class="ap-meta">' + esc(ln.meta) + ' · ' + timeAgo(it.t) + '</div></div></div></div>';
+            });
+        }
+
         if (jobHistory.length) {
             html += '<div class="ap-sec"><span>Finished</span><button type="button" id="ajClear">Clear</button></div>';
             jobHistory.forEach(function (j) {
@@ -278,8 +336,8 @@
             });
         }
 
-        if (!cur && !jobHistory.length) {
-            html += '<div class="ap-empty">No translations yet.<br>Find a movie or upload an SRT file and its progress will show here.' +
+        if (!cur && !jobHistory.length && !inbox.length) {
+            html += '<div class="ap-empty">Nothing here yet.<br>New movies, TV series and Sinhala subtitles, and your translation progress, will show here.' +
                 '<br><button type="button" id="ajFind">Find subtitles</button></div>';
         }
 
@@ -294,6 +352,27 @@
                 renderJobs();
             });
         }
+        var clrNew = $("ajClearNew");
+        if (clrNew) {
+            clrNew.addEventListener("click", function () {
+                inbox = [];
+                inboxUnread = 0;
+                var D = plug("Downloads");
+                if (D && D.clearReleaseInbox) { D.clearReleaseInbox().catch(function () { /* ignore */ }); }
+                updateRing();
+                renderJobs();
+            });
+        }
+        Array.prototype.forEach.call(body.querySelectorAll("[data-inbox]"), function (el) {
+            function open() {
+                var it = inbox[+el.getAttribute("data-inbox")];
+                if (!it) { return; }
+                navigate("find", false);
+                setTimeout(function () { searchFor(it.title); }, 60);
+            }
+            el.addEventListener("click", open);
+            el.addEventListener("keydown", function (e) { if (e.key === "Enter") { open(); } });
+        });
         var find = $("ajFind");
         if (find) { find.addEventListener("click", function () { navigate("find", false); }); }
     }
@@ -302,6 +381,7 @@
     // NAVIGATION (tabs + panel, with Android back button)
     // =====================================================
     function applyView(tab, jobs) {
+        var wasOpen = jobsOpen;
         curTab = tab;
         jobsOpen = !!jobs;
         root.setAttribute("data-app-tab", tab);
@@ -316,6 +396,15 @@
         }
 
         if (jobsOpen && jobsBtn) { jobsBtn.classList.remove("has-new"); }
+        if (jobsOpen) {
+            // highlight what arrived since the last visit, then mark it all as seen
+            if (!wasOpen) { inboxMarkAt = inboxSeen || 1; }
+            if (inboxUnread) { markInboxSeen(); inboxUnread = 0; }
+            loadInbox();
+        } else {
+            inboxMarkAt = 0;
+        }
+        updateRing();
         renderJobs();
         if (tab === "settings") { refreshSettings(); }
     }
@@ -659,8 +748,12 @@
 
         // coming back from Android settings: refresh permission states
         document.addEventListener("visibilitychange", function () {
-            if (!document.hidden) { refreshSettings(); }
+            if (!document.hidden) { refreshSettings(); loadInbox(); }
         });
+
+        // new-release alerts (bell): load now, then keep fresh while the app is open
+        loadInbox();
+        setInterval(function () { if (!document.hidden) { loadInbox(); } }, 30000);
 
         try { window.history.replaceState({ appTab: "find", jobs: false }, ""); } catch (e) { /* ignore */ }
         applyView("find", false);

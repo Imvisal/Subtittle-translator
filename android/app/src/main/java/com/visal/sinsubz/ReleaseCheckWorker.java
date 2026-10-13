@@ -54,13 +54,11 @@ public class ReleaseCheckWorker extends Worker {
     public Result doWork() {
         Context ctx = getApplicationContext();
 
-        // Android 13+: no permission = nothing to show. Try again next time
-        // (do not remember titles yet, so they are announced once allowed).
-        if (Build.VERSION.SDK_INT >= 33
-                && ctx.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
-                    != PackageManager.PERMISSION_GRANTED) {
-            return Result.success();
-        }
+        // Without the notification permission (Android 13+) we still record the
+        // new releases in the in-app bell list, we just cannot pop a notification.
+        boolean canNotify = Build.VERSION.SDK_INT < 33
+            || ctx.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                == PackageManager.PERMISSION_GRANTED;
 
         try {
             JSONObject root = new JSONObject(download(API));
@@ -74,6 +72,8 @@ public class ReleaseCheckWorker extends Worker {
             JSONObject state = new JSONObject(prefs.getString("state", "{}"));
 
             List<String[]> toShow = new ArrayList<>();
+            JSONArray inbox = new JSONArray(prefs.getString("inbox", "[]"));
+            long now = System.currentTimeMillis();
 
             for (int i = 0; i < items.length(); i++) {
                 JSONObject item = items.getJSONObject(i);
@@ -99,6 +99,7 @@ public class ReleaseCheckWorker extends Worker {
                     state.put(key, entry);
 
                     if (initialized) {
+                        addInbox(inbox, key, "new", title, year, series, sinhala, source, poster, now);
                         toShow.add(new String[] {
                             key,
                             (series ? "New series available: " : "New movie available: ") + name,
@@ -112,6 +113,7 @@ public class ReleaseCheckWorker extends Worker {
                     known.put("sinhala", true);
 
                     if (initialized) {
+                        addInbox(inbox, key, "sinhala", title, year, series, true, source, poster, now);
                         toShow.add(new String[] {
                             key,
                             "Sinhala subtitle available: " + name,
@@ -125,13 +127,52 @@ public class ReleaseCheckWorker extends Worker {
             prefs.edit()
                 .putBoolean("init", true)
                 .putString("state", state.toString())
+                .putString("inbox", inbox.toString())
                 .apply();
 
-            show(ctx, toShow);
+            if (canNotify) {
+                show(ctx, toShow);
+            }
             return Result.success();
 
         } catch (Exception e) {
             return Result.retry();
+        }
+    }
+
+    // In-app notification list (the bell). Newest first, newest 30 kept.
+    // Read by DownloadsPlugin.getReleaseInbox().
+    private static void addInbox(JSONArray inbox, String key, String kind, String title,
+            String year, boolean series, boolean sinhala, String source, String poster, long now)
+            throws Exception {
+        // an older entry for the same title + kind is replaced, not duplicated
+        for (int i = inbox.length() - 1; i >= 0; i--) {
+            JSONObject o = inbox.getJSONObject(i);
+            if (key.equals(o.optString("key")) && kind.equals(o.optString("kind"))) {
+                inbox.remove(i);
+            }
+        }
+        JSONObject e = new JSONObject();
+        e.put("key", key);
+        e.put("kind", kind);
+        e.put("title", title);
+        e.put("year", year);
+        e.put("type", series ? "series" : "movie");
+        e.put("sinhala", sinhala);
+        e.put("source", source);
+        e.put("poster", poster);
+        e.put("t", now);
+
+        JSONArray out = new JSONArray();
+        out.put(e);
+        for (int i = 0; i < inbox.length() && out.length() < 30; i++) {
+            out.put(inbox.get(i));
+        }
+        while (inbox.length() > 0) {
+            inbox.remove(0);
+        }
+        for (int i = 0; i < out.length(); i++) {
+            inbox.put(out.get(i));
         }
     }
 

@@ -191,6 +191,55 @@ public class DownloadsPlugin extends Plugin {
         });
     }
 
+    // ---- In-app notification list (the bell) -----------------------------
+    // ReleaseCheckWorker records every new movie / series / Sinhala subtitle in
+    // SharedPreferences, even while the app is closed. The page reads it here.
+
+    private android.content.SharedPreferences releasePrefs() {
+        return getContext().getSharedPreferences("sinsubz_releases", Context.MODE_PRIVATE);
+    }
+
+    @PluginMethod
+    public void getReleaseInbox(PluginCall call) {
+        try {
+            android.content.SharedPreferences p = releasePrefs();
+            org.json.JSONArray items = new org.json.JSONArray(p.getString("inbox", "[]"));
+            long seen = p.getLong("inboxSeen", 0L);
+            int unread = 0;
+            for (int i = 0; i < items.length(); i++) {
+                if (items.getJSONObject(i).optLong("t", 0L) > seen) {
+                    unread++;
+                }
+            }
+            JSObject r = new JSObject();
+            r.put("items", new com.getcapacitor.JSArray(items.toString()));
+            r.put("unread", unread);
+            r.put("seen", seen);
+            call.resolve(r);
+        } catch (Exception e) {
+            JSObject r = new JSObject();
+            r.put("items", new com.getcapacitor.JSArray());
+            r.put("unread", 0);
+            call.resolve(r);
+        }
+    }
+
+    /** The panel was opened: everything in the list counts as seen. */
+    @PluginMethod
+    public void markReleaseInboxSeen(PluginCall call) {
+        releasePrefs().edit().putLong("inboxSeen", System.currentTimeMillis()).apply();
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void clearReleaseInbox(PluginCall call) {
+        releasePrefs().edit()
+            .putString("inbox", "[]")
+            .putLong("inboxSeen", System.currentTimeMillis())
+            .apply();
+        call.resolve();
+    }
+
     /** Opens a link (e.g. the new APK) in the phone's browser. */
     @PluginMethod
     public void openUrl(PluginCall call) {

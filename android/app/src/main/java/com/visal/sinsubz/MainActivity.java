@@ -9,6 +9,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.Window;
+import android.view.WindowManager;
+import android.graphics.drawable.ColorDrawable;
 
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -35,9 +37,23 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(DownloadsPlugin.class);
         super.onCreate(savedInstanceState);
 
+        configureKeyboard();
         goEdgeToEdge();
         askNotificationPermission();
         scheduleReleaseChecks();
+    }
+
+    // The keyboard must resize the page exactly ONCE. On Android 11+ we do it
+    // ourselves (WebView bottom margin = keyboard height, see goEdgeToEdge), so
+    // the system must not resize the window as well - doing both squeezed the
+    // page into a thin strip with a grey gap above the keyboard.
+    // On older Android the system resize is used and we add no margin.
+    private void configureKeyboard() {
+        getWindow().setSoftInputMode(Build.VERSION.SDK_INT >= 30
+            ? WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING
+            : WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        // never show a grey window behind the page
+        getWindow().setBackgroundDrawable(new ColorDrawable(0xFF07080D));
     }
 
     // Full-screen layout: the web page is drawn behind the status bar and the
@@ -78,7 +94,9 @@ public class MainActivity extends BridgeActivity {
 
         // The only space the page leaves is the on-screen keyboard.
         ViewCompat.setOnApplyWindowInsetsListener(web, (view, insets) -> {
-            Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
+            Insets ime = Build.VERSION.SDK_INT >= 30
+                ? insets.getInsets(WindowInsetsCompat.Type.ime())
+                : Insets.NONE;
             ViewGroup.LayoutParams lp = view.getLayoutParams();
             if (lp instanceof ViewGroup.MarginLayoutParams) {
                 ViewGroup.MarginLayoutParams m = (ViewGroup.MarginLayoutParams) lp;
