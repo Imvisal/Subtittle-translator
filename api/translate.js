@@ -48,7 +48,7 @@ module.exports = async function handler(req, res) {
             literal:
                 "Stay close to the original meaning, but still in spoken Sinhala, not bookish.",
             formal:
-                "Polite and respectful spoken Sinhala (still conversational, not textbook-written Sinhala)."
+                "Polite and respectful spoken Sinhala (still conversational, not textbook-written Sinhala). Use ඔයා with respectful titles; ඔබ only for very formal speeches."
         };
 
         const styleNote =
@@ -83,8 +83,56 @@ Rules:
   "ඇයි?" not "මන්ද?"; "හරි" not "එසේය"; "ඉන්නවා" not "සිටිමි";
   "මේක" not "මෙය"; "ඒක" not "එය"; "දැන්ම" not "වහාම".
 - Avoid stiff verb endings like -මි, -යි, -න්නෙමි, -ඇත. Use -නවා / -නේ / -ද / -ලා.
-- Pick pronouns by context: ඔයා / උඹ / තෝ / ඔබ only when formal;
-  අම්මා, තාත්තා, අයියා, අක්කා, මල්ලි, නංගි, මචං, බං, යාලුවා where natural.
+- NEVER use stiff, bookish pronouns/forms in normal dialogue:
+  "ඔබ", "ඔබට", "ඔබේ", "මට", "මගේ" (written style), "ඇය", "ඔහු", "එම", "මෙම".
+  Use what people really say: "ඔයා", "ඔයාට", "ඔයාගේ", "මම/මං", "මට" only where natural,
+  "එයා", "එයාට", "අර මනුස්සයා", "මේ", "අර".
+  ("ඔබ" is allowed ONLY for very formal speeches, royal/religious/news-style lines.)
+
+PRONOUNS & RELATIONSHIPS (most important rule):
+Before translating each line, work out WHO is talking to WHOM and what the
+relationship and mood are, using the surrounding subtitles as context
+(friends, lovers, family, boss/employee, strangers, enemies, police/criminal,
+kid/parent, anger, teasing, begging, etc.). Then choose the pronoun, verb
+ending and vocabulary that real Sri Lankans use in exactly that situation.
+Keep the SAME pronoun for the same pair of people through the whole scene.
+
+  English "you" ->
+    friends, couples, siblings, coworkers, normal adults ......... ඔයා / ඔයාට / ඔයාගේ
+    very close friends, teasing, casual (guy to guy) ............ උඹ / උඹට / උඹේ  (or උබ, උඹල)
+    angry, insulting, fighting, villain threatening someone ..... තෝ / තොට / තොගේ  (or තෝව)
+    respectful: elders, teachers, boss, doctor, strangers ....... ඔයා + respectful words
+                                                                (සර්, මැඩම්, අංකල්, ආන්ටි, නෝනා, මහත්තයා)
+    to a child / loved one, soft tone ........................... ඔයා / පුතා / දුව / සුදූ / බබා
+  English "I" ->
+    normal ........ මම   |   close/casual/angry ........ මං   |   very rough ........ මං (with තෝ/උඹ)
+
+  Example: "I told you."
+    normal / friendly .............. මම ඔයාට කිව්වනේ.
+    close friends / casual ......... මං උඹට කිව්වනේ.
+    angry / rough .................. මං තොට කිව්වා නේද!
+    never ........................... මම ඔබට පැවසුවෙමි.
+
+  Example: "Where were you?"  ->  ඔයා කොහෙද හිටියේ? / උඹ කොහෙද හිටියේ? / තෝ කොහෙද හිටියේ?
+  Example: "Don't lie to me." ->  මට බොරු කියන්න එපා. / මට බොරු කියන්නෙපා. / තෝ මට බොරු කියන්න එපා!
+
+Make verbs match the chosen pronoun and mood:
+  polite/normal: කිව්වා, කරන්න, එන්න, යමු, බලන්න
+  casual:        කිව්වනේ, කරපන්, වරෙන්, යමු, බලපන්, හරි නේ, නේද, නේ
+  rough:         කිව්වා නේද, කරපන් බන්, ඕක නවත්තපන්, පලයන්, වරෙන් මෙහාට, ගහන්නේ
+Use natural sentence-final particles (නේ, නෙ, නේද, නැද්ද, බං, මචං, අනේ, ඕයි, අයියෝ, හා, හරි, ඉතින්)
+only where a real person would say them. Do not overuse them.
+
+Names, titles & address:
+  Use the way Sri Lankans address people: අම්මා, තාත්තා, අක්කා, අයියා, නංගි, මල්ලි,
+  සර්, මැඩම්, මචං, බං, ඇන්ටි, අංකල්. Do not translate "Mr./Mrs." stiffly:
+  use "සර්/මැඩම්/මහත්තයා/නෝනා" where it sounds natural.
+
+Meaning over words:
+  Translate the MEANING and the feeling, not word-by-word.
+  Idioms, jokes, slang and swearing should become the closest natural Sinhala
+  equivalent (not a literal translation). Keep the strength of insults the same
+  (do not soften or make them stiff).
 - Keep subtitles short and easy to read quickly on screen.
 - Write Sinhala in Sinhala script only (no Singlish/English letters),
   except proper names which can be transliterated into Sinhala.
