@@ -1424,6 +1424,103 @@ async function searchMovies() {
 
 
 // ========================================================
+// IMDb RATING LABELS
+// Cards carry an empty <span class="imdb-slot" data-imdb-id="tt...">.
+// applyImdbRatings() asks /api/ratings once for all of them and fills in a small
+// "IMDb 7.4" label. Titles without a rating keep the slot hidden, and a failed
+// request changes nothing, so the cards never break because of it.
+// (The Android / Windows app list "New releases" uses the same helper.)
+// ========================================================
+
+const imdbRatingCache = {};
+
+function imdbSlot(id) {
+
+    return /^tt\d+$/.test(String(id || ""))
+        ? `<span class="imdb-slot" data-imdb-id="${id}"></span>`
+        : "";
+
+}
+
+function fillImdbSlot(slot, info) {
+
+    if (!info || !info.rating) {
+        return;
+    }
+
+    slot.innerHTML =
+        "<b>IMDb</b><em>" + escapeHTML(info.rating) + "</em>";
+
+    slot.title =
+        "IMDb rating " + info.rating + "/10" +
+        (info.votes ? " (" + info.votes + " votes)" : "");
+
+    slot.classList.add("has-rating");
+
+}
+
+function applyImdbRatings(root) {
+
+    const scope = root || document;
+
+    const slots = Array.from(
+        scope.querySelectorAll(".imdb-slot[data-imdb-id]:not(.has-rating)")
+    );
+
+    if (!slots.length) {
+        return;
+    }
+
+    const need = [];
+
+    slots.forEach(function (slot) {
+        const id = slot.dataset.imdbId;
+        if (!(id in imdbRatingCache) && need.indexOf(id) === -1) {
+            need.push(id);
+        }
+    });
+
+    function paint() {
+        slots.forEach(function (slot) {
+            fillImdbSlot(slot, imdbRatingCache[slot.dataset.imdbId]);
+        });
+    }
+
+    if (!need.length) {
+        paint();
+        return;
+    }
+
+    const chunks = [];
+
+    for (let i = 0; i < need.length; i += 20) {
+        chunks.push(need.slice(i, i + 20));
+    }
+
+    Promise.all(
+        chunks.map(function (ids) {
+            return fetch("/api/ratings?ids=" + ids.join(","))
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (data) {
+                    if (!data || !data.ratings) { return; }
+                    const unknown = data.unknown || [];
+                    ids.forEach(function (id) {
+                        // "unknown" = could not be checked right now: ask again next time
+                        if (unknown.indexOf(id) === -1) {
+                            imdbRatingCache[id] = data.ratings[id] || null;
+                        }
+                    });
+                })
+                .catch(function () { /* offline: no labels, nothing else changes */ });
+        })
+    ).then(paint);
+
+}
+
+window.applyImdbRatings = applyImdbRatings;
+
+
+// ========================================================
 // DISPLAY SEARCH RESULTS
 // ========================================================
 
@@ -1513,6 +1610,8 @@ function displaySearchResults(results) {
                                 )}
                             </span>
 
+                            ${imdbSlot(item.imdbID)}
+
                         </div>
 
                         <button
@@ -1569,6 +1668,8 @@ function displaySearchResults(results) {
 
             }
         );
+
+    applyImdbRatings(searchResults);
 
 }
 
@@ -4943,7 +5044,7 @@ async function loadCategory(category) {
 
 
         renderCategoryResults(
-            results.slice(0, 4),
+            results.slice(0, 10),
             container
         );
 
@@ -5016,67 +5117,85 @@ function getCategoryName(category) {
 // RENDER CATEGORY RESULTS
 // ========================================================
 
+const CATEGORY_PAGE_SIZE = 6;
+
 function renderCategoryResults(
     results,
     container
 ) {
 
+    const totalPages =
+        Math.max(
+            1,
+            Math.ceil(
+                results.length / CATEGORY_PAGE_SIZE
+            )
+        );
+
+    let page = 0;
+    let busy = false;
+
     container.innerHTML = "";
 
-
-    const grid =
+    const stage =
         document.createElement("div");
+    stage.className = "category-stage";
 
+    container.appendChild(stage);
 
-    grid.className =
-        "category-results-grid";
+    let pager = null;
 
+    if (totalPages > 1) {
 
-    results.forEach(
-        function (item) {
+        pager =
+            document.createElement("div");
+        pager.className = "category-pager";
+
+        pager.innerHTML = `
+            <button type="button" class="category-page-btn" data-dir="-1" aria-label="Previous page">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <div class="category-dots"></div>
+            <span class="category-page-count"></span>
+            <button type="button" class="category-page-btn" data-dir="1" aria-label="Next page">
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+        `;
+
+        container.appendChild(pager);
+
+    }
+
+    function typeLabel(item) {
+        if (item.anime) return "Anime";
+        return item.type === "series" ? "TV" : "Movie";
+    }
+
+    function typeBadge(item) {
+        if (item.anime) return "🎌 Anime";
+        return item.type === "series" ? "📺 TV" : "🎬 Movie";
+    }
+
+    function buildGrid(slice) {
+
+        const grid =
+            document.createElement("div");
+
+        grid.className =
+            "category-results-grid";
+
+        slice.forEach(function (item) {
 
             const card =
-                document.createElement(
-                    "article"
-                );
+                document.createElement("article");
 
-
-            card.className =
-                "category-card";
-
+            card.className = "category-card";
 
             const poster =
                 item.poster &&
                 item.poster !== "N/A"
-
-                    ? `
-
-                        <img
-                            src="${escapeAttribute(
-                                item.poster
-                            )}"
-                            alt="${escapeAttribute(
-                                item.title
-                            )}"
-                            loading="lazy"
-                            class="category-poster"
-                        >
-
-                      `
-
-                    : `
-
-                        <div
-                            class="
-                                category-poster
-                                category-poster-empty
-                            "
-                        >
-                            🎬
-                        </div>
-
-                      `;
-
+                    ? `<img src="${escapeAttribute(item.poster)}" alt="${escapeAttribute(item.title)}" loading="lazy" class="category-poster">`
+                    : `<div class="category-poster category-poster-empty">🎬</div>`;
 
             card.innerHTML = `
 
@@ -5084,53 +5203,24 @@ function renderCategoryResults(
 
                     ${poster}
 
-                    <span
-                        class="category-type-badge"
-                    >
-
-                        ${
-                            item.type === "series"
-                                ? "📺 TV"
-                                : "🎬 Movie"
-                        }
-
+                    <span class="category-type-badge">
+                        ${typeBadge(item)}
                     </span>
+
+                    ${imdbSlot(item.imdbID)}
 
                 </div>
 
-
                 <div class="category-card-info">
 
-                    <h3>
-                        ${escapeHTML(
-                            item.title
-                        )}
-                    </h3>
-
+                    <h3>${escapeHTML(item.title)}</h3>
 
                     <div class="category-card-meta">
-
-                        <span>
-                            ${escapeHTML(
-                                item.year || ""
-                            )}
-                        </span>
-
-                        <span>
-                            ${
-                                item.type === "series"
-                                    ? "TV"
-                                    : "Movie"
-                            }
-                        </span>
-
+                        <span>${escapeHTML(item.year || "")}</span>
+                        <span>${typeLabel(item)}</span>
                     </div>
 
-
-                    <button
-                        type="button"
-                        class="category-select-btn"
-                    >
+                    <button type="button" class="category-select-btn">
                         Select
                     </button>
 
@@ -5138,40 +5228,136 @@ function renderCategoryResults(
 
             `;
 
-
             const selectButton =
-                card.querySelector(
-                    ".category-select-btn"
-                );
-
+                card.querySelector(".category-select-btn");
 
             if (selectButton) {
-
                 selectButton.addEventListener(
                     "click",
                     function () {
-
-                        selectSearchResult(
-                            item
-                        );
-
+                        selectSearchResult(item);
                     }
                 );
-
             }
 
+            grid.appendChild(card);
 
-            grid.appendChild(
-                card
-            );
+        });
+
+        return grid;
+
+    }
+
+    function updatePager() {
+
+        if (!pager) return;
+
+        const dots =
+            pager.querySelector(".category-dots");
+
+        dots.innerHTML = "";
+
+        for (let i = 0; i < totalPages; i++) {
+
+            const dot =
+                document.createElement("button");
+
+            dot.type = "button";
+            dot.className =
+                "category-dot" +
+                (i === page ? " active" : "");
+            dot.setAttribute("aria-label", "Page " + (i + 1));
+
+            dot.addEventListener("click", function () {
+                goTo(i);
+            });
+
+            dots.appendChild(dot);
 
         }
-    );
 
+        pager.querySelector(".category-page-count")
+            .textContent = (page + 1) + " / " + totalPages;
 
-    container.appendChild(
-        grid
-    );
+        const [prev, next] =
+            pager.querySelectorAll(".category-page-btn");
+
+        prev.disabled = page === 0;
+        next.disabled = page === totalPages - 1;
+
+    }
+
+    function show(direction, animate) {
+
+        const slice =
+            results.slice(
+                page * CATEGORY_PAGE_SIZE,
+                (page + 1) * CATEGORY_PAGE_SIZE
+            );
+
+        const grid = buildGrid(slice);
+
+        if (animate) {
+            grid.classList.add(
+                direction > 0
+                    ? "page-in-next"
+                    : "page-in-prev"
+            );
+        }
+
+        stage.innerHTML = "";
+        stage.appendChild(grid);
+
+        applyImdbRatings(grid);
+        updatePager();
+
+    }
+
+    function goTo(target) {
+
+        if (
+            busy ||
+            target === page ||
+            target < 0 ||
+            target >= totalPages
+        ) {
+            return;
+        }
+
+        const direction = target > page ? 1 : -1;
+        const current = stage.firstElementChild;
+
+        busy = true;
+
+        const swap = function () {
+            page = target;
+            show(direction, true);
+            busy = false;
+        };
+
+        if (current) {
+            current.classList.add(
+                direction > 0
+                    ? "page-out-next"
+                    : "page-out-prev"
+            );
+            setTimeout(swap, 260);
+        } else {
+            swap();
+        }
+
+    }
+
+    if (pager) {
+        pager.querySelectorAll(".category-page-btn")
+            .forEach(function (btn) {
+                btn.addEventListener("click", function () {
+                    goTo(page + Number(btn.dataset.dir));
+                });
+            });
+    }
+
+    show(1, false);
 
 }
 
