@@ -5451,6 +5451,289 @@ document.addEventListener(
 
 
 // ========================================================
+// SEARCH SUGGESTIONS (live dropdown while typing)
+// ========================================================
+
+(function initSearchSuggestions() {
+
+    if (!searchInput) {
+        return;
+    }
+
+    const wrap = searchInput.closest(".search-input-wrap");
+
+    if (!wrap) {
+        return;
+    }
+
+    const MIN_CHARS = 2;
+    const MAX_ITEMS = 6;
+    const DEBOUNCE_MS = 300;
+
+    const box = document.createElement("div");
+    box.className = "suggest-box";
+    box.id = "suggestBox";
+    box.setAttribute("role", "listbox");
+    box.hidden = true;
+    wrap.appendChild(box);
+
+    searchInput.setAttribute("aria-controls", "suggestBox");
+    searchInput.setAttribute("aria-autocomplete", "list");
+
+    const cache = new Map();
+    let timer = null;
+    let controller = null;
+    let items = [];
+    let active = -1;
+    let latest = "";
+
+    function close() {
+        box.hidden = true;
+        box.innerHTML = "";
+        items = [];
+        active = -1;
+    }
+
+    function setActive(index) {
+
+        const rows = box.querySelectorAll(".suggest-item");
+
+        rows.forEach(function (row, i) {
+            row.classList.toggle("active", i === index);
+            row.setAttribute("aria-selected", i === index ? "true" : "false");
+        });
+
+        active = index;
+
+        if (rows[index]) {
+            rows[index].scrollIntoView({ block: "nearest" });
+        }
+
+    }
+
+    function choose(item) {
+
+        searchInput.value = item.title;
+        close();
+
+        if (searchResults) {
+            searchResults.innerHTML = "";
+        }
+
+        hideCategoryResults();
+        selectSearchResult(item);
+
+    }
+
+    function showLoading() {
+
+        let rows = "";
+
+        for (let i = 0; i < 3; i++) {
+            rows += `
+                <div class="suggest-skeleton">
+                    <span class="suggest-thumb"></span>
+                    <span class="suggest-lines"><i></i><i></i></span>
+                </div>`;
+        }
+
+        box.innerHTML = rows;
+        box.hidden = false;
+
+    }
+
+    function render(list, query) {
+
+        items = list.slice(0, MAX_ITEMS);
+        active = -1;
+
+        if (!items.length) {
+
+            box.innerHTML = `
+                <div class="suggest-empty">
+                    No matches for "${escapeHTML(query)}"
+                </div>`;
+            box.hidden = false;
+            return;
+
+        }
+
+        box.innerHTML = "";
+
+        items.forEach(function (item, index) {
+
+            const row = document.createElement("div");
+
+            row.className = "suggest-item";
+            row.setAttribute("role", "option");
+            row.style.animationDelay = (index * 0.04) + "s";
+
+            const thumb =
+                item.poster && item.poster !== "N/A"
+                    ? `<img class="suggest-thumb" src="${escapeAttribute(item.poster)}" alt="" loading="lazy">`
+                    : `<span class="suggest-thumb suggest-thumb-empty">🎬</span>`;
+
+            row.innerHTML = `
+                ${thumb}
+                <span class="suggest-text">
+                    <strong>${escapeHTML(item.title)}</strong>
+                    <small>
+                        ${escapeHTML(item.year || "")}
+                        &middot;
+                        ${item.type === "series" ? "TV Series" : "Movie"}
+                    </small>
+                </span>
+                <i class="fa-solid fa-arrow-right suggest-arrow"></i>
+            `;
+
+            // mousedown (not click) so it fires before the input loses focus
+            row.addEventListener("mousedown", function (event) {
+                event.preventDefault();
+                choose(item);
+            });
+
+            row.addEventListener("mousemove", function () {
+                if (active !== index) setActive(index);
+            });
+
+            box.appendChild(row);
+
+        });
+
+        box.hidden = false;
+
+    }
+
+    async function fetchSuggestions(query) {
+
+        const key = query.toLowerCase();
+
+        if (cache.has(key)) {
+            render(cache.get(key), query);
+            return;
+        }
+
+        if (controller) {
+            controller.abort();
+        }
+
+        controller = new AbortController();
+
+        showLoading();
+
+        try {
+
+            const response = await fetch(
+                `/api/search?query=${encodeURIComponent(query)}`,
+                { signal: controller.signal }
+            );
+
+            const data = await response.json();
+
+            // OMDb answers 404 when nothing matches
+            const list =
+                response.ok && Array.isArray(data.results)
+                    ? data.results
+                    : [];
+
+            cache.set(key, list);
+
+            // ignore answers for text the user has already changed
+            if (searchInput.value.trim() === query) {
+                render(list, query);
+            }
+
+        } catch (error) {
+
+            if (error && error.name === "AbortError") {
+                return;
+            }
+
+            close();
+
+        }
+
+    }
+
+    searchInput.addEventListener("input", function () {
+
+        const query = searchInput.value.trim();
+
+        latest = query;
+        clearTimeout(timer);
+
+        if (query.length < MIN_CHARS) {
+            if (controller) controller.abort();
+            close();
+            return;
+        }
+
+        timer = setTimeout(function () {
+            fetchSuggestions(query);
+        }, DEBOUNCE_MS);
+
+    });
+
+    searchInput.addEventListener("keydown", function (event) {
+
+        if (box.hidden || !items.length) {
+            if (event.key === "Escape") close();
+            return;
+        }
+
+        if (event.key === "ArrowDown") {
+            event.preventDefault();
+            setActive((active + 1) % items.length);
+        }
+
+        else if (event.key === "ArrowUp") {
+            event.preventDefault();
+            setActive((active - 1 + items.length) % items.length);
+        }
+
+        else if (event.key === "Enter") {
+
+            clearTimeout(timer);
+
+            if (active >= 0) {
+                // picks the highlighted suggestion instead of a full search
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                choose(items[active]);
+            } else {
+                close();
+            }
+
+        }
+
+        else if (event.key === "Escape") {
+            close();
+        }
+
+    }, true);
+
+    searchInput.addEventListener("focus", function () {
+        if (latest.length >= MIN_CHARS && items.length) {
+            box.hidden = false;
+        }
+    });
+
+    searchInput.addEventListener("blur", function () {
+        // small delay so a tap on a row still registers
+        setTimeout(close, 120);
+    });
+
+    if (searchBtn) {
+        searchBtn.addEventListener("click", function () {
+            clearTimeout(timer);
+            close();
+        });
+    }
+
+})();
+
+
+// ========================================================
 // DEBUG
 // ========================================================
 
