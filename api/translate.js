@@ -11,10 +11,12 @@
 // they are created in different projects.
 // ------------------------------------------------------------------
 
+// "-latest" aliases always point at a model that is still available,
+// so they keep working when Google retires a fixed model name.
 const DEFAULT_MODELS = [
     "gemini-3.1-flash-lite",
-    "gemini-2.5-flash-lite",
-    "gemini-2.5-flash"
+    "gemini-flash-lite-latest",
+    "gemini-flash-latest"
 ];
 
 function getKeys() {
@@ -83,6 +85,11 @@ async function generateWithFallback(prompt) {
     let lastStatus = 500;
     let lastMessage = "Gemini API error";
     let sawQuota = false;
+    let sawBusy = false;
+
+    // Two passes: if every model was only "busy" (503), wait a moment and retry once.
+    for (let pass = 0; pass < 2; pass++) {
+    sawBusy = false;
 
     // best model first, and every key is tried on it before moving on
     for (const model of models) {
@@ -161,9 +168,11 @@ async function generateWithFallback(prompt) {
             }
 
             // model overloaded / temporary -> try the next one, short pause
+            // (overload is per MODEL, not per key, so skip the other keys and
+            // go straight to the next model instead of waiting on every key)
             if (response.status === 503 || response.status === 500) {
-                cooldowns.set(id, Date.now() + 15 * 1000);
-                continue;
+                sawBusy = true;
+                break;
             }
 
             // bad / blocked key -> skip that key for a while
@@ -186,6 +195,10 @@ async function generateWithFallback(prompt) {
         }
     }
 
+        if (!sawBusy || sawQuota) break;
+        await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+
     if (sawQuota) {
         return {
             status: 429,
@@ -193,6 +206,15 @@ async function generateWithFallback(prompt) {
             error:
                 "Today's free translation limit has been reached. " +
                 "Please try again later."
+        };
+    }
+
+    if (sawBusy) {
+        return {
+            status: 503,
+            error:
+                "Gemini is very busy right now (not a limit problem). " +
+                "Please try again in a minute."
         };
     }
 
