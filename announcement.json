@@ -1,8 +1,19 @@
 {
   "enabled": true,
-  "id": "tg-3",
-  "title": "Join our Telegram group",
-  "body": "Updates, tips and help for SinSubz. Tap Open to join!",
+  "id": "tg-4",
+  "title": " 📢 IMPORTENT NOTICE",
+  "body": "මචංලා, මේ වෙලාවේ SinSubz subtitle translation service එකේ තාවකාලික ගැටලුවක් ඇතිවෙලා තියෙනවා.
+Subtitle එක translate කරන්න යද්දී “Quota exceeded” කියන error එක එන්නේ අපි භාවිතා කරන Google Gemini API එකේ දැනට තියෙන usage quota එක සම්පූර්ණ වෙලා තියෙන නිසා. මේක App එකේ හෝ ඔයාලගේ phone එකේ ප්‍රශ්නයක් නෙවෙයි. ❤️
+🛠️ අපි දැන් කරගෙන යන්නේ:
+• API quota එක වැඩි කරගැනීම / billing & limits check කිරීම
+• Translation service එක නැවත සාමාන්‍ය තත්ත්වයට ගෙන ඒම
+• Service එක යථා තත්ත්වයට ආවම SinSubz Notifications හරහා දැනුම්දීම
+⏳ දැනට:
+කරුණාකර ටික වේලාවකට පස්සේ නැවත try කරන්න.
+Translation එක වැඩ නොකළා කියලා App එක uninstall කරන්න එපා. 😄
+📲 Latest updates & support සඳහා SinSubz Telegram Group එකට join වෙන්න.
+🙏 මේ තාවකාලික ගැටලුව නිසා සිදුවන අපහසුතාවයට සමාවෙන්න.
+SinSubz Team ❤️",
   "image": "https://images.macrumors.com/t/ItjhdfRbbYjDUvoOgGo0v9v5Gh8=/1920x/article-new/2022/08/telegram-app-icon.jpg",
   "url": "https://t.me/sinsubz",
   "openLabel": "Join Telegram",
