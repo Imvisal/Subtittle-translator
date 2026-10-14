@@ -138,6 +138,14 @@ async function generateWithFallback(prompt) {
             lastStatus = response.status;
             lastMessage = message;
 
+            console.warn(
+                "Gemini failed:",
+                model,
+                "key#" + (k + 1),
+                response.status,
+                message.substring(0, 300)
+            );
+
             // quota / rate limit -> skip this key+model and try the next one
             if (response.status === 429) {
                 sawQuota = true;
