@@ -197,6 +197,22 @@
         }
     }
 
+    var lastCfg = null;
+
+    // an announcement taken from the bell list (same shape as the native inbox entry)
+    function showFromInbox(it) {
+        if (!lastCfg || showing || !it) { return; }
+        showAnnouncementPopup({
+            id: String(it.key || it.id || ""),
+            title: String(it.title || "SinSubz"),
+            body: String(it.body || ""),
+            image: httpsOnly(String(it.image || "")),
+            url: httpsOnly(String(it.url || "")),
+            openLabel: String(it.openLabel || "Open"),
+            laterLabel: String(it.laterLabel || "Not now")
+        }, lastCfg);
+    }
+
     function checkAnnouncement(cfg) {
         return cfg.fetchJson("/announcement.json").then(function (data) {
             var n = readAnnouncement(data, cfg);
@@ -206,6 +222,12 @@
 
             setFlag(AN_FLAG, n.id);
             try { cfg.notify(n.title, n.body, "announcement"); } catch (e) { /* ignore */ }
+            // Windows keeps its own bell list (Android's list is filled by the native worker)
+            try {
+                if (window.__appInbox && window.__appInbox.addAnnouncement) {
+                    window.__appInbox.addAnnouncement(n);
+                }
+            } catch (e) { /* ignore */ }
             showAnnouncementPopup(n, cfg);
         }).catch(function () { /* offline / no announcement.json: ignore */ });
     }
@@ -237,8 +259,10 @@
 
     window.__appUpdates = {
         _compare: compare,
+        showAnnouncement: showFromInbox,
         start: function (cfg) {
             if (!parse(cfg && cfg.currentVersion)) { return; }
+            lastCfg = cfg;
             setTimeout(function () {
                 runChecks(cfg);
                 setInterval(function () { runChecks(cfg); }, CHECK_EVERY);

@@ -1,6 +1,6 @@
 {
-  "version": "1.1.12",
-  "notes": "Windows app: new Play tab. Choose a movie and a subtitle and watch with the subtitle on, adjust delay and size, or save the subtitle next to the video.",
+  "version": "1.1.13",
+  "notes": "Search no longer hides the Find / Upload / Sync / Settings tabs. Announcements now arrive as background notifications (checked every 15 minutes) and are saved in the Notifications bell list, where tapping one opens it again.",
   "android": {
     "url": "https://github.com/Imvisal/Subtittle-translator/releases/latest/download/SinSubz.apk"
   },

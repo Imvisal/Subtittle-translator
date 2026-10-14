@@ -240,6 +240,31 @@
         try { localStorage.setItem(DESK_INBOX, JSON.stringify(o)); } catch (e) { /* ignore */ }
     }
 
+    // announcements (Windows): app-update.js adds them to the bell list.
+    // On Android the native worker (ReleaseCheckWorker.java) fills the list itself.
+    window.__appInbox = {
+        addAnnouncement: function (n) {
+            if (!isDesktop || !n) { return; }
+            var o = deskInbox();
+            var key = "announcement:" + n.id;
+            o.items = o.items.filter(function (it) { return !(it.kind === "announcement" && it.key === key); });
+            o.items.unshift({
+                key: key,
+                kind: "announcement",
+                title: n.title,
+                body: n.body,
+                image: n.image,
+                url: n.url,
+                openLabel: n.openLabel,
+                laterLabel: n.laterLabel,
+                t: Date.now()
+            });
+            o.items = o.items.slice(0, 30);
+            deskSave(o);
+            loadInbox();
+        }
+    };
+
     function inboxApi() {
         if (isDesktop) {
             return {
@@ -284,6 +309,11 @@
     }
 
     function inboxLine(it) {
+        if (it.kind === "announcement") {
+            var firstLine = String(it.body || "").split("\n")[0];
+            if (firstLine.length > 90) { firstLine = firstLine.slice(0, 87) + "..."; }
+            return { title: it.title, meta: firstLine || "Announcement" };
+        }
         var name = it.title + (it.year ? " (" + it.year + ")" : "");
         if (it.kind === "sinhala") {
             return { title: "Sinhala subtitle available: " + name,
@@ -376,13 +406,18 @@
         }
 
         if (inbox.length) {
-            html += '<div class="ap-sec"><span>New releases</span><button type="button" id="ajClearNew">Clear</button></div>';
+            var hasNews = inbox.some(function (it) { return it.kind === "announcement"; });
+            html += '<div class="ap-sec"><span>' + (hasNews ? "News &amp; new releases" : "New releases") +
+                '</span><button type="button" id="ajClearNew">Clear</button></div>';
             inbox.forEach(function (it, idx) {
                 var ln = inboxLine(it);
                 var fresh = it.t > inboxMarkAt && inboxMarkAt > 0;
-                var tile = it.poster
-                    ? '<div class="ap-tile poster"><img loading="lazy" alt="" src="' + esc(it.poster) + '"></div>'
-                    : '<div class="ap-tile"><i class="fa-solid ' + (it.type === "series" ? "fa-tv" : "fa-film") + '"></i></div>';
+                var isNews = it.kind === "announcement";
+                var pic = isNews ? it.image : it.poster;
+                var tile = pic
+                    ? '<div class="ap-tile poster"><img loading="lazy" alt="" src="' + esc(pic) + '"></div>'
+                    : '<div class="ap-tile"><i class="fa-solid ' +
+                      (isNews ? "fa-bullhorn" : (it.type === "series" ? "fa-tv" : "fa-film")) + '"></i></div>';
                 html += '<div class="ap-card ap-click' + (fresh ? " fresh" : "") + '" data-inbox="' + idx + '" role="button" tabindex="0">' +
                     '<div class="ap-row">' + tile +
                     '<div class="ap-main"><div class="ap-title">' + esc(ln.title) + '</div>' +
@@ -436,6 +471,13 @@
             function open() {
                 var it = inbox[+el.getAttribute("data-inbox")];
                 if (!it) { return; }
+                if (it.kind === "announcement") {
+                    // open the announcement again (picture, text and the Open button)
+                    if (window.__appUpdates && window.__appUpdates.showAnnouncement) {
+                        window.__appUpdates.showAnnouncement(it);
+                    }
+                    return;
+                }
                 navigate("find", false);
                 setTimeout(function () { searchFor(it.title); }, 60);
             }
