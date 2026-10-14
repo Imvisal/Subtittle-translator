@@ -1110,6 +1110,105 @@ html[data-theme="light"] .top-header:not(.scrolled) {
 .category-card:nth-child(8)  { animation-delay: 0.30s; }
 .category-card:nth-child(n+9) { animation-delay: 0.34s; }
 
+/* ---------------------------------------------------------
+   CATEGORY PAGER (next / previous page + slide animation)
+--------------------------------------------------------- */
+
+.category-stage {
+    position: relative;
+    overflow: hidden;
+    padding: 10px 6px 14px;
+    margin: -10px -6px -14px;
+}
+
+.category-results-grid.page-in-next { animation: pageInNext 0.5s var(--ease) both; }
+.category-results-grid.page-in-prev { animation: pageInPrev 0.5s var(--ease) both; }
+.category-results-grid.page-out-next { animation: pageOutNext 0.26s ease-in both; pointer-events: none; }
+.category-results-grid.page-out-prev { animation: pageOutPrev 0.26s ease-in both; pointer-events: none; }
+
+/* the grid itself slides, so the cards must not replay their own entrance */
+.category-results-grid.page-in-next .category-card,
+.category-results-grid.page-in-prev .category-card { animation: none; }
+
+@keyframes pageInNext  { from { opacity: 0; transform: translateX(70px); }  to { opacity: 1; transform: none; } }
+@keyframes pageInPrev  { from { opacity: 0; transform: translateX(-70px); } to { opacity: 1; transform: none; } }
+@keyframes pageOutNext { to { opacity: 0; transform: translateX(-70px); } }
+@keyframes pageOutPrev { to { opacity: 0; transform: translateX(70px); } }
+
+.category-pager {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin-top: 22px;
+    animation: fadeUp 0.6s var(--ease) both;
+}
+
+.category-page-btn {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: inherit;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: transform 0.25s var(--ease), background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, opacity 0.25s ease;
+}
+
+.category-page-btn:hover:not(:disabled) {
+    transform: scale(1.12);
+    border-color: rgba(127, 180, 255, 0.6);
+    background: linear-gradient(135deg, #7fb4ff, #b784ff);
+    color: #0b0d17;
+    box-shadow: 0 10px 26px rgba(127, 140, 255, 0.35);
+}
+
+.category-page-btn:active:not(:disabled) { transform: scale(0.94); }
+
+.category-page-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.category-dots {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.category-dot {
+    width: 9px;
+    height: 9px;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(160, 170, 200, 0.4);
+    cursor: pointer;
+    transition: width 0.35s var(--ease), background 0.35s ease;
+}
+
+.category-dot.active {
+    width: 28px;
+    background: linear-gradient(90deg, #7fb4ff, #b784ff);
+}
+
+.category-page-count {
+    font-size: 0.85rem;
+    opacity: 0.65;
+    min-width: 44px;
+    text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .category-results-grid.page-in-next,
+    .category-results-grid.page-in-prev,
+    .category-results-grid.page-out-next,
+    .category-results-grid.page-out-prev { animation-duration: 0.01s; }
+}
+
 @keyframes cardIn {
     from { opacity: 0; transform: translateY(26px) scale(0.96); }
     to   { opacity: 1; transform: none; }
@@ -3390,4 +3489,54 @@ footer {
     color: #0b0d1f;
     background: var(--grad-cool);
     cursor: pointer;
+}
+
+/* ---------- IMDb rating label (filled in by applyImdbRatings in script.js) ---------- */
+.imdb-slot {
+    display: none;
+}
+
+.imdb-slot.has-rating {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 7px 2px 3px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.66);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.imdb-slot b {
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-size: 8.5px;
+    font-weight: 900;
+    letter-spacing: 0.2px;
+    color: #000;
+    background: #f5c518;
+}
+
+.imdb-slot em {
+    font-style: normal;
+}
+
+/* on category posters: top-right corner (the Movie / TV badge is top-left) */
+.category-poster-wrap .imdb-slot.has-rating {
+    position: absolute;
+    z-index: 2;
+    top: 8px;
+    right: 8px;
+}
+
+/* in the search result row: a normal pill next to the year (undo the generic meta-pill look) */
+.result-meta .imdb-slot.has-rating {
+    padding: 2px 8px 2px 3px;
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #fff;
 }
