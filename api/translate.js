@@ -50,6 +50,11 @@ function getModels() {
 // Lives as long as the serverless instance stays warm (best effort).
 const cooldowns = new Map();
 
+// model -> time (ms) until which that whole model is treated as "busy" (503).
+// Without this every request wastes seconds on a model that is overloaded.
+const modelBusyUntil = new Map();
+const MODEL_BUSY_MS = 3 * 60 * 1000;
+
 // Google daily quotas reset at midnight Pacific time.
 function nextPacificMidnight() {
     const now = new Date();
@@ -93,6 +98,13 @@ async function generateWithFallback(prompt) {
 
     // best model first, and every key is tried on it before moving on
     for (const model of models) {
+
+        // skip a model that just returned 503 (second pass tries everything again)
+        if (pass === 0 && (modelBusyUntil.get(model) || 0) > Date.now()) {
+            sawBusy = true;
+            continue;
+        }
+
         for (let k = 0; k < keys.length; k++) {
 
             const id = k + "|" + model;
@@ -134,6 +146,7 @@ async function generateWithFallback(prompt) {
             }
 
             if (response.ok && data) {
+                modelBusyUntil.delete(model);
                 return { data };
             }
 
@@ -172,6 +185,7 @@ async function generateWithFallback(prompt) {
             // go straight to the next model instead of waiting on every key)
             if (response.status === 503 || response.status === 500) {
                 sawBusy = true;
+                modelBusyUntil.set(model, Date.now() + MODEL_BUSY_MS);
                 break;
             }
 
