@@ -3153,10 +3153,17 @@ async function translateSubtitleChunksImpl(
 
                 if (!response.ok) {
 
-                    throw new Error(
+                    const apiError = new Error(
                         data.error ||
                         `Chunk ${chunkNumber} failed.`
                     );
+
+                    // daily limit reached on every key/model: retrying will not help
+                    if (data.code === "QUOTA_EXHAUSTED") {
+                        apiError.quotaExhausted = true;
+                    }
+
+                    throw apiError;
 
                 }
 
@@ -3201,6 +3208,11 @@ async function translateSubtitleChunksImpl(
                     `Chunk ${chunkNumber} attempt ${attempt} failed:`,
                     error
                 );
+
+
+                if (error && error.quotaExhausted) {
+                    break;
+                }
 
 
                 if (
