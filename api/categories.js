@@ -74,13 +74,10 @@ module.exports = async function handler(req, res) {
         // --------------------------------
         // Convert TMDB item
         // --------------------------------
-        async function normalizeItem(item, forcedType = null) {
+        async function normalizeItem(entry) {
 
-            const type =
-                forcedType ||
-                (item.media_type === "tv"
-                    ? "series"
-                    : "movie");
+            const item = entry.item;
+            const type = entry.type;
 
             const title =
                 item.title ||
@@ -115,6 +112,7 @@ module.exports = async function handler(req, res) {
                 imdbID,
                 tmdbID: item.id,
                 type,
+                anime: !!entry.anime,
                 title,
                 year,
                 poster
@@ -122,67 +120,90 @@ module.exports = async function handler(req, res) {
         }
 
         // --------------------------------
-        // Get category data
+        // Category sources
         // --------------------------------
-        let items = [];
+        const TOTAL = 10;
 
-        // TRENDING
+        const isAnime = item =>
+            (item.genre_ids || []).includes(16) &&
+            item.original_language === "ja";
+
+        const movieList = async (path) =>
+            ((await tmdbFetch(path)).results || [])
+                .map(item => ({ item, type: "movie", anime: false }));
+
+        const tvList = async (path, anime = false) =>
+            ((await tmdbFetch(path)).results || [])
+                .map(item => ({ item, type: "series", anime }));
+
+        const ANIME_PATH =
+            "/discover/tv" +
+            "?sort_by=popularity.desc" +
+            "&with_genres=16" +
+            "&with_original_language=ja" +
+            "&include_adult=false" +
+            "&page=1";
+
+        let entries = [];
+
+        // TRENDING = a mix of movies + TV series + anime
         if (category === "trending") {
 
-            const data = await tmdbFetch(
-                "/trending/all/day"
+            const [movies, shows, anime] = await Promise.all([
+                movieList("/trending/movie/week"),
+                tvList("/trending/tv/week"),
+                tvList(ANIME_PATH, true)
+            ]);
+
+            // keep anime out of the normal TV list so nothing repeats
+            const animeIds = new Set(anime.map(e => e.item.id));
+            const tv = shows.filter(e =>
+                !animeIds.has(e.item.id) && !isAnime(e.item)
             );
 
-            items = (data.results || [])
-                .filter(item =>
-                    item.media_type === "movie" ||
-                    item.media_type === "tv"
-                )
-                .slice(0, 8);
+            // movie, tv, anime, movie, tv, anime ...
+            const buckets = [
+                movies.slice(0, 6),
+                tv.slice(0, 6),
+                anime.slice(0, 6)
+            ];
+
+            const mixed = [];
+            for (let i = 0; i < 6; i++) {
+                buckets.forEach(list => {
+                    if (list[i]) mixed.push(list[i]);
+                });
+            }
+
+            entries = mixed;
         }
 
         // MOVIES
         else if (category === "movie") {
 
-            const data = await tmdbFetch(
+            entries = await movieList(
                 "/discover/movie" +
                 "?sort_by=popularity.desc" +
                 "&include_adult=false" +
                 "&page=1"
             );
-
-            items = (data.results || [])
-                .slice(0, 8);
         }
 
         // TV SERIES
         else if (category === "tv") {
 
-            const data = await tmdbFetch(
+            entries = await tvList(
                 "/discover/tv" +
                 "?sort_by=popularity.desc" +
                 "&include_adult=false" +
                 "&page=1"
             );
-
-            items = (data.results || [])
-                .slice(0, 8);
         }
 
         // ANIME
         else if (category === "anime") {
 
-            const data = await tmdbFetch(
-                "/discover/tv" +
-                "?sort_by=popularity.desc" +
-                "&with_genres=16" +
-                "&with_original_language=ja" +
-                "&include_adult=false" +
-                "&page=1"
-            );
-
-            items = (data.results || [])
-                .slice(0, 8);
+            entries = await tvList(ANIME_PATH, true);
         }
 
         else {
@@ -198,17 +219,12 @@ module.exports = async function handler(req, res) {
         }
 
         // --------------------------------
-        // Convert items + get IMDb IDs
+        // IMDb IDs (all in parallel), keep the first 10 that have one
         // --------------------------------
-        // Discover results have no media_type, so the type must be forced here.
-        // (Before: TV/Anime items were treated as movies -> wrong IMDb lookups -> empty list.)
-        const forced =
-            category === "movie" ? "movie" :
-            (category === "tv" || category === "anime") ? "series" : null;
-
-        // All IMDb lookups in parallel instead of one after another
-        const normalized = await Promise.all(items.map(item => normalizeItem(item, forced)));
-        const results = normalized.filter(n => n.imdbID).slice(0, 4);
+        const normalized = await Promise.all(
+            entries.slice(0, 16).map(normalizeItem)
+        );
+        const results = normalized.filter(n => n.imdbID).slice(0, TOTAL);
 
         res.setHeader("Cache-Control", "s-maxage=1800, stale-while-revalidate=86400");
 
