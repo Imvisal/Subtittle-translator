@@ -1,0 +1,15 @@
+{
+  "enabled": false,
+  "id": "tg-1",
+  "title": "Join our Telegram group",
+  "body": "Updates, tips and help for SinSubz. Tap Open to join!",
+  "image": "",
+  "url": "https://t.me/YOUR_GROUP",
+  "openLabel": "Join Telegram",
+  "laterLabel": "Not now",
+  "platforms": [
+    "android",
+    "windows"
+  ],
+  "expires": ""
+}

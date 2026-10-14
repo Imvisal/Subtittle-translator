@@ -238,9 +238,10 @@
         window.__appUpdates.start({
             currentVersion: "__APP_VERSION__",
             platform: "android",
+            origin: API_ORIGIN,
 
-            fetchJson: function () {
-                return originalFetch(API_ORIGIN + "/version.json?t=" + Date.now(), { cache: "no-store" })
+            fetchJson: function (path) {
+                return originalFetch(API_ORIGIN + (path || "/version.json") + "?t=" + Date.now(), { cache: "no-store" })
                     .then(function (r) { return r.json(); });
             },
 
@@ -255,7 +256,10 @@
                 window.open(url, "_blank");
             },
 
-            notify: function (title, body) {
+            notify: function (title, body, kind) {
+                // announcements are shown by the native background worker
+                // (ReleaseCheckWorker.java), with the picture, even when the app is closed
+                if (kind === "announcement") { return; }
                 prepareNotes().then(function (ok) {
                     if (!ok) { return; }
                     return notes().schedule({

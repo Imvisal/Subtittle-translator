@@ -7,6 +7,11 @@
    version than the one this app was built with, the app shows a
    notification (once per version) and an "Update available" popup
    (every time the app is opened).
+
+   It also shows ONE-TIME announcements that you control from the website's
+   /announcement.json (title, text, optional image, optional link with an
+   "Open" button and a "Not now" button). Each announcement id is shown to
+   each user only once. See ANNOUNCEMENTS.md.
 ========================================================= */
 (function () {
     "use strict";
@@ -47,6 +52,7 @@
             "box-shadow:0 24px 60px rgba(0,0,0,.55);font-family:'Plus Jakarta Sans','Noto Sans Sinhala',system-ui,sans-serif;}" +
             ".upd-badge{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.04em;padding:4px 10px;" +
             "border-radius:999px;background:rgba(124,124,255,.18);color:#b9b9ff;margin-bottom:12px;}" +
+            ".upd-img{display:block;width:100%;max-height:190px;object-fit:cover;border-radius:14px;margin:0 0 14px;}" +
             ".upd-card h3{margin:0 0 8px;font-size:21px;line-height:1.25;font-weight:800;}" +
             ".upd-card p{margin:0 0 6px;font-size:14px;line-height:1.55;color:#b6b9cf;white-space:pre-line;}" +
             ".upd-actions{display:flex;gap:10px;margin-top:20px;}" +
@@ -102,6 +108,112 @@
         });
     }
 
+    // ---- One-time announcements (/announcement.json) -----------------------
+    var AN_FLAG = "sinsubz_announce_seen";
+
+    function absUrl(u, cfg) {
+        u = String(u || "").trim();
+        if (u.charAt(0) === "/" && u.charAt(1) !== "/") { return (cfg.origin || "") + u; }
+        return u;
+    }
+
+    function httpsOnly(u) {
+        return /^https:\/\/\S+$/i.test(u) ? u : "";
+    }
+
+    // returns a clean announcement object, or null when it must not be shown
+    function readAnnouncement(a, cfg) {
+        if (!a || a.enabled !== true || !a.id) { return null; }
+        if (!a.title && !a.body) { return null; }
+
+        if (a.platforms && a.platforms.length && a.platforms.indexOf(cfg.platform) === -1) {
+            return null;
+        }
+
+        if (a.expires) {                      // "YYYY-MM-DD" = valid through that whole day
+            var end = Date.parse(String(a.expires).slice(0, 10));
+            if (!isNaN(end) && Date.now() > end + 24 * 60 * 60 * 1000) { return null; }
+        }
+
+        return {
+            id: String(a.id),
+            title: String(a.title || "SinSubz"),
+            body: String(a.body || ""),
+            image: httpsOnly(absUrl(a.image, cfg)),
+            url: httpsOnly(absUrl(a.url, cfg)),
+            openLabel: String(a.openLabel || "Open"),
+            laterLabel: String(a.laterLabel || "Not now")
+        };
+    }
+
+    function showAnnouncementPopup(n, cfg) {
+        showing = true;
+        injectStyles();
+
+        var back = el("div", "upd-back");
+        var card = el("div", "upd-card");
+        card.setAttribute("role", "dialog");
+        card.setAttribute("aria-modal", "true");
+
+        if (n.image) {
+            var img = el("img", "upd-img");
+            img.alt = "";
+            img.addEventListener("error", function () {   // broken image: just hide it
+                if (img.parentNode) { img.parentNode.removeChild(img); }
+            });
+            img.src = n.image;
+            card.appendChild(img);
+        }
+
+        card.appendChild(el("h3", "", n.title));
+        if (n.body) { card.appendChild(el("p", "", n.body)); }
+
+        var actions = el("div", "upd-actions");
+        var later = el("button", "upd-later", n.url ? n.laterLabel : "OK");
+        later.type = "button";
+        actions.appendChild(later);
+
+        var open = null;
+        if (n.url) {
+            open = el("button", "upd-now", n.openLabel);
+            open.type = "button";
+            actions.appendChild(open);
+        }
+        card.appendChild(actions);
+        back.appendChild(card);
+        document.body.appendChild(back);
+
+        function close() {
+            showing = false;
+            if (back.parentNode) { back.parentNode.removeChild(back); }
+        }
+
+        later.addEventListener("click", close);
+        if (open) {
+            open.addEventListener("click", function () {
+                cfg.openUrl(n.url);
+                close();
+            });
+        }
+    }
+
+    function checkAnnouncement(cfg) {
+        return cfg.fetchJson("/announcement.json").then(function (data) {
+            var n = readAnnouncement(data, cfg);
+            if (!n) { return; }
+            if (getFlag(AN_FLAG) === n.id) { return; }   // this user already saw it
+            if (showing) { return; }                      // update popup is open: try next time
+
+            setFlag(AN_FLAG, n.id);
+            try { cfg.notify(n.title, n.body, "announcement"); } catch (e) { /* ignore */ }
+            showAnnouncementPopup(n, cfg);
+        }).catch(function () { /* offline / no announcement.json: ignore */ });
+    }
+
+    function runChecks(cfg) {
+        return check(cfg).then(function () { return checkAnnouncement(cfg); });
+    }
+
     function check(cfg) {
         return cfg.fetchJson().then(function (data) {
             if (!data || compare(data.version, cfg.currentVersion) <= 0) { return; }
@@ -128,8 +240,8 @@
         start: function (cfg) {
             if (!parse(cfg && cfg.currentVersion)) { return; }
             setTimeout(function () {
-                check(cfg);
-                setInterval(function () { check(cfg); }, CHECK_EVERY);
+                runChecks(cfg);
+                setInterval(function () { runChecks(cfg); }, CHECK_EVERY);
             }, 2500);
         }
     };
