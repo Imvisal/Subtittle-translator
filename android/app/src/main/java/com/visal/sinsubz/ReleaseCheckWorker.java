@@ -17,6 +17,7 @@ import android.os.Build;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
@@ -51,9 +52,12 @@ public class ReleaseCheckWorker extends Worker {
 
     private static final String ORIGIN = "https://subtittle-translator.vercel.app";
     private static final String ANNOUNCE_API = ORIGIN + "/announcement.json";
-    private static final String ANNOUNCE_CHANNEL = "announcements";
+    private static final String ANNOUNCE_CHANNEL = "announcements2";
     private static final String ANNOUNCE_PREFS = "sinsubz_announce";
     private static final int ANNOUNCE_ID = 3001;
+
+    // the release check and the announcement check both write the bell list
+    private static final Object LOCK = new Object();
 
     public ReleaseCheckWorker(@NonNull Context context, @NonNull WorkerParameters params) {
         super(context, params);
@@ -64,18 +68,13 @@ public class ReleaseCheckWorker extends Worker {
     public Result doWork() {
         Context ctx = getApplicationContext();
 
-        // Without the notification permission (Android 13+) we still record the
-        // new releases in the in-app bell list, we just cannot pop a notification.
-        boolean canNotify = Build.VERSION.SDK_INT < 33
-            || ctx.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
-                == PackageManager.PERMISSION_GRANTED;
+        // Without the notification permission (Android 13+), or with notifications
+        // switched off, we still record everything in the in-app bell list, we just
+        // cannot pop a notification.
+        boolean canNotify = canNotify(ctx);
 
         // one-time announcement; never lets a failure here block the release check
-        try {
-            checkAnnouncement(ctx, canNotify);
-        } catch (Exception ignored) {
-            // offline, no announcement.json, bad JSON ... try again next run
-        }
+        runAnnouncementCheck(ctx);
 
         try {
             JSONObject root = new JSONObject(download(API));
@@ -84,11 +83,13 @@ public class ReleaseCheckWorker extends Worker {
                 return Result.success();
             }
 
+            List<String[]> toShow = new ArrayList<>();
+
+            synchronized (LOCK) {
             SharedPreferences prefs = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
             boolean initialized = prefs.getBoolean("init", false);
             JSONObject state = new JSONObject(prefs.getString("state", "{}"));
 
-            List<String[]> toShow = new ArrayList<>();
             JSONArray inbox = new JSONArray(prefs.getString("inbox", "[]"));
             long now = System.currentTimeMillis();
 
@@ -146,6 +147,7 @@ public class ReleaseCheckWorker extends Worker {
                 .putString("state", state.toString())
                 .putString("inbox", inbox.toString())
                 .apply();
+            }
 
             if (canNotify) {
                 show(ctx, toShow);
@@ -159,13 +161,29 @@ public class ReleaseCheckWorker extends Worker {
 
     // ---- One-time announcement ------------------------------------------------
     // /announcement.json: { enabled, id, title, body, image, url, platforms, expires ... }
-    // Shown once per id. Tapping the notification opens the app, where the web
-    // side (app-update.js) shows the popup with the picture and the buttons.
-    private void checkAnnouncement(Context ctx, boolean canNotify) throws Exception {
-        if (!canNotify) {
-            return;
-        }
+    // Shown once per id: it is added to the in-app bell list and (when allowed)
+    // shown as a notification with the picture. Tapping the notification opens the
+    // app, where the web side (app-update.js) shows the popup. Called by this
+    // worker (every 3 h) and by AnnouncementWorker (every 15 min).
 
+    static boolean canNotify(Context ctx) {
+        if (Build.VERSION.SDK_INT >= 33
+                && ctx.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+            return false;
+        }
+        return NotificationManagerCompat.from(ctx).areNotificationsEnabled();
+    }
+
+    static void runAnnouncementCheck(Context ctx) {
+        try {
+            checkAnnouncement(ctx);
+        } catch (Exception ignored) {
+            // offline, no announcement.json, bad JSON ... try again next run
+        }
+    }
+
+    private static void checkAnnouncement(Context ctx) throws Exception {
         JSONObject a = new JSONObject(download(ANNOUNCE_API + "?t=" + System.currentTimeMillis()));
         if (!a.optBoolean("enabled", false)) {
             return;
@@ -197,20 +215,55 @@ public class ReleaseCheckWorker extends Worker {
 
         SharedPreferences prefs = ctx.getSharedPreferences(ANNOUNCE_PREFS, Context.MODE_PRIVATE);
         if (id.equals(prefs.getString("notified", ""))) {
-            return;                                   // already notified for this id
+            return;                                   // already handled for this id
         }
 
-        String image = a.optString("image", "").trim();
-        if (image.startsWith("/") && !image.startsWith("//")) {
-            image = ORIGIN + image;
-        }
-        Bitmap picture = loadBitmap(image);           // null when empty / not https / fails
+        String image = httpsLink(a.optString("image", ""));
+        String link = httpsLink(a.optString("url", ""));
+        String shownTitle = title.isEmpty() ? "SinSubz" : title;
 
-        showAnnouncement(ctx, title.isEmpty() ? "SinSubz" : title, body, picture);
-        prefs.edit().putString("notified", id).apply();
+        synchronized (LOCK) {
+            if (id.equals(prefs.getString("notified", ""))) {
+                return;
+            }
+
+            // 1) the in-app bell list (works even when notifications are off)
+            JSONObject e = new JSONObject();
+            e.put("key", "announcement:" + id);
+            e.put("kind", "announcement");
+            e.put("title", shownTitle);
+            e.put("body", body);
+            e.put("image", image);
+            e.put("url", link);
+            e.put("openLabel", a.optString("openLabel", "Open"));
+            e.put("laterLabel", a.optString("laterLabel", "Not now"));
+            e.put("t", System.currentTimeMillis());
+
+            SharedPreferences rel = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+            JSONArray inbox = new JSONArray(rel.getString("inbox", "[]"));
+            pushEntry(inbox, e);
+            rel.edit().putString("inbox", inbox.toString()).apply();
+
+            prefs.edit().putString("notified", id).apply();
+        }
+
+        // 2) the phone notification (with the picture)
+        if (canNotify(ctx)) {
+            showAnnouncement(ctx, shownTitle, body, loadBitmap(image));
+        }
     }
 
-    // "YYYY-MM-DD" = still valid through the whole of that day (UTC). Empty = never expires.
+    // only https links are accepted; "/promo.png" means a file on our website
+    private static String httpsLink(String raw) {
+        String u = raw == null ? "" : raw.trim();
+        if (u.startsWith("/") && !u.startsWith("//")) {
+            u = ORIGIN + u;
+        }
+        return u.startsWith("https://") ? u : "";
+    }
+
+    // "YYYY-MM-DD" (or "YYYY/MM/DD") = still valid through the whole of that day (UTC).
+    // Empty = never expires.
     private static boolean isExpired(String expires) {
         if (expires == null || expires.length() < 10) {
             return false;
@@ -218,14 +271,14 @@ public class ReleaseCheckWorker extends Worker {
         try {
             SimpleDateFormat f = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
             f.setTimeZone(TimeZone.getTimeZone("UTC"));
-            long end = f.parse(expires.substring(0, 10)).getTime() + 24L * 60 * 60 * 1000;
+            long end = f.parse(expires.substring(0, 10).replace('/', '-')).getTime() + 24L * 60 * 60 * 1000;
             return System.currentTimeMillis() > end;
         } catch (Exception e) {
             return false;
         }
     }
 
-    private void showAnnouncement(Context ctx, String title, String body, Bitmap picture) {
+    private static void showAnnouncement(Context ctx, String title, String body, Bitmap picture) {
         NotificationManager nm =
             (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm == null) {
@@ -234,7 +287,7 @@ public class ReleaseCheckWorker extends Worker {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
-                ANNOUNCE_CHANNEL, "Announcements", NotificationManager.IMPORTANCE_DEFAULT);
+                ANNOUNCE_CHANNEL, "Announcements", NotificationManager.IMPORTANCE_HIGH);
             channel.setDescription("News and invitations from SinSubz");
             nm.createNotificationChannel(channel);
         }
@@ -251,7 +304,7 @@ public class ReleaseCheckWorker extends Worker {
             .setContentText(body)
             .setContentIntent(open)
             .setAutoCancel(true)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+            .setPriority(NotificationCompat.PRIORITY_HIGH);
 
         if (picture != null) {
             b.setStyle(new NotificationCompat.BigPictureStyle()
@@ -282,13 +335,6 @@ public class ReleaseCheckWorker extends Worker {
     private static void addInbox(JSONArray inbox, String key, String kind, String title,
             String year, boolean series, boolean sinhala, String source, String poster, long now)
             throws Exception {
-        // an older entry for the same title + kind is replaced, not duplicated
-        for (int i = inbox.length() - 1; i >= 0; i--) {
-            JSONObject o = inbox.getJSONObject(i);
-            if (key.equals(o.optString("key")) && kind.equals(o.optString("kind"))) {
-                inbox.remove(i);
-            }
-        }
         JSONObject e = new JSONObject();
         e.put("key", key);
         e.put("kind", kind);
@@ -299,6 +345,20 @@ public class ReleaseCheckWorker extends Worker {
         e.put("source", source);
         e.put("poster", poster);
         e.put("t", now);
+        pushEntry(inbox, e);
+    }
+
+    private static void pushEntry(JSONArray inbox, JSONObject e) throws Exception {
+        String key = e.optString("key");
+        String kind = e.optString("kind");
+
+        // an older entry for the same title + kind is replaced, not duplicated
+        for (int i = inbox.length() - 1; i >= 0; i--) {
+            JSONObject o = inbox.getJSONObject(i);
+            if (key.equals(o.optString("key")) && kind.equals(o.optString("kind"))) {
+                inbox.remove(i);
+            }
+        }
 
         JSONArray out = new JSONArray();
         out.put(e);

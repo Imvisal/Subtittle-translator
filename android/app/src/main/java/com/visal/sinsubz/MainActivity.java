@@ -126,6 +126,15 @@ public class MainActivity extends BridgeActivity {
                 .build()
         );
 
+        // announcements: a very small check every 15 minutes (the shortest Android allows)
+        wm.enqueueUniquePeriodicWork(
+            "announcement-check",
+            ExistingPeriodicWorkPolicy.KEEP,
+            new PeriodicWorkRequest.Builder(AnnouncementWorker.class, 15, TimeUnit.MINUTES)
+                .setConstraints(constraints)
+                .build()
+        );
+
         wm.enqueueUniqueWork(
             "release-check-now",
             ExistingWorkPolicy.REPLACE,
