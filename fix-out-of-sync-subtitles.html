@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Subtitles appear too early or too late? Learn why it happens and how to fix subtitle timing with VLC shortcuts or by syncing a Sinhala SRT to your movie file with SinSubz.">
+    <meta name="theme-color" content="#07080d">
+    <title>How to Fix Out-of-Sync Subtitles (Early or Late Subtitles) | SinSubz</title>
+
+    <link rel="canonical" href="https://subtittle-translator.vercel.app/fix-out-of-sync-subtitles.html">
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="SinSubz">
+    <meta property="og:title" content="How to Fix Out-of-Sync Subtitles (Early or Late Subtitles) | SinSubz">
+    <meta property="og:description" content="Subtitles appear too early or too late? Learn why it happens and how to fix subtitle timing with VLC shortcuts or by syncing a Sinhala SRT to your movie file with SinSubz.">
+    <meta property="og:url" content="https://subtittle-translator.vercel.app/fix-out-of-sync-subtitles.html">
+    <meta property="og:image" content="https://subtittle-translator.vercel.app/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:locale" content="en_US">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="How to Fix Out-of-Sync Subtitles (Early or Late Subtitles) | SinSubz">
+    <meta name="twitter:description" content="Subtitles appear too early or too late? Learn why it happens and how to fix subtitle timing with VLC shortcuts or by syncing a Sinhala SRT to your movie file with SinSubz.">
+    <meta name="twitter:image" content="https://subtittle-translator.vercel.app/og-image.png">
+
+    <script type="application/ld+json">
+    {"@context": "https://schema.org", "@type": "Article", "headline": "How to Fix Out-of-Sync Subtitles", "description": "Subtitles appear too early or too late? Learn why it happens and how to fix subtitle timing with VLC shortcuts or by syncing a Sinhala SRT to your movie file with SinSubz.", "inLanguage": "en", "datePublished": "2026-10-14", "dateModified": "2026-10-14", "mainEntityOfPage": "https://subtittle-translator.vercel.app/fix-out-of-sync-subtitles.html", "image": "https://subtittle-translator.vercel.app/og-image.png", "author": {"@type": "Organization", "name": "SinSubz", "url": "https://subtittle-translator.vercel.app/"}, "publisher": {"@type": "Organization", "name": "SinSubz", "logo": {"@type": "ImageObject", "url": "https://subtittle-translator.vercel.app/logo.png"}}}
+    </script>
+    <script type="application/ld+json">
+    {"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "SinSubz", "item": "https://subtittle-translator.vercel.app/"}, {"@type": "ListItem", "position": 2, "name": "Guides", "item": "https://subtittle-translator.vercel.app/guides.html"}, {"@type": "ListItem", "position": 3, "name": "How to Fix Out-of-Sync Subtitles", "item": "https://subtittle-translator.vercel.app/fix-out-of-sync-subtitles.html"}]}
+    </script>
+    <script type="application/ld+json">
+    {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Does syncing change the Sinhala text?", "acceptedAnswer": {"@type": "Answer", "text": "No. Only the timestamps are corrected. The Sinhala text stays exactly as it is."}}, {"@type": "Question", "name": "Is my movie file uploaded?", "acceptedAnswer": {"@type": "Answer", "text": "No. Only the file name is used to find the matching subtitles. The video never leaves your device."}}]}
+    </script>
+
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="favicon.ico" sizes="any">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="guides.css">
+    <script>
+        (function () {
+            try {
+                var t = localStorage.getItem("sinsubz-theme");
+                if (t === "light" || t === "dark") {
+                    document.documentElement.setAttribute("data-theme", t);
+                }
+            } catch (e) {}
+        })();
+    </script>
+</head>
+
+<body class="legal-page">
+
+<main class="legal-container">
+
+    <header class="legal-header">
+        <a href="index.html" class="back-home">← Back to SinSubz</a>
+        <h1>How to Fix Out-of-Sync Subtitles</h1>
+        <p>Subtitles that appear too early or too late are one of the most common problems. They usually do not mean the subtitle is broken: it was simply made for a different version of the video.</p>
+        <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">SinSubz</a> › <a href="guides.html">Guides</a></nav>
+    </header>
+
+    <article class="legal-content guide">
+
+<h2>Why subtitles go out of sync</h2>
+<ul>
+<li>The subtitle was timed for a different <strong>release</strong> of the movie (for example a cinema cut, a version with an intro or a different frame rate).</li>
+<li>The video has extra seconds at the start, such as a logo or an ad.</li>
+<li>The frame rate differs (for example 23.976 vs 25 fps), so the delay grows slowly as the movie plays.</li>
+</ul>
+
+<h2>Quick fix in VLC</h2>
+<p>While the video is playing, press <strong>H</strong> to show the subtitle later, or <strong>G</strong> to show it earlier (each press changes the timing by 50 ms). This changes the timing only while you watch, it does not change the file.</p>
+
+<h2>Fix it permanently with the SinSubz Sync tool</h2>
+<p>If you already have a Sinhala subtitle, the <a href="index.html#sync">Sync tool</a> can correct its timing for your exact movie file:</p>
+<ol>
+<li>Upload your Sinhala SRT file.</li>
+<li>Select your movie file. Only the <strong>file name</strong> is used to find the right release, and the video is never uploaded.</li>
+<li>Pick the English subtitle that matches your release from the list.</li>
+<li>SinSubz compares the timing of the two subtitles, corrects the Sinhala timing (offset and frame-rate difference) and lets you download the new file. The Sinhala text is not changed, only the timestamps.</li>
+</ol>
+
+<h2>Check the result</h2>
+<p>Play a few scenes near the beginning, the middle and the end. If the subtitle is in time in all three places, the sync is good. If not, try a different English subtitle as the reference.</p>
+
+<h2>Related guides</h2>
+<ul>
+<li><a href="how-to-get-sinhala-subtitles.html">How to get Sinhala subtitles for a movie or TV series</a></li>
+<li><a href="what-is-an-srt-file.html">What is an SRT file?</a></li>
+</ul>
+
+<p class="guide-cta"><a class="btn btn-primary" href="index.html#search">Translate a subtitle to Sinhala</a></p>
+<h2>Frequently asked questions</h2>
+<h3>Does syncing change the Sinhala text?</h3>
+<p>No. Only the timestamps are corrected. The Sinhala text stays exactly as it is.</p>
+<h3>Is my movie file uploaded?</h3>
+<p>No. Only the file name is used to find the matching subtitles. The video never leaves your device.</p>
+    </article>
+
+    <footer class="legal-footer">
+        <a href="index.html">SinSubz</a>
+        <span>•</span>
+        <a href="guides.html">Guides</a>
+        <span>•</span>
+        <a href="privacy.html">Privacy</a>
+        <span>•</span>
+        <a href="terms.html">Terms</a>
+        <span>•</span>
+        <a href="contact.html">Contact</a>
+    </footer>
+
+</main>
+
+</body>
+
+</html>

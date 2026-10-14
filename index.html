@@ -24,6 +24,7 @@
     <title>SinSubz - English to Sinhala Subtitle Translator</title>
 
     <!--WEBONLY-->
+    <link rel="preload" as="image" href="hero-banner.webp" type="image/webp" fetchpriority="high">
     <link rel="canonical" href="https://subtittle-translator.vercel.app/">
     <meta name="robots" content="index, follow, max-image-preview:large">
     <meta property="og:type" content="website">
@@ -56,16 +57,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    <link
-        href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap"
-        rel="stylesheet"
-    >
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap"></noscript>
 
     <!-- Font Awesome -->
-    <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-    >
+    <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"></noscript>
 
     <!-- Main CSS -->
     <link rel="stylesheet" href="style.css">
@@ -113,7 +110,7 @@
         <a class="brand" href="index.html" aria-label="SinSubz home">
 
             <div class="brand-logo">
-                <img src="logo.png" alt="SinSubz logo" width="512" height="512">
+                <img src="logo-128.png" alt="SinSubz logo" width="128" height="128">
             </div>
 
             <div class="brand-text">
@@ -192,6 +189,8 @@
         <section class="hero">
 
             <div class="hero-banner">
+                <picture>
+                <source srcset="hero-banner.webp" type="image/webp">
                 <img
                     src="hero-banner.png"
                     alt="Collage of movie and TV series posters, English to Sinhala subtitles with SinSubz"
@@ -200,6 +199,7 @@
                     fetchpriority="high"
                     decoding="async"
                 >
+                </picture>
             </div>
 
             <div class="hero-overlay"></div>
@@ -950,6 +950,10 @@
 
                 <!--WEBONLY--><a href="download.html">
                     Download
+                </a><!--/WEBONLY-->
+
+                <!--WEBONLY--><a href="guides.html">
+                    Guides
                 </a><!--/WEBONLY-->
 
                 <a href="about.html">
