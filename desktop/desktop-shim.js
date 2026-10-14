@@ -64,9 +64,10 @@
         window.__appUpdates.start({
             currentVersion: "__APP_VERSION__",
             platform: "windows",
+            origin: API_ORIGIN,
 
-            fetchJson: function () {
-                return window.desktopApi.fetch(API_ORIGIN + "/version.json?t=" + Date.now(), { method: "GET" })
+            fetchJson: function (path) {
+                return window.desktopApi.fetch(API_ORIGIN + (path || "/version.json") + "?t=" + Date.now(), { method: "GET" })
                     .then(function (r) {
                         return JSON.parse(new TextDecoder("utf-8").decode(r.body));
                     });

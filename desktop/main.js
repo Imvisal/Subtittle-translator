@@ -252,9 +252,9 @@ ipcMain.on("show-in-folder", (_event, p) => {
     if (typeof p === "string" && fs.existsSync(p)) shell.showItemInFolder(p);
 });
 
-// Only the update download links are allowed to open in the browser
+// Only https links may open in the browser (update downloads, announcement links)
 ipcMain.on("open-external", (_event, url) => {
-    if (typeof url === "string" && /^https:\/\/(github\.com|subtittle-translator\.vercel\.app)\//i.test(url)) {
+    if (typeof url === "string" && /^https:\/\/[^\s]+$/i.test(url)) {
         shell.openExternal(url);
     }
 });

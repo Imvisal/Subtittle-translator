@@ -34,14 +34,73 @@ function sinhalaFonts() {
     return found;
 }
 
-function plainError(log) {
+// Rebuild the subtitle as a clean, standard SRT before ffmpeg sees it.
+// The preview is forgiving (".", missing numbers, CRLF, cues without blank lines ...) but
+// ffmpeg's SRT reader is strict and refuses such files, so we parse leniently here and
+// write a canonical file. Text (incl. <i> / <b> tags) is kept as it is.
+function srtClock(sec) {
+    let ms = Math.max(0, Math.round(sec * 1000));
+    const h = Math.floor(ms / 3600000); ms -= h * 3600000;
+    const m = Math.floor(ms / 60000); ms -= m * 60000;
+    const s = Math.floor(ms / 1000); ms -= s * 1000;
+    const z = (n, w) => String(n).padStart(w, "0");
+    return z(h, 2) + ":" + z(m, 2) + ":" + z(s, 2) + "," + z(ms, 3);
+}
+
+function normalizeSrt(text) {
+    const src = String(text || "").replace(/^\uFEFF/, "").replace(/\0/g, "").replace(/\r\n?/g, "\n");
+    const re = /(\d+):(\d{1,2}):(\d{1,2})[,.:](\d{1,3})\s*-->\s*(\d+):(\d{1,2}):(\d{1,2})[,.:](\d{1,3})/;
+    const toSec = (h, m, s, ms) => (+h) * 3600 + (+m) * 60 + (+s) + (+((ms + "00").slice(0, 3))) / 1000;
+
+    const raw = [];
+    let cur = null;
+    src.split("\n").forEach((line) => {
+        const m = re.exec(line);
+        if (m) {
+            if (cur) raw.push(cur);
+            cur = { a: toSec(m[1], m[2], m[3], m[4]), b: toSec(m[5], m[6], m[7], m[8]), body: [] };
+        } else if (cur) {
+            cur.body.push(line);
+        }
+    });
+    if (cur) raw.push(cur);
+
+    const cues = [];
+    raw.forEach((c, i) => {
+        const body = c.body.slice();
+        // a number on the very last line, right above the next timestamp, is the NEXT cue's index
+        if (i < raw.length - 1 && body.length > 1 && /^\s*\d+\s*$/.test(body[body.length - 1])) {
+            body.pop();
+        }
+        while (body.length && !body[body.length - 1].trim()) body.pop();
+        const t = body.map((l) => l.replace(/\s+$/, "")).join("\n").trim();
+        if (!t) return;
+        cues.push({ a: c.a, b: c.b > c.a ? c.b : c.a + 2, t });
+    });
+
+    if (!cues.length) throw new Error("No subtitle lines could be read from the subtitle file.");
+    cues.sort((x, y) => x.a - y.a);
+    return cues.map((c, i) => (i + 1) + "\n" + srtClock(c.a) + " --> " + srtClock(c.b) + "\n" + c.t + "\n").join("\n");
+}
+
+function plainError(log, videoPath) {
     const text = String(log || "");
     if (/No such filter: 'subtitles'|Filter not found/i.test(text)) {
         return "This ffmpeg build cannot burn subtitles onto the picture. Use the fast “Subtitle track” mode instead.";
     }
     if (/Permission denied/i.test(text)) return "Can't write the output file there. Choose another folder.";
     if (/No space left/i.test(text)) return "The disk is full.";
-    if (/Invalid data found|moov atom not found/i.test(text)) return "That video file looks damaged or incomplete.";
+    // the subtitle file could not be opened by ffmpeg (NOT a video problem)
+    if (/Unable to open sub\.srt|sub\.srt: Invalid data/i.test(text)) {
+        return "ffmpeg could not read the subtitle file. Try another subtitle, or use the fast “Subtitle track” mode.";
+    }
+    // only blame the video when ffmpeg says the VIDEO input is broken
+    const esc = videoPath ? String(videoPath).replace(/[.*+?^${}()|[\]\\]/g, "\\$&") : "";
+    if (/moov atom not found/i.test(text) ||
+        /Error opening input[^\n]*Invalid data found/i.test(text) ||
+        (esc && new RegExp(esc + ":\\s*Invalid data found", "i").test(text))) {
+        return "That video file looks damaged or incomplete.";
+    }
     const lines = text.trim().split(/\r?\n/).filter(Boolean);
     return "ffmpeg failed: " + (lines[lines.length - 1] || "unknown error");
 }
@@ -58,7 +117,7 @@ function runExport(opts) {
 
     const promise = new Promise((resolve, reject) => {
         try {
-            fs.writeFileSync(path.join(work, "sub.srt"), "\uFEFF" + opts.srtText, "utf8");
+            fs.writeFileSync(path.join(work, "sub.srt"), normalizeSrt(opts.srtText), "utf8");
 
             const outExt = path.extname(opts.out).toLowerCase();
             const args = ["-hide_banner", "-y", "-nostdin", "-progress", "pipe:1", "-nostats"];
@@ -86,6 +145,7 @@ function runExport(opts) {
                     "-vf", vf,
                     "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
                     "-c:a", "aac", "-b:a", "192k",
+                    "-max_muxing_queue_size", "1024",
                     "-sn", "-movflags", "+faststart");
             }
             args.push(opts.out);
@@ -137,7 +197,7 @@ function runExport(opts) {
                     resolve({ path: opts.out });
                 } else {
                     try { fs.rmSync(opts.out, { force: true }); } catch (e) { /* ignore */ }
-                    reject(new Error(plainError(log)));
+                    reject(new Error(plainError(log, opts.video)));
                 }
             });
         } catch (e) {
@@ -155,4 +215,4 @@ function runExport(opts) {
     };
 }
 
-module.exports = { runExport };
+module.exports = { runExport, normalizeSrt };

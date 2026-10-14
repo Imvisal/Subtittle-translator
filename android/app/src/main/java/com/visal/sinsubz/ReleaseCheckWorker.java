@@ -28,14 +28,18 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.TimeZone;
 
 /**
  * Runs in the background (every ~3 hours, even when the app is closed) and
  * shows a notification when
  *   - a new movie / TV series appears in /api/new-releases, or
- *   - a Sinhala subtitle becomes available for a title we already announced.
+ *   - a Sinhala subtitle becomes available for a title we already announced, or
+ *   - /announcement.json holds a new one-time announcement (see ANNOUNCEMENTS.md).
  */
 public class ReleaseCheckWorker extends Worker {
 
@@ -44,6 +48,12 @@ public class ReleaseCheckWorker extends Worker {
     private static final String PREFS = "sinsubz_releases";
     private static final int MAX_NOTIFICATIONS = 3;
     private static final int SUMMARY_ID = 2999;
+
+    private static final String ORIGIN = "https://subtittle-translator.vercel.app";
+    private static final String ANNOUNCE_API = ORIGIN + "/announcement.json";
+    private static final String ANNOUNCE_CHANNEL = "announcements";
+    private static final String ANNOUNCE_PREFS = "sinsubz_announce";
+    private static final int ANNOUNCE_ID = 3001;
 
     public ReleaseCheckWorker(@NonNull Context context, @NonNull WorkerParameters params) {
         super(context, params);
@@ -59,6 +69,13 @@ public class ReleaseCheckWorker extends Worker {
         boolean canNotify = Build.VERSION.SDK_INT < 33
             || ctx.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
                 == PackageManager.PERMISSION_GRANTED;
+
+        // one-time announcement; never lets a failure here block the release check
+        try {
+            checkAnnouncement(ctx, canNotify);
+        } catch (Exception ignored) {
+            // offline, no announcement.json, bad JSON ... try again next run
+        }
 
         try {
             JSONObject root = new JSONObject(download(API));
@@ -138,6 +155,126 @@ public class ReleaseCheckWorker extends Worker {
         } catch (Exception e) {
             return Result.retry();
         }
+    }
+
+    // ---- One-time announcement ------------------------------------------------
+    // /announcement.json: { enabled, id, title, body, image, url, platforms, expires ... }
+    // Shown once per id. Tapping the notification opens the app, where the web
+    // side (app-update.js) shows the popup with the picture and the buttons.
+    private void checkAnnouncement(Context ctx, boolean canNotify) throws Exception {
+        if (!canNotify) {
+            return;
+        }
+
+        JSONObject a = new JSONObject(download(ANNOUNCE_API + "?t=" + System.currentTimeMillis()));
+        if (!a.optBoolean("enabled", false)) {
+            return;
+        }
+
+        String id = a.optString("id", "");
+        String title = a.optString("title", "");
+        String body = a.optString("body", "");
+        if (id.isEmpty() || (title.isEmpty() && body.isEmpty())) {
+            return;
+        }
+
+        JSONArray platforms = a.optJSONArray("platforms");
+        if (platforms != null && platforms.length() > 0) {
+            boolean forAndroid = false;
+            for (int i = 0; i < platforms.length(); i++) {
+                if ("android".equals(platforms.optString(i))) {
+                    forAndroid = true;
+                }
+            }
+            if (!forAndroid) {
+                return;
+            }
+        }
+
+        if (isExpired(a.optString("expires", ""))) {
+            return;
+        }
+
+        SharedPreferences prefs = ctx.getSharedPreferences(ANNOUNCE_PREFS, Context.MODE_PRIVATE);
+        if (id.equals(prefs.getString("notified", ""))) {
+            return;                                   // already notified for this id
+        }
+
+        String image = a.optString("image", "").trim();
+        if (image.startsWith("/") && !image.startsWith("//")) {
+            image = ORIGIN + image;
+        }
+        Bitmap picture = loadBitmap(image);           // null when empty / not https / fails
+
+        showAnnouncement(ctx, title.isEmpty() ? "SinSubz" : title, body, picture);
+        prefs.edit().putString("notified", id).apply();
+    }
+
+    // "YYYY-MM-DD" = still valid through the whole of that day (UTC). Empty = never expires.
+    private static boolean isExpired(String expires) {
+        if (expires == null || expires.length() < 10) {
+            return false;
+        }
+        try {
+            SimpleDateFormat f = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+            f.setTimeZone(TimeZone.getTimeZone("UTC"));
+            long end = f.parse(expires.substring(0, 10)).getTime() + 24L * 60 * 60 * 1000;
+            return System.currentTimeMillis() > end;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private void showAnnouncement(Context ctx, String title, String body, Bitmap picture) {
+        NotificationManager nm =
+            (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (nm == null) {
+            return;
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                ANNOUNCE_CHANNEL, "Announcements", NotificationManager.IMPORTANCE_DEFAULT);
+            channel.setDescription("News and invitations from SinSubz");
+            nm.createNotificationChannel(channel);
+        }
+
+        Intent launch = ctx.getPackageManager().getLaunchIntentForPackage(ctx.getPackageName());
+        PendingIntent open = PendingIntent.getActivity(
+            ctx, 1, launch, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+
+        NotificationCompat.Builder b = new NotificationCompat.Builder(ctx, ANNOUNCE_CHANNEL)
+            .setSmallIcon(R.drawable.ic_stat_sinsubz)
+            .setLargeIcon(BitmapFactory.decodeResource(ctx.getResources(), R.drawable.ic_logo_large))
+            .setColor(0xFF7C7CFF)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setContentIntent(open)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+
+        if (picture != null) {
+            b.setStyle(new NotificationCompat.BigPictureStyle()
+                .bigPicture(shrink(picture))
+                .bigLargeIcon((Bitmap) null)
+                .setBigContentTitle(title)
+                .setSummaryText(body));
+        } else {
+            b.setStyle(new NotificationCompat.BigTextStyle().bigText(body));
+        }
+
+        nm.notify(ANNOUNCE_ID, b.build());
+    }
+
+    // very large pictures can make the notification fail: keep the longest side <= 1024 px
+    private static Bitmap shrink(Bitmap src) {
+        int max = Math.max(src.getWidth(), src.getHeight());
+        if (max <= 1024) {
+            return src;
+        }
+        float k = 1024f / max;
+        return Bitmap.createScaledBitmap(
+            src, Math.round(src.getWidth() * k), Math.round(src.getHeight() * k), true);
     }
 
     // In-app notification list (the bell). Newest first, newest 30 kept.

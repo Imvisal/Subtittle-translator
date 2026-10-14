@@ -10,8 +10,11 @@
  *
  * Response:
  * { success, generatedAt, items: [
- *     { key, type: "movie"|"series", title, year, poster,
+ *     { key, type: "movie"|"series", title, year, poster, imdbID,
  *       sinhala: { found: boolean, source: string, url: string } } ] }
+ *
+ * imdbID ("tt...", or "" when TMDB has none) lets the apps show the IMDb rating
+ * label on each poster (see /api/ratings).
  */
 
 const sinhalaSearch = require("./sinhala-search");
@@ -122,14 +125,29 @@ module.exports = async function handler(req, res) {
 
         const wanted = items.filter((i) => i.title);
 
-        const checks = await Promise.all(
-            wanted.map((i) => checkSinhala(i.title, i.year, i.type === "series" ? "series" : "movie"))
-        );
+        // IMDb id of every title (TMDB external_ids), looked up at the same time as the Sinhala check
+        async function imdbIdOf(item) {
+            try {
+                const kind = item.type === "series" ? "tv" : "movie";
+                const d = await tmdb(`/${kind}/${item.key.slice(1)}/external_ids`);
+                return d.imdb_id || "";
+            } catch (e) {
+                return "";
+            }
+        }
+
+        const [checks, imdbIds] = await Promise.all([
+            Promise.all(
+                wanted.map((i) => checkSinhala(i.title, i.year, i.type === "series" ? "series" : "movie"))
+            ),
+            Promise.all(wanted.map(imdbIdOf))
+        ]);
 
         const out = wanted.map((item, idx) => {
             const c = checks[idx];
             const first = c && c.found && c.sources && c.sources[0];
             return Object.assign({}, item, {
+                imdbID: imdbIds[idx],
                 sinhala: first
                     ? { found: true, source: first.source || "", url: first.url || "" }
                     : { found: false, source: "", url: "" }
