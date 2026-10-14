@@ -1,9 +1,9 @@
 {
   "enabled": true,
-  "id": "tg-1",
+  "id": "tg-2",
   "title": "Join our Telegram group",
   "body": "Updates, tips and help for SinSubz. Tap Open to join!",
-  "image": "",
+  "image": "https://images.macrumors.com/t/ItjhdfRbbYjDUvoOgGo0v9v5Gh8=/1920x/article-new/2022/08/telegram-app-icon.jpg",
   "url": "https://t.me/sinsubz",
   "openLabel": "Join Telegram",
   "laterLabel": "Not now",
@@ -11,5 +11,5 @@
     "android",
     "windows"
   ],
-  "expires": "2026-10-14"
+  "expires": "2026-10-15"
 }
