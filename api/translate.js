@@ -1,3 +1,196 @@
+// ------------------------------------------------------------------
+// Gemini key + model fallback
+//
+// Env vars (Vercel -> Settings -> Environment Variables):
+//   GEMINI_API_KEY            (existing key, still works)
+//   GEMINI_API_KEY_2 ... _10  (extra keys, each from a DIFFERENT Google project)
+//   GEMINI_API_KEYS           (optional, comma separated list instead)
+//   GEMINI_MODELS             (optional, comma separated, best model first)
+//
+// Daily quota is per Google Cloud PROJECT, so extra keys only help when
+// they are created in different projects.
+// ------------------------------------------------------------------
+
+const DEFAULT_MODELS = [
+    "gemini-3.1-flash-lite",
+    "gemini-2.5-flash-lite",
+    "gemini-2.5-flash"
+];
+
+function getKeys() {
+    const list = [];
+
+    if (process.env.GEMINI_API_KEYS) {
+        list.push(...process.env.GEMINI_API_KEYS.split(","));
+    }
+
+    list.push(process.env.GEMINI_API_KEY);
+
+    for (let i = 2; i <= 10; i++) {
+        list.push(process.env["GEMINI_API_KEY_" + i]);
+    }
+
+    return [...new Set(
+        list.map(k => (k || "").trim()).filter(Boolean)
+    )];
+}
+
+function getModels() {
+    const fromEnv = (process.env.GEMINI_MODELS || "")
+        .split(",")
+        .map(m => m.trim())
+        .filter(Boolean);
+
+    return fromEnv.length ? fromEnv : DEFAULT_MODELS;
+}
+
+// key|model -> time (ms) until which we skip that combo.
+// Lives as long as the serverless instance stays warm (best effort).
+const cooldowns = new Map();
+
+// Google daily quotas reset at midnight Pacific time.
+function nextPacificMidnight() {
+    const now = new Date();
+    const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: "America/Los_Angeles",
+        hour: "numeric",
+        minute: "numeric",
+        second: "numeric",
+        hour12: false
+    }).formatToParts(now);
+
+    const get = t => Number(parts.find(p => p.type === t).value) % 24;
+    const secondsPassed = get("hour") * 3600 + get("minute") * 60 + get("second");
+
+    return now.getTime() + (86400 - secondsPassed) * 1000;
+}
+
+function isDailyQuotaMessage(message) {
+    return /per\s*day|perday|daily/i.test(message || "");
+}
+
+async function generateWithFallback(prompt) {
+    const keys = getKeys();
+    const models = getModels();
+
+    if (keys.length === 0) {
+        return {
+            status: 500,
+            error: "GEMINI_API_KEY is missing"
+        };
+    }
+
+    let lastStatus = 500;
+    let lastMessage = "Gemini API error";
+    let sawQuota = false;
+
+    // best model first, and every key is tried on it before moving on
+    for (const model of models) {
+        for (let k = 0; k < keys.length; k++) {
+
+            const id = k + "|" + model;
+
+            if ((cooldowns.get(id) || 0) > Date.now()) {
+                sawQuota = true;
+                continue;
+            }
+
+            const response = await fetch(
+                "https://generativelanguage.googleapis.com/v1beta/models/" +
+                model + ":generateContent",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "x-goog-api-key": keys[k]
+                    },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: {
+                            responseMimeType: "application/json",
+                            maxOutputTokens: 8192
+                        }
+                    })
+                }
+            );
+
+            const raw = await response.text();
+
+            console.log("Gemini", model, "key#" + (k + 1), "status:", response.status);
+
+            let data = null;
+
+            try {
+                data = JSON.parse(raw);
+            } catch (error) {
+                // handled below
+            }
+
+            if (response.ok && data) {
+                return { data };
+            }
+
+            const message =
+                data?.error?.message ||
+                raw.substring(0, 300) ||
+                "Gemini API error";
+
+            lastStatus = response.status;
+            lastMessage = message;
+
+            // quota / rate limit -> skip this key+model and try the next one
+            if (response.status === 429) {
+                sawQuota = true;
+
+                cooldowns.set(
+                    id,
+                    isDailyQuotaMessage(message)
+                        ? nextPacificMidnight()
+                        : Date.now() + 60 * 1000
+                );
+
+                continue;
+            }
+
+            // model overloaded / temporary -> try the next one, short pause
+            if (response.status === 503 || response.status === 500) {
+                cooldowns.set(id, Date.now() + 15 * 1000);
+                continue;
+            }
+
+            // bad / blocked key -> skip that key for a while
+            if (
+                response.status === 403 ||
+                (response.status === 400 && /api key/i.test(message))
+            ) {
+                cooldowns.set(id, Date.now() + 60 * 60 * 1000);
+                continue;
+            }
+
+            // model name not found -> try the next model
+            if (response.status === 404) {
+                cooldowns.set(id, Date.now() + 60 * 60 * 1000);
+                continue;
+            }
+
+            // anything else (bad request etc.) will not fix itself
+            return { status: response.status, error: message };
+        }
+    }
+
+    if (sawQuota) {
+        return {
+            status: 429,
+            code: "QUOTA_EXHAUSTED",
+            error:
+                "Today's free translation limit has been reached. " +
+                "Please try again later."
+        };
+    }
+
+    return { status: lastStatus, error: lastMessage };
+}
+
 module.exports = async function handler(req, res) {
 
     try {
@@ -20,14 +213,6 @@ module.exports = async function handler(req, res) {
             });
         }
 
-        const apiKey =
-            process.env.GEMINI_API_KEY;
-
-        if (!apiKey) {
-            return res.status(500).json({
-                error: "GEMINI_API_KEY is missing"
-            });
-        }
 
         const targetLanguage =
             language === "ta"
@@ -159,93 +344,21 @@ ${JSON.stringify(input)}
 `;
 
 
-        const response = await fetch(
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent",
-            {
-                method: "POST",
+        const generated =
+            await generateWithFallback(prompt);
 
-                headers: {
-                    "Content-Type": "application/json",
-                    "x-goog-api-key": apiKey
-                },
-
-                body: JSON.stringify({
-
-                    contents: [
-                        {
-                            parts: [
-                                {
-                                    text: prompt
-                                }
-                            ]
-                        }
-                    ],
-
-                    generationConfig: {
-                        responseMimeType:
-                            "application/json",
-
-                        maxOutputTokens:
-                            8192
-                    }
-
-                })
-            }
-        );
-
-
-        const raw =
-            await response.text();
-
-
-        console.log(
-            "Gemini status:",
-            response.status
-        );
-
-
-        console.log(
-            "Gemini raw response:",
-            raw.substring(0, 1000)
-        );
-
-
-        let data;
-
-        try {
-
-            data = JSON.parse(raw);
-
-        } catch (error) {
-
-            console.error(
-                "Gemini response was not JSON:",
-                raw
-            );
-
-            return res.status(502).json({
-                error:
-                    "Gemini returned an invalid response.",
-                details:
-                    raw.substring(0, 500)
-            });
-
-        }
-
-
-        if (!response.ok) {
-
-            const message =
-                data?.error?.message ||
-                "Gemini API error";
+        if (generated.error) {
 
             return res.status(
-                response.status
+                generated.status || 500
             ).json({
-                error: message
+                error: generated.error,
+                code: generated.code
             });
 
         }
+
+        const data = generated.data;
 
 
         const modelText =
