@@ -3054,7 +3054,7 @@ async function translateSubtitleChunksImpl(
     subtitles
 ) {
 
-    const CHUNK_SIZE = 20;
+    const CHUNK_SIZE = 40;
 
     // How many chunks are translated at the same time.
     // The server spreads them over all Gemini keys.
@@ -5028,9 +5028,6 @@ async function loadCategory(category) {
                 <button
                     type="button"
                     class="category-retry-btn"
-                    onclick="loadCategory('${escapeAttribute(
-                        category
-                    )}')"
                 >
                     Try Again
                 </button>
@@ -5041,6 +5038,10 @@ async function loadCategory(category) {
 
         const detail = container.querySelector(".category-error-detail");
         if (detail) detail.textContent = String((error && error.message) || "").slice(0, 160);
+
+        // no inline onclick: the category value is never put into JS source
+        const retryBtn = container.querySelector(".category-retry-btn");
+        if (retryBtn) retryBtn.addEventListener("click", () => loadCategory(category));
 
     }
 

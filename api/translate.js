@@ -12,6 +12,37 @@
 // ------------------------------------------------------------------
 
 // ------------------------------------------------------------------
+// Request limits + simple per-IP rate limit
+// ------------------------------------------------------------------
+const MAX_LINES = 100;
+const MAX_LINE_CHARS = 1500;
+const MAX_TOTAL_CHARS = 40000;
+const RATE_WINDOW_MS = 60 * 1000;
+const RATE_MAX_REQUESTS = 90; // one 2-hour movie at 40 lines/chunk is ~35 requests
+const rateHits = new Map();
+
+function clientIp(req) {
+    const fwd = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim();
+    return fwd || (req.socket && req.socket.remoteAddress) || "unknown";
+}
+
+function isRateLimited(ip) {
+    const now = Date.now();
+    const hits = (rateHits.get(ip) || []).filter(t => now - t < RATE_WINDOW_MS);
+
+    hits.push(now);
+    rateHits.set(ip, hits);
+
+    if (rateHits.size > 5000) {
+        for (const [key, list] of rateHits) {
+            if (!list.some(t => now - t < RATE_WINDOW_MS)) rateHits.delete(key);
+        }
+    }
+
+    return hits.length > RATE_MAX_REQUESTS;
+}
+
+// ------------------------------------------------------------------
 // Glitch guard
 // Small Gemini models sometimes slip a random character from another
 // script (Tamil, Hebrew, Georgian, Ethiopic, Hangul ...) or a stray Latin
@@ -186,7 +217,7 @@ async function generateWithFallback(prompt) {
                         contents: [{ parts: [{ text: prompt }] }],
                         generationConfig: {
                             responseMimeType: "application/json",
-                            maxOutputTokens: 8192
+                            maxOutputTokens: 16384
                         }
                     })
                 }
@@ -304,6 +335,13 @@ module.exports = async function handler(req, res) {
             });
         }
 
+        // ---- abuse protection (best effort, per warm serverless instance) ----
+        if (isRateLimited(clientIp(req))) {
+            return res.status(429).json({
+                error: "Too many requests. Please wait a minute and try again."
+            });
+        }
+
         const { subtitles, language = "si", style = "natural" } =
             req.body || {};
 
@@ -316,6 +354,30 @@ module.exports = async function handler(req, res) {
             });
         }
 
+
+        // ---- input limits: nobody should burn the free quota with huge bodies ----
+        if (subtitles.length > MAX_LINES) {
+            return res.status(413).json({
+                error: "Too many subtitle lines in one request (max " + MAX_LINES + ")."
+            });
+        }
+
+        let totalChars = 0;
+
+        for (const sub of subtitles) {
+            const len = String((sub && sub.text) || "").length;
+            totalChars += len;
+
+            if (len > MAX_LINE_CHARS || totalChars > MAX_TOTAL_CHARS) {
+                return res.status(413).json({
+                    error: "Subtitle text is too long for one request."
+                });
+            }
+        }
+
+        if (!["si", "ta"].includes(language)) {
+            return res.status(400).json({ error: "Unsupported language" });
+        }
 
         const targetLanguage =
             language === "ta"

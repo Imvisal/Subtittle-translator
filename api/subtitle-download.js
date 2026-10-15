@@ -1,5 +1,8 @@
 const AdmZip = require("adm-zip");
 
+const MAX_DOWNLOAD_BYTES = 8 * 1024 * 1024;   // zip / srt download
+const MAX_UNZIPPED_BYTES = 8 * 1024 * 1024;   // one extracted .srt
+
 module.exports = async function handler(req, res) {
 
     try {
@@ -116,20 +119,64 @@ module.exports = async function handler(req, res) {
         );
 
 
-        const response =
-            await fetch(
-                finalUrl,
+        // follow redirects by hand so they can never leave dl.subdl.com
+        let response;
+        let hopUrl = finalUrl;
+
+        for (let hop = 0; hop < 4; hop++) {
+
+            response = await fetch(
+                hopUrl,
                 {
                     method: "GET",
-
-                    redirect: "follow",
-
+                    redirect: "manual",
                     headers: {
-                        "User-Agent":
-                            "Mozilla/5.0 SinSubz"
+                        "User-Agent": "Mozilla/5.0 SinSubz"
                     }
                 }
             );
+
+            if (response.status >= 300 && response.status < 400) {
+
+                const location = response.headers.get("location");
+                let next;
+
+                try {
+                    next = new URL(location || "", hopUrl);
+                } catch {
+                    next = null;
+                }
+
+                if (
+                    !next ||
+                    next.protocol !== "https:" ||
+                    next.hostname !== "dl.subdl.com"
+                ) {
+                    return res.status(403).json({
+                        error: "Blocked redirect to a non-SubDL address"
+                    });
+                }
+
+                hopUrl = next.toString();
+                continue;
+            }
+
+            break;
+        }
+
+        if (response.status >= 300 && response.status < 400) {
+            return res.status(502).json({
+                error: "Too many redirects from SubDL"
+            });
+        }
+
+        const declaredSize = Number(response.headers.get("content-length") || 0);
+
+        if (declaredSize > MAX_DOWNLOAD_BYTES) {
+            return res.status(413).json({
+                error: "Subtitle file is too large"
+            });
+        }
 
 
         if (!response.ok) {
@@ -150,6 +197,13 @@ module.exports = async function handler(req, res) {
             Buffer.from(
                 await response.arrayBuffer()
             );
+
+
+        if (buffer.length > MAX_DOWNLOAD_BYTES) {
+            return res.status(413).json({
+                error: "Subtitle file is too large"
+            });
+        }
 
 
         if (!buffer.length) {
@@ -243,8 +297,21 @@ module.exports = async function handler(req, res) {
                     entries[0];
 
 
+                // zip-bomb guard: check the declared size before unpacking
+                if (selected.header.size > MAX_UNZIPPED_BYTES) {
+                    return res.status(413).json({
+                        error: "Subtitle file inside the ZIP is too large"
+                    });
+                }
+
                 subtitleBuffer =
                     selected.getData();
+
+                if (subtitleBuffer.length > MAX_UNZIPPED_BYTES) {
+                    return res.status(413).json({
+                        error: "Subtitle file inside the ZIP is too large"
+                    });
+                }
 
 
                 extractedFileName =
