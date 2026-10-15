@@ -9,7 +9,7 @@ module.exports = async function handler(req, res) {
         }
 
         const query =
-            String(req.query.query || "").trim();
+            String(req.query.query || "").trim().slice(0, 100);
 
         if (!query) {
             return res.status(400).json({

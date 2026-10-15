@@ -36,6 +36,22 @@ module.exports = async function handler(req, res) {
         }
 
 
+        // only real IMDb ids / small numbers reach the SubDL request
+        if (!/^(tt)?\d{5,10}$/.test(String(imdb_id))) {
+            return res.status(400).json({
+                error: "Invalid IMDb ID"
+            });
+        }
+
+        for (const value of [season, episode]) {
+            if (value != null && value !== "" && !/^\d{1,4}$/.test(String(value))) {
+                return res.status(400).json({
+                    error: "Invalid season or episode"
+                });
+            }
+        }
+
+
         // ==================================================
         // API KEY
         // ==================================================

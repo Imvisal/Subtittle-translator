@@ -8,9 +8,9 @@ module.exports = async function handler(req, res) {
             });
         }
 
-        const title = String(req.query.title || "").trim();
-        const year = String(req.query.year || "").trim();
-        const type = String(req.query.type || "movie").trim();
+        const title = String(req.query.title || "").trim().slice(0, 150);
+        const year = String(req.query.year || "").trim().slice(0, 4);
+        const type = String(req.query.type || "movie").trim().slice(0, 10);
 
         if (!title) {
             return res.status(400).json({

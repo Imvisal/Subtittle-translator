@@ -54,6 +54,9 @@ function createWindow() {
     });
 
     // external links open in the normal browser
+    // the app never needs camera / mic / location etc.: deny every permission prompt
+    win.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
+
     win.webContents.setWindowOpenHandler(({ url }) => {
         if (/^https?:\/\//i.test(url)) shell.openExternal(url);
         return { action: "deny" };
@@ -67,7 +70,18 @@ function createWindow() {
 }
 
 // Network calls run here (not in the page) so there are no CORS problems.
-ipcMain.handle("api-fetch", async (_event, url, init) => {
+// Only our own bundled page (file://) may talk to the main process.
+function fromOurPage(event) {
+    try {
+        const u = (event.senderFrame && event.senderFrame.url) || event.sender.getURL();
+        return typeof u === "string" && u.startsWith("file://");
+    } catch (e) {
+        return false;
+    }
+}
+
+ipcMain.handle("api-fetch", async (event, url, init) => {
+    if (!fromOurPage(event)) throw new Error("Blocked request");
     const allowed =
         typeof url === "string" &&
         (url.startsWith(API_ORIGIN + "/api/") || url.startsWith(API_ORIGIN + "/version.json"));
@@ -80,8 +94,10 @@ ipcMain.handle("api-fetch", async (_event, url, init) => {
     };
     if (init && typeof init.body === "string") opts.body = init.body;
 
+    opts.signal = AbortSignal.timeout(120000);
     const res = await fetch(url, opts);
     const buf = new Uint8Array(await res.arrayBuffer());
+    if (buf.length > 25 * 1024 * 1024) throw new Error("Response too large");
     return {
         status: res.status,
         statusText: res.statusText,
@@ -116,8 +132,9 @@ function toast(title, body, silent, onClick) {
 let startedToast = false;
 
 // Save the translated / synced .srt into Downloads\SinSubz\
-ipcMain.handle("save-file", async (_event, text, filename) => {
-    if (typeof text !== "string" || typeof filename !== "string") {
+ipcMain.handle("save-file", async (event, text, filename) => {
+    if (!fromOurPage(event)) throw new Error("Blocked request");
+    if (typeof text !== "string" || typeof filename !== "string" || text.length > 10 * 1024 * 1024) {
         throw new Error("Invalid file");
     }
 
@@ -145,7 +162,8 @@ ipcMain.handle("save-file", async (_event, text, filename) => {
 // The video path stays here in the main process. The page only gets a file:// URL to play.
 let currentVideo = null;
 
-ipcMain.handle("pick-video", async () => {
+ipcMain.handle("pick-video", async (event) => {
+    if (!fromOurPage(event)) throw new Error("Blocked request");
     const r = await dialog.showOpenDialog(win, {
         title: "Choose a movie or episode",
         properties: ["openFile"],
@@ -162,7 +180,8 @@ ipcMain.handle("pick-video", async () => {
     };
 });
 
-ipcMain.handle("pick-subtitle", async () => {
+ipcMain.handle("pick-subtitle", async (event) => {
+    if (!fromOurPage(event)) throw new Error("Blocked request");
     const r = await dialog.showOpenDialog(win, {
         title: "Choose a subtitle (.srt)",
         properties: ["openFile"],
@@ -175,7 +194,9 @@ ipcMain.handle("pick-subtitle", async () => {
 });
 
 // "Movie.mkv" -> "Movie.si.srt" in the same folder (VLC, MPC-HC, PotPlayer... load it automatically)
-ipcMain.handle("save-sub-next-to-video", async (_event, text) => {
+ipcMain.handle("save-sub-next-to-video", async (event, text) => {
+    if (!fromOurPage(event)) throw new Error("Blocked request");
+    if (typeof text === "string" && text.length > 10 * 1024 * 1024) throw new Error("Subtitle is too big.");
     if (!currentVideo) throw new Error("Choose a video first.");
     if (typeof text !== "string" || !text.length) throw new Error("No subtitle to save.");
     const dir = path.dirname(currentVideo);
@@ -193,10 +214,12 @@ function ffmpegBinary() {
 
 let exportJob = null;
 
-ipcMain.handle("export-video", async (_event, opts) => {
+ipcMain.handle("export-video", async (event, opts) => {
+    if (!fromOurPage(event)) throw new Error("Blocked request");
     if (!currentVideo) throw new Error("Choose a video first.");
     if (exportJob) throw new Error("A video is already being made.");
     if (!opts || typeof opts.srtText !== "string" || !opts.srtText.length) throw new Error("No subtitle to add.");
+    if (opts.srtText.length > 10 * 1024 * 1024) throw new Error("Subtitle is too big.");
 
     const mode = opts.mode === "soft" ? "soft" : "burn";
     const vExt = path.extname(currentVideo).toLowerCase();
@@ -223,7 +246,7 @@ ipcMain.handle("export-video", async (_event, opts) => {
         video: currentVideo,
         srtText: opts.srtText,
         mode,
-        size: Number(opts.size) || 30,
+        size: Math.min(120, Math.max(10, Number(opts.size) || 30)),
         out,
         onProgress: (p) => {
             if (win && !win.isDestroyed()) {
@@ -248,13 +271,13 @@ ipcMain.handle("export-video", async (_event, opts) => {
 });
 
 ipcMain.on("export-cancel", () => { if (exportJob) exportJob.cancel(); });
-ipcMain.on("show-in-folder", (_event, p) => {
-    if (typeof p === "string" && fs.existsSync(p)) shell.showItemInFolder(p);
+ipcMain.on("show-in-folder", (event, p) => {
+    if (fromOurPage(event) && typeof p === "string" && p.length < 1024 && fs.existsSync(p)) shell.showItemInFolder(p);
 });
 
 // Only https links may open in the browser (update downloads, announcement links)
-ipcMain.on("open-external", (_event, url) => {
-    if (typeof url === "string" && /^https:\/\/[^\s]+$/i.test(url)) {
+ipcMain.on("open-external", (event, url) => {
+    if (fromOurPage(event) && typeof url === "string" && url.length < 2048 && /^https:\/\/[^\s]+$/i.test(url)) {
         shell.openExternal(url);
     }
 });
