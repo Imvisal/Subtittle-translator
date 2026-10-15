@@ -37,6 +37,13 @@ function cleanGlitch(text) {
         .trim();
 }
 
+// Deterministic fix for two bookish forms the model still produces in sound cues.
+function polishSinhala(text) {
+    return text
+        .replace(/(?<![\u0D80-\u0DFF])ඇසෙයි(?![\u0D80-\u0DFF])/g, "ඇහෙනවා")
+        .replace(/(?<![\u0D80-\u0DFF])ඇසේ(?![\u0D80-\u0DFF])/g, "ඇහෙනවා");
+}
+
 // "-latest" aliases always point at a model that is still available,
 // so they keep working when Google retires a fixed model name.
 const DEFAULT_MODELS = [
@@ -399,7 +406,10 @@ SOUND CUES / DESCRIPTIONS in [square brackets] or (parentheses):
     [thunder rumbling]  ->  [ගිගුරුම් සද්දයක්]   NOT  [ගිගුරුම් හඬක් ඇසේ]
     [phone ringing]     ->  [ෆෝන් එක වදිනවා]
     [tense music]       ->  [බය හිතෙන සංගීතයක්]
-    [speaking Thai]     ->  [තායි භාෂාවෙන් කතා කරනවා]
+    [speaking another language] -> [වෙන භාෂාවකින් කතා කරනවා]
+  Only translate cues and speaker labels that exist in the English line.
+  NEVER invent a cue, a speaker name, or a language tag such as [ඉංග්‍රීසියෙන්] or
+  [තායි භාෂාවෙන්] that is not in the original English text.
 
 BOOKISH WORDS to avoid  ->  say this instead:
   සිනාසෙයි / සිනාසෙමින් -> හිනාවෙනවා / හිනාවෙමින්     කෑගසයි -> කෑගහනවා
@@ -414,7 +424,9 @@ BOOKISH WORDS to avoid  ->  say this instead:
   Arabic, Hebrew, Georgian, Ethiopic, Korean, Chinese, Japanese, Cyrillic, Greek).
   Never put an English letter inside a Sinhala word. Re-read each line and fix
   any stray character before answering.
-  Proper names are transliterated into Sinhala and spelled the SAME way every time.
+  Proper names are transliterated into Sinhala and spelled the SAME way every time:
+  pick ONE Sinhala spelling for each person's name and never vary it
+  (also keep short forms like "Shy" / "Jax" consistent with the full name).
 - Tone: ${styleNote}
 - Preserve names, emotions, jokes and meaning.
 - You may change line breaks naturally.
@@ -513,7 +525,7 @@ ${JSON.stringify(inputItems)}
                     continue;
                 }
 
-                translationMap.set(item.index, text);
+                translationMap.set(item.index, checkGlitch ? polishSinhala(text) : text);
                 dirtyCandidates.delete(item.index);
                 stillPending.delete(item.index);
 
