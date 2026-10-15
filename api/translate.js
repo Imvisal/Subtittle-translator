@@ -37,11 +37,37 @@ function cleanGlitch(text) {
         .trim();
 }
 
-// Deterministic fix for two bookish forms the model still produces in sound cues.
+// Deterministic fixes for bookish forms the model still lets through.
+// (?<!SINHALA) / (?!SINHALA) make sure only WHOLE words are replaced.
+const SI = "\\u0D80-\\u0DFF";
+const BOOKISH = [
+    ["ඇසෙයි", "ඇහෙනවා"],
+    ["ඇසේ", "ඇහෙනවා"],
+    ["ඔබේ", "ඔයාගේ"],
+    ["ඔබට", "ඔයාට"],
+    ["ඔබ", "ඔයා"],
+    ["ඇයට", "එයාට"],
+    ["ඇයගේ", "එයාගේ"],
+    ["ඇය", "එයා"],
+    ["ඔහුට", "එයාට"],
+    ["ඔහුගේ", "එයාගේ"],
+    ["ඔහු", "එයා"],
+    ["මෙම", "මේ"],
+    ["එම", "ඒ"],
+    ["ට්‍රයි එකක්", "උත්සාහයක්"],
+    ["ට්‍රයි එක", "උත්සාහය"]
+].map(([from, to]) => [new RegExp("(?<![" + SI + "])" + from + "(?![" + SI + "])", "g"), to]);
+
 function polishSinhala(text) {
-    return text
-        .replace(/(?<![\u0D80-\u0DFF])ඇසෙයි(?![\u0D80-\u0DFF])/g, "ඇහෙනවා")
-        .replace(/(?<![\u0D80-\u0DFF])ඇසේ(?![\u0D80-\u0DFF])/g, "ඇහෙනවා");
+    let out = text;
+
+    for (const [re, to] of BOOKISH) out = out.replace(re, to);
+
+    return out
+        // dash belongs OUTSIDE the italic tag: <i>- text</i> -> - <i>text</i>
+        .replace(/<i>\s*-\s*/g, "- <i>")
+        // "(Zeros)" style English tails after a Sinhala word
+        .replace(new RegExp("([" + SI + "])\\s*\\([A-Za-z][A-Za-z ]*\\)", "g"), "$1");
 }
 
 // "-latest" aliases always point at a model that is still available,
@@ -417,6 +443,26 @@ BOOKISH WORDS to avoid  ->  say this instead:
   ව්‍යසනය -> විනාශය / අනතුර     අන්තර්ජාලය -> ඉන්ටර්නෙට් එක     භයානක -> බයංකර / භයානක (both ok)
   විශ්වාසද? -> ෂුවර්ද? / හරියටම ද?     ස්තුතියි -> තැන්ක්ස් / ස්තූතියි (casual)
   Everyday English loanwords (ඉන්ටර්නෙට්, ෆෝන්, කැමරා, ෆොටෝ, ඔකේ) are FINE and normal in spoken Sinhala.
+
+
+SUBTITLE READABILITY & ENGLISH WORDS:
+- Reading speed matters: aim for at most ~17 Sinhala characters per second of
+  screen time. Short original lines must stay short. When an English line is long,
+  keep only the meaning that matters and cut filler ("you know", "well", repeats).
+- Max about 42 characters per line. If a cue is longer, split it into 2 lines at a
+  natural pause. Never use more than 2 lines.
+- If the original has a leading "-" (two speakers), keep "- " at the start of EACH
+  speaker's line. If the line is italic (<i>...</i>), put the dash OUTSIDE the tag:
+  "- <i>text</i>".
+- Translate English words into natural Sinhala wherever a common Sinhala word exists
+  (Depression -> මානසික අවපීඩනය, try -> උත්සාහ කරනවා, doctors -> දොස්තර මහත්තුරු / දොස්තරලා).
+  Do NOT write "try එකක්" / "ට්‍රයි එකක්" style half-English phrases.
+  Well-known loanwords (ෆෝන්, ලොකර්, ඉන්ටර්නෙට්) and brand names are fine, in Sinhala letters.
+- Abbreviations (PSAT, OCD, STEM, DNA, FBI) are written in Sinhala letters too
+  (පීඑස්ඒටී, ඕසීඩී, ස්ටෙම්). Never put the English word in brackets next to a
+  Sinhala word like "සීවල (Zeros)": write only the Sinhala.
+  Only real passwords, usernames and codes stay in English letters.
+- Interjections stay simple: "Mm-hm" -> "හ්ම්", "Uh" -> "ඒ...", "Huh?" -> "හා?".
 
 - Keep subtitles short and easy to read quickly on screen.
 - Write Sinhala in Sinhala script only, plus normal punctuation and digits.
