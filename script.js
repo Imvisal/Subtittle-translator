@@ -3056,106 +3056,58 @@ async function translateSubtitleChunksImpl(
 
     const CHUNK_SIZE = 20;
 
+    // How many chunks are translated at the same time.
+    // The server spreads them over all Gemini keys.
+    const CONCURRENCY = 4;
 
     const totalChunks =
-        Math.ceil(
-            subtitles.length /
-            CHUNK_SIZE
-        );
+        Math.ceil(subtitles.length / CHUNK_SIZE);
+
+    const results = new Array(totalChunks);
+
+    let nextChunk = 0;
+    let completed = 0;
+    let failure = null;
 
 
-    const translated = [];
-
-
-    for (
-        let start = 0;
-        start < subtitles.length;
-        start += CHUNK_SIZE
-    ) {
-
-        const chunk =
-            subtitles.slice(
-                start,
-                start + CHUNK_SIZE
-            );
-
-
-        const chunkNumber =
-            Math.floor(
-                start /
-                CHUNK_SIZE
-            ) + 1;
-
-
-        updateTranslationProgress(
-            chunkNumber,
-            totalChunks,
-            translated.length,
-            subtitles.length
-        );
-
-
-        let success = false;
+    // Translates ONE chunk (with up to 3 attempts) and returns the checked result.
+    async function translateOneChunk(chunk, chunkNumber) {
 
         let lastError = null;
 
-
-        for (
-            let attempt = 1;
-            attempt <= 3;
-            attempt++
-        ) {
+        for (let attempt = 1; attempt <= 3; attempt++) {
 
             try {
 
-                const response =
-                    await fetch(
-                        "/api/translate",
-                        {
-                            method: "POST",
+                const response = await fetch(
+                    "/api/translate",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            subtitles: chunk,
+                            language: "si",
+                            style: selectedTranslationStyle
+                        })
+                    }
+                );
 
-                            headers: {
-                                "Content-Type":
-                                    "application/json"
-                            },
-
-                            
-                            body: JSON.stringify({
-    subtitles: chunk,
-    language: "si",
-    style: selectedTranslationStyle
-})
-
-                        }
-                    );
-
-
-                const raw =
-                    await response.text();
-
+                const raw = await response.text();
 
                 let data;
 
-
                 try {
-
-                    data =
-                        JSON.parse(raw);
-
+                    data = JSON.parse(raw);
                 } catch {
-
-                    throw new Error(
-                        "Server returned invalid JSON."
-                    );
-
+                    throw new Error("Server returned invalid JSON.");
                 }
-
 
                 if (!response.ok) {
 
                     const apiError = new Error(
-                        data.error ||
-                        `Chunk ${chunkNumber} failed.`
+                        data.error || `Chunk ${chunkNumber} failed.`
                     );
 
                     // daily limit reached on every key/model: retrying will not help
@@ -3164,122 +3116,114 @@ async function translateSubtitleChunksImpl(
                     }
 
                     throw apiError;
-
                 }
 
-
-                if (
-                    !Array.isArray(
-                        data.subtitles
-                    )
-                ) {
-
+                if (!Array.isArray(data.subtitles)) {
                     throw new Error(
                         "Translation API returned invalid subtitle data."
                     );
-
                 }
 
-
-                const checked =
-                    validateTranslatedChunk(
-                        chunk,
-                        data.subtitles
-                    );
-
-
-                translated.push(
-                    ...checked
-                );
-
-
-                success = true;
-
-                break;
-
+                return validateTranslatedChunk(chunk, data.subtitles);
 
             } catch (error) {
 
-                lastError =
-                    error;
-
+                lastError = error;
 
                 console.warn(
                     `Chunk ${chunkNumber} attempt ${attempt} failed:`,
                     error
                 );
 
-
                 if (error && error.quotaExhausted) {
                     break;
                 }
 
+                // another chunk already failed for good: stop wasting calls
+                if (failure) {
+                    break;
+                }
 
-                if (
-                    attempt < 3
-                ) {
-
-                    const waitTime =
-                        attempt === 1
-                            ? 3000
-                            : 7000;
-
+                if (attempt < 3) {
 
                     updateTranslationStatus(
                         "Having a little trouble — retrying..."
                     );
 
-
-                    await sleep(
-                        waitTime
-                    );
-
+                    await sleep(attempt === 1 ? 3000 : 7000);
                 }
-
             }
-
         }
 
-
-        if (!success) {
-
-            throw new Error(
-                `Translation could not continue: ${
-                    lastError?.message ||
-                    "Unknown error"
-                }`
-            );
-
-        }
-
-
-        const completed =
-            translated.length;
-
-
-        updateTranslationProgress(
-            chunkNumber,
-            totalChunks,
-            completed,
-            subtitles.length
+        throw new Error(
+            `Translation could not continue: ${
+                lastError?.message || "Unknown error"
+            }`
         );
-
-
-        if (
-            start + CHUNK_SIZE <
-            subtitles.length
-        ) {
-
-            await sleep(
-                1200
-            );
-
-        }
-
     }
 
 
-    return translated;
+    // Each worker keeps taking the next untranslated chunk.
+    async function worker(workerIndex) {
+
+        // small stagger so the first requests do not all hit at the same instant
+        await sleep(workerIndex * 400);
+
+        while (!failure) {
+
+            const index = nextChunk++;
+
+            if (index >= totalChunks) {
+                return;
+            }
+
+            const start = index * CHUNK_SIZE;
+            const chunk = subtitles.slice(start, start + CHUNK_SIZE);
+
+            try {
+
+                results[index] =
+                    await translateOneChunk(chunk, index + 1);
+
+                completed += chunk.length;
+
+                updateTranslationProgress(
+                    index + 1,
+                    totalChunks,
+                    completed,
+                    subtitles.length
+                );
+
+            } catch (error) {
+
+                failure = failure || error;
+
+                return;
+            }
+        }
+    }
+
+
+    updateTranslationProgress(
+        1,
+        totalChunks,
+        0,
+        subtitles.length
+    );
+
+    await Promise.all(
+        Array.from(
+            { length: Math.min(CONCURRENCY, totalChunks) },
+            (_, workerIndex) => worker(workerIndex)
+        )
+    );
+
+    if (failure) {
+        throw failure;
+    }
+
+    // results[] is indexed by chunk, so the order is always the original order
+    return results.flat();
 
 }
 
