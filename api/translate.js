@@ -217,6 +217,7 @@ async function generateWithFallback(prompt) {
                         contents: [{ parts: [{ text: prompt }] }],
                         generationConfig: {
                             responseMimeType: "application/json",
+                            temperature: 0.3,
                             maxOutputTokens: 16384
                         }
                     })
@@ -344,6 +345,18 @@ module.exports = async function handler(req, res) {
 
         const { subtitles, language = "si", style = "natural" } =
             req.body || {};
+
+        // optional extra context: show / movie title + neighbouring original lines
+        const title = String((req.body && req.body.title) || "")
+            .replace(/[\r\n]+/g, " ").slice(0, 150).trim();
+
+        const cleanCtx = list => (Array.isArray(list) ? list : [])
+            .slice(0, 5)
+            .map(t => String(t || "").replace(/\s+/g, " ").slice(0, 300))
+            .filter(Boolean);
+
+        const ctxBefore = cleanCtx(req.body && req.body.context && req.body.context.before);
+        const ctxAfter = cleanCtx(req.body && req.body.context && req.body.context.after);
 
         if (
             !Array.isArray(subtitles) ||
@@ -541,6 +554,10 @@ SUBTITLE READABILITY & ENGLISH WORDS:
 - Return ONLY valid JSON.
 - Do not use markdown.
 
+${title ? "TITLE OF THE FILM / SHOW: " + title + "\n(Use it to understand genre, setting, slang and character names. Do not translate or output it.)\n" : ""}${(ctxBefore.length || ctxAfter.length) ? `CONTEXT ONLY - do NOT translate or return these lines. They show who is speaking and the mood around the lines you must translate. Keep the same pronouns and name spellings as the flow of this conversation:
+LINES JUST BEFORE: ${JSON.stringify(ctxBefore)}
+LINES JUST AFTER: ${JSON.stringify(ctxAfter)}
+` : ""}
 Return exactly this format:
 
 {

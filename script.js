@@ -1141,7 +1141,8 @@ uploadProgressUI.status.textContent =
 
         const translated =
             await translateSubtitleChunks(
-                uploadedSubtitles
+                uploadedSubtitles,
+                { title: String(uploadedFileName || "").replace(/[._]+/g, " ") }
             );
 
         const sinhalaSRT =
@@ -2862,7 +2863,8 @@ async function selectSubtitle(
 
         const translated =
             await translateSubtitleChunks(
-                subtitles
+                subtitles,
+                { title: (item && item.title) ? item.title + (item.year ? " (" + item.year + ")" : "") : "" }
             );
 
 
@@ -3017,7 +3019,8 @@ async function selectSubtitle(
 // Wrapper: lets the Android / desktop apps show notifications
 // (window.__appNotify is only defined by app-shim.js / desktop-shim.js).
 async function translateSubtitleChunks(
-    subtitles
+    subtitles,
+    meta
 ) {
 
     const notify = window.__appNotify;
@@ -3029,7 +3032,7 @@ async function translateSubtitleChunks(
     try {
 
         const result =
-            await translateSubtitleChunksImpl(subtitles);
+            await translateSubtitleChunksImpl(subtitles, meta);
 
         if (notify) {
             try { notify.done(result.length); } catch (e) { /* ignore */ }
@@ -3051,7 +3054,8 @@ async function translateSubtitleChunks(
 
 
 async function translateSubtitleChunksImpl(
-    subtitles
+    subtitles,
+    meta
 ) {
 
     const CHUNK_SIZE = 40;
@@ -3071,7 +3075,7 @@ async function translateSubtitleChunksImpl(
 
 
     // Translates ONE chunk (with up to 3 attempts) and returns the checked result.
-    async function translateOneChunk(chunk, chunkNumber) {
+    async function translateOneChunk(chunk, chunkNumber, chunkStart) {
 
         let lastError = null;
 
@@ -3089,7 +3093,9 @@ async function translateSubtitleChunksImpl(
                         body: JSON.stringify({
                             subtitles: chunk,
                             language: "si",
-                            style: selectedTranslationStyle
+                            style: selectedTranslationStyle,
+                            title: (meta && meta.title) || "",
+                            context: getChunkContext(subtitles, chunkStart, chunk.length)
                         })
                     }
                 );
@@ -3183,7 +3189,7 @@ async function translateSubtitleChunksImpl(
             try {
 
                 results[index] =
-                    await translateOneChunk(chunk, index + 1);
+                    await translateOneChunk(chunk, index + 1, start);
 
                 completed += chunk.length;
 
@@ -3223,7 +3229,115 @@ async function translateSubtitleChunksImpl(
     }
 
     // results[] is indexed by chunk, so the order is always the original order
-    return results.flat();
+    return polishReadability(results.flat());
+
+}
+
+
+// ========================================================
+// CONTEXT FOR EACH CHUNK
+// Neighbouring ORIGINAL lines (not translated, only read) so the model
+// keeps the same pronouns / names across chunk borders.
+// ========================================================
+
+function getChunkContext(all, start, length) {
+
+    const text = sub => String((sub && sub.text) || "").slice(0, 300);
+
+    return {
+        before: all.slice(Math.max(0, start - 4), start).map(text),
+        after: all.slice(start + length, start + length + 3).map(text)
+    };
+
+}
+
+
+// ========================================================
+// READABILITY POLISH (no AI, no quota)
+//  1. long single-line cues are split into 2 balanced lines
+//  2. cues that are too fast get a little more screen time,
+//     only into the free gap before the next cue
+// ========================================================
+
+function polishReadability(subs) {
+
+    const MAX_LINE = 42;
+    const TARGET_CPS = 17;
+    const MAX_EXTRA_SECONDS = 3;
+    const GAP = 0.08;
+
+    const parse = ts => {
+        const m = String(ts || "").match(
+            /(\d+):(\d\d):(\d\d)[,.](\d{1,3})\s*-->\s*(\d+):(\d\d):(\d\d)[,.](\d{1,3})/
+        );
+        if (!m) return null;
+        const t = (h, mi, se, ms) =>
+            (+h) * 3600 + (+mi) * 60 + (+se) + (+ms.padEnd(3, "0")) / 1000;
+        return {
+            start: t(m[1], m[2], m[3], m[4]),
+            end: t(m[5], m[6], m[7], m[8])
+        };
+    };
+
+    const fmt = sec => {
+        const ms = Math.round(sec * 1000);
+        const h = Math.floor(ms / 3600000);
+        const mi = Math.floor((ms % 3600000) / 60000);
+        const se = Math.floor((ms % 60000) / 1000);
+        const r = ms % 1000;
+        const p = (n, w) => String(n).padStart(w, "0");
+        return `${p(h, 2)}:${p(mi, 2)}:${p(se, 2)},${p(r, 3)}`;
+    };
+
+    const plain = t => t.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+
+    return subs.map((sub, i) => {
+
+        let text = String(sub.text || "");
+        let timestamp = sub.timestamp;
+
+        // 1. split a long one-line cue at the space closest to the middle
+        if (!text.includes("\n") && plain(text).length > MAX_LINE) {
+
+            const mid = Math.floor(text.length / 2);
+            let best = -1;
+
+            for (let k = 0; k < text.length; k++) {
+                if (text[k] === " " && !/^<\/?[a-z]/i.test(text.slice(k + 1)) &&
+                    (best === -1 || Math.abs(k - mid) < Math.abs(best - mid))) {
+                    best = k;
+                }
+            }
+
+            if (best > 8 && best < text.length - 8) {
+                text = text.slice(0, best).trim() + "\n" + text.slice(best + 1).trim();
+            }
+        }
+
+        // 2. give fast cues more time (never into the next cue)
+        const t = parse(timestamp);
+
+        if (t) {
+
+            const next = subs[i + 1] ? parse(subs[i + 1].timestamp) : null;
+            const chars = plain(text).replace(/\n/g, "").length;
+            const duration = t.end - t.start;
+
+            if (duration > 0 && chars / duration > TARGET_CPS) {
+
+                const wanted = Math.min(chars / TARGET_CPS, duration + MAX_EXTRA_SECONDS);
+                const limit = next ? next.start - GAP : t.start + wanted;
+                const newEnd = Math.min(t.start + wanted, limit);
+
+                if (newEnd > t.end + 0.05) {
+                    timestamp = `${fmt(t.start)} --> ${fmt(newEnd)}`;
+                }
+            }
+        }
+
+        return { ...sub, text, timestamp };
+
+    });
 
 }
 
