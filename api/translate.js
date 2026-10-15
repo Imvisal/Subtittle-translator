@@ -11,6 +11,32 @@
 // they are created in different projects.
 // ------------------------------------------------------------------
 
+// ------------------------------------------------------------------
+// Glitch guard
+// Small Gemini models sometimes slip a random character from another
+// script (Tamil, Hebrew, Georgian, Ethiopic, Hangul ...) or a stray Latin
+// letter into the middle of a Sinhala word. Those lines are detected here
+// so the chunk can be translated again instead of reaching the .srt file.
+// ------------------------------------------------------------------
+
+// Greek ... Malayalam, Thai ... Ethiopic/Georgian/etc, Hiragana ... CJK, Hangul
+const FOREIGN_SCRIPT = /[\u0370-\u0D7F\u0E00-\u1FFF\u3040-\u9FFF\uAC00-\uD7AF]/;
+// Latin letter glued directly to a Sinhala letter, e.g. "කොහomත්"
+const LATIN_IN_SINHALA = /[\u0D80-\u0DFF][A-Za-z]|[A-Za-z][\u0D80-\u0DFF]/;
+
+function hasGlitch(text) {
+    return FOREIGN_SCRIPT.test(text) || LATIN_IN_SINHALA.test(text);
+}
+
+// Last resort when retries still leave a glitch: drop the stray characters.
+function cleanGlitch(text) {
+    return text
+        .replace(new RegExp(FOREIGN_SCRIPT.source, "g"), "")
+        .replace(/([\u0D80-\u0DFF])[A-Za-z]+(?=[\u0D80-\u0DFF])/g, "$1")
+        .replace(/ {2,}/g, " ")
+        .trim();
+}
+
 // "-latest" aliases always point at a model that is still available,
 // so they keep working when Google retires a fixed model name.
 const DEFAULT_MODELS = [
@@ -290,7 +316,7 @@ module.exports = async function handler(req, res) {
         }));
 
 
-        const prompt = `
+        const buildPrompt = (inputItems) => `
 You are a professional English movie and TV subtitle translator.
 
 Translate the following English subtitle dialogue into
@@ -362,9 +388,33 @@ Meaning over words:
   Idioms, jokes, slang and swearing should become the closest natural Sinhala
   equivalent (not a literal translation). Keep the strength of insults the same
   (do not soften or make them stiff).
+SOUND CUES / DESCRIPTIONS in [square brackets] or (parentheses):
+  Keep the brackets, but write them SHORT and SPOKEN, never bookish.
+  Use -නවා / -වෙනවා endings and everyday words, not -යි / -ඇසේ / -ඇසෙයි.
+    [laughs]            ->  [හිනාවෙනවා]          NOT  [සිනාසෙයි]
+    [screams]           ->  [කෑගහනවා]           NOT  [කෑගසයි]
+    [crying]            ->  [අඬනවා]              NOT  [හඬයි]
+    [sighs]             ->  [සුසුම් ගන්නවා]      NOT  [සුසුම්ලයි]
+    [groans]            ->  [ගොඳුරනවා]  or  [කෙඳිරිගානවා]
+    [thunder rumbling]  ->  [ගිගුරුම් සද්දයක්]   NOT  [ගිගුරුම් හඬක් ඇසේ]
+    [phone ringing]     ->  [ෆෝන් එක වදිනවා]
+    [tense music]       ->  [බය හිතෙන සංගීතයක්]
+    [speaking Thai]     ->  [තායි භාෂාවෙන් කතා කරනවා]
+
+BOOKISH WORDS to avoid  ->  say this instead:
+  සිනාසෙයි / සිනාසෙමින් -> හිනාවෙනවා / හිනාවෙමින්     කෑගසයි -> කෑගහනවා
+  ඇසේ / ඇසෙයි -> ඇහෙනවා     මහත්වරුනි -> මහත්තයලා     කරුණාකරලා -> අනේ / softener
+  ව්‍යසනය -> විනාශය / අනතුර     අන්තර්ජාලය -> ඉන්ටර්නෙට් එක     භයානක -> බයංකර / භයානක (both ok)
+  විශ්වාසද? -> ෂුවර්ද? / හරියටම ද?     ස්තුතියි -> තැන්ක්ස් / ස්තූතියි (casual)
+  Everyday English loanwords (ඉන්ටර්නෙට්, ෆෝන්, කැමරා, ෆොටෝ, ඔකේ) are FINE and normal in spoken Sinhala.
+
 - Keep subtitles short and easy to read quickly on screen.
-- Write Sinhala in Sinhala script only (no Singlish/English letters),
-  except proper names which can be transliterated into Sinhala.
+- Write Sinhala in Sinhala script only, plus normal punctuation and digits.
+  NEVER output characters from any other script (no Tamil, Hindi, Malayalam,
+  Arabic, Hebrew, Georgian, Ethiopic, Korean, Chinese, Japanese, Cyrillic, Greek).
+  Never put an English letter inside a Sinhala word. Re-read each line and fix
+  any stray character before answering.
+  Proper names are transliterated into Sinhala and spelled the SAME way every time.
 - Tone: ${styleNote}
 - Preserve names, emotions, jokes and meaning.
 - You may change line breaks naturally.
@@ -384,152 +434,150 @@ Return exactly this format:
 
 SUBTITLES:
 
-${JSON.stringify(input)}
+${JSON.stringify(inputItems)}
 `;
 
 
-        const generated =
-            await generateWithFallback(prompt);
+        const checkGlitch = language !== "ta";
+        const MAX_TRIES = 3;
 
-        if (generated.error) {
+        // index -> final text
+        const translationMap = new Map();
 
-            return res.status(
-                generated.status || 500
-            ).json({
-                error: generated.error,
-                code: generated.code
-            });
+        // index -> latest (glitchy) candidate, used only if retries never fix it
+        const dirtyCandidates = new Map();
 
-        }
+        // lines still to be translated. First pass = every line,
+        // retries = only the lines that came back with stray characters.
+        let pending = input;
 
-        const data = generated.data;
+        for (let attempt = 1; attempt <= MAX_TRIES; attempt++) {
 
+            const generated =
+                await generateWithFallback(buildPrompt(pending));
 
-        const modelText =
-            data
-                ?.candidates?.[0]
-                ?.content?.parts?.[0]
-                ?.text;
+            if (generated.error) {
 
+                // a failed RETRY must not throw away lines that already worked
+                if (attempt > 1) break;
 
-        if (!modelText) {
+                return res.status(
+                    generated.status || 500
+                ).json({
+                    error: generated.error,
+                    code: generated.code
+                });
 
-            return res.status(502).json({
-                error:
-                    "Gemini returned no translation."
-            });
+            }
 
-        }
+            const modelText =
+                generated.data
+                    ?.candidates?.[0]
+                    ?.content?.parts?.[0]
+                    ?.text;
 
+            let result = null;
 
-        let result;
+            try {
+                result = modelText ? JSON.parse(modelText) : null;
+            } catch (error) {
+                console.error("Model JSON parse error:", modelText);
+            }
 
-        try {
+            if (!result || !Array.isArray(result.translations)) {
 
-            result =
-                JSON.parse(modelText);
+                if (attempt > 1) break;
 
-        } catch (error) {
+                return res.status(502).json({
+                    error: modelText
+                        ? "Gemini translation was not valid JSON."
+                        : "Gemini returned no translation."
+                });
 
-            console.error(
-                "Model JSON parse error:",
-                modelText
+            }
+
+            const stillPending = new Set(pending.map(item => item.index));
+
+            for (const item of result.translations) {
+
+                if (typeof item.index !== "number") continue;
+                if (typeof item.text !== "string") continue;
+                if (!stillPending.has(item.index)) continue;
+
+                const text = item.text.trim();
+
+                if (!text) continue;
+
+                if (checkGlitch && hasGlitch(text)) {
+                    dirtyCandidates.set(item.index, text);
+                    continue;
+                }
+
+                translationMap.set(item.index, text);
+                dirtyCandidates.delete(item.index);
+                stillPending.delete(item.index);
+
+            }
+
+            // lines the model skipped entirely (first pass only is an error)
+            if (attempt === 1) {
+
+                const missing = [];
+
+                for (let i = 0; i < subtitles.length; i++) {
+                    if (!translationMap.has(i) && !dirtyCandidates.has(i)) {
+                        missing.push(i);
+                    }
+                }
+
+                if (missing.length > 0) {
+
+                    console.error("Missing translations:", missing);
+
+                    return res.status(422).json({
+                        error: "Some subtitles were not translated.",
+                        missing
+                    });
+
+                }
+
+            }
+
+            pending = input.filter(item => stillPending.has(item.index));
+
+            if (pending.length === 0) {
+                break;
+            }
+
+            console.warn(
+                `Glitch characters in ${pending.length} line(s), attempt ${attempt}/${MAX_TRIES}`
             );
 
-            return res.status(502).json({
-                error:
-                    "Gemini translation was not valid JSON."
-            });
-
         }
 
+        // retries ran out: strip the stray characters from what is left
+        for (const item of pending) {
 
-        if (
-            !Array.isArray(
-                result.translations
-            )
-        ) {
-
-            return res.status(502).json({
-                error:
-                    "Translation list is missing."
-            });
-
-        }
-
-
-        const translationMap =
-            new Map();
-
-
-        for (
-            const item
-            of result.translations
-        ) {
-
-            if (
-                typeof item.index !== "number"
-            ) {
-                continue;
-            }
-
-            if (
-                typeof item.text !== "string"
-            ) {
-                continue;
-            }
-
-            if (
-                !item.text.trim()
-            ) {
-                continue;
-            }
+            const candidate = dirtyCandidates.get(item.index);
 
             translationMap.set(
                 item.index,
-                item.text.trim()
+                (candidate && cleanGlitch(candidate)) ||
+                    String(subtitles[item.index].text || "")
             );
 
         }
 
+        for (let i = 0; i < subtitles.length; i++) {
 
-        const missing = [];
+            if (!translationMap.has(i)) {
 
-
-        for (
-            let i = 0;
-            i < subtitles.length;
-            i++
-        ) {
-
-            if (
-                !translationMap.has(i)
-            ) {
-
-                missing.push(i);
+                return res.status(422).json({
+                    error: "Some subtitles were not translated.",
+                    missing: [i]
+                });
 
             }
-
-        }
-
-
-        if (
-            missing.length > 0
-        ) {
-
-            console.error(
-                "Missing translations:",
-                missing
-            );
-
-            return res.status(422).json({
-
-                error:
-                    "Some subtitles were not translated.",
-
-                missing
-
-            });
 
         }
 
