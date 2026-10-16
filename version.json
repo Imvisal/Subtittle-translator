@@ -1,6 +1,6 @@
 {
-  "version": "1.1.15",
-  "notes": "Ads added to keep SinSubz free: a small banner and an occasional full-screen ad after a finished translation. Includes Sign in with Google (sync history and settings), better Sinhala translation quality and security improvements.",
+  "version": "1.1.16",
+  "notes": "Ads: diagnostics build. If an ad does not show, a small message on top of the screen now says why. Also includes Google sign-in, ads, better Sinhala translation and security improvements.",
   "android": {
     "url": "https://github.com/Imvisal/Subtittle-translator/releases/latest/download/SinSubz.apk"
   },

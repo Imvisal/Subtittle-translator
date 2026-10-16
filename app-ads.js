@@ -27,6 +27,29 @@
     var REAL_BANNER_ID = "ca-app-pub-9347758659846355/7383209066";
     var REAL_INTERSTITIAL_ID = "ca-app-pub-9347758659846355/4677154678";
 
+    // Temporary diagnostics: shows WHY an ad did not appear (error code + message) as a small toast.
+    // Set to false once ads are confirmed working.
+    var DEBUG_ADS = true;
+
+    function dbg(msg) {
+        if (!DEBUG_ADS) { return; }
+        try {
+            var t = document.createElement("div");
+            t.textContent = "Ads: " + msg;
+            t.style.cssText = "position:fixed;left:50%;top:70px;transform:translateX(-50%);" +
+                "background:#222;color:#fff;padding:9px 14px;border-radius:12px;font-size:12.5px;" +
+                "z-index:99999;max-width:88%;text-align:center;line-height:1.35";
+            document.body.appendChild(t);
+            setTimeout(function () { if (t.parentNode) { t.parentNode.removeChild(t); } }, 6000);
+        } catch (e) { /* ignore */ }
+    }
+
+    function errText(e) {
+        if (!e) { return "unknown"; }
+        var c = e.code != null ? "code " + e.code + ": " : "";
+        return c + String(e.message || e);
+    }
+
     var INTERSTITIAL_GAP_MS = 5 * 60 * 1000;
     var lastInterstitial = 0;
     var ready = false;
@@ -44,7 +67,14 @@
     // ---------- 1. init + consent ----------
     function init() {
         var ad = admob();
-        if (!ad) { return; }
+        if (!ad) { dbg("AdMob plugin not found in this build"); return; }
+
+        try {
+            ad.addListener("bannerAdLoaded", function () { dbg("banner loaded"); });
+            ad.addListener("bannerAdFailedToLoad", function (e) { dbg("banner failed - " + errText(e)); });
+            ad.addListener("onAdFailedToLoad", function (e) { dbg("ad failed - " + errText(e)); });
+            ad.addListener("interstitialAdFailedToLoad", function (e) { dbg("interstitial failed - " + errText(e)); });
+        } catch (e) { dbg("listener error - " + errText(e)); }
 
         safe(ad.initialize({ initializeForTesting: USE_TEST_ADS }))
             .then(function () { return ad.requestConsentInfo(); })
@@ -53,7 +83,7 @@
                     return ad.showConsentForm();
                 }
             })
-            .catch(function () { /* consent errors must never break the app */ })
+            .catch(function (e) { dbg("consent error - " + errText(e)); /* consent errors must never break the app */ })
             .then(function () {
                 ready = true;
                 showBanner();
@@ -78,7 +108,7 @@
             position: "BOTTOM_CENTER",
             margin: tabBarOffset(),
             isTesting: USE_TEST_ADS
-        })).then(function () { bannerShown = true; }).catch(function () { /* ignore */ });
+        })).then(function () { bannerShown = true; dbg("banner requested"); }).catch(function (e) { dbg("showBanner error - " + errText(e)); });
     }
 
     function hideBanner() {
@@ -98,7 +128,7 @@
         if (!ready || !ad || !interstitialId()) { return; }
         safe(ad.prepareInterstitial({ adId: interstitialId(), isTesting: USE_TEST_ADS }))
             .then(function () { interstitialLoaded = true; })
-            .catch(function () { interstitialLoaded = false; });
+            .catch(function (e) { interstitialLoaded = false; dbg("interstitial prepare error - " + errText(e)); });
     }
 
     function maybeShowInterstitial() {
