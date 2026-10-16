@@ -1,6 +1,6 @@
 {
-  "version": "1.1.14",
-  "notes": "Sign in with Google: save your translation history and settings to your account and sync them across phones. Better Sinhala translation quality (more natural spoken words, shorter lines, fewer English words), plus security improvements.",
+  "version": "1.1.15",
+  "notes": "Ads added to keep SinSubz free: a small banner and an occasional full-screen ad after a finished translation. Includes Sign in with Google (sync history and settings), better Sinhala translation quality and security improvements.",
   "android": {
     "url": "https://github.com/Imvisal/Subtittle-translator/releases/latest/download/SinSubz.apk"
   },

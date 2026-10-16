@@ -25,7 +25,7 @@
     var INTERSTITIAL_ID = "ca-app-pub-3940256099942544/1033173712";
     // real units go here, e.g. "ca-app-pub-XXXXXXXXXXXXXXXX/YYYYYYYYYY"
     var REAL_BANNER_ID = "ca-app-pub-9347758659846355/7383209066";
-    var REAL_INTERSTITIAL_ID = "";
+    var REAL_INTERSTITIAL_ID = "ca-app-pub-9347758659846355/4677154678";
 
     var INTERSTITIAL_GAP_MS = 5 * 60 * 1000;
     var lastInterstitial = 0;
