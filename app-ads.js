@@ -28,8 +28,8 @@
     var REAL_INTERSTITIAL_ID = "ca-app-pub-9347758659846355/4677154678";
 
     // Temporary diagnostics: shows WHY an ad did not appear (error code + message) as a small toast.
-    // Set to false once ads are confirmed working.
-    var DEBUG_ADS = true;
+    // Set to false once ads are confirmed working (the toast must never reach normal users).
+    var DEBUG_ADS = false;
 
     function dbg(msg) {
         if (!DEBUG_ADS) { return; }
