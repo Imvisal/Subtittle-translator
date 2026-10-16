@@ -183,6 +183,11 @@
     background: #222; color: #fff; padding: 11px 18px; border-radius: 12px; font-size: 14px; max-width: 86%; text-align: center;
 }
 @media (max-width: 640px) {
-    .wa-btn { width: 44px; padding: 0; justify-content: center; }
+    /* the Download / Settings icons are gone, so the "Sign in" text fits on phones too */
+    .wa-btn { height: 40px; padding: 0 14px 0 10px; gap: 7px; font-size: 13.5px; }
+    .wa-avatar { width: 40px; height: 40px; }
+}
+@media (max-width: 360px) {
+    .wa-btn { width: 40px; padding: 0; justify-content: center; }
     .wa-txt { display: none; }
 }
