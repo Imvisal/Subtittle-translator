@@ -20,11 +20,11 @@
     if (!isAndroid) { return; }
 
     // ---- Google's official TEST ad units (safe to click while developing) ----
-    var USE_TEST_ADS = true;                       // set to false for the release build
+    var USE_TEST_ADS = false;                       // set to false for the release build
     var BANNER_ID = "ca-app-pub-3940256099942544/6300978111";
     var INTERSTITIAL_ID = "ca-app-pub-3940256099942544/1033173712";
     // real units go here, e.g. "ca-app-pub-XXXXXXXXXXXXXXXX/YYYYYYYYYY"
-    var REAL_BANNER_ID = "";
+    var REAL_BANNER_ID = "ca-app-pub-9347758659846355/7383209066";
     var REAL_INTERSTITIAL_ID = "";
 
     var INTERSTITIAL_GAP_MS = 5 * 60 * 1000;
