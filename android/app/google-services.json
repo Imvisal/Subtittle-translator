@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "501489259006",
+    "project_id": "sinsubz-2071",
+    "storage_bucket": "sinsubz-2071.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:501489259006:android:80419ea8bf00dbf35030af",
+        "android_client_info": {
+          "package_name": "com.visal.sinsubz"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "501489259006-snm5fsegqbs936drkegcdmft3bamon8j.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBtVA4AdmAlkwVsBnZ3rqm7vjSGEA2NAO0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "501489259006-snm5fsegqbs936drkegcdmft3bamon8j.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,66 @@
+name: Build Signed Android APK (+ SHA-1)
+
+# Manual run (Actions tab -> "Build Signed Android APK" -> Run workflow).
+# Signs with the same release keystore as release.yml, so the SHA-1 printed
+# in the "Show SHA-1" step stays the same for every build. Add that SHA-1 to
+# Firebase (Project settings -> Your apps -> Add fingerprint) for Google sign-in.
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build web files for the app
+        run: npm run build:www
+
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Decode keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+
+      - name: Show SHA-1 (add this to Firebase)
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          keytool -list -v -keystore "$RUNNER_TEMP/release.keystore" \
+            -alias "$KEY_ALIAS" -storepass "$KEYSTORE_PASSWORD" | grep -E "SHA1|SHA256"
+
+      - name: Build signed APK
+        working-directory: android
+        env:
+          KEYSTORE_PATH: ${{ runner.temp }}/release.keystore
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleRelease
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SinSubz-signed
+          path: android/app/build/outputs/apk/release/app-release.apk
