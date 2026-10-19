@@ -125,6 +125,14 @@
             '<span><b>Burn into the picture</b><em>Shows in every player, TV and phone. Takes longer (the video is re-encoded).</em></span></label>' +
             '<label class="dp-opt"><input type="radio" name="dpMode" value="soft">' +
             '<span><b>Subtitle track (fast)</b><em>Done in a minute. Works in VLC, MPC-HC, PotPlayer and most phones; some TVs ignore it.</em></span></label>' +
+            '<div class="dp-opt-sub" id="dpBuiltin" hidden>' +
+            '<div class="dp-k">This video already has its own subtitle</div>' +
+            '<div class="dp-v" id="dpBuiltinList"></div>' +
+            '<label class="dp-opt"><input type="radio" name="dpOld" value="remove" checked>' +
+            '<span><b>Remove it, keep only my Sinhala subtitle</b><em>The new video has just the subtitle you chose above.</em></span></label>' +
+            '<label class="dp-opt"><input type="radio" name="dpOld" value="keep">' +
+            '<span><b>Keep it and add my Sinhala subtitle as an extra track</b><em>Only with “Subtitle track”. The new file is an .mkv. Choose the track in your player.</em></span></label>' +
+            '</div>' +
             '<div class="dp-btns"><button type="button" class="dp-btn" id="dpMake" disabled>Save video with subtitle…</button>' +
             '<button type="button" class="dp-btn alt" id="dpCancel" hidden>Cancel</button>' +
             '<button type="button" class="dp-btn alt" id="dpShow" hidden>Show in folder</button></div>' +
@@ -232,6 +240,7 @@
             if (!r) { return; }
             var v = $("dpVideo");
             haveVideo = true;
+            showBuiltin(r.subs || []);
             $("dpVideoName").textContent = r.name;
             $("dpStage").classList.add("has");
             msg("");
@@ -242,6 +251,17 @@
             // newest subtitle from Find / Upload / Sync goes on automatically
             if (!cues.length && lastSaved) { setSub(lastSaved.text, lastSaved.filename); }
         }).catch(function (e) { msg(String((e && e.message) || e), true); });
+    }
+
+    // the video's own (built-in) subtitle tracks: tell the person and let them choose
+    function showBuiltin(subs) {
+        var box = $("dpBuiltin");
+        box.hidden = !subs.length;
+        if (!subs.length) { return; }
+        $("dpBuiltinList").textContent = subs.map(function (t) {
+            return (t.title || t.lang || "Subtitle") + (t.codec ? " (" + t.codec + ")" : "");
+        }).join(" · ");
+        document.querySelector('input[name="dpOld"][value="remove"]').checked = true;
     }
 
     function setDelay(d) {
@@ -344,7 +364,8 @@
         var mode = (document.querySelector('input[name="dpMode"]:checked') || {}).value || "burn";
         setMaking(true);
         msg(mode === "burn" ? "Making the video. Keep SinSubz open; you can use other apps meanwhile." : "Adding the subtitle track…");
-        window.desktopApi.exportVideo({ srtText: shiftedSrt(), mode: mode, size: size }).then(function (r) {
+        window.desktopApi.exportVideo({ srtText: shiftedSrt(), mode: mode, size: size,
+            keepOriginal: (document.querySelector('input[name="dpOld"]:checked') || {}).value === "keep" }).then(function (r) {
             setMaking(false);
             if (!r || r.cancelled) { msg("Cancelled. Nothing was saved."); return; }
             lastOut = r.path;

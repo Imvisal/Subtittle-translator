@@ -4,7 +4,7 @@
    - "burn": the subtitle is drawn onto the picture (re-encodes the video).
              Shows in EVERY player / TV / phone, Sinhala letters are shaped correctly.
              Slow (a full movie can take a while).
-   - "soft": the subtitle is added as a subtitle track (video + audio are copied, so it is
+   - "soft": (built-in subtitle tracks are removed, or kept with opts.keepOriginal) the subtitle is added as a subtitle track (video + audio are copied, so it is
              very fast). VLC, MPC-HC, PotPlayer, most phones show it; some TVs ignore it.
 
    Used by main.js. Has no Electron dependency so it can be tested on its own. */
@@ -83,6 +83,36 @@ function normalizeSrt(text) {
     return cues.map((c, i) => (i + 1) + "\n" + srtClock(c.a) + " --> " + srtClock(c.b) + "\n" + c.t + "\n").join("\n");
 }
 
+
+// Which subtitle tracks does the video already have? (name only, nothing is changed)
+function probeSubs(ffmpegPath, video) {
+    return new Promise((resolve) => {
+        let log = "";
+        let child;
+        try {
+            child = spawn(ffmpegPath, ["-hide_banner", "-i", video], { windowsHide: true });
+        } catch (e) { resolve([]); return; }
+        child.stderr.on("data", (d) => { log += d.toString(); if (log.length > 200000) log = log.slice(-100000); });
+        child.on("error", () => resolve([]));
+        child.on("close", () => {
+            const tracks = [];
+            const re = /Stream #0:\d+(?:\(([^)]*)\))?[^\n]*?: Subtitle: ([^\n(,]+)/g;
+            let m;
+            while ((m = re.exec(log))) {
+                const after = log.slice(m.index, m.index + 600).split("\n");
+                let title = "";
+                for (let i = 1; i < after.length; i++) {
+                    if (/^\s*Stream #/.test(after[i])) break;
+                    const t = /^\s*title\s*:\s*(.+)$/.exec(after[i]);
+                    if (t) { title = t[1].trim(); break; }
+                }
+                tracks.push({ lang: (m[1] || "").trim(), codec: m[2].trim(), title });
+            }
+            resolve(tracks);
+        });
+    });
+}
+
 function plainError(log, videoPath) {
     const text = String(log || "");
     if (/No such filter: 'subtitles'|Filter not found/i.test(text)) {
@@ -123,12 +153,18 @@ function runExport(opts) {
             const args = ["-hide_banner", "-y", "-nostdin", "-progress", "pipe:1", "-nostats"];
 
             if (opts.mode === "soft") {
+                // keepOriginal = the video's own subtitle tracks stay, Sinhala is added as one more track.
+                // Otherwise (default) the built-in tracks are left out and ONLY the Sinhala one is in the new file.
+                const keep = !!opts.keepOriginal && opts.existingSubs > 0 && outExt === ".mkv";
+                const n = keep ? opts.existingSubs : 0;          // index of the new Sinhala track
                 args.push("-i", opts.video, "-sub_charenc", "UTF-8", "-i", path.join(work, "sub.srt"),
-                    "-map", "0:v", "-map", "0:a?", "-map", "1:0",
-                    "-c", "copy",
-                    "-c:s", outExt === ".mkv" ? "srt" : "mov_text",
-                    "-metadata:s:s:0", "language=sin", "-metadata:s:s:0", "title=Sinhala",
-                    "-disposition:s:0", "default");
+                    "-map", "0:v", "-map", "0:a?");
+                if (keep) args.push("-map", "0:s?");
+                args.push("-map", "1:0", "-c", "copy",
+                    "-c:s:" + n, outExt === ".mkv" ? "srt" : "mov_text",
+                    "-metadata:s:s:" + n, "language=sin", "-metadata:s:s:" + n, "title=Sinhala");
+                for (let i = 0; i < n; i++) args.push("-disposition:s:" + i, "0");
+                args.push("-disposition:s:" + n, "default");
                 if (outExt === ".mp4" || outExt === ".m4v" || outExt === ".mov") args.push("-movflags", "+faststart");
             } else {
                 sinhalaFonts().forEach((f) => {
@@ -215,4 +251,4 @@ function runExport(opts) {
     };
 }
 
-module.exports = { runExport, normalizeSrt };
+module.exports = { runExport, normalizeSrt, probeSubs };

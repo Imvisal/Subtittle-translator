@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain, shell, Menu, Notification, Tray, nativeImage, dialog } = require("electron");
 const path = require("path");
 const fs = require("fs");
-const { runExport } = require("./export-video");
+const { runExport, probeSubs } = require("./export-video");
 
 // The desktop app has no server of its own: /api/... calls go to the deployed site.
 const API_ORIGIN = "https://subtittle-translator.vercel.app";
@@ -166,6 +166,7 @@ ipcMain.handle("save-file", async (event, text, filename) => {
 // ---- Play tab: pick a video, play it with a subtitle, save the subtitle next to it ----
 // The video path stays here in the main process. The page only gets a file:// URL to play.
 let currentVideo = null;
+let currentVideoSubs = [];
 
 ipcMain.handle("pick-video", async (event) => {
     if (!fromOurPage(event)) throw new Error("Blocked request");
@@ -179,9 +180,13 @@ ipcMain.handle("pick-video", async (event) => {
     });
     if (r.canceled || !r.filePaths.length) return null;
     currentVideo = r.filePaths[0];
+    // does the video already carry its own subtitle track(s)? (the page shows a choice if so)
+    currentVideoSubs = [];
+    try { currentVideoSubs = await probeSubs(ffmpegBinary(), currentVideo); } catch (e) { /* ignore */ }
     return {
         name: path.basename(currentVideo),
-        url: require("url").pathToFileURL(currentVideo).href
+        url: require("url").pathToFileURL(currentVideo).href,
+        subs: currentVideoSubs
     };
 });
 
@@ -228,7 +233,10 @@ ipcMain.handle("export-video", async (event, opts) => {
 
     const mode = opts.mode === "soft" ? "soft" : "burn";
     const vExt = path.extname(currentVideo).toLowerCase();
-    const outExt = mode === "soft" && vExt === ".mkv" ? ".mkv" : ".mp4";
+    const existingSubs = currentVideoSubs.length;
+    const keepOriginal = mode === "soft" && !!opts.keepOriginal && existingSubs > 0;
+    // mp4 can only hold text subtitles of one kind, so keeping the original tracks needs an .mkv
+    const outExt = mode === "soft" && (vExt === ".mkv" || keepOriginal) ? ".mkv" : ".mp4";
     const base = path.basename(currentVideo, path.extname(currentVideo));
 
     const r = await dialog.showSaveDialog(win, {
@@ -251,6 +259,8 @@ ipcMain.handle("export-video", async (event, opts) => {
         video: currentVideo,
         srtText: opts.srtText,
         mode,
+        keepOriginal,
+        existingSubs,
         size: Math.min(120, Math.max(10, Number(opts.size) || 30)),
         out,
         onProgress: (p) => {

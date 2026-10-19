@@ -234,3 +234,6 @@ html.desk-mode[data-app-tab="play"] #deskPlayer { display: block; }
 #deskPlayer .dp-prog-bar { flex: 1; height: 8px; border-radius: 99px; background: var(--surface-2, rgba(255,255,255,.075)); overflow: hidden; }
 #deskPlayer .dp-prog-bar i { display: block; height: 100%; width: 0; background: var(--grad, linear-gradient(135deg,#7fb4ff,#c58bff)); transition: width .4s; }
 #deskPlayer .dp-prog span { min-width: 200px; text-align: right; }
+
+#deskPlayer .dp-opt-sub { margin: 10px 0 4px; padding-top: 8px; border-top: 1px dashed var(--border, rgba(128,128,128,.35)); }
+#deskPlayer .dp-opt-sub .dp-v { font-size: 13px; margin: 2px 0 8px; opacity: .85; }
