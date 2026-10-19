@@ -6,9 +6,13 @@ const { runExport } = require("./export-video");
 // The desktop app has no server of its own: /api/... calls go to the deployed site.
 const API_ORIGIN = "https://subtittle-translator.vercel.app";
 
-if (!app.requestSingleInstanceLock()) {
-    app.quit();
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) {
+    app.exit(0);
 }
+
+// "Start with Windows" launches with --hidden: stay in the tray, do not pop the window up
+const START_HIDDEN = process.argv.includes("--hidden");
 
 let win;
 let tray = null;
@@ -25,6 +29,7 @@ function createWindow() {
         title: "SinSubz",
         icon: path.join(__dirname, "app", "logo.png"),
         autoHideMenuBar: true,
+        show: !START_HIDDEN,
         webPreferences: {
             preload: path.join(__dirname, "preload.js"),
             contextIsolation: true,
@@ -337,8 +342,8 @@ function createTray() {
         {
             label: "Start with Windows",
             type: "checkbox",
-            checked: app.getLoginItemSettings().openAtLogin,
-            click: (item) => app.setLoginItemSettings({ openAtLogin: item.checked })
+            checked: app.getLoginItemSettings({ args: ["--hidden"] }).openAtLogin,
+            click: (item) => app.setLoginItemSettings({ openAtLogin: item.checked, args: ["--hidden"] })
         },
         { type: "separator" },
         { label: "Quit", click: () => { quitting = true; app.quit(); } }
@@ -349,9 +354,13 @@ function createTray() {
     tray.on("right-click", () => tray.setContextMenu(menu()));
 }
 
-app.on("before-quit", () => { quitting = true; });
+app.on("before-quit", () => {
+    quitting = true;
+    if (exportJob) { try { exportJob.cancel(); } catch (e) { /* ignore */ } }   // do not leave ffmpeg running
+});
 
 app.whenReady().then(() => {
+    if (!gotLock) return;
     createWindow();
     createTray();
     app.on("activate", () => {

@@ -28,6 +28,12 @@
                     statusText: r.statusText,
                     headers: r.contentType ? { "Content-Type": r.contentType } : {}
                 });
+            }, function (err) {
+                var m = String((err && err.message) || err).replace(/^Error invoking remote method '[^']+':\s*(Error:\s*)?/, "");
+                if (/fetch failed|ENOTFOUND|ECONN|ETIMEDOUT|EAI_AGAIN|network|timeout|abort/i.test(m)) {
+                    m = "Could not reach the SinSubz server. Check your internet connection and try again.";
+                }
+                throw new Error(m);
             });
         }
         return originalFetch(input, init);

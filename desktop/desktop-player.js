@@ -49,10 +49,12 @@
             for (var i = 0; i < lines.length; i++) {
                 var m = re.exec(lines[i]);
                 if (m) {
-                    var body = lines.slice(i + 1).join("\n")
+                    var rawBody = lines.slice(i + 1).join("\n").trim();
+                    var body = rawBody
                         .replace(/<[^>]+>/g, "").replace(/\{\\[^}]*\}/g, "").trim();
                     if (body) {
                         out.push({
+                            r: rawBody,
                             a: toSec(m[1], m[2], m[3], (m[4] + "00").slice(0, 3)),
                             b: toSec(m[5], m[6], m[7], (m[8] + "00").slice(0, 3)),
                             t: body
@@ -304,7 +306,7 @@
             return z(h, 2) + ":" + z(m, 2) + ":" + z(s, 2) + "," + z(ms, 3);
         }
         return cues.map(function (c, i) {
-            return (i + 1) + "\n" + fmt(c.a + delay) + " --> " + fmt(c.b + delay) + "\n" + c.t + "\n";
+            return (i + 1) + "\n" + fmt(c.a + delay) + " --> " + fmt(c.b + delay) + "\n" + (c.r || c.t) + "\n";
         }).join("\n");
     }
 
