@@ -4,7 +4,7 @@
 
 SinSubz is a web-based subtitle translation project designed to help users search for subtitles, upload SRT files, and translate English subtitle dialogue into natural Sinhala using Google Gemini AI.
 
-🌐 **Live Website:** https://subtittle-translator.vercel.app/
+🌐 **Live Website:** https://sinsubs.site/
 
 ---
 
@@ -110,7 +110,7 @@ Subtittle-translator/
 - Do not upload confidential or sensitive material unless you understand how it will be processed.
 - Keep API keys on the server and out of public source code.
 
-Read the website's [Privacy Policy](https://subtittle-translator.vercel.app/privacy.html) and [Terms of Service](https://subtittle-translator.vercel.app/terms.html).
+Read the website's [Privacy Policy](https://sinsubs.site/privacy.html) and [Terms of Service](https://sinsubs.site/terms.html).
 
 ## ⚠️ Important Notes
 

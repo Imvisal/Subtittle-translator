@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /api/
 
-Sitemap: https://subtittle-translator.vercel.app/sitemap.xml
+Sitemap: https://sinsubs.site/sitemap.xml
