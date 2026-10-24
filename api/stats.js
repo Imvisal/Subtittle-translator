@@ -11,8 +11,13 @@
    (so the same title is counted once). */
 "use strict";
 
-const URL_BASE = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || "";
-const TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || "";
+// Works with any prefix Vercel gave the variables (KV_..., UPSTASH_REDIS_..., STORAGE_KV_... ).
+function findEnv(re) {
+    const key = Object.keys(process.env).find(k => re.test(k) && process.env[k]);
+    return key ? process.env[key] : "";
+}
+const URL_BASE = findEnv(/(?:^|_)(?:KV|UPSTASH_REDIS)_REST_(?:API_)?URL$/);
+const TOKEN = findEnv(/(?:^|_)(?:KV|UPSTASH_REDIS)_REST_(?:API_)?TOKEN$/);
 
 const RATE_WINDOW_MS = 60 * 1000;
 const RATE_MAX_POSTS = 20;       // one person never needs more than this per minute
