@@ -194,7 +194,8 @@
 
 /* ---- usage counters (home page hero, website only): one plain line under the buttons, figures take turns ---- */
 .hero-stats[hidden] { display: none; }
-.hero-stats { margin-top: 28px; min-height: 40px; }
+/* same width as the 2x2 button grid, with a hairline above so it reads as part of that block */
+.hero-stats { width: 100%; max-width: 540px; margin-top: 26px; padding-top: 20px; min-height: 66px; box-sizing: border-box; border-top: 1px solid rgba(169,155,255,0.22); }
 .ss-line {
     display: inline-flex; align-items: center; gap: 12px;
     opacity: 0; transform: translateY(6px);
@@ -203,14 +204,14 @@
 .ss-line.in { opacity: 1; transform: none; }
 .ss-line.out { opacity: 0; transform: translateY(-6px); }
 .ss-ico {
-    width: 34px; height: 34px; border-radius: 50%; flex: none;
-    display: flex; align-items: center; justify-content: center; font-size: 0.9rem; color: #1a1630;
+    width: 38px; height: 38px; border-radius: 50%; flex: none;
+    display: flex; align-items: center; justify-content: center; font-size: 0.95rem; color: #1a1630;
     background: linear-gradient(135deg, #8b8bff, #c4a1ff);
 }
 .ss-num {
-    font-size: 1.6rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.5px;
+    font-size: 1.9rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.5px;
     background: linear-gradient(135deg, #c3c3ff, #ecd6ff); -webkit-background-clip: text; background-clip: text; color: transparent;
 }
-.ss-label { font-size: 0.85rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.75; }
-@media (max-width: 480px) { .ss-num { font-size: 1.35rem; } .ss-label { font-size: 0.74rem; letter-spacing: 0.08em; } }
+.ss-label { font-size: 0.82rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.75; }
+@media (max-width: 480px) { .hero-stats { max-width: none; min-height: 60px; } .ss-num { font-size: 1.5rem; } .ss-label { font-size: 0.74rem; letter-spacing: 0.08em; } }
 @media (prefers-reduced-motion: reduce) { .ss-line { transition: none; } }
