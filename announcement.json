@@ -1,9 +1,9 @@
 {
-  "enabled": false,
-  "id": "tg-6",
-  "title": " SUBTITLE TRANSLATE ERROR FIXED ✅ ",
-  "body": "Translate limit error fixed,Thanks for your patience ❤️ Stay with us #sinsubz_team",
-  "image": "https://media.istockphoto.com/id/2209283866/vector/people-show-thank-you-message-via-text-sign-in-flat-design-vector-illustration.jpg?s=612x612&w=0&k=20&c=MZYph8a6m_VxsVhvInPwAnpmexwaGobhe_NSpvnRNoo=",
+  "enabled": true,
+  "id": "tg-7",
+  "title": " Sinsubz App bugs FIXED ✅ ",
+  "body": "Some App bugs fixed,Thanks for your patience ❤️ Stay with us #sinsubz_team",
+  "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSmB39dlx56misJThlzbZBsXVPETeFn-EilpMwu3QFNJQ&s=10",
   "url": "https://t.me/sinsubz",
   "openLabel": "Join Telegram",
   "laterLabel": "Not now",
@@ -11,5 +11,5 @@
     "android",
     "windows"
   ],
-  "expires": "2026-10-15"
+  "expires": "2026-10-26"
 }
