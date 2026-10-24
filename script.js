@@ -3666,10 +3666,34 @@ function buildSRT(subtitles) {
 // DOWNLOAD FILE
 // ========================================================
 
+// Anonymous usage counters (shown on the website). Fire and forget, never blocks anything.
+const __statSent = new Set();
+
+function trackStat(type, name) {
+    try {
+        const key = type + "|" + (name || "");
+        if (__statSent.has(key)) return;      // same file saved twice in one visit counts once
+        __statSent.add(key);
+        fetch("/api/stats", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type: type, name: name || "" })
+        }).catch(function () { /* ignore */ });
+    } catch (e) { /* ignore */ }
+}
+
+function countSavedFile(filename) {
+    const f = String(filename || "");
+    if (/\.Sinhala\.SinSubz\.srt$/i.test(f)) trackStat("translated", f);
+    else if (/\.synced\.srt$/i.test(f)) trackStat("synced", f);
+}
+
 function downloadTextFile(
     text,
     filename
 ) {
+
+    countSavedFile(filename);
 
     // Inside the Android app, blob downloads do not work in the WebView.
     // app-shim.js (only included in the app build) saves + shares the file.

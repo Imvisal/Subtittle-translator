@@ -369,6 +369,13 @@
             setMaking(false);
             if (!r || r.cancelled) { msg("Cancelled. Nothing was saved."); return; }
             lastOut = r.path;
+            try {
+                fetch("/api/stats", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ type: "merged" })
+                }).catch(function () { /* ignore */ });
+            } catch (e) { /* ignore */ }
             $("dpShow").hidden = false;
             msg("Done! Saved: " + r.path + " . Play it in any player and the subtitle is already there.");
         }).catch(function (e) {
