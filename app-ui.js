@@ -760,6 +760,24 @@
         if (card) { card.scrollIntoView({ behavior: "smooth", block: "start" }); }
     }
 
+    // Opens that exact title's subtitle results (same as pressing Select on a Trending card).
+    // Falls back to a name search only when TMDB had no IMDb id for the title.
+    function openRelease(it) {
+        if (it && it.imdbID && typeof window.selectSearchResult === "function") {
+            var input = $("searchInput");
+            if (input) { input.value = ""; }
+            window.selectSearchResult({
+                imdbID: it.imdbID,
+                title: it.title,
+                year: it.year,
+                poster: it.poster,
+                type: it.type === "series" ? "series" : "movie"
+            });
+            return;
+        }
+        searchFor(it && it.title);
+    }
+
     function buildReleases() {
         var chips = document.querySelector(".category-chips");
         if (!chips) { return; }
@@ -813,7 +831,7 @@
                         '</div><div class="ar-name">' + esc(it.title) + '</div>' +
                         '<div class="ar-sub">' + (it.type === "series" ? "TV" : "Movie") +
                         (it.year ? " · " + esc(it.year) : "") + '</div>';
-                    b.addEventListener("click", function () { searchFor(it.title); });
+                    b.addEventListener("click", function () { openRelease(it); });
                     rail.appendChild(b);
                 });
             })

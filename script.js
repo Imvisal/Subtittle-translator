@@ -1207,6 +1207,39 @@ uploadProgressUI.status.textContent =
 // HIDE CATEGORY RESULTS
 // ========================================================
 
+// Bring the results / progress area into view. The poster or button that was clicked is usually
+// far above it, so without this the person has to scroll down to find the subtitle list, and
+// back up to see the translation progress. force=false only scrolls when it is not already visible.
+function scrollToResults(force) {
+
+    const el = document.getElementById("searchResults");
+
+    if (!el) {
+        return;
+    }
+
+    const reduce =
+        window.matchMedia &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    requestAnimationFrame(function () {
+
+        const top = el.getBoundingClientRect().top;
+
+        if (!force && top >= 0 && top < window.innerHeight * 0.6) {
+            return;
+        }
+
+        el.scrollIntoView({
+            behavior: reduce ? "auto" : "smooth",
+            block: "start"
+        });
+
+    });
+
+}
+
+
 function hideCategoryResults() {
 
     const container =
@@ -1944,6 +1977,8 @@ function showEpisodeSelector(item) {
 
     `;
 
+    scrollToResults(true);
+
 
     const button =
         document.getElementById(
@@ -2046,6 +2081,8 @@ async function searchSubtitles(
             </div>
 
         `;
+
+        scrollToResults(true);
 
     }
 
@@ -2617,6 +2654,8 @@ async function displaySubtitleResults(
         sinhalaHTML +
         englishHTML;
 
+    scrollToResults(false);
+
 }
 
 
@@ -2700,6 +2739,8 @@ async function selectSubtitle(
             </div>
 
         `;
+
+        scrollToResults(true);
 
     }
 
@@ -2857,6 +2898,8 @@ async function selectSubtitle(
                 </div>
 
             `;
+
+            scrollToResults(true);
 
         }
 
