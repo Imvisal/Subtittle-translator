@@ -192,12 +192,12 @@
     .wa-txt { display: none; }
 }
 
-/* ---- usage counters (home page, website only): one plain line of text ---- */
+/* ---- usage counters (home page, website only): one line, one figure at a time ---- */
 .site-stats { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 14px 20px 88px; } /* room for the search card that overlaps upwards */
 .site-stats[hidden] { display: none; }
-.ss-line {
-    margin: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 22px;
-    font-size: 0.92rem; opacity: 0.85; text-align: center;
-}
-.ss-line b { font-weight: 800; font-variant-numeric: tabular-nums; color: #a99bff; }
-@media (max-width: 560px) { .ss-line { font-size: 0.85rem; gap: 4px 16px; } }
+.ss-line { margin: 0; min-height: 1.7em; text-align: center; font-size: 1.05rem; opacity: 0.9; }
+.ss-line span { display: none; }
+.ss-line span.on { display: inline; animation: ssIn 0.5s ease both; }
+.ss-line b { font-weight: 800; font-variant-numeric: tabular-nums; color: #a99bff; font-size: 1.15em; }
+@keyframes ssIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .ss-line span.on { animation: none; } }
