@@ -267,14 +267,14 @@
 
         <!--WEBONLY-->
         <section class="site-stats" id="siteStats" aria-label="SinSubz in numbers" hidden>
-            <p class="ss-line">
-                <span><b data-stat="translated">0</b> subtitles translated</span>
-                <span><b data-stat="movies">0</b> movies</span>
-                <span><b data-stat="series">0</b> TV series</span>
-                <span><b data-stat="episodes">0</b> episodes</span>
-                <span><b data-stat="synced">0</b> files synced</span>
-                <span><b data-stat="merged">0</b> videos merged</span>
-            </p>
+            <div class="ss-pill" aria-live="polite">
+                <span class="ss-ico" id="ssIco"><i class="fa-solid fa-language"></i></span>
+                <span class="ss-txt">
+                    <b class="ss-num" id="ssNum">0</b>
+                    <span class="ss-label" id="ssLabel"></span>
+                </span>
+            </div>
+            <div class="ss-dots" id="ssDots" aria-hidden="true"></div>
         </section>
         <!--/WEBONLY-->
 
