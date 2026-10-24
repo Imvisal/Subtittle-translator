@@ -50,6 +50,8 @@
         dots.innerHTML = items.map(function () { return "<i></i>"; }).join("");
         dots.hidden = items.length < 2;
         box.hidden = false;
+        var hero = document.querySelector(".hero");
+        if (hero) { hero.classList.add("has-stats"); }   // the demo window makes room for the figures
 
         var i = 0;
 
@@ -62,6 +64,7 @@
             });
             pill.classList.remove("out");
             pill.classList.add("in");
+            num.textContent = "0";                      // never show the previous figure next to the new label
             countUp(it.to);
             i++;
         }
