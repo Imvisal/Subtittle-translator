@@ -192,31 +192,25 @@
     .wa-txt { display: none; }
 }
 
-/* ---- usage counters (home page hero, website only): a slim row under the buttons ---- */
+/* ---- usage counters (home page hero, website only): one plain line under the buttons, figures take turns ---- */
 .hero-stats[hidden] { display: none; }
-.hero-stats {
-    display: flex; flex-wrap: wrap; gap: 10px 12px; margin-top: 26px;
+.hero-stats { margin-top: 28px; min-height: 40px; }
+.ss-line {
+    display: inline-flex; align-items: center; gap: 12px;
+    opacity: 0; transform: translateY(6px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
 }
-.ss-item {
-    display: inline-flex; align-items: center; gap: 10px;
-    padding: 9px 16px 9px 10px; border-radius: 999px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(169,155,255,0.22);
-    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-    opacity: 0; transform: translateY(8px);
-    transition: opacity 0.45s ease, transform 0.45s ease;
-    transition-delay: calc(var(--i, 0) * 90ms);
-}
-.hero-stats.in .ss-item { opacity: 1; transform: none; }
+.ss-line.in { opacity: 1; transform: none; }
+.ss-line.out { opacity: 0; transform: translateY(-6px); }
 .ss-ico {
-    width: 30px; height: 30px; border-radius: 50%; flex: none;
-    display: flex; align-items: center; justify-content: center; font-size: 0.8rem; color: #1a1630;
+    width: 34px; height: 34px; border-radius: 50%; flex: none;
+    display: flex; align-items: center; justify-content: center; font-size: 0.9rem; color: #1a1630;
     background: linear-gradient(135deg, #8b8bff, #c4a1ff);
 }
 .ss-num {
-    font-size: 1.05rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums;
+    font-size: 1.6rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.5px;
     background: linear-gradient(135deg, #c3c3ff, #ecd6ff); -webkit-background-clip: text; background-clip: text; color: transparent;
 }
-.ss-label { font-size: 0.78rem; font-weight: 600; letter-spacing: 0.04em; opacity: 0.72; white-space: nowrap; }
-@media (max-width: 480px) { .hero-stats { gap: 8px; } .ss-item { padding: 7px 13px 7px 8px; gap: 8px; } .ss-ico { width: 26px; height: 26px; } .ss-label { font-size: 0.72rem; } }
-@media (prefers-reduced-motion: reduce) { .ss-item { transition: none; opacity: 1; transform: none; } }
+.ss-label { font-size: 0.85rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.75; }
+@media (max-width: 480px) { .ss-num { font-size: 1.35rem; } .ss-label { font-size: 0.74rem; letter-spacing: 0.08em; } }
+@media (prefers-reduced-motion: reduce) { .ss-line { transition: none; } }
