@@ -1,43 +1,35 @@
 /* SinSubz — usage counters on the home page (website only).
-   Fetches /api/stats and shows ONE figure at a time: it counts up, stays a moment,
-   then fades to the next one (translated, movies, series, episodes, synced, merged). */
+   Fetches /api/stats and shows every non-zero figure at once as a slim row of chips under
+   the hero buttons (translated, movies, series, episodes, synced, merged). Each one counts up. */
 (function () {
     "use strict";
 
     var box = document.getElementById("siteStats");
     if (!box) { return; }
 
-    var num = document.getElementById("ssNum");
-    var label = document.getElementById("ssLabel");
-    var ico = document.getElementById("ssIco");
-    var dots = document.getElementById("ssDots");
-    var pill = box.querySelector(".ss-pill");
-
     var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     // key, icon, label (one / many)
     var DEFS = [
-        ["translated", "fa-language",  "Subtitle translated",  "Subtitles translated"],
-        ["movies",     "fa-film",      "Movie translated",     "Movies translated"],
-        ["series",     "fa-tv",        "TV series translated", "TV series translated"],
-        ["episodes",   "fa-clapperboard", "Episode translated", "Episodes translated"],
-        ["synced",     "fa-rotate",    "File synced",          "Files synced"],
-        ["merged",     "fa-layer-group", "Video merged",       "Videos merged"]
+        ["translated", "fa-language",     "Subtitle translated",  "Subtitles translated"],
+        ["movies",     "fa-film",         "Movie translated",     "Movies translated"],
+        ["series",     "fa-tv",           "TV series translated", "TV series translated"],
+        ["episodes",   "fa-clapperboard", "Episode translated",   "Episodes translated"],
+        ["synced",     "fa-rotate",       "File synced",          "Files synced"],
+        ["merged",     "fa-layer-group",  "Video merged",         "Videos merged"]
     ];
 
     function fmt(n) { try { return n.toLocaleString("en-US"); } catch (e) { return String(n); } }
 
-    var raf = 0;
-    function countUp(to) {
-        cancelAnimationFrame(raf);
-        if (reduce || to < 2) { num.textContent = fmt(to); return; }
+    function countUp(el, to) {
+        if (reduce || to < 2) { el.textContent = fmt(to); return; }
         var start = performance.now();
-        var dur = Math.min(2200, 900 + Math.log10(to + 1) * 350);
+        var dur = Math.min(2000, 800 + Math.log10(to + 1) * 350);
         (function tick(now) {
             var t = Math.max(0, Math.min(1, (now - start) / dur));   // rAF time can be a hair before "start"
             var eased = 1 - Math.pow(1 - t, 3);
-            num.textContent = fmt(Math.round(to * eased));
-            if (t < 1) { raf = requestAnimationFrame(tick); }
+            el.textContent = fmt(Math.round(to * eased));
+            if (t < 1) { requestAnimationFrame(tick); }
         })(start);
     }
 
@@ -47,36 +39,21 @@
         }).filter(function (it) { return it.to > 0; });
         if (!items.length) { return; }              // nothing to show yet: keep it hidden
 
-        dots.innerHTML = items.map(function () { return "<i></i>"; }).join("");
-        dots.hidden = items.length < 2;
+        box.innerHTML = items.map(function (it, k) {
+            return '<div class="ss-item" style="--i:' + k + '">' +
+                '<span class="ss-ico"><i class="fa-solid ' + it.icon + '"></i></span>' +
+                '<b class="ss-num">0</b>' +
+                '<span class="ss-label">' + (it.to === 1 ? it.one : it.many) + '</span>' +
+                '</div>';
+        }).join("");
         box.hidden = false;
-        var hero = document.querySelector(".hero");
-        if (hero) { hero.classList.add("has-stats"); }   // the demo window makes room for the figures
 
-        var i = 0;
-
-        function paint() {
-            var it = items[i % items.length];
-            ico.innerHTML = '<i class="fa-solid ' + it.icon + '"></i>';
-            label.textContent = it.to === 1 ? it.one : it.many;
-            Array.prototype.forEach.call(dots.children, function (d, k) {
-                d.className = k === i % items.length ? "on" : "";
+        function begin() {
+            box.classList.add("in");
+            Array.prototype.forEach.call(box.querySelectorAll(".ss-num"), function (el, k) {
+                countUp(el, items[k].to);
             });
-            pill.classList.remove("out");
-            pill.classList.add("in");
-            num.textContent = "0";                      // never show the previous figure next to the new label
-            countUp(it.to);
-            i++;
         }
-
-        function next() {
-            if (items.length < 2) { return; }
-            pill.classList.remove("in");
-            pill.classList.add("out");
-            setTimeout(function () { paint(); setTimeout(next, 4200); }, reduce ? 0 : 380);
-        }
-
-        function begin() { paint(); setTimeout(next, 4200); }
 
         if ("IntersectionObserver" in window) {
             var io = new IntersectionObserver(function (entries) {
