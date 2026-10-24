@@ -205,10 +205,28 @@
 
                     <h1>
                         English to
-                        <span>Sinhala</span>
+                        <span class="hero-type">Sinhala</span>
                         <br>
                         Subtitle Translator
                     </h1>
+                    <script>
+                    /* "Sinhala" types itself in once per page load (a reload types it again). Runs before first paint. */
+                    (function () {
+                        var e = document.querySelector(".hero-type");
+                        if (!e || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) { return; }
+                        var t = e.textContent;
+                        e.setAttribute("aria-label", t);
+                        e.textContent = "";
+                        for (var i = 0; i < t.length; i++) {
+                            var c = document.createElement("span");
+                            c.className = "tc";
+                            c.setAttribute("aria-hidden", "true");
+                            c.style.setProperty("--i", i);
+                            c.textContent = t.charAt(i);
+                            e.appendChild(c);
+                        }
+                    })();
+                    </script>
 
                     <p>
                         Translate English movie and TV subtitles

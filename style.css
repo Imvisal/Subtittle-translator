@@ -618,6 +618,34 @@ html[data-theme="light"] .top-header:not(.scrolled) {
     to { background-position: 250% 0; }
 }
 
+/* typing effect on "Sinhala": each letter appears in turn, with a caret that follows and blinks out at the end */
+.hero-type .tc {
+    position: relative;
+    opacity: 0;
+    animation: tcIn 0.01s step-end forwards;
+    animation-delay: calc(0.4s + var(--i) * 0.14s);
+}
+.hero-type .tc::after {
+    content: "";
+    position: absolute;
+    right: -0.05em;
+    top: 0.1em;
+    bottom: 0.06em;
+    width: 0.06em;
+    border-radius: 2px;
+    background: #c58bff;
+    opacity: 0;
+    animation: tcCaret 0.14s step-end forwards;
+    animation-delay: calc(0.4s + var(--i) * 0.14s);
+}
+.hero-type .tc:last-child::after {
+    animation: tcCaretEnd 0.8s step-end 4 forwards;
+    animation-delay: calc(0.4s + var(--i) * 0.14s);
+}
+@keyframes tcIn { to { opacity: 1; } }
+@keyframes tcCaret { 0% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes tcCaretEnd { 0%, 49.99% { opacity: 1; } 50%, 100% { opacity: 0; } }
+
 .hero-content p {
     max-width: 520px;
     margin-top: 22px;
