@@ -661,26 +661,21 @@ ${JSON.stringify(inputItems)}
 
             }
 
-            // lines the model skipped entirely (first pass only is an error)
+            // Lines the model skipped entirely stay in stillPending, so the next attempt
+            // asks for ONLY those lines (a cheap request) instead of failing the whole chunk
+            // and making the browser re-send all 40 lines.
             if (attempt === 1) {
 
-                const missing = [];
+                const skipped = [];
 
                 for (let i = 0; i < subtitles.length; i++) {
                     if (!translationMap.has(i) && !dirtyCandidates.has(i)) {
-                        missing.push(i);
+                        skipped.push(i);
                     }
                 }
 
-                if (missing.length > 0) {
-
-                    console.error("Missing translations:", missing);
-
-                    return res.status(422).json({
-                        error: "Some subtitles were not translated.",
-                        missing
-                    });
-
+                if (skipped.length > 0) {
+                    console.warn("Model skipped line(s), asking again for only these:", skipped);
                 }
 
             }
@@ -697,16 +692,31 @@ ${JSON.stringify(inputItems)}
 
         }
 
-        // retries ran out: strip the stray characters from what is left
+        // retries ran out: strip the stray characters from what is left.
+        // A line the model never produced at all is a real failure (the browser retries the chunk).
+        const neverReturned = [];
+
         for (const item of pending) {
 
             const candidate = dirtyCandidates.get(item.index);
+            const cleaned = candidate && cleanGlitch(candidate);
 
-            translationMap.set(
-                item.index,
-                (candidate && cleanGlitch(candidate)) ||
-                    String(subtitles[item.index].text || "")
-            );
+            if (cleaned) {
+                translationMap.set(item.index, cleaned);
+            } else {
+                neverReturned.push(item.index);
+            }
+
+        }
+
+        if (neverReturned.length > 0) {
+
+            console.error("Missing translations:", neverReturned);
+
+            return res.status(422).json({
+                error: "Some subtitles were not translated.",
+                missing: neverReturned
+            });
 
         }
 
