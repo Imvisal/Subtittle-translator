@@ -554,7 +554,9 @@ html[data-theme="light"] .top-header:not(.scrolled) {
     margin: 0 auto;
     padding: 60px 20px 120px;
     display: grid;
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    /* one text column on the left; the poster banner fills the right */
+    grid-template-columns: minmax(0, 700px);
+    justify-content: start;
     align-items: center;
     gap: 40px;
 }
