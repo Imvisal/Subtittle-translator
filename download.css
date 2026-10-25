@@ -194,11 +194,8 @@
 
 /* ---- usage counters (home page hero, website only): "Live Now" ring with floating figure cards ---- */
 .hero-stats[hidden] { display: none; }
-.hero-stats {
-    container-type: inline-size;
-    position: relative; z-index: 1;
-    width: min(100%, 360px); aspect-ratio: 1 / 1; margin: 22px 0 0; box-sizing: border-box;
-}
+.hero-stats { margin: 0; }
+.ss-orbitbox { display: none; }
 .ss-orbit { position: absolute; inset: 0; }
 .ss-ring {
     position: absolute; left: 50%; top: 50%; border-radius: 50%; transform: translate(-50%, -50%);
@@ -235,7 +232,7 @@
     transition: opacity 0.6s ease, transform 0.6s cubic-bezier(.2, .8, .2, 1);
     transition-delay: var(--d, 0s);
 }
-.hero-stats.on .ss-card { opacity: 1; transform: translate(-50%, -50%) scale(1); animation: ssFloat 6s ease-in-out infinite; animation-delay: calc(var(--d, 0s) + 0.8s); }
+.ss-orbitbox.on .ss-card { opacity: 1; transform: translate(-50%, -50%) scale(1); animation: ssFloat 6s ease-in-out infinite; animation-delay: calc(var(--d, 0s) + 0.8s); }
 .ss-tag {
     align-self: flex-start; display: inline-flex; align-items: center; gap: 1.6cqw;
     padding: 0.7cqw 2.2cqw; border-radius: 999px; background: rgba(139, 139, 255, 0.2); color: #c9c6ff;
@@ -254,9 +251,48 @@
 
 /* desktop: the ring floats on the right, over the poster banner */
 @media (min-width: 961px) {
-    .hero-stats { position: absolute; right: 20px; top: 50%; margin: 0; transform: translateY(-46%); width: 380px; }
+    .ss-pillbox { display: none; }
+    .ss-orbitbox {
+        display: block; container-type: inline-size; aspect-ratio: 1 / 1; box-sizing: border-box;
+        position: absolute; right: 20px; top: 50%; transform: translateY(-46%); width: 380px; z-index: 1;
+    }
 }
 @media (prefers-reduced-motion: reduce) {
-    .ss-ring-in, .ss-core, .ss-dot, .hero-stats.on .ss-card { animation: none; }
+    .ss-ring-in, .ss-core, .ss-dot, .ss-orbitbox.on .ss-card { animation: none; }
     .ss-card { transition: none; }
 }
+
+/* ---- mobile web: one slim pill, figures take turns ---- */
+/* same width as the 2x2 button grid and about as tall as one button, so it reads as the third row */
+.ss-pillbox {
+    width: 100%; max-width: 540px; height: 50px; margin-top: 14px; box-sizing: border-box;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid transparent; border-radius: 999px;
+    background:
+        linear-gradient(rgba(16,14,30,0.62), rgba(16,14,30,0.62)) padding-box,
+        linear-gradient(120deg, rgba(127,180,255,0.75), rgba(143,134,255,0.55), rgba(197,139,255,0.75)) border-box;
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 8px 28px -10px rgba(139,139,255,0.45);
+}
+.ss-line {
+    display: inline-flex; align-items: center; gap: 10px; white-space: nowrap;
+    opacity: 0; transform: translateY(5px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.ss-line.in { opacity: 1; transform: none; }
+.ss-line.out { opacity: 0; transform: translateY(-5px); }
+.ss-ico {
+    width: 26px; height: 26px; border-radius: 50%; flex: none;
+    display: flex; align-items: center; justify-content: center; font-size: 0.72rem; color: #1a1630;
+    background: linear-gradient(135deg, #8b8bff, #c4a1ff);
+}
+.ss-num {
+    font-size: 1.1rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #c3c3ff, #ecd6ff); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.ss-label { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.78; }
+@media (max-width: 480px) { .ss-pillbox { max-width: none; height: 46px; } .ss-label { font-size: 0.66rem; letter-spacing: 0.1em; } }
+@media (prefers-reduced-motion: reduce) { .ss-line { transition: none; } }
+
+/* desktop shows the ring only; mobile web keeps the pill */
+@media (min-width: 961px) { .ss-pillbox { display: none; } }

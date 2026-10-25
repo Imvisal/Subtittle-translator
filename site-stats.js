@@ -39,7 +39,7 @@
 
         var slots = SLOTS[items.length];
         var html =
-            '<div class="ss-orbit">' +
+            '<div class="ss-orbitbox"><div class="ss-orbit">' +
             '<span class="ss-ring ss-ring-out" aria-hidden="true"></span>' +
             '<span class="ss-ring ss-ring-in" aria-hidden="true"></span>' +
             '<div class="ss-core"><span class="ss-dot" aria-hidden="true"></span><span class="ss-live">Live Now</span></div>';
@@ -53,10 +53,14 @@
                 '</div>';
         });
 
-        html += '</div>';
+        html += '</div></div>' +
+            '<div class="ss-pillbox"><div class="ss-line" aria-live="polite">' +
+            '<span class="ss-ico" id="ssIco"></span><b class="ss-num" id="ssNum">0</b><span class="ss-label" id="ssLabel"></span>' +
+            '</div></div>';
         box.innerHTML = html;
         box.hidden = false;
 
+        var orbit = box.querySelector(".ss-orbitbox");
         var vals = box.querySelectorAll(".ss-val");
 
         function countUp(el, to, delay) {
@@ -74,7 +78,7 @@
         }
 
         function begin() {
-            box.classList.add("on");
+            orbit.classList.add("on");
             Array.prototype.forEach.call(vals, function (el, k) {
                 countUp(el, Number(el.getAttribute("data-to")) || 0, reduce ? 0 : 150 + k * 120);
             });
@@ -84,7 +88,60 @@
             var io = new IntersectionObserver(function (entries) {
                 if (entries.some(function (e) { return e.isIntersecting; })) { io.disconnect(); begin(); }
             }, { threshold: 0.25 });
-            io.observe(box);
+            io.observe(orbit);
+        } else {
+            begin();
+        }
+
+        startPill(items);
+    }
+
+    // mobile web: one slim pill, figures take turns (counts up, stays a moment, fades to the next)
+    function startPill(items) {
+        var pill = box.querySelector(".ss-pillbox");
+        var line = pill.querySelector(".ss-line");
+        var num = document.getElementById("ssNum");
+        var label = document.getElementById("ssLabel");
+        var ico = document.getElementById("ssIco");
+        var i = 0, raf = 0;
+
+        function countUp(to) {
+            cancelAnimationFrame(raf);
+            if (reduce || to < 2) { num.textContent = fmt(to); return; }
+            var start = performance.now();
+            var dur = Math.min(2000, 800 + Math.log10(to + 1) * 350);
+            (function tick(now) {
+                var t = Math.max(0, Math.min(1, (now - start) / dur));
+                num.textContent = fmt(Math.round(to * (1 - Math.pow(1 - t, 3))));
+                if (t < 1) { raf = requestAnimationFrame(tick); }
+            })(start);
+        }
+
+        function paint() {
+            var it = items[i % items.length];
+            ico.innerHTML = '<i class="fa-solid ' + it.icon + '"></i>';
+            label.textContent = it.full;
+            line.classList.remove("out");
+            line.classList.add("in");
+            num.textContent = "0";
+            countUp(it.to);
+            i++;
+        }
+
+        function next() {
+            if (items.length < 2) { return; }
+            line.classList.remove("in");
+            line.classList.add("out");
+            setTimeout(function () { paint(); setTimeout(next, 4200); }, reduce ? 0 : 400);
+        }
+
+        function begin() { paint(); setTimeout(next, 4200); }
+
+        if ("IntersectionObserver" in window) {
+            var io = new IntersectionObserver(function (entries) {
+                if (entries.some(function (e) { return e.isIntersecting; })) { io.disconnect(); begin(); }
+            }, { threshold: 0.3 });
+            io.observe(pill);
         } else {
             begin();
         }
