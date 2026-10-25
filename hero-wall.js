@@ -17,7 +17,13 @@
     setTimeout(function () { if (!banner.classList.contains("wall-on")) { giveUp(); } }, 7000);
 
     var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    var IMG = "https://image.tmdb.org/t/p/w342";
+    var wideScreen = window.innerWidth >= 961;
+    // phones get smaller pictures (about a third of the data)
+    var IMG = "https://image.tmdb.org/t/p/" + (wideScreen ? "w342" : "w185");
+
+    // Data Saver / slow connection: no wall at all, the static banner stays
+    var conn = navigator.connection || {};
+    if (conn.saveData || /(^|-)2g$/.test(conn.effectiveType || "")) { giveUp(); return; }
 
     function shuffle(a) {
         for (var i = a.length - 1; i > 0; i--) {
@@ -97,12 +103,19 @@
 
         // "wall-on" is added by the loader above once 6 posters are really there
 
+        // swap posters only while the wall is on screen, and stop after about a minute
+        var visible = true, swaps = 0, MAX_SWAPS = wide ? 45 : 25;
+        if ("IntersectionObserver" in window) {
+            new IntersectionObserver(function (e) { visible = e[0].isIntersecting; }).observe(banner);
+        }
+
         if (!reduce) {
-            setInterval(function () {
-                if (document.hidden) { return; }
+            var timer = setInterval(function () {
+                if (document.hidden || !visible) { return; }
+                if (++swaps > MAX_SWAPS) { clearInterval(timer); return; }
                 var card = cards[Math.floor(Math.random() * cards.length)];
                 setCard(card, nextUrl());
-            }, 1400);
+            }, wide ? 1400 : 2200);
         }
     }
 
