@@ -3103,10 +3103,50 @@ async function translateSubtitleChunks(
 }
 
 
+// [ ... ] parts are sound / music descriptions ([DOOR SLAMS], [ඇතින් කුරුල්ලෝ කෑගහනවා]).
+// They are removed before translating (saves quota) and again from the result; a cue that has
+// nothing left is dropped. If that would remove every cue, the file is left alone.
+function stripBracketParts(text) {
+
+    let t = String(text || "").replace(/\[[^\]]*\]/g, "");
+
+    let lines = t.split("\n")
+        .map(l => l.replace(/<(\w+)[^>]*>\s*<\/\1>/g, "").replace(/[ \t]+/g, " ").trim())
+        .filter(l => l && !/^(?:<[^>]+>\s*)*[-\u2013\u2014]?\s*(?:<\/[^>]+>\s*)*$/.test(l));
+
+    // "- [door slams]\n- Hello" leaves one speaker: the dash is no longer needed
+    if (lines.length === 1) {
+        lines = [lines[0].replace(/^((?:<[^>]+>)*)[-\u2013\u2014]\s+/, "$1")];
+    }
+
+    return lines.join("\n");
+}
+
+function dropBracketCues(subs) {
+
+    const out = [];
+
+    for (const sub of subs || []) {
+
+        const hadBrackets = /\[[^\]]*\]/.test(String((sub && sub.text) || ""));
+
+        if (!hadBrackets) { out.push(sub); continue; }
+
+        const text = stripBracketParts(sub.text);
+
+        if (text) { out.push({ ...sub, text }); }
+    }
+
+    return out.length ? out.map((s, i) => ({ ...s, number: i + 1 })) : (subs || []);
+}
+
+
 async function translateSubtitleChunksImpl(
     subtitles,
     meta
 ) {
+
+    subtitles = dropBracketCues(subtitles);
 
     const CHUNK_SIZE = 40;
 
@@ -3287,7 +3327,7 @@ async function translateSubtitleChunksImpl(
             CHUNK_SIZE
         );
 
-    return polishReadability(cleaned);
+    return dropBracketCues(polishReadability(cleaned));
 
 }
 
