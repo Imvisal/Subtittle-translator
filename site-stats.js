@@ -42,7 +42,7 @@
             '<div class="ss-orbitbox"><div class="ss-orbit">' +
             '<span class="ss-ring ss-ring-out" aria-hidden="true"></span>' +
             '<span class="ss-ring ss-ring-in" aria-hidden="true"></span>' +
-            '<div class="ss-core"><span class="ss-dot" aria-hidden="true"></span><span class="ss-live">Live Now</span></div>';
+            '<div class="ss-core"><span class="ss-dot" aria-hidden="true"></span><span class="ss-live">SinSubz</span><span class="ss-sub">in numbers</span></div>';
 
         items.forEach(function (it, k) {
             html +=
