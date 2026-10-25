@@ -3279,7 +3279,15 @@ async function translateSubtitleChunksImpl(
     }
 
     // results[] is indexed by chunk, so the order is always the original order
-    return polishReadability(results.flat());
+    // (and results.flat() lines up cue for cue with `subtitles`)
+    const cleaned =
+        cleanTranslatedCues(
+            results.flat(),
+            subtitles,
+            CHUNK_SIZE
+        );
+
+    return polishReadability(cleaned);
 
 }
 
@@ -3396,6 +3404,41 @@ function polishReadability(subs) {
 // VALIDATE TRANSLATED CHUNK
 // ========================================================
 
+// Clean-up passes live in subtitle-cleanup.js (negative-length cues, repeated lines, names).
+// If that file did not load, or a pass fails, the cues are used exactly as they came back.
+function keepSpeakerDashes(originalText, translatedText) {
+
+    try {
+        if (window.SinSubzCleanup) {
+            return window.SinSubzCleanup.restoreSpeakerDashes(
+                originalText,
+                translatedText
+            );
+        }
+    } catch (e) { /* keep the text as it is */ }
+
+    return translatedText;
+
+}
+
+
+function cleanTranslatedCues(cues, originalCues, chunkSize) {
+
+    try {
+        if (window.SinSubzCleanup) {
+            return window.SinSubzCleanup.cleanup(
+                cues,
+                originalCues.map(function (sub) { return sub.text; }),
+                { chunkSize: chunkSize }
+            );
+        }
+    } catch (e) { /* keep the cues as they are */ }
+
+    return cues;
+
+}
+
+
 function validateTranslatedChunk(
     original,
     translated
@@ -3447,7 +3490,10 @@ function validateTranslatedChunk(
                     typeof translatedText ===
                     "string" &&
                     translatedText.trim()
-                        ? translatedText.trim()
+                        ? keepSpeakerDashes(
+                            sub.text,
+                            translatedText.trim()
+                        )
                         : sub.text
 
             };
