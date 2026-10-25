@@ -1146,7 +1146,7 @@ uploadProgressUI.status.textContent =
             );
 
         const sinhalaSRT =
-            buildSRT(translated);
+            buildSRT(addSinSubzCredit(translated));
 
 
         const filename =
@@ -2919,7 +2919,7 @@ async function selectSubtitle(
 
 
         const sinhalaSRT =
-            buildSRT(translated);
+            buildSRT(addSinSubzCredit(translated));
 
 
         const baseName =
@@ -3713,6 +3713,52 @@ function parseSRT(srt) {
 // ========================================================
 // BUILD SRT
 // ========================================================
+
+// SinSubz credit: one short cue at the start and one at the end of every translated subtitle.
+// They only go into a gap with no dialogue and never touch the timing of any other cue.
+const SINSUBZ_CREDIT = "Sinhala subtitles by SinSubz \u00B7 sinsubs.site";
+
+function addSinSubzCredit(subs) {
+
+    const re = /(\d+):(\d\d):(\d\d)[,.](\d{1,3})\s*-->\s*(\d+):(\d\d):(\d\d)[,.](\d{1,3})/;
+
+    const toSec = (h, m, s, ms) =>
+        (+h) * 3600 + (+m) * 60 + (+s) + (+String(ms).padEnd(3, "0")) / 1000;
+
+    const clock = sec => {
+        const ms = Math.max(0, Math.round(sec * 1000));
+        const p = (n, w) => String(n).padStart(w, "0");
+        return p(Math.floor(ms / 3600000), 2) + ":" +
+            p(Math.floor((ms % 3600000) / 60000), 2) + ":" +
+            p(Math.floor((ms % 60000) / 1000), 2) + "," + p(ms % 1000, 3);
+    };
+
+    const list = (subs || []).filter(s => s && s.text && s.text.indexOf(SINSUBZ_CREDIT) === -1);
+
+    let first = Infinity, last = 0;
+
+    list.forEach(s => {
+        const m = re.exec(String(s.timestamp || ""));
+        if (!m) return;
+        first = Math.min(first, toSec(m[1], m[2], m[3], m[4]));
+        last = Math.max(last, toSec(m[5], m[6], m[7], m[8]));
+    });
+
+    if (!isFinite(first)) return subs;      // nothing readable: leave the file alone
+
+    const out = list.slice();
+
+    // start: use the quiet time before the first line (needs at least ~3 s of room)
+    if (first >= 3.4) {
+        const dur = Math.min(4, first - 0.9);
+        out.unshift({ number: 0, timestamp: clock(0.4) + " --> " + clock(0.4 + dur), text: SINSUBZ_CREDIT });
+    }
+
+    // end: right after the last line
+    out.push({ number: 0, timestamp: clock(last + 1) + " --> " + clock(last + 5), text: SINSUBZ_CREDIT });
+
+    return out.map((s, i) => ({ number: i + 1, timestamp: s.timestamp, text: s.text }));
+}
 
 function buildSRT(subtitles) {
 
