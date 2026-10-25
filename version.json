@@ -1,6 +1,6 @@
 {
-  "version": "1.1.22",
-  "notes": "Subtitle list and translation progress now scroll into view on their own. New releases opens the exact title's subtitles. Website home page redesigned (one-line counter, typing heading).",
+  "version": "1.1.23",
+  "notes": "Nicer translating screen (animated icon, smoothly rolling count). Subtitle list and progress scroll into view, New releases opens the exact title, spoken Sinhala for 'try' and 'sure', Windows app fixes, usage counters.",
   "android": {
     "url": "https://github.com/Imvisal/Subtittle-translator/releases/latest/download/SinSubz.apk"
   },
