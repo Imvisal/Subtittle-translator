@@ -48,7 +48,7 @@
             html +=
                 '<div class="ss-card" style="left:' + slots[k][0] + '%;top:' + slots[k][1] + '%;--d:' + (k * 0.55).toFixed(2) + 's" ' +
                 'role="text" aria-label="' + fmt(it.to) + ' ' + it.full + '">' +
-                '<span class="ss-tag"><i class="fa-solid ' + it.icon + '" aria-hidden="true"></i>' + it.label + '</span>' +
+                '<span class="ss-tag"><i class="fa-solid ' + it.icon + '" aria-hidden="true"></i>' + it.full + '</span>' +
                 '<b class="ss-val" data-to="' + it.to + '">0</b>' +
                 '</div>';
         });

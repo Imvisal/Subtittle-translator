@@ -238,7 +238,7 @@
     align-self: flex-start; display: inline-flex; align-items: center; gap: 1.6cqw;
     padding: 0.7cqw 2.2cqw; border-radius: 999px; background: rgba(139, 139, 255, 0.2); color: #c9c6ff;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: clamp(8px, 2.5cqw, 10px); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap;
+    font-size: clamp(7px, 2.1cqw, 9px); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap;
 }
 .ss-tag i { font-size: 0.95em; opacity: 0.9; }
 .ss-val {
