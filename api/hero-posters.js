@@ -4,8 +4,9 @@
  * GET /api/hero-posters
  *
  * A small pool of current movie / TV series posters (TMDB) for the animated
- * poster wall behind the home page title. Cached at the edge for a few hours,
- * so it costs a handful of TMDB calls per day no matter how many visitors.
+ * poster wall behind the home page title. A mix of trending, popular and random well-known
+ * titles from all years. Cached at the edge for an hour, so it costs ~10 TMDB calls per hour
+ * no matter how many visitors.
  *
  * Response: { posters: [ { p: "<tmdb poster path>", t: "movie"|"tv" } ] }
  * The page builds https://image.tmdb.org/t/p/w342<p> itself.
@@ -25,6 +26,8 @@ module.exports = async function handler(req, res) {
         }
 
         const isToken = apiKey.length > 40;
+
+        const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 
         async function tmdb(path, type) {
             const sep = path.includes("?") ? "&" : "?";
@@ -48,8 +51,13 @@ module.exports = async function handler(req, res) {
             tmdb("/trending/tv/week", "tv"),
             tmdb("/movie/popular", "movie"),
             tmdb("/tv/popular", "tv"),
-            tmdb("/trending/movie/week?page=2", "movie"),
-            tmdb("/trending/tv/week?page=2", "tv")
+            // random well-known titles from all years: a random page of the most-voted movies / series
+            tmdb(`/discover/movie?sort_by=vote_count.desc&vote_count.gte=1500&page=${rnd(1, 30)}`, "movie"),
+            tmdb(`/discover/movie?sort_by=vote_count.desc&vote_count.gte=1500&page=${rnd(1, 30)}`, "movie"),
+            tmdb(`/discover/movie?sort_by=vote_count.desc&vote_count.gte=1500&page=${rnd(1, 30)}`, "movie"),
+            tmdb(`/discover/tv?sort_by=vote_count.desc&vote_count.gte=800&page=${rnd(1, 15)}`, "tv"),
+            tmdb(`/discover/tv?sort_by=vote_count.desc&vote_count.gte=800&page=${rnd(1, 15)}`, "tv"),
+            tmdb(`/discover/tv?sort_by=vote_count.desc&vote_count.gte=800&page=${rnd(1, 15)}`, "tv")
         ]);
 
         const seen = new Set();
@@ -64,8 +72,8 @@ module.exports = async function handler(req, res) {
             });
         });
 
-        res.setHeader("Cache-Control", "public, s-maxage=21600, stale-while-revalidate=86400");
-        return res.status(200).json({ posters: posters.slice(0, 60) });
+        res.setHeader("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400");
+        return res.status(200).json({ posters: posters.slice(0, 120) });
 
     } catch (error) {
         console.error("HERO POSTERS ERROR:", error.message);
