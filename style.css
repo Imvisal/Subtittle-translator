@@ -668,6 +668,7 @@ html[data-theme="light"] .top-header:not(.scrolled) {
     .hero-content p { max-width: 720px; }
     .hero-actions { grid-template-columns: repeat(4, minmax(0, 1fr)); max-width: 720px; }
     .hero-actions .btn { padding: 0 10px; font-size: 14px; }
+    .hero-stats { max-width: 720px; }
 }
 
 .hero-actions .btn {
