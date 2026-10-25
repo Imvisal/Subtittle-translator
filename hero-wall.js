@@ -8,6 +8,14 @@
     var banner = document.querySelector(".hero-banner");
     if (!banner) { return; }
 
+    var root = document.documentElement;
+    var done = false;
+
+    // the static banner is hidden while the wall is expected (class set in index.html);
+    // any failure brings it back
+    function giveUp() { if (!done) { done = true; root.classList.remove("wall-try"); } }
+    setTimeout(function () { if (!banner.classList.contains("wall-on")) { giveUp(); } }, 7000);
+
     var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     var IMG = "https://image.tmdb.org/t/p/w342";
 
@@ -45,6 +53,7 @@
             cols.push(col);
         }
 
+        var loaded = 0;
         var queue = shuffle(pool.slice());
         var inUse = {};
 
@@ -61,6 +70,8 @@
             im.decoding = "async";
             im.alt = "";
             im.onload = function () {
+                loaded++;
+                if (loaded >= 6 && !done) { done = true; banner.classList.add("wall-on"); }
                 var old = card.img;
                 if (card.url) { delete inUse[card.url]; }
                 inUse[url] = true;
@@ -84,8 +95,7 @@
 
         banner.appendChild(wall);
 
-        // wait until a few posters are really on screen before hiding the static banner
-        setTimeout(function () { banner.classList.add("wall-on"); }, 900);
+        // "wall-on" is added by the loader above once 6 posters are really there
 
         if (!reduce) {
             setInterval(function () {
@@ -99,8 +109,8 @@
     function start() {
         fetch("/api/hero-posters")
             .then(function (r) { return r.ok ? r.json() : null; })
-            .then(function (d) { if (d && d.posters && d.posters.length >= 12) { build(d.posters); } })
-            .catch(function () { /* static banner stays */ });
+            .then(function (d) { if (d && d.posters && d.posters.length >= 12) { build(d.posters); } else { giveUp(); } })
+            .catch(giveUp);
     }
 
     // never compete with the first paint
