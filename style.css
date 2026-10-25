@@ -3743,3 +3743,41 @@ html[data-theme="light"] .suggest-box {
 @media (prefers-reduced-motion: reduce) {
     .suggest-box, .suggest-item { animation: none; }
 }
+
+
+/* ---- animated "translating" icon + rolling count ---- */
+.app .translation-icon.tr-orb {
+    position: relative; width: 84px; height: 84px; margin: 0 auto 18px; border-radius: 50%;
+    background: radial-gradient(circle at 50% 35%, rgba(139,139,255,0.28), rgba(139,139,255,0.06) 70%);
+    border: 0; color: #c9c9ff; font-size: 0;
+    animation: trGlow 2.4s ease-in-out infinite;
+}
+.tr-ring {
+    position: absolute; inset: 0; border-radius: 50%;
+    background: conic-gradient(from 0deg, rgba(139,139,255,0) 0 40%, #8b8bff 70%, #e0b8ff 100%);
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+            mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+    animation: trSpin 1.5s linear infinite;
+}
+.tr-svg { position: absolute; inset: 15px; width: calc(100% - 30px); height: calc(100% - 30px); overflow: visible; }
+.tr-l { stroke-dasharray: 20; stroke-dashoffset: 20; animation: trType 2.6s ease-in-out infinite; }
+.tr-l2 { animation-delay: 0.45s; }
+.tr-spark { transform-box: fill-box; transform-origin: center; animation: trTwinkle 1.8s ease-in-out infinite; }
+.tr-s2 { animation-delay: 0.9s; }
+@keyframes trSpin { to { transform: rotate(360deg); } }
+@keyframes trType { 0% { stroke-dashoffset: 20; } 35%, 80% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 20; } }
+@keyframes trTwinkle { 0%, 100% { transform: scale(0.4); opacity: 0.25; } 50% { transform: scale(1.15); opacity: 1; } }
+@keyframes trGlow { 0%, 100% { box-shadow: 0 0 0 rgba(139,139,255,0); } 50% { box-shadow: 0 0 36px rgba(139,139,255,0.35); } }
+
+.app .translation-count.tc { margin-top: 18px; display: flex; align-items: baseline; justify-content: center; gap: 2px; }
+.tc-num {
+    font-size: 40px; font-weight: 800; line-height: 1; letter-spacing: -1px; font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, #c3c3ff, #ecd6ff); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.tc-of { font-size: 14px; font-weight: 600; color: var(--muted); }
+html[data-theme="light"] .tc-num { background: linear-gradient(135deg, #5b5bd6, #9b5de5); -webkit-background-clip: text; background-clip: text; }
+html[data-theme="light"] .app .translation-icon.tr-orb { color: #5b5bd6; }
+@media (prefers-reduced-motion: reduce) {
+    .tr-ring, .tr-l, .tr-spark, .app .translation-icon.tr-orb { animation: none; }
+    .tr-l { stroke-dashoffset: 0; }
+}

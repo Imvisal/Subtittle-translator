@@ -2849,8 +2849,15 @@ async function selectSubtitle(
 
                 <div class="translation-status">
 
-                    <div class="translation-icon">
-                        ✨
+                    <div class="translation-icon tr-orb" aria-hidden="true">
+                        <span class="tr-ring"></span>
+                        <svg class="tr-svg" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="5" y="10" width="30" height="21" rx="6"></rect>
+                            <path class="tr-l tr-l1" d="M11 17h18"></path>
+                            <path class="tr-l tr-l2" d="M11 23.5h11"></path>
+                            <path class="tr-spark tr-s1" d="M33 2.5l1.1 2.7 2.7 1.1-2.7 1.1L33 10l-1.1-2.6-2.7-1.1 2.7-1.1z" fill="currentColor" stroke="none"></path>
+                            <path class="tr-spark tr-s2" d="M6 32.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z" fill="currentColor" stroke="none"></path>
+                        </svg>
                     </div>
 
                     <h3>
@@ -2883,9 +2890,9 @@ async function selectSubtitle(
 
                     <div
                         id="autoTranslateCount"
-                        class="translation-count"
+                        class="translation-count tc"
                     >
-                        0 of ${subtitles.length} subtitles
+                        <b class="tc-num" id="autoTranslateNum">0</b><span class="tc-of"> / ${subtitles.length} subtitles</span>
                     </div>
 
                     <p
@@ -3455,6 +3462,23 @@ function validateTranslatedChunk(
 // UPDATE BOTH TRANSLATION PROGRESS BARS
 // ========================================================
 
+// smooth rolling number for the progress count
+function tweenNumber(el, to) {
+    const from = el.__v || 0;
+    el.__v = to;
+    cancelAnimationFrame(el.__raf);
+
+    const start = performance.now();
+    const dur = 650;
+
+    (function tick(now) {
+        const t = Math.max(0, Math.min(1, (now - start) / dur));
+        const eased = 1 - Math.pow(1 - t, 3);
+        el.textContent = Math.round(from + (to - from) * eased).toLocaleString("en-US");
+        if (t < 1) { el.__raf = requestAnimationFrame(tick); }
+    })(start);
+}
+
 function updateTranslationProgress(
     chunkNumber,
     totalChunks,
@@ -3488,12 +3512,17 @@ function updateTranslationProgress(
 
     if (autoStatus) {
         autoStatus.textContent =
-            `Translated ${completed}/${total} subtitles — chunk ${chunkNumber}/${totalChunks}`;
+            `Part ${chunkNumber} of ${totalChunks}`;
     }
 
     if (autoCount) {
-        autoCount.textContent =
-            `${completed} of ${total} subtitles`;
+        const numEl = document.getElementById("autoTranslateNum");
+
+        if (numEl) {
+            tweenNumber(numEl, completed);
+        } else {
+            autoCount.textContent = `${completed} of ${total} subtitles`;
+        }
     }
 
     // Uploaded SRT progress.
