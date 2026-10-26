@@ -1148,6 +1148,8 @@ uploadProgressUI.status.textContent =
         const sinhalaSRT =
             buildSRT(addSinSubzCredit(translated));
 
+        askForComment(String(uploadedFileName || ""));
+
 
         const filename =
             `${uploadedFileName}.Sinhala.SinSubz.srt`;
@@ -2921,6 +2923,8 @@ async function selectSubtitle(
         const sinhalaSRT =
             buildSRT(addSinSubzCredit(translated));
 
+        askForComment((item && item.title) ? item.title + (item.year ? " (" + item.year + ")" : "") : "");
+
 
         const baseName =
             getSubtitleBaseName(
@@ -3844,6 +3848,17 @@ function addSinSubzCredit(subs) {
     out.push({ number: 0, timestamp: clock(last + 1) + " --> " + clock(last + 5), text: SINSUBZ_CREDIT });
 
     return out.map((s, i) => ({ number: i + 1, timestamp: s.timestamp, text: s.text }));
+}
+
+// Website only: after a translation finishes, comments.js may show a small "leave a comment" popup.
+function askForComment(label) {
+    try {
+        if (window.SinSubzComments) {
+            window.SinSubzComments.afterTranslate(
+                String(label || "").replace(/\.srt$/i, "").replace(/[._]+/g, " ").replace(/\s+/g, " ").trim()
+            );
+        }
+    } catch (e) { /* never break the translation */ }
 }
 
 function buildSRT(subtitles) {
