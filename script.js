@@ -1,3 +1,21 @@
+// ---- scroll performance: let decorative loops rest while scrolling / when the hero is off screen ----
+(function () {
+    var root = document.documentElement, t = 0, on = false;
+
+    window.addEventListener("scroll", function () {
+        if (!on) { on = true; root.classList.add("is-scrolling"); }
+        clearTimeout(t);
+        t = setTimeout(function () { on = false; root.classList.remove("is-scrolling"); }, 160);
+    }, { passive: true });
+
+    var hero = document.querySelector(".hero");
+    if (hero && "IntersectionObserver" in window) {
+        new IntersectionObserver(function (e) {
+            root.classList.toggle("hero-off", !e[0].isIntersecting);
+        }).observe(hero);
+    }
+})();
+
 "use strict";
 
 /*
