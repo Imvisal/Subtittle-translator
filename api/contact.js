@@ -1,6 +1,8 @@
-/* SinSubz — private messages from the Contact page.
+/* SinSubz — private messages from the Contact page. The sender must be signed in with Google:
+   the name and email come from their Google account (checked on the server), never from the form.
 
-   POST /api/contact   { name?, email?, message, website? }   (website = hidden spam trap)
+   POST /api/contact   header "Authorization: Bearer <Firebase ID token>"   { message, website? }
+                       (website = hidden spam trap)
    GET  /api/contact   header "x-admin-key: <ADMIN_KEY>"       -> { messages: [...] }  (newest first)
    DELETE /api/contact?id=<id>   header "x-admin-key"          -> removes one message
 
@@ -17,6 +19,9 @@ function findEnv(re) {
 }
 const URL_BASE = findEnv(/(?:^|_)(?:KV|UPSTASH_REDIS)_REST_(?:API_)?URL$/);
 const TOKEN = findEnv(/(?:^|_)(?:KV|UPSTASH_REDIS)_REST_(?:API_)?TOKEN$/);
+
+// public web API key of the Firebase project (the same one the website already ships to browsers)
+const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || "AIzaSyBtVA4AdmAlkwVsBnZ3rqm7vjSGEA2NAO0";
 
 const MAX_KEEP = 300;
 const MAX_PER_HOUR = 5;
@@ -45,6 +50,24 @@ function isAdmin(req) {
     const got = String(req.headers["x-admin-key"] || "");
     if (!want || !got) return false;
     return crypto.timingSafeEqual(sha(want), sha(got));
+}
+
+// Asks Google whether the ID token is real, unexpired and from our Firebase project.
+async function verifyGoogleUser(idToken) {
+    if (!idToken || idToken.length > 4000) return null;
+    const r = await fetch(
+        "https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=" + encodeURIComponent(FIREBASE_API_KEY),
+        {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ idToken }),
+            signal: AbortSignal.timeout(7000)
+        }
+    );
+    if (!r.ok) return null;
+    const u = ((await r.json()).users || [])[0];
+    if (!u || !u.localId) return null;
+    return { uid: u.localId, name: u.displayName || "", email: u.email || "" };
 }
 
 function clean(v, max) {
@@ -90,24 +113,26 @@ module.exports = async function handler(req, res) {
         if (clean(body.website, 10)) return res.status(200).json({ ok: true });
 
         const message = clean(body.message, 2000);
-        const name = clean(body.name, 60);
-        const email = clean(body.email, 120);
 
         if (message.length < 5) return res.status(400).json({ error: "Please write a little more." });
-        if (email && !/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(email)) {
-            return res.status(400).json({ error: "That email address does not look right." });
-        }
         if ((message.match(/https?:\/\//gi) || []).length > 2) {
             return res.status(400).json({ error: "Please remove some of the links." });
         }
 
-        // at most 5 messages per hour per person (the address itself is not stored, only a daily hash)
-        const day = new Date().toISOString().slice(0, 10);
-        const rk = "contact:rl:" + sha(clientIp(req) + day).toString("hex").slice(0, 24);
+        // the sender must be signed in with Google; name and email come from the account
+        const auth = String(req.headers.authorization || "");
+        const who = /^Bearer\s+/i.test(auth) ? await verifyGoogleUser(auth.replace(/^Bearer\s+/i, "").trim()) : null;
+        if (!who) return res.status(401).json({ error: "Please sign in with Google to send a message." });
+
+        // at most 5 messages per hour per account
+        const rk = "contact:rl:" + sha(who.uid).toString("hex").slice(0, 24);
         const [count] = await redis([["INCR", rk], ["EXPIRE", rk, 3600]]);
         if (Number(count) > MAX_PER_HOUR) {
             return res.status(429).json({ error: "Too many messages. Please try again later." });
         }
+
+        const name = clean(who.name, 80);
+        const email = clean(who.email, 120);
 
         const item = {
             id: crypto.randomBytes(8).toString("hex"),
