@@ -42,7 +42,7 @@
             if (w && v.windows && v.windows.url) {
                 w.href = v.windows.url;
                 var p = document.getElementById("dlPortable");
-                if (p) { p.href = v.windows.url.replace("SinSubz-Setup.exe", "SinSubz-Portable.exe"); }
+                if (p && v.windows.url.indexOf("SinSubz-Setup.exe") !== -1) { p.href = v.windows.url.replace("SinSubz-Setup.exe", "SinSubz-Portable.exe"); }
             }
         })
         .catch(function () { /* the built-in links still work */ });

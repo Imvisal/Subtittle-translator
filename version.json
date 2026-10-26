@@ -2,9 +2,9 @@
   "version": "1.1.27",
   "notes": "Sound descriptions in [brackets] are no longer translated or kept. Every translated subtitle starts and ends with a short two-line SinSubz credit. Nicer translating screen, subtitle list scrolls into view, spoken Sinhala for 'try' and 'sure', Windows app fixes, usage counters.",
   "android": {
-    "url": "https://github.com/Imvisal/Subtittle-translator/releases/latest/download/SinSubz.apk"
+    "url": "https://sinsubs.site/get/android"
   },
   "windows": {
-    "url": "https://github.com/Imvisal/Subtittle-translator/releases/latest/download/SinSubz-Setup.exe"
+    "url": "https://sinsubs.site/get/windows"
   }
 }

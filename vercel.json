@@ -47,5 +47,22 @@
         }
       ]
     }
+  ],
+  "redirects": [
+    {
+      "source": "/get/android",
+      "destination": "https://github.com/Imvisal/Subtittle-translator/releases/latest/download/SinSubz.apk",
+      "permanent": false
+    },
+    {
+      "source": "/get/windows",
+      "destination": "https://github.com/Imvisal/Subtittle-translator/releases/latest/download/SinSubz-Setup.exe",
+      "permanent": false
+    },
+    {
+      "source": "/get/portable",
+      "destination": "https://github.com/Imvisal/Subtittle-translator/releases/latest/download/SinSubz-Portable.exe",
+      "permanent": false
+    }
   ]
 }
