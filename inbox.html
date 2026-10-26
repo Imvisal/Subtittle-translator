@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="theme-color" content="#080d1b">
+    <title>SinSubz Inbox</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any">
+    <style>
+        :root { --bg:#0b0d1a; --card:#14172b; --line:#262a45; --text:#eceaff; --muted:#9a98b8; --acc:#8f86ff; }
+        @media (prefers-color-scheme: light) { :root { --bg:#f4f4fb; --card:#fff; --line:#dcdcee; --text:#1a1830; --muted:#6a6888; } }
+        * { box-sizing: border-box; }
+        body { margin:0; background:var(--bg); color:var(--text); font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; }
+        main { max-width: 760px; margin: 0 auto; padding: 24px 16px 60px; }
+        h1 { font-size: 22px; margin: 0 0 4px; }
+        .sub { color: var(--muted); margin: 0 0 20px; font-size: 13px; }
+        .row { display:flex; gap:8px; flex-wrap:wrap; }
+        input { flex:1; min-width:180px; padding:11px 13px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:inherit; font:inherit; }
+        button { padding:11px 18px; border:0; border-radius:10px; background:var(--acc); color:#fff; font:inherit; font-weight:700; cursor:pointer; }
+        button.ghost { background:transparent; color:var(--muted); border:1px solid var(--line); font-weight:500; padding:6px 12px; }
+        .msg { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin-top:12px; }
+        .msg .top { display:flex; justify-content:space-between; gap:10px; align-items:baseline; flex-wrap:wrap; font-size:13px; color:var(--muted); }
+        .msg .who { color:var(--text); font-weight:700; }
+        .msg .body { white-space:pre-wrap; word-break:break-word; margin:8px 0 10px; }
+        .err { color:#ff8a8a; margin-top:10px; min-height:1.3em; }
+        .empty { color:var(--muted); margin-top:24px; }
+    </style>
+</head>
+<body>
+<main>
+    <h1>SinSubz Inbox</h1>
+    <p class="sub" id="sub">Messages sent from the Contact page. Only you can open this page with your admin key.</p>
+
+    <form class="row" id="login">
+        <input type="password" id="key" placeholder="Admin key" autocomplete="current-password">
+        <button type="submit">Open</button>
+    </form>
+    <div class="err" id="err"></div>
+
+    <div id="list"></div>
+</main>
+<script src="inbox.js"></script>
+</body>
+</html>

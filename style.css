@@ -2818,6 +2818,28 @@ footer p + p {
     color: var(--muted);
 }
 
+/* ---- contact form (website only) ---- */
+.cf { display: grid; gap: 14px; margin-top: 18px; max-width: 640px; }
+.cf-field { display: grid; gap: 6px; font-size: 14px; font-weight: 600; }
+.cf-field em { font-style: normal; font-weight: 400; color: var(--muted); }
+.cf input[type="text"], .cf input[type="email"], .cf textarea {
+    width: 100%; box-sizing: border-box; padding: 12px 14px; border-radius: 12px;
+    background: var(--surface); color: inherit; border: 1px solid var(--line);
+    font: inherit; font-weight: 400; resize: vertical;
+}
+.cf input:focus, .cf textarea:focus { outline: none; border-color: var(--amber); box-shadow: 0 0 0 3px rgba(127, 180, 255, 0.18); }
+.cf-trap { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.cf-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.cf-btn {
+    padding: 12px 24px; border: 0; border-radius: 999px; cursor: pointer; font: inherit; font-weight: 700;
+    color: #12102a; background: linear-gradient(120deg, #7fb4ff, #c58bff);
+}
+.cf-btn:disabled { opacity: 0.6; cursor: default; }
+.cf-count { font-size: 12px; color: var(--muted); }
+.cf-status { min-height: 1.4em; margin: 0; font-size: 14px; }
+.cf-status.ok { color: #5fe0a8; }
+.cf-status.bad { color: #ff8a8a; }
+
 /* ---------------------------------------------------------
    RESPONSIVE
 --------------------------------------------------------- */

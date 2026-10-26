@@ -186,6 +186,52 @@
 
         </div>
 
+
+        <!--WEBONLY-->
+        <h2>
+            Send a Message
+        </h2>
+
+        <p>
+            Write your comment, a problem you found or a suggestion below.
+            It goes straight to us and is not shown to anyone else.
+            Your email is optional, add it only if you want a reply.
+        </p>
+
+        <form class="cf" id="contactForm" novalidate>
+
+            <label class="cf-field">
+                <span>Name <em>(optional)</em></span>
+                <input type="text" name="name" maxlength="60" autocomplete="name">
+            </label>
+
+            <label class="cf-field">
+                <span>Email <em>(optional, for a reply)</em></span>
+                <input type="email" name="email" maxlength="120" autocomplete="email">
+            </label>
+
+            <label class="cf-field">
+                <span>Message</span>
+                <textarea name="message" rows="6" maxlength="2000" required placeholder="Tell us what you think..."></textarea>
+            </label>
+
+            <!-- spam trap: people never see or fill this -->
+            <div class="cf-trap" aria-hidden="true">
+                <label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+            </div>
+
+            <div class="cf-row">
+                <button type="submit" class="cf-btn" id="cfBtn">Send message</button>
+                <span class="cf-count" id="cfCount">0 / 2000</span>
+            </div>
+
+            <p class="cf-status" id="cfStatus" role="status" aria-live="polite"></p>
+
+        </form>
+
+        <script src="contact.js" defer></script>
+        <!--/WEBONLY-->
+
     </article>
 
 
