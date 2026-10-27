@@ -32,12 +32,14 @@
     --muted: #9391a3;
     --muted-2: #6f6d80;
 
-    --amber: #8ab4ff;
-    --rose: #9a8bff;
+    --amber: #a9a7ff;
+    --rose: #8d8bff;
     --violet: #c58bff;
     --teal: #36e0c8;
 
-    --grad: linear-gradient(135deg, #7fb4ff 0%, #8f86ff 55%, #c58bff 100%);
+    /* one signature colour, taken from the logo (periwinkle); --grad is now flat on purpose */
+    --accent: #8d8bff;
+    --grad: linear-gradient(var(--accent), var(--accent));
     --grad-cool: linear-gradient(135deg, #36e0c8, #4aa8ff);
 
     --glow: rgba(120, 140, 255, 0.35);
@@ -596,7 +598,7 @@ html[data-theme="light"] .top-header:not(.scrolled) {
 
 .hero h1 span {
     display: inline-block;
-    background: linear-gradient(100deg, #7fb4ff, #8f86ff, #c58bff, #7fb4ff);
+    background: linear-gradient(100deg, #8d8bff, #b9b7ff, #8d8bff);
     background-size: 250% 100%;
     -webkit-background-clip: text;
     background-clip: text;
@@ -1202,7 +1204,7 @@ html[data-theme="light"] .top-header:not(.scrolled) {
 .category-page-btn:hover:not(:disabled) {
     transform: scale(1.12);
     border-color: rgba(127, 180, 255, 0.6);
-    background: linear-gradient(135deg, #7fb4ff, #b784ff);
+    background: var(--accent);
     color: #0b0d17;
     box-shadow: 0 10px 26px rgba(127, 140, 255, 0.35);
 }
@@ -1233,7 +1235,7 @@ html[data-theme="light"] .top-header:not(.scrolled) {
 
 .category-dot.active {
     width: 28px;
-    background: linear-gradient(90deg, #7fb4ff, #b784ff);
+    background: var(--accent);
 }
 
 .category-page-count {
@@ -2832,7 +2834,7 @@ footer p + p {
 .cf-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .cf-btn {
     padding: 12px 24px; border: 0; border-radius: 999px; cursor: pointer; font: inherit; font-weight: 700;
-    color: #12102a; background: linear-gradient(120deg, #7fb4ff, #c58bff);
+    color: #12102a; background: var(--accent);
 }
 .cf-btn:disabled { opacity: 0.6; cursor: default; }
 .cf-count { font-size: 12px; color: var(--muted); }

@@ -201,7 +201,7 @@
     border: 1px solid transparent; border-radius: 999px;
     background:
         linear-gradient(rgba(16,14,30,0.62), rgba(16,14,30,0.62)) padding-box,
-        linear-gradient(120deg, rgba(127,180,255,0.75), rgba(143,134,255,0.55), rgba(197,139,255,0.75)) border-box;
+        linear-gradient(rgba(141,139,255,0.6), rgba(141,139,255,0.6)) border-box;
     backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
     box-shadow: 0 8px 28px -10px rgba(139,139,255,0.45);
 }
@@ -215,11 +215,11 @@
 .ss-ico {
     width: 26px; height: 26px; border-radius: 50%; flex: none;
     display: flex; align-items: center; justify-content: center; font-size: 0.72rem; color: #1a1630;
-    background: linear-gradient(135deg, #8b8bff, #c4a1ff);
+    background: var(--accent);
 }
 .ss-num {
     font-size: 1.1rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums;
-    background: linear-gradient(135deg, #c3c3ff, #ecd6ff); -webkit-background-clip: text; background-clip: text; color: transparent;
+    color: #e4e3ff;
 }
 .ss-label { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.78; }
 @media (max-width: 480px) { .hero-stats { max-width: none; height: 46px; } .ss-label { font-size: 0.66rem; letter-spacing: 0.1em; } }

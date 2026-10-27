@@ -20,7 +20,7 @@
 .cm-as { font-size: 13px; color: var(--muted); }
 .cm-post, .cm-more {
     padding: 10px 22px; border: 0; border-radius: 999px; cursor: pointer; font: inherit; font-weight: 700;
-    color: #12102a; background: linear-gradient(120deg, #7fb4ff, #c58bff);
+    color: #12102a; background: var(--accent);
 }
 .cm-more { display: block; margin: 18px auto 0; background: var(--surface); color: inherit; border: 1px solid var(--line); }
 .cm-more[hidden] { display: none; }
