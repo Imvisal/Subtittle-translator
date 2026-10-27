@@ -3128,11 +3128,22 @@ async function translateSubtitleChunks(
 // [ ... ] parts are sound / music descriptions ([DOOR SLAMS], [ඇතින් කුරුල්ලෝ කෑගහනවා]).
 // They are removed before translating (saves quota) and again from the result; a cue that has
 // nothing left is dropped. If that would remove every cue, the file is left alone.
+// "SARA: Hello" / "හෝස්ට්: ..." -> speaker name before a colon is removed (max 3 words, no digits)
+function stripSpeakerLabel(line) {
+    const m = String(line).match(/^((?:<[^>]+>\s*)*(?:[-\u2013\u2014]\s*)?(?:<[^>]+>\s*)*)([^\s:<>\d][^:<>\d]{0,23}):(?=\s|$)\s*/);
+    if (!m) return line;
+    const label = m[2].trim();
+    if (!label || label.split(/\s+/).length > 3 || /[.!?,]/.test(label)) return line;
+    return m[1] + String(line).slice(m[0].length);
+}
+
 function stripBracketParts(text) {
 
-    let t = String(text || "").replace(/\[[^\]]*\]/g, "");
+    // [ ... ] and ( ... ) parts are removed
+    let t = String(text || "").replace(/\[[^\]]*\]/g, "").replace(/\([^)]*\)/g, "");
 
     let lines = t.split("\n")
+        .map(l => stripSpeakerLabel(l))
         .map(l => l.replace(/<(\w+)[^>]*>\s*<\/\1>/g, "").replace(/[ \t]+/g, " ").trim())
         .filter(l => l && !/^(?:<[^>]+>\s*)*[-\u2013\u2014]?\s*(?:<\/[^>]+>\s*)*$/.test(l));
 
@@ -3150,7 +3161,7 @@ function dropBracketCues(subs) {
 
     for (const sub of subs || []) {
 
-        const hadBrackets = /\[[^\]]*\]/.test(String((sub && sub.text) || ""));
+        const hadBrackets = /[\[(]/.test(String((sub && sub.text) || "")) || stripSpeakerLabel(String((sub && sub.text) || "").split("\n")[0]) !== String((sub && sub.text) || "").split("\n")[0] || /\n.*:(\s|$)/.test(String((sub && sub.text) || ""));
 
         if (!hadBrackets) { out.push(sub); continue; }
 

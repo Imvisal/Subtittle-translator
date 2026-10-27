@@ -1,6 +1,6 @@
 {
-  "version": "1.1.28",
-  "notes": "Smoother scrolling. Sound descriptions in [brackets] are no longer translated or kept. Every translated subtitle starts and ends with a short two-line SinSubz credit. Nicer translating screen, subtitle list scrolls into view, spoken Sinhala for 'try' and 'sure', Windows app fixes, usage counters.",
+  "version": "1.1.29",
+  "notes": "Speaker names (HOST:) and (...) parts are removed from subtitles. More professional buttons. Smoother scrolling. Sound descriptions in [brackets] are no longer translated or kept. Every translated subtitle starts and ends with a short two-line SinSubz credit. Nicer translating screen, subtitle list scrolls into view, spoken Sinhala for 'try' and 'sure', Windows app fixes, usage counters.",
   "android": {
     "url": "https://sinsubs.site/get/android"
   },
