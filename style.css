@@ -3822,3 +3822,123 @@ html[data-theme="light"] .app .translation-icon.tr-orb { color: #5b5bd6; }
 .hero-off .hw-col {
     animation-play-state: paused !important;
 }
+
+/* ---------------------------------------------------------
+   PROFESSIONAL BUTTONS (v1.1.29) – calm, solid, consistent
+--------------------------------------------------------- */
+:root {
+    --btn-bg: linear-gradient(180deg, #9a98ff 0%, #8381f7 100%);
+    --btn-bg-hover: linear-gradient(180deg, #a6a4ff 0%, #8e8cfb 100%);
+    --btn-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.38), inset 0 -1px 0 rgba(30, 28, 120, 0.25), 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 18px -8px rgba(105, 102, 245, 0.55);
+    --btn-shadow-hover: inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 -1px 0 rgba(30, 28, 120, 0.25), 0 1px 2px rgba(0, 0, 0, 0.35), 0 12px 24px -8px rgba(105, 102, 245, 0.65);
+    --btn-radius: 12px;
+}
+
+.btn-primary,
+#searchBtn,
+#translateBtn,
+.upload-btn,
+.upload-section label.upload-btn,
+.select-title-btn,
+.cm-post,
+.cf-btn {
+    color: #0b0d1f;
+    background: var(--btn-bg);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: var(--btn-radius);
+    box-shadow: var(--btn-shadow);
+    letter-spacing: 0.01em;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.18);
+    animation: none;
+    transition: transform 0.18s var(--ease), box-shadow 0.18s ease, background 0.18s ease, opacity 0.2s ease;
+}
+
+.btn-primary:hover,
+#searchBtn:hover:not(:disabled),
+#translateBtn:hover:not(:disabled),
+.upload-btn:hover,
+.select-title-btn:hover,
+.cm-post:hover,
+.cf-btn:hover {
+    background: var(--btn-bg-hover);
+    box-shadow: var(--btn-shadow-hover);
+    transform: translateY(-1px);
+}
+
+.btn-primary:active,
+#searchBtn:active,
+#translateBtn:active:not(:disabled),
+.upload-btn:active,
+.select-title-btn:active,
+.cm-post:active,
+.cf-btn:active {
+    transform: translateY(0) scale(0.985);
+    box-shadow: inset 0 2px 4px rgba(30, 28, 120, 0.35), 0 1px 1px rgba(0, 0, 0, 0.3);
+}
+
+/* no flashy shimmer / infinite pulse */
+.btn-primary::after,
+#searchBtn::after,
+#translateBtn::after,
+.upload-btn::after,
+.select-title-btn::after {
+    display: none;
+}
+
+#translateBtn:not(:disabled) { animation: none; }
+
+.btn { border-radius: var(--btn-radius); min-height: 50px; }
+#searchBtn { border-radius: var(--btn-radius); height: 60px; }
+#translateBtn, #downloadBtn { border-radius: var(--btn-radius); }
+.select-title-btn { border-radius: 10px; }
+
+#downloadBtn {
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 18px -8px rgba(54, 224, 200, 0.45);
+}
+
+.btn-ghost,
+.btn-sync {
+    color: var(--text, #f2f4fa);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: var(--btn-radius);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    backdrop-filter: none;
+    animation: none;
+}
+
+.btn-ghost:hover,
+.btn-sync:hover {
+    background: rgba(255, 255, 255, 0.09);
+    border-color: rgba(157, 155, 255, 0.7);
+    transform: translateY(-1px);
+}
+
+.btn-sync i,
+.btn-sync .sync-ring { animation: none; }
+.btn-sync .sync-ring { display: none; }
+
+.btn:focus-visible,
+#searchBtn:focus-visible,
+#translateBtn:focus-visible,
+#downloadBtn:focus-visible,
+.upload-btn:focus-visible,
+.select-title-btn:focus-visible,
+.cm-post:focus-visible,
+.cf-btn:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 5px rgba(141, 139, 255, 0.55);
+}
+
+#translateBtn:disabled,
+#downloadBtn:disabled { box-shadow: none; filter: grayscale(0.5); }
+
+/* hero stays dark in both themes → keep ghost text light */
+.hero-actions .btn-ghost,
+.hero-actions .btn-sync {
+    color: #f2f4fa;
+    background: rgba(8, 9, 20, 0.45);
+    border-color: rgba(255, 255, 255, 0.22);
+}
