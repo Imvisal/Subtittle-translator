@@ -1028,11 +1028,11 @@
     d.className = "mv-back";
     d.innerHTML =
         '<div class="mv-box" role="dialog" aria-modal="true">' +
-        '<h2>🚀 SinSubz අලුත් ලිපිනයට / New address</h2>' +
-        '<p>මේක පරණ ලිපිනයයි. කරුණාකර <b>sinsubs.site</b> භාවිතා කරන්න.</p>' +
-        '<p>This is the old address. Please use <b>sinsubs.site</b>.</p>' +
+        '<h2>🚀 SinSubz අලුත් domain එකට / New domain</h2>' +
+        '<p>අපි අලුත් domain එකකට මාරු වුණා. කරුණාකර <b>sinsubs.site</b> භාවිතා කරන්න.</p>' +
+        '<p>We've moved to a new domain. Please use <b>sinsubs.site</b>.</p>' +
         '<a class="mv-go" href="https://sinsubs.site">sinsubs.site වෙත යන්න / Go to site</a>' +
-        '<button class="mv-skip" type="button">මෙතන ඉන්නම් / Stay here</button></div>';
+        '<button class="mv-skip" type="button">Stay here</button></div>';
     d.querySelector(".mv-skip").onclick = function () {
         try { sessionStorage.setItem("movedNoticeSeen", "1"); } catch (e) {}
         d.remove();
