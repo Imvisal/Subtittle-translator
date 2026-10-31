@@ -186,6 +186,7 @@ async function generateWithFallback(prompt) {
     let lastMessage = "Gemini API error";
     let sawQuota = false;
     let sawBusy = false;
+    const startKey = Math.floor(Math.random() * keys.length);
 
     // Two passes: if every model was only "busy" (503), wait a moment and retry once.
     for (let pass = 0; pass < 2; pass++) {
@@ -200,8 +201,11 @@ async function generateWithFallback(prompt) {
             continue;
         }
 
-        for (let k = 0; k < keys.length; k++) {
+        for (let n = 0; n < keys.length; n++) {
 
+            // start from a different key each request so ALL keys share the
+            // load (the rest still act as fallback when one is rate limited)
+            const k = (startKey + n) % keys.length;
             const id = k + "|" + model;
 
             if ((cooldowns.get(id) || 0) > Date.now()) {
@@ -634,7 +638,10 @@ ${JSON.stringify(inputItems)}
 
             if (!result || !Array.isArray(result.translations)) {
 
-                if (attempt > 1) break;
+                // broken / cut-off JSON: ask again (a different key is picked each time)
+                if (attempt < MAX_TRIES) continue;
+
+                if (translationMap.size > 0) break;
 
                 return res.status(502).json({
                     error: modelText
