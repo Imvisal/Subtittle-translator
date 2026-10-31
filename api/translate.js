@@ -633,7 +633,28 @@ ${JSON.stringify(inputItems)}
             try {
                 result = modelText ? JSON.parse(modelText) : null;
             } catch (error) {
-                console.error("Model JSON parse error:", modelText);
+                console.error(
+                    "Model JSON parse error: finish=",
+                    generated.data?.candidates?.[0]?.finishReason,
+                    "len=", (modelText || "").length,
+                    "tail=", (modelText || "").slice(-120)
+                );
+
+                // cut-off / slightly broken JSON: keep every complete {"index","text"} item
+                const salvaged = [];
+                const re = /\{\s*"index"\s*:\s*(\d+)\s*,\s*"text"\s*:\s*("(?:[^"\\]|\\.)*")\s*\}/g;
+                let m;
+
+                while ((m = re.exec(modelText || "")) !== null) {
+                    try {
+                        salvaged.push({ index: Number(m[1]), text: JSON.parse(m[2]) });
+                    } catch (e) { /* skip */ }
+                }
+
+                if (salvaged.length > 0) {
+                    console.warn("Salvaged", salvaged.length, "item(s) from broken JSON");
+                    result = { translations: salvaged };
+                }
             }
 
             if (!result || !Array.isArray(result.translations)) {
