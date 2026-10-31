@@ -11,7 +11,7 @@ const out = path.join(root, "www");
 
 const files = [
     "index.html", "about.html", "contact.html", "privacy.html", "terms.html",
-    "style.css", "script.js", "subtitle-cleanup.js", "ui.js", "sync.js", "app-update.js", "app-shim.js",
+    "style.css", "script.js", "subtitle-cleanup.js", "retime.js", "library.js", "ui.js", "sync.js", "app-update.js", "app-shim.js",
     "app-ui.js", "app-ui.css",
     "logo.png", "logo-128.png", "hero-banner.png", "hero-banner.webp",
     "favicon.svg", "favicon.ico", "apple-touch-icon.png"

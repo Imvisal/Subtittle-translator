@@ -333,6 +333,12 @@ async function generateWithFallback(prompt) {
 
 module.exports = async function handler(req, res) {
 
+    // /api/translate?lib=... -> library of finished translations (api/_library.js). It lives behind this
+    // file so it does not count as another serverless function (the Hobby plan allows 12).
+    if (/[?&]lib=/.test(String(req.url || ""))) {
+        return require("./_library.js")(req, res);
+    }
+
     try {
 
         if (req.method !== "POST") {

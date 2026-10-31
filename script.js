@@ -2932,8 +2932,11 @@ async function selectSubtitle(
 
 
         const translated =
-            await translateSubtitleChunks(
+            await translateWithLibrary(
                 subtitles,
+                item,
+                season,
+                episode,
                 { title: (item && item.title) ? item.title + (item.year ? " (" + item.year + ")" : "") : "" }
             );
 
@@ -3122,6 +3125,121 @@ async function translateSubtitleChunks(
 
     }
 
+}
+
+
+// ========================================================
+// SAVED TRANSLATIONS (library.js + retime.js + api/_library.js)
+// A finished translation is saved with the English file it came from. When somebody picks ANOTHER
+// release of the same film / episode (BluRay, WEB-DL ...), the saved Sinhala lines are lined up with
+// the new English file by text and put on its own timing: no new AI translation. Lines that did not
+// match (at most 5%) are translated by the AI. Less than 95% matched -> a normal full AI translation.
+// ========================================================
+
+async function translateWithLibrary(subtitles, item, season, episode, meta) {
+
+    const lib = window.SinSubzLibrary;
+    const retimer = window.SinSubzRetime;
+
+    if (!lib || !retimer) {
+        return translateSubtitleChunks(subtitles, meta);
+    }
+
+    // the same clean-up the translator does first, so the saved English lines are what the AI saw
+    const english = dropBracketCues(subtitles);
+
+    let key = "";
+    let hash = "";
+
+    try {
+        key = lib.titleKey(item, season, episode, selectedTranslationStyle);
+        hash = lib.hashCues(english);
+    } catch (e) {
+        key = "";
+    }
+
+    if (key) {
+        try {
+            const reused = await reuseSavedTranslation(lib, retimer, key, hash, english, meta);
+            if (reused) { return reused; }
+        } catch (error) {
+            console.warn("Saved translation not used:", error);
+        }
+    }
+
+    const translated = await translateSubtitleChunks(subtitles, meta);
+
+    if (key) {
+        try {
+            lib.save(key, hash, lib.buildPairs(english, translated), english.length);
+        } catch (e) { /* saving is optional */ }
+    }
+
+    return translated;
+}
+
+
+async function reuseSavedTranslation(lib, retimer, key, hash, english, meta) {
+
+    updateTranslationStatus("Looking for a saved Sinhala subtitle...");
+
+    const entries = await lib.lookup(key, hash);
+
+    if (!entries.length) { return null; }
+
+    const newCues = english.map(function (cue) {
+        const t = lib.cueTimes(cue.timestamp);
+        return { s: t.s, e: t.e, text: cue.text };
+    });
+
+    let best = null;
+
+    for (const entry of entries) {
+        const result = retimer.retime(entry.pairs, newCues);
+        if (!best || result.score > best.score) { best = result; }
+    }
+
+    if (!best || !best.ok) {
+        console.info("Saved translation not used:", best ? best.reason : "no match");
+        return null;
+    }
+
+    updateTranslationStatus("Found a saved Sinhala subtitle. Matching it to this release...");
+
+    // the few lines that did not match go to the AI
+    const aiText = new Map();
+
+    if (best.missing.length) {
+
+        const missingCues = best.missing.map(function (pos, n) {
+            return { ...english[best.items[pos].index], number: n + 1 };
+        });
+
+        const done = await translateSubtitleChunks(missingCues, meta);
+
+        done.forEach(function (cue) {
+            aiText.set(lib.startKey(cue.timestamp), cue.text);
+        });
+    }
+
+    const out = [];
+
+    best.items.forEach(function (item) {
+
+        const source = english[item.index];
+        const text = String(item.si !== null ? item.si : (aiText.get(lib.startKey(source.timestamp)) || "")).trim();
+
+        if (text) {
+            out.push({ ...source, number: out.length + 1, text: text });
+        }
+    });
+
+    // something went wrong with the lines: do not hand out a half-empty file
+    if (out.length < Math.floor(english.length * 0.8)) { return null; }
+
+    updateTranslationProgress(1, 1, english.length, english.length);
+
+    return polishReadability(out);
 }
 
 
