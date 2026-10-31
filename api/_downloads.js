@@ -1,6 +1,10 @@
 /* SinSubz — download counts for the download page.
 
-   GET /api/downloads -> { enabled, android, windows, portable, windowsTotal }
+   Served by api/stats.js:  GET /api/stats?downloads=1
+     -> { enabled, android, windows, portable, windowsTotal }
+
+   This file starts with "_" on purpose: Vercel does not count it as a serverless function
+   (the Hobby plan allows at most 12). Do not rename it to downloads.js.
 
    The numbers come straight from GitHub: every release asset has a download_count, and the
    /get/android, /get/windows and /get/portable links end up on those same files, so the
@@ -18,7 +22,7 @@
 
 const REPO = "Imvisal/Subtittle-translator";
 
-module.exports = async function handler(req, res) {
+module.exports = async function downloadsHandler(req, res) {
     if (req.method !== "GET") {
         res.setHeader("Allow", "GET");
         return res.status(405).json({ error: "Method not allowed" });

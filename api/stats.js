@@ -1,6 +1,7 @@
 /* SinSubz — public usage counters (web + Windows + Android all report here).
 
    GET  /api/stats  -> { enabled, translated, movies, series, episodes, synced, merged }
+   GET  /api/stats?downloads=1 -> { enabled, android, windows, portable, windowsTotal }
    POST /api/stats  -> { type: "translated" | "synced" | "merged", name?: "Title" | "Title.S01E02" }
 
    Needs a small Redis database (free): in Vercel -> Storage -> Upstash Redis -> connect to the
@@ -74,6 +75,12 @@ function classify(name) {
 }
 
 module.exports = async function handler(req, res) {
+    // GET /api/stats?downloads=1 -> release download counts (kept in a "_" helper file so it does
+    // not count as a 13th serverless function; the Hobby plan allows 12)
+    if (req.method === "GET" && /(?:^|[?&])downloads(?:=|&|$)/.test(String(req.url || ""))) {
+        return require("./_downloads.js")(req, res);
+    }
+
     res.setHeader("Cache-Control", "no-store");
 
     if (!URL_BASE || !TOKEN) {

@@ -47,7 +47,7 @@
         })
         .catch(function () { /* the built-in links still work */ });
 
-    // ---------- download counts, Android and Windows shown separately (from /api/downloads) ----------
+    // ---------- download counts, Android and Windows shown separately (from /api/stats?downloads=1) ----------
     function fmt(n) {
         try { return Number(n).toLocaleString("en-US"); } catch (e) { return String(n); }
     }
@@ -56,7 +56,7 @@
         if (el) { el.textContent = text; }
     }
 
-    fetch("/api/downloads")
+    fetch("/api/stats?downloads=1")
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (d) {
             if (!d || !d.enabled) { return; }
