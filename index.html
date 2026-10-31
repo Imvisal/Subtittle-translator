@@ -1010,6 +1010,36 @@
     <!--WEBONLY--><script src="web-account.js" defer></script><script src="site-stats.js" defer></script>
     <script src="hero-wall.js" defer></script><script src="comments.js" defer></script><!--/WEBONLY-->
 
+<!--WEBONLY--><script>
+/* Old vercel.app address -> ask visitors to use sinsubs.site */
+(function () {
+    if (!/\.vercel\.app$/i.test(location.hostname)) return;
+    try { if (sessionStorage.getItem("movedNoticeSeen")) return; } catch (e) {}
+    var css = document.createElement("style");
+    css.textContent =
+        ".mv-back{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(4,5,10,.72);backdrop-filter:blur(6px)}" +
+        ".mv-box{max-width:380px;width:100%;text-align:center;padding:26px 22px;border-radius:20px;background:#11131d;border:1px solid rgba(255,255,255,.14);color:#f2f3fa;box-shadow:0 24px 60px rgba(0,0,0,.55);font-family:'Plus Jakarta Sans','Noto Sans Sinhala',system-ui,sans-serif}" +
+        ".mv-box h2{margin:0 0 10px;font-size:1.25rem}" +
+        ".mv-box p{margin:0 0 6px;line-height:1.55;color:#c9ccdd;font-size:.95rem}" +
+        ".mv-go{display:block;margin:18px 0 8px;padding:13px;border-radius:12px;background:linear-gradient(180deg,#9a98ff,#8381f7);color:#0b0b1a;font-weight:700;text-decoration:none}" +
+        ".mv-skip{background:none;border:0;color:#9a9db3;cursor:pointer;font:inherit;font-size:.85rem;padding:6px}";
+    document.head.appendChild(css);
+    var d = document.createElement("div");
+    d.className = "mv-back";
+    d.innerHTML =
+        '<div class="mv-box" role="dialog" aria-modal="true">' +
+        '<h2>🚀 SinSubz අලුත් ලිපිනයට / New address</h2>' +
+        '<p>මේක පරණ ලිපිනයයි. කරුණාකර <b>sinsubs.site</b> භාවිතා කරන්න.</p>' +
+        '<p>This is the old address. Please use <b>sinsubs.site</b>.</p>' +
+        '<a class="mv-go" href="https://sinsubs.site">sinsubs.site වෙත යන්න / Go to site</a>' +
+        '<button class="mv-skip" type="button">මෙතන ඉන්නම් / Stay here</button></div>';
+    d.querySelector(".mv-skip").onclick = function () {
+        try { sessionStorage.setItem("movedNoticeSeen", "1"); } catch (e) {}
+        d.remove();
+    };
+    document.body.appendChild(d);
+})();
+</script><!--/WEBONLY-->
 </body>
 
 </html>
