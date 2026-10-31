@@ -47,6 +47,50 @@
         })
         .catch(function () { /* the built-in links still work */ });
 
+    // ---------- download counts, Android and Windows shown separately (from /api/downloads) ----------
+    function fmt(n) {
+        try { return Number(n).toLocaleString("en-US"); } catch (e) { return String(n); }
+    }
+    function setText(id, text) {
+        var el = document.getElementById(id);
+        if (el) { el.textContent = text; }
+    }
+
+    fetch("/api/downloads")
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+            if (!d || !d.enabled) { return; }
+
+            var android = Number(d.android) || 0;
+            var winTotal = Number(d.windowsTotal) || 0;
+            var installer = Number(d.windows) || 0;
+            var portable = Number(d.portable) || 0;
+
+            // hero: two boxes side by side
+            setText("dlCountAndroidHero", fmt(android));
+            setText("dlCountWindowsHero", fmt(winTotal));
+            var hero = document.getElementById("dlCounts");
+            if (hero) { hero.hidden = false; }
+
+            // android card
+            var ca = document.getElementById("dlCountAndroid");
+            if (ca) {
+                var cab = ca.querySelector("b");
+                if (cab) { cab.textContent = fmt(android); }
+                ca.hidden = false;
+            }
+
+            // windows card (installer + portable, with the split)
+            var cw = document.getElementById("dlCountWindows");
+            if (cw) {
+                var cwb = cw.querySelector("b");
+                if (cwb) { cwb.textContent = fmt(winTotal); }
+                setText("dlCountWindowsSplit", "(installer " + fmt(installer) + " \u00b7 portable " + fmt(portable) + ")");
+                cw.hidden = false;
+            }
+        })
+        .catch(function () { /* counts are optional - the page works without them */ });
+
     // ---------- scroll to the platform card the visitor came for ----------
     function focusCard() {
         var id = (location.hash || "").replace("#", "");
