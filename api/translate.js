@@ -563,6 +563,9 @@ SUBTITLE READABILITY & ENGLISH WORDS:
   Proper names are transliterated into Sinhala and spelled the SAME way every time:
   pick ONE Sinhala spelling for each person's name and never vary it
   (also keep short forms like "Shy" / "Jax" consistent with the full name).
+  A character name is ALWAYS transliterated by sound. Never replace it with a Sinhala or
+  English word that merely sounds similar ("Bogo" is a name, not "beef"; "Judy" is not "Judith").
+  Use ONE form of "no / cannot" through the whole file: either නැහැ / බැහැ or නෑ / බෑ, not both.
 - Tone: ${styleNote}
 - Preserve names, emotions, jokes and meaning.
 - You may change line breaks naturally.

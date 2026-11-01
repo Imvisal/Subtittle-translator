@@ -3540,7 +3540,7 @@ function polishReadability(subs) {
 
     const plain = t => t.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
 
-    return subs.map((sub, i) => {
+    const polished = subs.map((sub, i) => {
 
         let text = String(sub.text || "");
         let timestamp = sub.timestamp;
@@ -3587,6 +3587,27 @@ function polishReadability(subs) {
         return { ...sub, text, timestamp };
 
     });
+
+    // 3. still too fast: show the cue up to 0.3 s earlier, only into free time after the previous
+    //    cue (its final end time is known here, so nothing ever overlaps)
+    const EARLY = 0.3, HARD_CPS = 22;
+
+    for (let i = 1; i < polished.length; i++) {
+
+        const t = parse(polished[i].timestamp);
+        const prev = parse(polished[i - 1].timestamp);
+        if (!t || !prev) continue;
+
+        const chars = plain(String(polished[i].text || "")).replace(/\n/g, "").length;
+        if (!(t.end > t.start) || chars / (t.end - t.start) <= HARD_CPS) continue;
+
+        const newStart = Math.max(t.start - EARLY, prev.end + GAP);
+        if (newStart < t.start - 0.05) {
+            polished[i] = { ...polished[i], timestamp: `${fmt(newStart)} --> ${fmt(t.end)}` };
+        }
+    }
+
+    return polished;
 
 }
 

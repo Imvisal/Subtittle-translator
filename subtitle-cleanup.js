@@ -254,6 +254,40 @@
     }
 
     // ------------------------------------------------------------------
+    // 5. one way of writing "no / can't" per file
+    // ------------------------------------------------------------------
+    // The model mixes the formal (නැහැ / බැහැ) and the spoken (නෑ / බෑ) forms inside one film.
+    // The less used form is rewritten to the more used one (a tie is left alone).
+    // Whole words only: නෑනේ, නැහැයි ... are left alone.
+    var LET = "[\\p{L}\\p{M}\\u200D]";
+    function wordRe(w) { return new RegExp("(?<!" + LET + ")" + w + "(?!" + LET + ")", "gu"); }
+    var NEG_FORMAL = ["\u0DB1\u0DD0\u0DC4\u0DD0", "\u0DB6\u0DD0\u0DC4\u0DD0"];   // නැහැ, බැහැ
+    var NEG_SPOKEN = ["\u0DB1\u0DD1", "\u0DB6\u0DD1"];                                  // නෑ, බෑ
+
+    function unifyNegation(subs) {
+        function count(list) {
+            var n = 0;
+            subs.forEach(function (s) { list.forEach(function (w) { n += (String(s.text).match(wordRe(w)) || []).length; }); });
+            return n;
+        }
+        var formal = count(NEG_FORMAL), spoken = count(NEG_SPOKEN), total = formal + spoken;
+        if (total < 8) { return { subs: subs, changed: 0 }; }
+
+        var from, to;
+        if (spoken < formal) { from = NEG_SPOKEN; to = NEG_FORMAL; }
+        else if (formal < spoken) { from = NEG_FORMAL; to = NEG_SPOKEN; }
+        else { return { subs: subs, changed: 0 }; }
+
+        var changed = 0;
+        var out = subs.map(function (s) {
+            var text = s.text;
+            from.forEach(function (w, i) { text = text.replace(wordRe(w), function () { changed++; return to[i]; }); });
+            return text === s.text ? s : Object.assign({}, s, { text: text });
+        });
+        return { subs: out, changed: changed };
+    }
+
+    // ------------------------------------------------------------------
     // all passes, in order. subs and origTexts are parallel arrays (same cue at the same index).
     // ------------------------------------------------------------------
     function cleanup(subs, origTexts, opts) {
@@ -263,6 +297,7 @@
             }
             var glossary = buildNameGlossary(origTexts, subs.map(function (s) { return s.text; }));
             var current = unifyNameSpellings(subs, glossary).subs;
+            current = unifyNegation(current).subs;
             current = dedupeNearDuplicates(current, origTexts, opts);
             current = repairCueTiming(current);
             return current;
@@ -279,6 +314,7 @@
         dedupeNearDuplicates: dedupeNearDuplicates,
         buildNameGlossary: buildNameGlossary,
         unifyNameSpellings: unifyNameSpellings,
+        unifyNegation: unifyNegation,
         parseTs: parseTs
     };
 });
