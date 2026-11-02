@@ -1900,7 +1900,7 @@ async function showTitleInfo(item) {
     try {
 
         const response = await fetch(
-            "/api/title-info?id=" + encodeURIComponent(item.imdbID) +
+            "/api/ratings?info=1&id=" + encodeURIComponent(item.imdbID) +
             "&type=" + encodeURIComponent(item.type === "series" ? "series" : "movie")
         );
 

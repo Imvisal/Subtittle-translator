@@ -75,7 +75,15 @@ async function lookup(id, apiKey) {
     }
 }
 
+const titleInfo = require("./_title-info");
+
 module.exports = async function handler(req, res) {
+    // /api/ratings?info=1&id=tt..&type=movie|series  -> short title info + trailer.
+    // Lives here because the free Vercel plan allows only 12 serverless functions.
+    if (req.query && req.query.info) {
+        return titleInfo(req, res);
+    }
+
     try {
         if (req.method !== "GET") {
             return res.status(405).json({ error: "Method not allowed" });

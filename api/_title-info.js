@@ -1,7 +1,7 @@
 "use strict";
 
 /*
- * GET /api/title-info?id=tt0111161&type=movie|series
+ * GET /api/ratings?info=1&id=tt0111161&type=movie|series
  *
  * Short, spoiler-light info for the title the visitor just picked:
  *   { success, info: { title, year, tagline, overview, genres[], runtime, rating, trailer } }
