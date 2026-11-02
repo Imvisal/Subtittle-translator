@@ -116,12 +116,33 @@
                 if (user) { lsSet(K.flag, "1"); } else { lsDel(K.flag); }
                 render();
                 if (first) { sync().catch(function () { /* offline */ }); }
+                if (user) { pingServer(); }
             });
         }).catch(function (e) {
             loading = null;
             throw e;
         });
         return loading;
+    }
+
+    // Lets the server know this Google account is using the site (shown only in the owner's admin panel).
+    // The ID token is verified by Google on the server; nothing else is sent.
+    window.__sinsubzIdToken = function () {
+        if (!fb || !fb.auth || !fb.auth.currentUser) { return Promise.resolve(""); }
+        return fb.auth.currentUser.getIdToken();
+    };
+
+    function pingServer() {
+        try {
+            fb.auth.currentUser.getIdToken().then(function (tk) {
+                return fetch("/api/stats?user=1", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", Authorization: "Bearer " + tk },
+                    body: JSON.stringify({ platform: "web" }),
+                    keepalive: true
+                });
+            }).catch(function () { /* ignore */ });
+        } catch (e) { /* ignore */ }
     }
 
     function signIn() {

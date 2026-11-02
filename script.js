@@ -4061,10 +4061,19 @@ function trackStat(type, name) {
         const key = type + "|" + (name || "");
         if (__statSent.has(key)) return;      // same file saved twice in one visit counts once
         __statSent.add(key);
-        fetch("/api/stats", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ type: type, name: name || "" })
+        // signed-in visitors send their Google token too, so the admin panel can count per account
+        const getToken = (type === "translated" && window.__sinsubzIdToken)
+            ? window.__sinsubzIdToken().catch(function () { return ""; })
+            : Promise.resolve("");
+
+        getToken.then(function (token) {
+            const headers = { "Content-Type": "application/json" };
+            if (token) { headers.Authorization = "Bearer " + token; }
+            return fetch("/api/stats", {
+                method: "POST",
+                headers: headers,
+                body: JSON.stringify({ type: type, name: name || "" })
+            });
         }).catch(function () { /* ignore */ });
     } catch (e) { /* ignore */ }
 }

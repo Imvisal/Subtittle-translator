@@ -52,6 +52,7 @@ async function verifyGoogleUser(req) {
     return {
         uid: u.localId,
         name: u.displayName || "",
+        photo: u.photoUrl || "",
         email,
         owner: !!email && email === OWNER_EMAIL && u.emailVerified === true
     };

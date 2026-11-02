@@ -2,14 +2,18 @@
 
    GET  /api/stats  -> { enabled, translated, movies, series, episodes, synced, merged }
    GET  /api/stats?downloads=1 -> { enabled, android, windows, portable, windowsTotal }
+   GET  /api/stats?admin=1     -> admin panel data (needs the ADMIN_KEY header, see api/_admin.js)
+   POST /api/stats?user=1      -> records a signed-in Google account (needs its ID token, see api/_admin.js)
    POST /api/stats  -> { type: "translated" | "synced" | "merged", name?: "Title" | "Title.S01E02" }
 
    Needs a small Redis database (free): in Vercel -> Storage -> Upstash Redis -> connect to the
    project. Vercel then adds KV_REST_API_URL + KV_REST_API_TOKEN (or UPSTASH_REDIS_REST_*)
    automatically. Without it, GET returns { enabled:false } and the website hides the counters.
 
-   No personal data is stored: only counters, plus the movie / series / episode NAME as a set
-   (so the same title is counted once). */
+   The public counters hold no personal data: only counters, plus the movie / series / episode
+   NAME as a set (so the same title is counted once), a short list of the latest titles and
+   per-day totals. Signed-in Google accounts (name, email, photo, last seen) are kept separately
+   by api/_admin.js and are only readable with the ADMIN_KEY. */
 "use strict";
 
 // Works with any prefix Vercel gave the variables (KV_..., UPSTASH_REDIS_..., STORAGE_KV_... ).
@@ -81,6 +85,14 @@ module.exports = async function handler(req, res) {
         return require("./_downloads.js")(req, res);
     }
 
+    // admin panel + signed-in user records (kept in a "_" helper file, not a function of their own)
+    if (/(?:^|[?&])admin(?:=|&|$)/.test(String(req.url || "")) && req.method === "GET") {
+        return require("./_admin.js").overview(req, res);
+    }
+    if (/(?:^|[?&])user(?:=|&|$)/.test(String(req.url || "")) && req.method === "POST") {
+        return require("./_admin.js").ping(req, res);
+    }
+
     res.setHeader("Cache-Control", "no-store");
 
     if (!URL_BASE || !TOKEN) {
@@ -117,8 +129,30 @@ module.exports = async function handler(req, res) {
         const type = String(body.type || "");
         const cmds = [];
 
+        const day = require("./_admin.js").dayKey(0);
+
         if (type === "translated") {
             cmds.push(["INCR", "stats:translated"]);
+            cmds.push(["HINCRBY", "stats:d:" + day, "translated", 1], ["EXPIRE", "stats:d:" + day, 120 * 86400]);
+
+            // latest titles for the admin panel (50 kept, no personal data)
+            const shown = String(body.name || "").replace(/\.(Sinhala\.SinSubz|synced)$/i, "").replace(/[._]+/g, " ")
+                .replace(/[\u0000-\u001F\u007F]/g, "").replace(/\s+/g, " ").trim().slice(0, 100);
+            if (shown.length >= 2) {
+                cmds.push(["LPUSH", "stats:recent", JSON.stringify({ t: Date.now(), n: shown })], ["LTRIM", "stats:recent", 0, 49]);
+            }
+
+            // a signed-in visitor also counts for "translations per user" and "active today"
+            if (/^Bearer\s+/i.test(String(req.headers.authorization || ""))) {
+                try {
+                    const who = await require("./_google").verifyGoogleUser(req);
+                    if (who) {
+                        const uk = require("./_admin.js").uidKeyOf(who.uid);
+                        cmds.push(["HINCRBY", "u:tc", uk, 1], ["SADD", "u:dau:" + day, uk], ["EXPIRE", "u:dau:" + day, 60 * 86400]);
+                    }
+                } catch (e) { /* the counter still counts */ }
+            }
+
             const c = classify(body.name);
             if (c && c.movie) cmds.push(["SADD", "stats:movies", c.movie]);
             if (c && c.series) {
@@ -126,7 +160,7 @@ module.exports = async function handler(req, res) {
                 cmds.push(["SADD", "stats:episodes", c.episode]);
             }
         } else if (type === "synced") {
-            cmds.push(["INCR", "stats:synced"]);
+            cmds.push(["INCR", "stats:synced"], ["HINCRBY", "stats:d:" + day, "synced", 1], ["EXPIRE", "stats:d:" + day, 120 * 86400]);
         } else if (type === "merged") {
             cmds.push(["INCR", "stats:merged"]);
         } else {
