@@ -1,25 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Monochrome version of the SinSubz logo (play button + two bars).
+<!-- Monochrome version of the SinSubz logo (play button with a speech bubble cut out of it).
      Android only allows single-colour small icons in the status bar. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:viewportWidth="380"
-    android:viewportHeight="380">
-    <group
-        android:translateX="-66"
-        android:translateY="-80">
-        <path
-            android:fillColor="#FFFFFF"
-            android:strokeColor="#FFFFFF"
-            android:strokeWidth="30"
-            android:strokeLineJoin="round"
-            android:pathData="M170,108 L170,292 L342,200 Z" />
-        <path
-            android:fillColor="#FFFFFF"
-            android:pathData="M125,352 H387 A19,19 0 0 1 387,390 H125 A19,19 0 0 1 125,352 Z" />
-        <path
-            android:fillColor="#FFFFFF"
-            android:pathData="M175,410 H337 A19,19 0 0 1 337,448 H175 A19,19 0 0 1 175,410 Z" />
-    </group>
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M5.20,5.90 Q5.20,3.60 7.23,4.69 L18.77,10.91 Q20.80,12.00 18.77,13.09 L7.23,19.31 Q5.20,20.40 5.20,18.10 Z M9.1,9.2 L13.1,9.2 Q14.6,9.2 14.6,10.7 L14.6,13.1 Q14.6,14.6 13.1,14.6 L11,14.6 L8.8,16.9 L9.1,14.6 Q7.6,14.6 7.6,13.1 L7.6,10.7 Q7.6,9.2 9.1,9.2 Z" />
 </vector>

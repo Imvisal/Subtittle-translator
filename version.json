@@ -1,6 +1,6 @@
 {
-  "version": "1.1.29",
-  "notes": "Speaker names (HOST:) and (...) parts are removed from subtitles. More professional buttons. Smoother scrolling. Sound descriptions in [brackets] are no longer translated or kept. Every translated subtitle starts and ends with a short two-line SinSubz credit. Nicer translating screen, subtitle list scrolls into view, spoken Sinhala for 'try' and 'sure', Windows app fixes, usage counters.",
+  "version": "1.1.30",
+  "notes": "New SinSubz logo and app icon. Saved Sinhala translations are re-used when you pick another release (BluRay / WEB-DL) of the same movie, so it is faster. Spelling of names and of නැහැ / නෑ is kept the same through a subtitle, and fast lines stay on screen a little longer.",
   "android": {
     "url": "https://sinsubs.site/get/android"
   },
