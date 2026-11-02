@@ -879,7 +879,7 @@
             tabsEl.appendChild(b);
         });
         if (isDesktop) {
-            var brand = make("div", "", '<img src="logo.png" alt=""><div><b>Sin<i>Subz</i></b><small>SUBTITLE TRANSLATOR</small></div>');
+            var brand = make("div", "", '<img src="logo.png?v=1130" alt=""><div><b>Sin<i>Subz</i></b><small>SUBTITLE TRANSLATOR</small></div>');
             brand.id = "deskBrand";
             tabsEl.insertBefore(brand, tabsEl.firstChild);
 
