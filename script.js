@@ -1879,6 +1879,97 @@ async function checkSinhalaSubtitles(
 
 
 // ========================================================
+// TITLE INFO CARD (short, spoiler-light overview + trailer)
+// ========================================================
+
+let titleInfoToken = 0;
+
+async function showTitleInfo(item) {
+
+    const box = document.getElementById("titleInfo");
+
+    if (!box || !item || !item.imdbID) {
+        return;
+    }
+
+    const token = ++titleInfoToken;
+
+    box.hidden = true;
+    box.innerHTML = "";
+
+    try {
+
+        const response = await fetch(
+            "/api/title-info?id=" + encodeURIComponent(item.imdbID) +
+            "&type=" + encodeURIComponent(item.type === "series" ? "series" : "movie")
+        );
+
+        if (!response.ok) {
+            return;
+        }
+
+        const data = await response.json();
+        const info = data && data.info;
+
+        // the visitor picked something else while we were loading
+        if (token !== titleInfoToken || !info || (!info.overview && !info.trailer)) {
+            return;
+        }
+
+        const facts = [];
+
+        if (info.year) facts.push(escapeHTML(info.year));
+        if (info.runtime) facts.push(info.runtime + " min");
+        if (info.seasons) facts.push(info.seasons + (info.seasons > 1 ? " seasons" : " season"));
+        if (info.genres && info.genres.length) facts.push(escapeHTML(info.genres.join(" · ")));
+        if (info.rating) facts.push("★ " + info.rating);
+
+        box.innerHTML =
+            '<div class="ti-card">' +
+                '<div class="ti-head">' +
+                    '<h3>' + escapeHTML(info.title || item.title) + '</h3>' +
+                    (facts.length ? '<div class="ti-facts">' + facts.join('<span>•</span>') + '</div>' : '') +
+                '</div>' +
+                (info.tagline ? '<p class="ti-tagline">“' + escapeHTML(info.tagline) + '”</p>' : '') +
+                (info.overview ? '<p class="ti-overview">' + escapeHTML(info.overview) + '</p>' : '') +
+                (info.trailer
+                    ? '<div class="ti-trailer" data-yt="' + escapeHTML(info.trailer) + '">' +
+                        '<button type="button" class="ti-play" aria-label="Play trailer">' +
+                            '<img src="https://img.youtube.com/vi/' + escapeHTML(info.trailer) + '/hqdefault.jpg" alt="" loading="lazy">' +
+                            '<span class="ti-play-icon">▶</span>' +
+                            '<span class="ti-play-label">Watch trailer</span>' +
+                        '</button>' +
+                      '</div>'
+                    : '') +
+            '</div>';
+
+        const trailer = box.querySelector(".ti-trailer");
+
+        if (trailer) {
+
+            trailer.querySelector(".ti-play").addEventListener("click", function () {
+
+                trailer.innerHTML =
+                    '<iframe src="https://www.youtube-nocookie.com/embed/' +
+                    encodeURIComponent(trailer.dataset.yt) +
+                    '?autoplay=1&rel=0" title="Trailer" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>';
+
+            });
+
+        }
+
+        box.hidden = false;
+
+    } catch (error) {
+
+        // info is only a bonus, never block the subtitles because of it
+
+    }
+
+}
+
+
+// ========================================================
 // SELECT MOVIE / TV
 // ========================================================
 
@@ -1901,6 +1992,9 @@ async function selectSearchResult(item) {
             `Selected: ${item.title}`;
 
     }
+
+
+    showTitleInfo(item);
 
 
     if (item.type === "movie") {

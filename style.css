@@ -3942,3 +3942,34 @@ html[data-theme="light"] .app .translation-icon.tr-orb { color: #5b5bd6; }
     background: rgba(8, 9, 20, 0.45);
     border-color: rgba(255, 255, 255, 0.22);
 }
+
+/* ---------- title info card (overview + trailer) ---------- */
+#titleInfo[hidden] { display: none; }
+.ti-card {
+    margin: 0 0 18px;
+    padding: 18px;
+    border-radius: 18px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+}
+.ti-head h3 { margin: 0 0 6px; font-size: 1.15rem; }
+.ti-facts { display: flex; flex-wrap: wrap; gap: 6px 8px; font-size: .85rem; color: var(--text-2); }
+.ti-facts span { opacity: .5; }
+.ti-tagline { margin: 10px 0 0; font-style: italic; opacity: .8; font-size: .92rem; }
+.ti-overview { margin: 10px 0 0; line-height: 1.6; font-size: .95rem; }
+.ti-trailer { margin-top: 14px; position: relative; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; background: #000; }
+.ti-trailer iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.ti-play { position: absolute; inset: 0; width: 100%; border: 0; padding: 0; cursor: pointer; background: #000; }
+.ti-play img { width: 100%; height: 100%; object-fit: cover; opacity: .75; transition: opacity .2s; }
+.ti-play:hover img { opacity: .95; }
+.ti-play-icon {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: 62px; height: 62px; border-radius: 50%;
+    display: grid; place-items: center; font-size: 1.5rem; padding-left: 4px;
+    background: linear-gradient(180deg, #9a98ff, #8381f7); color: #0b0b1a;
+    box-shadow: 0 8px 24px rgba(0,0,0,.5);
+}
+.ti-play-label {
+    position: absolute; left: 12px; bottom: 10px; padding: 4px 10px; border-radius: 8px;
+    background: rgba(0,0,0,.6); color: #fff; font-size: .8rem; font-weight: 600;
+}
