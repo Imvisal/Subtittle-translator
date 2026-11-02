@@ -1925,18 +1925,20 @@ async function showTitleInfo(item) {
         if (info.rating) facts.push("★ " + info.rating);
 
         box.innerHTML =
-            '<div class="ti-card">' +
-                '<div class="ti-head">' +
-                    '<h3>' + escapeHTML(info.title || item.title) + '</h3>' +
-                    (facts.length ? '<div class="ti-facts">' + facts.join('<span>•</span>') + '</div>' : '') +
+            '<div class="ti-card' + (info.trailer ? ' has-trailer' : '') + '">' +
+                '<div class="ti-text">' +
+                    '<div class="ti-head">' +
+                        '<h3>' + escapeHTML(info.title || item.title) + '</h3>' +
+                        (facts.length ? '<div class="ti-facts">' + facts.join('<span>\u2022</span>') + '</div>' : '') +
+                    '</div>' +
+                    (info.tagline ? '<p class="ti-tagline">\u201c' + escapeHTML(info.tagline) + '\u201d</p>' : '') +
+                    (info.overview ? '<p class="ti-overview">' + escapeHTML(info.overview) + '</p>' : '') +
                 '</div>' +
-                (info.tagline ? '<p class="ti-tagline">“' + escapeHTML(info.tagline) + '”</p>' : '') +
-                (info.overview ? '<p class="ti-overview">' + escapeHTML(info.overview) + '</p>' : '') +
                 (info.trailer
                     ? '<div class="ti-trailer" data-yt="' + escapeHTML(info.trailer) + '">' +
                         '<button type="button" class="ti-play" aria-label="Play trailer">' +
-                            '<img src="https://img.youtube.com/vi/' + escapeHTML(info.trailer) + '/hqdefault.jpg" alt="" loading="lazy">' +
-                            '<span class="ti-play-icon">▶</span>' +
+                            '<img src="https://img.youtube.com/vi/' + escapeHTML(info.trailer) + '/mqdefault.jpg" alt="" loading="lazy">' +
+                            '<span class="ti-play-icon">\u25B6</span>' +
                             '<span class="ti-play-label">Watch trailer</span>' +
                         '</button>' +
                       '</div>'
@@ -1959,6 +1961,9 @@ async function showTitleInfo(item) {
         }
 
         box.hidden = false;
+
+        // card first, the subtitle list follows right under it
+        box.scrollIntoView({ behavior: "smooth", block: "start" });
 
     } catch (error) {
 
