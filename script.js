@@ -1238,6 +1238,27 @@ function scrollToResults(force) {
         return;
     }
 
+    // inside the title popup the info card sits above the list: only scroll when the
+    // thing we want (progress / list) is below the visible part of the popup
+    const modalBody = titleModalOpen ? document.getElementById("titleModalBody") : null;
+
+    if (modalBody) {
+
+        requestAnimationFrame(function () {
+
+            const box = modalBody.getBoundingClientRect();
+            const top = el.getBoundingClientRect().top;
+
+            if (top > box.bottom - 140) {
+                el.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+
+        });
+
+        return;
+
+    }
+
     const reduce =
         window.matchMedia &&
         window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -1879,6 +1900,109 @@ async function checkSinhalaSubtitles(
 
 
 // ========================================================
+// TITLE POPUP (website only): blurred page, big panel with
+// details + trailer + the subtitle list / translate progress
+// ========================================================
+
+let titleModalOpen = false;
+const titleModalHome = [];
+
+function openTitleModal() {
+
+    const modal = document.getElementById("titleModal");
+    const body = document.getElementById("titleModalBody");
+    const info = document.getElementById("titleInfo");
+    const results = document.getElementById("searchResults");
+
+    if (!modal || !body || !info || !results) {
+        return false;
+    }
+
+    if (!titleModalOpen) {
+
+        // remember where the two blocks live so they can go back on close
+        [info, results].forEach(function (node) {
+            const mark = document.createComment("tm-home");
+            node.parentNode.insertBefore(mark, node);
+            titleModalHome.push({ node: node, mark: mark });
+            body.appendChild(node);
+        });
+
+        modal.hidden = false;
+        document.documentElement.classList.add("tm-open");
+        titleModalOpen = true;
+
+        const panel = modal.querySelector(".tm-panel");
+        if (panel) panel.scrollTop = 0;
+        body.scrollTop = 0;
+
+    }
+
+    return true;
+
+}
+
+function closeTitleModal() {
+
+    if (!titleModalOpen) {
+        return;
+    }
+
+    const modal = document.getElementById("titleModal");
+
+    // stop a playing trailer
+    const info = document.getElementById("titleInfo");
+    if (info) {
+        info.innerHTML = "";
+        info.hidden = true;
+    }
+    titleInfoToken++;
+
+    titleModalHome.splice(0).forEach(function (h) {
+        if (h.mark.parentNode) {
+            h.mark.parentNode.insertBefore(h.node, h.mark);
+            h.mark.remove();
+        }
+    });
+
+    const results = document.getElementById("searchResults");
+    if (results) results.innerHTML = "";
+
+    if (searchStatus) searchStatus.textContent = "";
+
+    if (modal) modal.hidden = true;
+
+    document.documentElement.classList.remove("tm-open");
+    titleModalOpen = false;
+
+    showCategoryResults();
+
+}
+
+document.addEventListener("click", function (event) {
+
+    const t = event.target;
+
+    if (!titleModalOpen || !t || !t.closest) {
+        return;
+    }
+
+    if (t.closest(".tm-close") || t.classList.contains("tm-back")) {
+        closeTitleModal();
+    }
+
+});
+
+document.addEventListener("keydown", function (event) {
+
+    if (event.key === "Escape" && titleModalOpen) {
+        closeTitleModal();
+    }
+
+});
+
+
+// ========================================================
 // TITLE INFO CARD (short, spoiler-light overview + trailer)
 // ========================================================
 
@@ -1924,8 +2048,12 @@ async function showTitleInfo(item) {
         if (info.genres && info.genres.length) facts.push(escapeHTML(info.genres.join(" · ")));
         if (info.rating) facts.push("★ " + info.rating);
 
+        const posterUrl =
+            item.poster && item.poster !== "N/A" ? item.poster : "";
+
         box.innerHTML =
-            '<div class="ti-card' + (info.trailer ? ' has-trailer' : '') + '">' +
+            '<div class="ti-card' + (info.trailer ? ' has-trailer' : '') + (posterUrl ? ' has-poster' : '') + '">' +
+                (posterUrl ? '<img class="ti-poster" src="' + escapeHTML(posterUrl) + '" alt="">' : '') +
                 '<div class="ti-text">' +
                     '<div class="ti-head">' +
                         '<h3>' + escapeHTML(info.title || item.title) + '</h3>' +
@@ -1962,8 +2090,10 @@ async function showTitleInfo(item) {
 
         box.hidden = false;
 
-        // card first, the subtitle list follows right under it
-        box.scrollIntoView({ behavior: "smooth", block: "start" });
+        if (!titleModalOpen) {
+            // card first, the subtitle list follows right under it
+            box.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
 
     } catch (error) {
 
@@ -1998,6 +2128,8 @@ async function selectSearchResult(item) {
 
     }
 
+
+    openTitleModal();
 
     showTitleInfo(item);
 
