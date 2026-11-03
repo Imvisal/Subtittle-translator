@@ -552,6 +552,8 @@ SUBTITLE READABILITY & ENGLISH WORDS:
   (පීඑස්ඒටී, ඕසීඩී, ස්ටෙම්). Never put the English word in brackets next to a
   Sinhala word like "සීවල (Zeros)": write only the Sinhala.
   Only real passwords, usernames and codes stay in English letters.
+  Do not write an English verb or adjective in Sinhala letters when a normal Sinhala word exists
+  ("engaged" -> විවාහ ගිවිස ගත්ත, NOT "එන්ගේජ් වුණා"; "cancel" -> අවලංගු කරනවා; "arrest" -> අත්අඩංගුවට ගන්නවා).
 - Interjections stay simple: "Mm-hm" -> "හ්ම්", "Uh" -> "ඒ...", "Huh?" -> "හා?".
 
 - Keep subtitles short and easy to read quickly on screen.

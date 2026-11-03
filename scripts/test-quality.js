@@ -21,6 +21,18 @@ ok(C.unifyNegation(subs).changed === 4, "majority wins (5 spoken vs 4 formal)");
 ok(C.unifyNegation(mk(["නැහැ", "නෑ"])).changed === 0, "too few to decide");
 ok(C.unifyNegation(mk(Array(8).fill("<i>නැහැ</i>").concat(["නෑ"]))).subs[8].text === "නැහැ", "inside italic tags");
 
+
+// ---- line layout ----
+{
+  const T = x => C.tidyLines([{ timestamp: "00:00:01,000 --> 00:00:03,000", text: x }]).subs[0].text;
+  ok(T("ඔයා කොහෙද\nයන්නේ?") === "ඔයා කොහෙද යන්නේ?", "short two lines are joined");
+  ok(T("-ඩාන්ටේ!\n-ඩාන්ටේ!") === "- ඩාන්ටේ!\n- ඩාන්ටේ!", "dash gets a space, dialog stays two lines");
+  ok(T("<i>-ඔයා එනවද?</i>") === "<i>- ඔයා එනවද?</i>", "dash inside italic");
+  const long = "අ".repeat(30) + "\n" + "ආ".repeat(30);
+  ok(T(long) === long, "long two lines are kept");
+  ok(T("<i>එක</i>\n<i>දෙක</i>") === "<i>එක දෙක</i>", "italic pair merged");
+}
+
 // ---- readability (run the real function out of script.js) ----
 const src = fs.readFileSync(path.join(__dirname, "..", "script.js"), "utf8");
 const a = src.indexOf("function polishReadability(subs)");

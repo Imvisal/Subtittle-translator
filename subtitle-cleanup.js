@@ -288,6 +288,33 @@
     }
 
     // ------------------------------------------------------------------
+    // line layout: join two short lines into one, and write "- text" (space after the dash)
+    // ------------------------------------------------------------------
+    function tidyLines(subs) {
+        var changed = 0;
+        var out = subs.map(function (s) {
+            var text = String(s.text || ""), orig = text;
+            var lines = text.split(/\r?\n/);
+            // dash followed by a space, also inside <i>
+            lines = lines.map(function (l) { return l.replace(/^(\s*(?:<[a-z]+>)*)-(?=[^\s-])/i, "$1- "); });
+            var dialog = lines.length > 1 && lines.every(function (l) { return /^\s*(?:<[a-z]+>)*-/i.test(l); });
+            if (lines.length === 2 && !dialog) {
+                var joined = lines[0].trim() + " " + lines[1].trim();
+                // keep italics tags balanced: only join when the tag count is even
+                var opens = (joined.match(/<i>/gi) || []).length, closes = (joined.match(/<\/i>/gi) || []).length;
+                if (plain(joined).length <= 42 && opens === closes) {
+                    joined = joined.replace(/<\/i>\s*<i>/gi, " ");
+                    lines = [joined];
+                }
+            }
+            text = lines.join("\n");
+            if (text !== orig) { changed++; return Object.assign({}, s, { text: text }); }
+            return s;
+        });
+        return { subs: out, changed: changed };
+    }
+
+    // ------------------------------------------------------------------
     // all passes, in order. subs and origTexts are parallel arrays (same cue at the same index).
     // ------------------------------------------------------------------
     function cleanup(subs, origTexts, opts) {
@@ -298,6 +325,7 @@
             var glossary = buildNameGlossary(origTexts, subs.map(function (s) { return s.text; }));
             var current = unifyNameSpellings(subs, glossary).subs;
             current = unifyNegation(current).subs;
+            current = tidyLines(current).subs;
             current = dedupeNearDuplicates(current, origTexts, opts);
             current = repairCueTiming(current);
             return current;
@@ -315,6 +343,7 @@
         buildNameGlossary: buildNameGlossary,
         unifyNameSpellings: unifyNameSpellings,
         unifyNegation: unifyNegation,
+        tidyLines: tidyLines,
         parseTs: parseTs
     };
 });
