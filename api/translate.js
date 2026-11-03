@@ -566,6 +566,12 @@ SUBTITLE READABILITY & ENGLISH WORDS:
   A character name is ALWAYS transliterated by sound. Never replace it with a Sinhala or
   English word that merely sounds similar ("Bogo" is a name, not "beef"; "Judy" is not "Judith").
   Use ONE form of "no / cannot" through the whole file: either නැහැ / බැහැ or නෑ / බෑ, not both.
+- Human feel (important, so it does not read like machine translation):
+  1. Keep the original punctuation: "!" stays "!", "?" stays "?", "..." stays "...". Do not turn every line into a flat statement ending in a full stop.
+  2. Use "ඔයාලා" / "ඔබලා" only when "you" clearly means several people; for one person use "ඔයා".
+  3. Do not overuse "තමයි", "කරනවා" or the same sentence ending on line after line. Vary the ending the way people really talk, and drop words a speaker would skip.
+  4. When the speaker's gender is clear from the scene or context, use ඔහු / ඇය (or the name) correctly. Do not default to one.
+  5. Prefer ONE short line per subtitle. Use 2 lines only when the text is really long.
 - Tone: ${styleNote}
 - Preserve names, emotions, jokes and meaning.
 - You may change line breaks naturally.
