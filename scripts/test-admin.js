@@ -236,7 +236,11 @@ function call(method, url, { headers = {}, body } = {}) {
             ok(m.body.premium === true && m.body.movies === 10 && m.body.episodes === 30 && m.body.until > Date.now(), "me shows premium: " + JSON.stringify(m.body));
             for (let i = 1; i <= 10; i++) { ok(!lim(await t("Prem.Film." + i, { authorization: "Bearer tok-pro", "x-forwarded-for": "6.7.7.7" })), "premium film " + i + " allowed"); }
             ok(lim(await t("Prem.Film.11", { authorization: "Bearer tok-pro", "x-forwarded-for": "6.7.7.7" })), "premium film 11 refused");
+            await call("POST", "/api/stats?user=1", { headers: { authorization: "Bearer tok-pro" }, body: { platform: "android" } });
+            let ov0 = (await call("GET", "/api/stats?admin=1", { headers: AK })).body.users.find(u => u.email === "p@example.com");
+            ok(ov0 && ov0.premium > Date.now(), "admin list shows premium until a date");
             await call("POST", "/api/stats?admin=1", { headers: AK, body: { action: "premiumOff", id: pk } });
+            await call("POST", "/api/stats?user=1", { headers: { authorization: "Bearer tok-pro" }, body: { platform: "android" } });
             const ov = (await call("GET", "/api/stats?admin=1", { headers: AK })).body.users.find(u => u.email === "p@example.com");
             ok(ov && ov.premium === 0, "admin list shows the account without premium after it was ended");
         }
