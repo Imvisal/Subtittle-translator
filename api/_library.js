@@ -158,6 +158,12 @@ module.exports = async function libraryHandler(req, res) {
                 ? exact
                 : entries.sort((a, b) => b.pairs.length - a.pairs.length).slice(0, MAX_ENTRIES_RETURNED);
 
+            // admin panel: how often a saved translation was found / missed (best effort)
+            try {
+                const day = new Date(Date.now() + 5.5 * 3600e3).toISOString().slice(0, 10);
+                await redis([["HINCRBY", "stats:d:" + day, chosen.length ? "libhit" : "libmiss", 1], ["EXPIRE", "stats:d:" + day, 120 * 86400]]);
+            } catch (e) { /* ignore */ }
+
             return res.status(200).json({ enabled: true, entries: chosen });
         }
 

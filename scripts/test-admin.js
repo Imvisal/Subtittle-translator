@@ -27,6 +27,15 @@ function run(c) {
         case "LTRIM": db.list[k] = (db.list[k] || []).slice(a[0], a[1] + 1); return "OK";
         case "LRANGE": return (db.list[k] || []).slice(a[0], a[1] + 1);
         case "LLEN": return (db.list[k] || []).length;
+        case "ZINCRBY": { const z = (db.z = db.z || {}); const m = (z[k] = z[k] || {}); m[a[1]] = (m[a[1]] || 0) + Number(a[0]); return String(m[a[1]]); }
+        case "ZREVRANGE": { const m = (db.z || {})[k] || {}; return Object.entries(m).sort((x, y) => y[1] - x[1]).slice(a[0], a[1] + 1).flatMap(([n, c]) => [n, String(c)]); }
+        case "SMEMBERS": return db.set[k] ? [...db.set[k]] : [];
+        case "SISMEMBER": return db.set[k] && db.set[k].has(a[0]) ? 1 : 0;
+        case "SREM": return db.set[k] && db.set[k].delete(a[0]) ? 1 : 0;
+        case "MGET": return [k, ...a].map(x => (db.kv[x] == null ? null : db.kv[x]));
+        case "DEL": [k, ...a].forEach(x => { delete db.kv[x]; delete db.list[x]; }); return 1;
+        case "LREM": { const l = db.list[k] || []; const i = l.indexOf(String(a[1])); if (i >= 0) l.splice(i, 1); return i >= 0 ? 1 : 0; }
+        case "PING": return "PONG";
         case "SCAN": return ["0", Object.keys(db.hash).filter(x => x.startsWith("lib:t:"))];
         default: throw new Error("unsupported " + cmd);
     }
@@ -39,6 +48,13 @@ global.fetch = async (url, opt) => {
         const out = JSON.parse(opt.body).map(c => ({ result: run(c) }));
         return { ok: true, status: 200, json: async () => out };
     }
+    if (String(url).includes("generativelanguage.googleapis.com/v1beta/models?")) {
+        const bad = opt && opt.headers && opt.headers["x-goog-api-key"] === "bad-gemini";
+        return { ok: !bad, status: bad ? 400 : 200, json: async () => ({}) };
+    }
+    if (String(url).includes("api.themoviedb.org")) { return { ok: true, status: 200, json: async () => ({}) }; }
+    if (String(url).includes("omdbapi.com")) { return { ok: true, status: 200, json: async () => ({ Response: "True" }) }; }
+    if (String(url).includes("api.subdl.com")) { return { ok: false, status: 403, json: async () => ({}) }; }
     if (String(url).includes("identitytoolkit")) {
         const u = users[JSON.parse(opt.body).idToken];
         return { ok: !!u, status: u ? 200 : 400, json: async () => ({ users: u ? [u] : [] }) };
@@ -95,6 +111,57 @@ function call(method, url, { headers = {}, body } = {}) {
     // the public GET still works and shows no personal data
     const pub = await call("GET", "/api/stats");
     ok(pub.code === 200 && pub.body.translated === 4 && !("users" in pub.body), "public counters unchanged");
+
+    // ---- new panels ----
+    const day = require("../api/_admin.js").dayKey(0);
+    ok(b.top.all.length === 4 && b.top.all[0].c === 1, "top titles all-time: " + JSON.stringify(b.top.all));
+    ok(b.top.week.some(x => x.n === "the mentalist"), "top titles week counts the series as one title");
+    ok(b.platforms.web === 1 && b.platforms.android === 1 && b.platforms.windows === 0, "platform split " + JSON.stringify(b.platforms));
+    ok(b.daily[13].newUsers === 2, "new accounts per day");
+
+    // health counters (what translate.js writes) show up per day and per key
+    db.hash["h:d:" + day] = { ok: "5", json: "2", salvaged: "1", quota: "1" };
+    db.hash["h:k:" + day] = { "1:ok": "4", "2:ok": "1", "1:429": "3", "3:bad": "1" };
+    db.hash["stats:d:" + day].libhit = "6"; db.hash["stats:d:" + day].libmiss = "2";
+    let r2 = await call("GET", "/api/stats?admin=1", { headers: { "x-admin-key": "secret-key-123" } });
+    const hh = r2.body.health;
+    ok(hh.daily[13].ok === 5 && hh.daily[13].json === 2 && hh.daily[13].quota === 1 && hh.daily[13].salvaged === 1, "health daily " + JSON.stringify(hh.daily[13]));
+    const k1 = hh.keys.find(k => k.n === 1), k3 = hh.keys.find(k => k.n === 3);
+    ok(k1.ok === 4 && k1.today === 4 && k1.q429 === 3 && k3.bad === 1, "per-key health " + JSON.stringify(hh.keys));
+    ok(r2.body.daily[13].libHit === 6 && r2.body.daily[13].libMiss === 2, "library hit/miss per day");
+
+    // inbox + comments
+    db.list["contact:msgs"] = [JSON.stringify({ id: "m1", t: new Date().toISOString(), name: "Kasun", email: "k@example.com", message: "hello admin" })];
+    db.list["cm:ids"] = ["c1"]; db.kv["cm:c:c1"] = JSON.stringify({ id: "c1", t: Date.now(), name: "Nimal", text: "nice site", film: "Verity", uid: "uid-2" });
+    r2 = await call("GET", "/api/stats?admin=1", { headers: { "x-admin-key": "secret-key-123" } });
+    ok(r2.body.inbox.total === 1 && r2.body.inbox.unread === 1 && r2.body.inbox.recent[0].text === "hello admin", "inbox unread " + JSON.stringify(r2.body.inbox));
+    ok(r2.body.comments.length === 1 && r2.body.comments[0].text === "nice site", "latest comments");
+    const AK = { "x-admin-key": "secret-key-123" };
+    ok((await call("POST", "/api/stats?admin=1", { headers: AK, body: { action: "inboxSeen" } })).code === 200, "inboxSeen");
+    await new Promise(r => setTimeout(r, 5));
+    r2 = await call("GET", "/api/stats?admin=1", { headers: AK });
+    ok(r2.body.inbox.unread === 0, "after inboxSeen nothing is unread");
+
+    // admin actions need the key; block / unblock / delete comment
+    ok((await call("POST", "/api/stats?admin=1", { body: { action: "block", id: "a".repeat(24) } })).code === 401, "action without key refused");
+    ok((await call("POST", "/api/stats?admin=1", { headers: AK, body: { action: "block", id: "nope" } })).code === 400, "bad id refused");
+    const nk = r2.body.users.find(u => u.email === "n@example.com").k;
+    ok((await call("POST", "/api/stats?admin=1", { headers: AK, body: { action: "block", id: nk } })).code === 200, "block");
+    r2 = await call("GET", "/api/stats?admin=1", { headers: AK });
+    ok(r2.body.users.find(u => u.email === "n@example.com").blocked === true, "user shows as blocked");
+    ok((await call("POST", "/api/stats?admin=1", { headers: AK, body: { action: "unblock", id: nk } })).code === 200, "unblock");
+    ok((await call("POST", "/api/stats?admin=1", { headers: AK, body: { action: "deleteComment", id: "c1" } })).code === 200, "delete comment");
+    ok(db.kv["cm:c:c1"] == null && !(db.list["cm:ids"] || []).includes("c1"), "comment really removed");
+
+    // health check button (fake Google / TMDB / OMDb / SubDL)
+    process.env.GEMINI_API_KEY = "good-gemini"; process.env.GEMINI_API_KEY_2 = "bad-gemini";
+    process.env.TMDB_API_KEY = "t"; process.env.OMDB_API_KEY = "o"; process.env.SUBDL_API_KEY = "s";
+    ok((await call("GET", "/api/stats?health=1")).code === 401, "health needs the key");
+    const hc = await call("GET", "/api/stats?health=1", { headers: AK });
+    const byName = Object.fromEntries((hc.body.results || []).map(x => [x.name, x]));
+    ok(hc.code === 200 && byName["Gemini key #1"].ok && !byName["Gemini key #2"].ok, "gemini keys checked separately");
+    ok(byName["TMDB"].ok && byName["OMDb"].ok && !byName["SubDL"].ok && byName["Redis database"].ok, "other services checked");
+    ok(!JSON.stringify(hc.body).includes("good-gemini") && !JSON.stringify(hc.body).includes("bad-gemini"), "keys never appear in the answer");
 
     // brute force
     let blocked = false;

@@ -171,6 +171,28 @@ function isDailyQuotaMessage(message) {
     return /per\s*day|perday|daily/i.test(message || "");
 }
 
+// ------------------------------------------------------------------
+// Health counters for the admin panel (best effort, never breaks translating).
+//   h:d:<day>  hash  ok / json / quota / busy / other / salvaged
+//   h:k:<day>  hash  "<keyNumber>:ok|429|bad|err"   (the key itself is never stored)
+// ------------------------------------------------------------------
+async function track(day, fields, keyFields) {
+    try {
+        const g = require("./_google");
+        if (!g.hasRedis()) return;
+        const cmds = [];
+        Object.keys(fields || {}).forEach(f => cmds.push(["HINCRBY", "h:d:" + day, f, fields[f]]));
+        Object.keys(keyFields || {}).forEach(f => cmds.push(["HINCRBY", "h:k:" + day, f, keyFields[f]]));
+        if (!cmds.length) return;
+        cmds.push(["EXPIRE", "h:d:" + day, 35 * 86400], ["EXPIRE", "h:k:" + day, 35 * 86400]);
+        await Promise.race([g.redis(cmds), new Promise(r => setTimeout(r, 1500))]);
+    } catch (e) { /* ignore */ }
+}
+
+function today() {
+    return new Date(Date.now() + 5.5 * 3600e3).toISOString().slice(0, 10);
+}
+
 async function generateWithFallback(prompt) {
     const keys = getKeys();
     const models = getModels();
@@ -247,6 +269,7 @@ async function generateWithFallback(prompt) {
 
             if (response.ok && data) {
                 modelBusyUntil.delete(model);
+                await track(today(), null, { [(k + 1) + ":ok"]: 1 });
                 return { data };
             }
 
@@ -269,6 +292,7 @@ async function generateWithFallback(prompt) {
             // quota / rate limit -> skip this key+model and try the next one
             if (response.status === 429) {
                 sawQuota = true;
+                await track(today(), null, { [(k + 1) + ":429"]: 1 });
 
                 cooldowns.set(
                     id,
@@ -285,6 +309,7 @@ async function generateWithFallback(prompt) {
             // go straight to the next model instead of waiting on every key)
             if (response.status === 503 || response.status === 500) {
                 sawBusy = true;
+                await track(today(), null, { [(k + 1) + ":err"]: 1 });
                 modelBusyUntil.set(model, Date.now() + MODEL_BUSY_MS);
                 break;
             }
@@ -295,6 +320,7 @@ async function generateWithFallback(prompt) {
                 (response.status === 400 && /api key/i.test(message))
             ) {
                 cooldowns.set(id, Date.now() + 60 * 60 * 1000);
+                await track(today(), null, { [(k + 1) + ":bad"]: 1 });
                 continue;
             }
 
@@ -312,6 +338,8 @@ async function generateWithFallback(prompt) {
         if (!sawBusy || sawQuota) break;
         await new Promise(resolve => setTimeout(resolve, 2000));
     }
+
+    await track(today(), { [sawQuota ? "quota" : (sawBusy ? "busy" : "other")]: 1 });
 
     if (sawQuota) {
         return {
@@ -644,6 +672,7 @@ ${JSON.stringify(inputItems)}
             try {
                 result = modelText ? JSON.parse(modelText) : null;
             } catch (error) {
+                await track(today(), { json: 1 });
                 console.error(
                     "Model JSON parse error: finish=",
                     generated.data?.candidates?.[0]?.finishReason,
@@ -663,6 +692,7 @@ ${JSON.stringify(inputItems)}
                 }
 
                 if (salvaged.length > 0) {
+                    await track(today(), { salvaged: 1 });
                     console.warn("Salvaged", salvaged.length, "item(s) from broken JSON");
                     result = { translations: salvaged };
                 }
@@ -797,6 +827,8 @@ ${JSON.stringify(inputItems)}
                 })
             );
 
+
+        await track(today(), { ok: 1 });
 
         return res.status(200).json({
             subtitles: output

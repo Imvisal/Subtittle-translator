@@ -49,6 +49,22 @@
         .list li { display:flex; justify-content:space-between; gap:12px; padding:7px 0; border-bottom:1px solid var(--line); }
         .list li span:last-child { color:var(--muted); font-size:12.5px; white-space:nowrap; }
         .empty { color:var(--muted); font-size:14px; }
+        .ok { color:var(--acc2); } .bad { color:var(--bad); font-weight:700; }
+        .pill { display:inline-block; padding:2px 9px; border-radius:99px; font-size:12px; border:1px solid var(--line); color:var(--muted); }
+        .pill.on { color:var(--bad); border-color:var(--bad); }
+        .bars { display:flex; flex-direction:column; gap:9px; }
+        .bars .b { display:grid; grid-template-columns:80px 1fr 56px; align-items:center; gap:10px; font-size:13px; }
+        .bars .track { background:var(--line); border-radius:99px; height:10px; overflow:hidden; }
+        .bars .fill { height:100%; background:var(--acc); border-radius:99px; }
+        .bars .b:nth-child(2) .fill { background:var(--acc2); } .bars .b:nth-child(3) .fill { background:#f5b84b; }
+        .bars .n { text-align:right; color:var(--muted); font-variant-numeric:tabular-nums; }
+        .msg { padding:9px 0; border-bottom:1px solid var(--line); font-size:14px; }
+        .msg small { color:var(--muted); display:block; }
+        .msg .t { overflow-wrap:anywhere; }
+        button.mini { padding:4px 10px; font-size:12px; font-weight:600; }
+        button.danger { background:transparent; border:1px solid var(--bad); color:var(--bad); }
+        .links { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+        td.act { text-align:right; white-space:nowrap; }
         [hidden] { display:none !important; }
     </style>
 </head>
@@ -64,6 +80,12 @@
             <a class="btn ghost" href="/inbox.html">Messages</a>
             <button class="ghost" id="logout" type="button">Lock</button>
         </div>
+    </div>
+
+    <div class="links" id="links" hidden>
+        <a class="btn ghost" href="https://vercel.com/dashboard" target="_blank" rel="noopener">Vercel dashboard</a>
+        <a class="btn ghost" href="https://vercel.com/dashboard" target="_blank" rel="noopener">Analytics &amp; logs (visitors, countries)</a>
+        <a class="btn ghost" href="https://adsense.google.com" target="_blank" rel="noopener">AdSense</a>
     </div>
 
     <form class="row" id="login">
@@ -83,6 +105,47 @@
         </div>
 
         <div class="two">
+            <div class="card"><h2>New accounts per day</h2><div class="chart" id="chartN"></div></div>
+            <div class="card"><h2>Where people use it (signed-in accounts)</h2><div class="bars" id="platforms"></div></div>
+        </div>
+
+        <h2>Translation health</h2>
+        <div class="grid" id="healthToday"></div>
+        <div class="two">
+            <div class="card"><h2>Failures per day (JSON errors + quota + busy)</h2><div class="chart" id="chartF"></div></div>
+            <div class="card"><h2>Gemini API keys (last 7 days)</h2>
+                <div class="tbl"><table>
+                    <thead><tr><th>Key</th><th>OK today</th><th>OK 7d</th><th>Quota (429)</th><th>Rejected</th><th>Errors</th></tr></thead>
+                    <tbody id="keys"></tbody>
+                </table></div>
+                <p class="empty" id="keysNote"></p>
+            </div>
+        </div>
+
+        <div class="two">
+            <div class="card"><h2>Most translated titles (last 7 days)</h2><ul class="list" id="topWeek"></ul></div>
+            <div class="card"><h2>Most translated titles (all time)</h2><ul class="list" id="topAll"></ul></div>
+        </div>
+
+        <div class="two">
+            <div class="card"><h2>Saved translations re-used (per day)</h2><div class="chart u" id="chartL"></div><p class="empty" id="libNote"></p></div>
+            <div class="card">
+                <h2>Health check</h2>
+                <button class="ghost" id="runCheck" type="button">Run check now</button>
+                <ul class="list" id="checkList" style="margin-top:10px"></ul>
+            </div>
+        </div>
+
+        <div class="two">
+            <div class="card">
+                <h2 id="inboxTitle">Inbox</h2>
+                <div id="inboxList"></div>
+                <p style="margin:10px 0 0"><a class="btn ghost" href="/inbox.html">Open inbox</a></p>
+            </div>
+            <div class="card"><h2>Latest comments</h2><div id="commentList"></div></div>
+        </div>
+
+        <div class="two">
             <div class="card"><h2>Latest translated titles</h2><ul class="list" id="recent"></ul></div>
             <div class="card"><h2>Downloads</h2><ul class="list" id="downloads"></ul></div>
         </div>
@@ -96,7 +159,7 @@
                 </div>
             </div>
             <div class="tbl"><table>
-                <thead><tr><th>Account</th><th>Using</th><th>First seen</th><th>Last seen</th><th>Translated</th></tr></thead>
+                <thead><tr><th>Account</th><th>Using</th><th>First seen</th><th>Last seen</th><th>Translated</th><th></th></tr></thead>
                 <tbody id="users"></tbody>
             </table></div>
             <p class="empty" id="usersNote"></p>

@@ -133,6 +133,19 @@ async function overview(req, res) {
         ];
         days.forEach(d => { cmds.push(["HGETALL", "stats:d:" + d], ["SCARD", "u:dau:" + d]); });
 
+        // extra panels (indexes continue after the per-day pairs)
+        const X = 12 + DAYS * 2;
+        cmds.push(
+            ["LRANGE", "contact:msgs", 0, 99],                 // X     newest contact messages
+            ["GET", "admin:inbox_seen"],                       // X+1   when the inbox was last opened
+            ["LRANGE", "cm:ids", 0, 7],                        // X+2   newest comment ids
+            ["SMEMBERS", "u:blocked"],                         // X+3   blocked accounts
+            ["ZREVRANGE", "stats:top", 0, 9, "WITHSCORES"]     // X+4   most translated titles (all time)
+        );
+        for (let i = 0; i < 7; i++) { cmds.push(["ZREVRANGE", "stats:top:" + days[i], 0, 29, "WITHSCORES"]); }   // X+5..X+11
+        days.forEach(d => { cmds.push(["HGETALL", "h:d:" + d]); });                                              // X+12..X+25
+        for (let i = 0; i < 7; i++) { cmds.push(["HGETALL", "h:k:" + days[i]]); }                                // X+26..X+32
+
         const r = await redis(cmds);
 
         // saved library titles (SCAN; a few rounds is plenty)
@@ -147,15 +160,72 @@ async function overview(req, res) {
 
         const info = pairs(r[10]);
         const tc = pairs(r[11]);
+        const blocked = new Set(Array.isArray(r[X + 3]) ? r[X + 3] : []);
         const users = Object.keys(info).map(k => {
             const u = parse(info[k]) || {};
-            return { id: k.slice(0, 8), name: u.n || "", email: u.e || "", photo: u.p || "", first: u.f || 0, last: u.l || 0, platform: u.pl || "web", translated: Number(tc[k]) || 0 };
+            return { id: k.slice(0, 8), k: k, blocked: blocked.has(k), name: u.n || "", email: u.e || "", photo: u.p || "", first: u.f || 0, last: u.l || 0, platform: u.pl || "web", translated: Number(tc[k]) || 0 };
         }).sort((a, b) => b.last - a.last);
+
+        const platforms = { web: 0, android: 0, windows: 0 };
+        users.forEach(u => { platforms[u.platform] = (platforms[u.platform] || 0) + 1; });
+        const startOf = d => Date.parse(d + "T00:00:00+05:30");
 
         const daily = days.map((d, i) => {
             const h = pairs(r[12 + i * 2]);
-            return { day: d, translated: Number(h.translated) || 0, synced: Number(h.synced) || 0, users: Number(r[13 + i * 2]) || 0 };
+            const from = startOf(d), to = from + 86400e3;
+            return {
+                day: d,
+                translated: Number(h.translated) || 0,
+                synced: Number(h.synced) || 0,
+                users: Number(r[13 + i * 2]) || 0,
+                newUsers: users.filter(u => u.first >= from && u.first < to).length,
+                libHit: Number(h.libhit) || 0,
+                libMiss: Number(h.libmiss) || 0
+            };
         }).reverse();
+
+        // most translated titles
+        const zpairs = flat => {
+            const out = [];
+            if (Array.isArray(flat)) { for (let i = 0; i + 1 < flat.length; i += 2) { out.push([String(flat[i]), Number(flat[i + 1]) || 0]); } }
+            return out;
+        };
+        const weekMap = new Map();
+        for (let i = 0; i < 7; i++) { zpairs(r[X + 5 + i]).forEach(([n, c]) => weekMap.set(n, (weekMap.get(n) || 0) + c)); }
+        const topWeek = [...weekMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([n, c]) => ({ n, c }));
+        const topAll = zpairs(r[X + 4]).map(([n, c]) => ({ n, c }));
+
+        // errors + API key health (counters written by api/translate.js)
+        const healthDaily = days.map((d, i) => {
+            const h = pairs(r[X + 12 + i]);
+            return { day: d, ok: Number(h.ok) || 0, json: Number(h.json) || 0, quota: Number(h.quota) || 0, busy: Number(h.busy) || 0, other: Number(h.other) || 0, salvaged: Number(h.salvaged) || 0 };
+        }).reverse();
+        const keyMap = {};
+        for (let i = 0; i < 7; i++) {
+            const h = pairs(r[X + 26 + i]);
+            Object.keys(h).forEach(f => {
+                const [n, kind] = f.split(":");
+                keyMap[n] = keyMap[n] || { n: Number(n), ok: 0, q429: 0, bad: 0, err: 0, today: 0 };
+                const v = Number(h[f]) || 0;
+                if (kind === "ok") { keyMap[n].ok += v; if (i === 0) { keyMap[n].today += v; } }
+                else if (kind === "429") { keyMap[n].q429 += v; }
+                else if (kind === "bad") { keyMap[n].bad += v; }
+                else { keyMap[n].err += v; }
+            });
+        }
+        const keyHealth = Object.values(keyMap).sort((a, b) => a.n - b.n);
+
+        // inbox + comments
+        const seen = Number(r[X + 1]) || 0;
+        const msgs = (r[X] || []).map(parse).filter(Boolean);
+        const unread = msgs.filter(m => Date.parse(m.t) > seen).length;
+        const recentMessages = msgs.slice(0, 5).map(m => ({ id: m.id, t: m.t, name: m.name || "", email: m.email || "", text: String(m.message || "").slice(0, 160), unread: Date.parse(m.t) > seen }));
+        const cids = Array.isArray(r[X + 2]) ? r[X + 2] : [];
+        let recentComments = [];
+        if (cids.length) {
+            const [raws] = await redis([["MGET", ...cids.map(id => "cm:c:" + id)]]);
+            recentComments = (raws || []).map(parse).filter(Boolean).map(c => ({ id: c.id, t: c.t, name: c.name || "", text: String(c.text || "").slice(0, 160), film: c.film || "" }));
+        }
 
         const today = daily[daily.length - 1];
         const startOfToday = Date.parse(dayKey(0) + "T00:00:00+05:30");
@@ -178,11 +248,113 @@ async function overview(req, res) {
             daily: daily,
             recent: (r[9] || []).map(parse).filter(Boolean),
             users: users.slice(0, MAX_USERS_SHOWN),
-            usersShown: Math.min(users.length, MAX_USERS_SHOWN)
+            usersShown: Math.min(users.length, MAX_USERS_SHOWN),
+            platforms: platforms,
+            top: { week: topWeek, all: topAll },
+            health: { daily: healthDaily, keys: keyHealth },
+            inbox: { total: msgs.length, unread: unread, recent: recentMessages },
+            comments: recentComments
         });
     } catch (e) {
         return res.status(200).json({ enabled: false, error: String((e && e.message) || e).slice(0, 80) });
     }
 }
 
-module.exports = { ping, overview, dayKey, uidKeyOf };
+// ---------------------------------------------------------------- admin: health check
+function geminiKeys() {
+    const list = [];
+    if (process.env.GEMINI_API_KEYS) { list.push(...process.env.GEMINI_API_KEYS.split(",")); }
+    list.push(process.env.GEMINI_API_KEY);
+    for (let i = 2; i <= 10; i++) { list.push(process.env["GEMINI_API_KEY_" + i]); }
+    return [...new Set(list.map(k => (k || "").trim()).filter(Boolean))];
+}
+
+async function probe(name, run) {
+    const t0 = Date.now();
+    try {
+        const note = await run();
+        return { name: name, ok: true, ms: Date.now() - t0, note: note || "OK" };
+    } catch (e) {
+        return { name: name, ok: false, ms: Date.now() - t0, note: String((e && e.message) || e).slice(0, 80) };
+    }
+}
+
+async function health(req, res) {
+    res.setHeader("Cache-Control", "no-store");
+    if (!process.env.ADMIN_KEY) { return res.status(503).json({ error: "ADMIN_KEY is not set in Vercel" }); }
+    if (limited("h:" + clientIp(req), 6)) { return res.status(429).json({ error: "Too many tries. Wait a minute." }); }
+    if (!isAdmin(req)) { return res.status(401).json({ error: "Wrong admin key" }); }
+
+    const get = (url, init) => fetch(url, Object.assign({ signal: AbortSignal.timeout(7000) }, init || {}));
+    const checks = [];
+
+    geminiKeys().forEach((key, i) => {
+        checks.push(probe("Gemini key #" + (i + 1), async () => {
+            const r = await get("https://generativelanguage.googleapis.com/v1beta/models?pageSize=1", { headers: { "x-goog-api-key": key } });
+            if (!r.ok) { throw new Error("HTTP " + r.status + (r.status === 400 || r.status === 403 ? " (key rejected)" : "")); }
+        }));
+    });
+    if (!geminiKeys().length) { checks.push(Promise.resolve({ name: "Gemini keys", ok: false, ms: 0, note: "none set" })); }
+
+    checks.push(probe("TMDB", async () => {
+        const k = process.env.TMDB_API_KEY;
+        if (!k) { throw new Error("TMDB_API_KEY not set"); }
+        const tok = k.length > 40;
+        const r = await get("https://api.themoviedb.org/3/configuration" + (tok ? "" : "?api_key=" + encodeURIComponent(k)), tok ? { headers: { Authorization: "Bearer " + k } } : {});
+        if (!r.ok) { throw new Error("HTTP " + r.status); }
+    }));
+    checks.push(probe("OMDb", async () => {
+        const k = process.env.OMDB_API_KEY;
+        if (!k) { throw new Error("OMDB_API_KEY not set"); }
+        const r = await get("https://www.omdbapi.com/?apikey=" + encodeURIComponent(k) + "&i=tt0111161");
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok || d.Response === "False") { throw new Error(String(d.Error || "HTTP " + r.status)); }
+    }));
+    checks.push(probe("SubDL", async () => {
+        const k = process.env.SUBDL_API_KEY;
+        if (!k) { throw new Error("SUBDL_API_KEY not set"); }
+        const r = await get("https://api.subdl.com/api/v1/subtitles?api_key=" + encodeURIComponent(k) + "&imdb_id=tt0111161&type=movie&languages=EN");
+        if (!r.ok) { throw new Error("HTTP " + r.status); }
+    }));
+    checks.push(probe("Redis database", async () => {
+        const [pong] = await redis([["PING"]]);
+        if (pong !== "PONG") { throw new Error("no answer"); }
+    }));
+
+    return res.status(200).json({ checked: Date.now(), results: await Promise.all(checks) });
+}
+
+// ---------------------------------------------------------------- admin: actions
+async function action(req, res) {
+    res.setHeader("Cache-Control", "no-store");
+    if (!process.env.ADMIN_KEY) { return res.status(503).json({ error: "ADMIN_KEY is not set in Vercel" }); }
+    if (limited("x:" + clientIp(req), 30)) { return res.status(429).json({ error: "Too many tries. Wait a minute." }); }
+    if (!isAdmin(req)) { return res.status(401).json({ error: "Wrong admin key" }); }
+    if (!hasRedis()) { return res.status(503).json({ error: "Database not connected" }); }
+
+    const body = req.body && typeof req.body === "object" ? req.body : {};
+    const what = String(body.action || "");
+    const id = clean(body.id, 40);
+
+    try {
+        if (what === "block" || what === "unblock") {
+            if (!/^[0-9a-f]{24}$/.test(id)) { return res.status(400).json({ error: "Bad id" }); }
+            await redis([[what === "block" ? "SADD" : "SREM", "u:blocked", id]]);
+            return res.status(200).json({ ok: true });
+        }
+        if (what === "deleteComment") {
+            if (!id) { return res.status(400).json({ error: "Bad id" }); }
+            await redis([["DEL", "cm:c:" + id, "cm:r:" + id], ["LREM", "cm:ids", 1, id]]);
+            return res.status(200).json({ ok: true });
+        }
+        if (what === "inboxSeen") {
+            await redis([["SET", "admin:inbox_seen", String(Date.now())]]);
+            return res.status(200).json({ ok: true });
+        }
+        return res.status(400).json({ error: "Unknown action" });
+    } catch (e) {
+        return res.status(500).json({ error: "Could not do that" });
+    }
+}
+
+module.exports = { ping, overview, health, action, dayKey, uidKeyOf };

@@ -89,6 +89,12 @@ module.exports = async function handler(req, res) {
     if (/(?:^|[?&])admin(?:=|&|$)/.test(String(req.url || "")) && req.method === "GET") {
         return require("./_admin.js").overview(req, res);
     }
+    if (/(?:^|[?&])health(?:=|&|$)/.test(String(req.url || "")) && req.method === "GET") {
+        return require("./_admin.js").health(req, res);
+    }
+    if (/(?:^|[?&])admin(?:=|&|$)/.test(String(req.url || "")) && req.method === "POST") {
+        return require("./_admin.js").action(req, res);
+    }
     if (/(?:^|[?&])user(?:=|&|$)/.test(String(req.url || "")) && req.method === "POST") {
         return require("./_admin.js").ping(req, res);
     }
@@ -154,6 +160,11 @@ module.exports = async function handler(req, res) {
             }
 
             const c = classify(body.name);
+            // most translated titles: all time + per day (a series counts as one title)
+            const topName = c && (c.movie || c.series);
+            if (topName) {
+                cmds.push(["ZINCRBY", "stats:top", 1, topName], ["ZINCRBY", "stats:top:" + day, 1, topName], ["EXPIRE", "stats:top:" + day, 20 * 86400]);
+            }
             if (c && c.movie) cmds.push(["SADD", "stats:movies", c.movie]);
             if (c && c.series) {
                 cmds.push(["SADD", "stats:series", c.series]);

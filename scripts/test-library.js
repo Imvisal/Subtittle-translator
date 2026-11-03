@@ -30,6 +30,8 @@ function runCommand(c) {
         }
         case "HDEL": return hash && hash.delete(a) ? 1 : 0;
         case "DEL": return store.delete(key) ? 1 : 0;
+        case "HINCRBY": { if (!store.has(key)) { store.set(key, new Map()); } const h = store.get(key); h.set(a, String((Number(h.get(a)) || 0) + Number(b))); return Number(h.get(a)); }
+        case "EXPIRE": return 1;
         default: throw new Error("unsupported " + cmd);
     }
 }

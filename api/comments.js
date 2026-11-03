@@ -91,6 +91,10 @@ module.exports = async function handler(req, res) {
             // hidden field: real people leave it empty, bots fill it. Pretend it worked.
             if (clean(body.website, 10)) return res.status(200).json({ ok: true });
 
+            // accounts blocked from the admin panel cannot post
+            const blockedRes = await redis([["SISMEMBER", "u:blocked", sha(who.uid).toString("hex").slice(0, 24)]]);
+            if (Number(blockedRes[0]) === 1) return res.status(403).json({ error: "You cannot post comments." });
+
             const text = clean(body.text, 600);
             if (text.length < 2) return res.status(400).json({ error: "Please write a little more." });
             if (!who.owner && LINK.test(text)) return res.status(400).json({ error: "Links are not allowed in comments." });

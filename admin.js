@@ -26,6 +26,24 @@
         return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
     }
 
+    function post(action, id) {
+        return fetch("/api/stats?admin=1", {
+            method: "POST",
+            headers: { "x-admin-key": KEY, "Content-Type": "application/json" },
+            body: JSON.stringify({ action: action, id: id })
+        }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { if (!r.ok) { throw new Error(d.error || "Failed"); } return d; }); });
+    }
+    function simpleList(host, rows, emptyText) {
+        host.textContent = "";
+        if (!rows.length) { host.appendChild(el("li", "empty", emptyText)); return; }
+        rows.forEach(function (x) {
+            var li = el("li");
+            li.appendChild(el("span", "", x[0]));
+            li.appendChild(el("span", "", x[1]));
+            host.appendChild(li);
+        });
+    }
+
     function stat(label, value, hi) {
         var s = el("div", "stat" + (hi ? " hi" : ""));
         s.appendChild(el("b", "", fmt(value)));
@@ -80,6 +98,18 @@
             tr.appendChild(el("td", "", when(u.first)));
             tr.appendChild(el("td", "", when(u.last)));
             tr.appendChild(el("td", "", u.translated ? fmt(u.translated) : "-"));
+
+            var tda = el("td", "act");
+            if (u.blocked) { tda.appendChild(el("span", "pill on", "blocked")); tda.appendChild(document.createTextNode(" ")); }
+            var bb = el("button", "ghost mini" + (u.blocked ? "" : " danger"), u.blocked ? "Unblock" : "Block");
+            bb.type = "button";
+            bb.addEventListener("click", function () {
+                if (!u.blocked && !window.confirm("Block " + (u.email || u.name) + " from comments and messages?")) { return; }
+                bb.disabled = true;
+                post(u.blocked ? "unblock" : "block", u.k).then(load).catch(function (e) { bb.disabled = false; window.alert(e.message); });
+            });
+            tda.appendChild(bb);
+            tr.appendChild(tda);
             body.appendChild(tr);
         });
         $("usersNote").textContent = !DATA.users.length
@@ -113,8 +143,110 @@
             rec.appendChild(li);
         });
 
+        // new accounts + where they use it
+        chart($("chartN"), d.daily, "newUsers");
+        var pl = $("platforms"); pl.textContent = "";
+        var pmax = Math.max(1, d.platforms.web || 0, d.platforms.android || 0, d.platforms.windows || 0);
+        [["Web", d.platforms.web], ["Android", d.platforms.android], ["Windows", d.platforms.windows]].forEach(function (x) {
+            var row = el("div", "b");
+            row.appendChild(el("span", "", x[0]));
+            var tr = el("div", "track"), f = el("div", "fill");
+            f.style.width = Math.round(((x[1] || 0) / pmax) * 100) + "%";
+            tr.appendChild(f); row.appendChild(tr);
+            row.appendChild(el("span", "n", fmt(x[1] || 0)));
+            pl.appendChild(row);
+        });
+
+        // translation health
+        var hd = d.health.daily, ht = hd[hd.length - 1];
+        var hg = $("healthToday"); hg.textContent = "";
+        hg.appendChild(stat("Chunks translated OK today", ht.ok, true));
+        hg.appendChild(stat("Broken JSON from Gemini today", ht.json));
+        hg.appendChild(stat("Fixed by salvage today", ht.salvaged, true));
+        hg.appendChild(stat("Quota ran out today", ht.quota));
+        hg.appendChild(stat("Gemini busy today", ht.busy));
+        hg.appendChild(stat("Other failures today", ht.other));
+        chart($("chartF"), hd.map(function (x) { return { day: x.day, fail: x.json + x.quota + x.busy + x.other }; }), "fail");
+
+        var kb = $("keys"); kb.textContent = "";
+        d.health.keys.forEach(function (k) {
+            var tr = el("tr");
+            tr.appendChild(el("td", "", "#" + k.n));
+            tr.appendChild(el("td", k.today ? "ok" : "", fmt(k.today)));
+            tr.appendChild(el("td", "", fmt(k.ok)));
+            tr.appendChild(el("td", k.q429 ? "bad" : "", fmt(k.q429)));
+            tr.appendChild(el("td", k.bad ? "bad" : "", fmt(k.bad)));
+            tr.appendChild(el("td", k.err ? "bad" : "", fmt(k.err)));
+            kb.appendChild(tr);
+        });
+        $("keysNote").textContent = d.health.keys.length
+            ? "A key with 0 uses while others are busy is still waiting as a spare. Rejected = wrong or blocked key."
+            : "No key activity recorded yet. It fills in as people translate.";
+
+        // most translated titles
+        simpleList($("topWeek"), d.top.week.map(function (x) { return [x.n, fmt(x.c)]; }), "Nothing yet. It fills in as people translate.");
+        simpleList($("topAll"), d.top.all.map(function (x) { return [x.n, fmt(x.c)]; }), "Nothing yet. It fills in as people translate.");
+
+        // saved translations re-used
+        var hits = d.daily.reduce(function (a, x) { return a + x.libHit; }, 0);
+        var miss = d.daily.reduce(function (a, x) { return a + x.libMiss; }, 0);
+        chart($("chartL"), d.daily, "libHit");
+        $("libNote").textContent = (hits + miss)
+            ? ("Last 14 days: " + fmt(hits) + " of " + fmt(hits + miss) + " lookups found a saved translation (" + Math.round(hits / (hits + miss) * 100) + "%). Each one saved an AI call.")
+            : "No lookups recorded yet.";
+
+        // inbox + comments
+        $("inboxTitle").textContent = "Inbox (" + d.inbox.unread + " unread of " + fmt(d.inbox.total) + ")";
+        var ib = $("inboxList"); ib.textContent = "";
+        if (!d.inbox.recent.length) { ib.appendChild(el("p", "empty", "No messages.")); }
+        d.inbox.recent.forEach(function (m) {
+            var row = el("div", "msg");
+            var top = el("div", "t", (m.unread ? "\u25CF " : "") + (m.name || "(no name)"));
+            if (m.unread) { top.className = "t ok"; }
+            row.appendChild(top);
+            row.appendChild(el("small", "", m.email + " \u00B7 " + when(Date.parse(m.t))));
+            row.appendChild(el("div", "t", m.text));
+            ib.appendChild(row);
+        });
+        var cb = $("commentList"); cb.textContent = "";
+        if (!d.comments.length) { cb.appendChild(el("p", "empty", "No comments.")); }
+        d.comments.forEach(function (c) {
+            var row = el("div", "msg");
+            row.appendChild(el("div", "t", c.name || "(no name)"));
+            row.appendChild(el("small", "", (c.film ? c.film + " \u00B7 " : "") + when(c.t)));
+            row.appendChild(el("div", "t", c.text));
+            var del = el("button", "ghost mini danger", "Delete");
+            del.type = "button";
+            del.style.marginTop = "6px";
+            del.addEventListener("click", function () {
+                if (!window.confirm("Delete this comment?")) { return; }
+                del.disabled = true;
+                post("deleteComment", c.id).then(load).catch(function (e) { del.disabled = false; window.alert(e.message); });
+            });
+            row.appendChild(del);
+            cb.appendChild(row);
+        });
+
         $("usersTitle").textContent = "Signed-in Google accounts (" + fmt(t.users) + ")";
         renderUsers();
+    }
+
+    function runCheck() {
+        var btn = $("runCheck"), ul = $("checkList");
+        btn.disabled = true; btn.textContent = "Checking...";
+        ul.textContent = "";
+        fetch("/api/stats?health=1", { headers: { "x-admin-key": KEY }, cache: "no-store" })
+            .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { if (!r.ok) { throw new Error(d.error || "Failed"); } return d; }); })
+            .then(function (d) {
+                d.results.forEach(function (x) {
+                    var li = el("li");
+                    li.appendChild(el("span", x.ok ? "ok" : "bad", (x.ok ? "\u2713 " : "\u2717 ") + x.name));
+                    li.appendChild(el("span", "", x.ok ? x.ms + " ms" : x.note));
+                    ul.appendChild(li);
+                });
+            })
+            .catch(function (e) { ul.appendChild(el("li", "bad", e.message)); })
+            .then(function () { btn.disabled = false; btn.textContent = "Run check now"; });
     }
 
     function renderDownloads(d) {
@@ -126,6 +258,7 @@
     }
 
     function show(on) {
+        $("links").hidden = !on;
         $("login").hidden = on;
         $("panel").hidden = !on;
         $("tools").hidden = !on;
@@ -165,6 +298,7 @@
         if (KEY) { load(); }
     });
     $("refresh").addEventListener("click", load);
+    $("runCheck").addEventListener("click", runCheck);
     $("logout").addEventListener("click", function () {
         KEY = ""; DATA = null;
         try { sessionStorage.removeItem(KEYNAME); } catch (e) { /* ignore */ }

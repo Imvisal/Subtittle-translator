@@ -68,6 +68,12 @@
                 login.hidden = true;
                 try { sessionStorage.setItem("sinsubz-inbox-key", KEY); } catch (e) { /* ignore */ }
                 render(r.d.messages || []);
+                // tell the admin panel everything up to now has been read (unread counter)
+                fetch("/api/stats?admin=1", {
+                    method: "POST",
+                    headers: { "x-admin-key": KEY, "Content-Type": "application/json" },
+                    body: JSON.stringify({ action: "inboxSeen" })
+                }).catch(function () { /* ignore */ });
             } else {
                 login.hidden = false;
                 try { sessionStorage.removeItem("sinsubz-inbox-key"); } catch (e) { /* ignore */ }

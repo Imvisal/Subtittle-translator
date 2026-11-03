@@ -124,6 +124,10 @@ module.exports = async function handler(req, res) {
         const who = /^Bearer\s+/i.test(auth) ? await verifyGoogleUser(auth.replace(/^Bearer\s+/i, "").trim()) : null;
         if (!who) return res.status(401).json({ error: "Please sign in with Google to send a message." });
 
+        // accounts blocked from the admin panel cannot send messages
+        const blockedRes = await redis([["SISMEMBER", "u:blocked", sha(who.uid).toString("hex").slice(0, 24)]]);
+        if (Number(blockedRes[0]) === 1) return res.status(403).json({ error: "You cannot send messages." });
+
         // at most 5 messages per hour per account
         const rk = "contact:rl:" + sha(who.uid).toString("hex").slice(0, 24);
         const [count] = await redis([["INCR", rk], ["EXPIRE", rk, 3600]]);
