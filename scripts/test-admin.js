@@ -181,6 +181,18 @@ function call(method, url, { headers = {}, body } = {}) {
         ok((await call("GET", "/api/stats?announcement=1")).body.enabled === false, "announcement stopped");
     }
 
+    // ---- Gemini quota estimate ----
+    {
+        process.env.GEMINI_API_KEY = "k1"; process.env.GEMINI_API_KEY_2 = "k2";
+        const day = require("../api/_admin.js").pacificDay();
+        db.hash["q:" + day] = { "1": "250", "2": "10", "2:x": "1" };
+        process.env.GEMINI_DAILY_LIMIT = "1000";
+        const q = (await call("GET", "/api/stats?admin=1", { headers: { "x-admin-key": "secret-key-123" } })).body.quota;
+        ok(q.keys.length === 2 && q.keys[0].left === 75 && q.keys[0].used === 250, "key 1: 250 of 1000 used -> 75% left " + JSON.stringify(q.keys[0]));
+        ok(q.keys[1].exhausted && q.keys[1].left === 0, "key 2: Google said finished -> 0%");
+        ok(q.resetAt > Date.now() && q.resetAt - Date.now() <= 86400e3, "reset time is within a day");
+    }
+
     // brute force
     let blocked = false;
     for (let i = 0; i < 40; i++) { const x = await (async () => { ipN = 5000; return call("GET", "/api/stats?admin=1", { headers: { "x-forwarded-for": "7.7.7.7", "x-admin-key": "guess" + i } }); })(); if (x.code === 429) blocked = true; }

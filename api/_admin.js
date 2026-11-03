@@ -145,8 +145,10 @@ async function overview(req, res) {
         for (let i = 0; i < 7; i++) { cmds.push(["ZREVRANGE", "stats:top:" + days[i], 0, 29, "WITHSCORES"]); }   // X+5..X+11
         days.forEach(d => { cmds.push(["HGETALL", "h:d:" + d]); });                                              // X+12..X+25
         for (let i = 0; i < 7; i++) { cmds.push(["HGETALL", "h:k:" + days[i]]); }                                // X+26..X+32
-        cmds.push(["GET", "an:cur"]);                                                                            // last: current announcement
+        cmds.push(["GET", "an:cur"]);                                                                            // current announcement
         const ANI = cmds.length - 1;
+        cmds.push(["HGETALL", "q:" + pacificDay()]);                                                             // Gemini requests used today (Pacific day)
+        const QI = cmds.length - 1;
 
         const r = await redis(cmds);
 
@@ -234,6 +236,17 @@ async function overview(req, res) {
 
         return res.status(200).json({
             announcement: parse(r[ANI]),
+            quota: (function () {
+                const used = pairs(r[QI]);
+                const limit = Math.max(1, Number(process.env.GEMINI_DAILY_LIMIT) || 1000);
+                const n = Math.max(geminiKeys().length, 1);
+                const list = [];
+                for (let i = 1; i <= n; i++) {
+                    const u = Number(used[String(i)]) || 0, dead = Number(used[i + ":x"]) > 0;
+                    list.push({ n: i, used: u, exhausted: dead, left: dead ? 0 : Math.max(0, Math.round((1 - u / limit) * 100)) });
+                }
+                return { limit: limit, resetAt: pacificResetAt(), keys: list };
+            })(),
             enabled: true,
             totals: {
                 translated: Number(r[0]) || 0,
@@ -327,6 +340,16 @@ async function health(req, res) {
     return res.status(200).json({ checked: Date.now(), results: await Promise.all(checks) });
 }
 
+// Gemini's daily quota resets at midnight in California (Pacific time), not at midnight in Sri Lanka.
+function pacificParts(ms) {
+    const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles", year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).formatToParts(new Date(ms));
+    const g = t => parts.find(p => p.type === t).value;
+    return { day: g("year") + "-" + g("month") + "-" + g("day"), secs: (Number(g("hour")) % 24) * 3600 + Number(g("minute")) * 60 + Number(g("second")) };
+}
+function pacificDay() { return pacificParts(Date.now()).day; }
+function pacificResetAt() { return Date.now() + (86400 - pacificParts(Date.now()).secs) * 1000; }
+
 // ---------------------------------------------------------------- announcements
 // The apps fetch /announcement.json; vercel.json rewrites that to /api/stats?announcement=1.
 function cleanAnnouncement(a) {
@@ -406,4 +429,4 @@ async function action(req, res) {
     }
 }
 
-module.exports = { ping, overview, health, action, publicAnnouncement, cleanAnnouncement, dayKey, uidKeyOf };
+module.exports = { pacificDay, ping, overview, health, action, publicAnnouncement, cleanAnnouncement, dayKey, uidKeyOf };

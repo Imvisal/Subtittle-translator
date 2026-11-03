@@ -189,6 +189,16 @@ async function track(day, fields, keyFields) {
     } catch (e) { /* ignore */ }
 }
 
+// requests used per key in the current Pacific day (Gemini's quota day); "<key>:x" = Google said the day's quota is gone
+async function trackQuota(k, exhausted) {
+    try {
+        const g = require("./_google");
+        if (!g.hasRedis()) return;
+        const day = require("./_admin.js").pacificDay();
+        await Promise.race([g.redis([["HINCRBY", "q:" + day, exhausted ? (k + 1) + ":x" : String(k + 1), 1], ["EXPIRE", "q:" + day, 3 * 86400]]), new Promise(r => setTimeout(r, 1500))]);
+    } catch (e) { /* ignore */ }
+}
+
 function today() {
     return new Date(Date.now() + 5.5 * 3600e3).toISOString().slice(0, 10);
 }
@@ -270,6 +280,7 @@ async function generateWithFallback(prompt) {
             if (response.ok && data) {
                 modelBusyUntil.delete(model);
                 await track(today(), null, { [(k + 1) + ":ok"]: 1 });
+                await trackQuota(k, false);
                 return { data };
             }
 
@@ -293,6 +304,7 @@ async function generateWithFallback(prompt) {
             if (response.status === 429) {
                 sawQuota = true;
                 await track(today(), null, { [(k + 1) + ":429"]: 1 });
+                if (isDailyQuotaMessage(message)) await trackQuota(k, true);
 
                 cooldowns.set(
                     id,

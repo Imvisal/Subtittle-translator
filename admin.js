@@ -175,6 +175,24 @@
             pl.appendChild(row);
         });
 
+        // estimated Gemini quota left today (per key, Pacific day)
+        var qb = $("quotaBars"); qb.textContent = "";
+        var Q = d.quota, qSum = 0;
+        Q.keys.forEach(function (k) {
+            qSum += k.left;
+            var row = el("div", "b");
+            row.appendChild(el("span", "", "Key #" + k.n));
+            var tr = el("div", "track"), f = el("div", "fill");
+            f.style.width = k.left + "%";
+            tr.appendChild(f); row.appendChild(tr);
+            row.appendChild(el("span", "n", k.exhausted ? "empty" : (k.left + "% (" + fmt(k.used) + " used)")));
+            qb.appendChild(row);
+        });
+        var resetIn = Math.max(0, Q.resetAt - Date.now());
+        $("quotaNote").textContent = "All keys together: about " + Math.round(qSum / Q.keys.length) + "% left. Resets in " + Math.floor(resetIn / 3600e3) + " h " + Math.floor(resetIn % 3600e3 / 60e3) + " min (" +
+            new Date(Q.resetAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + "). Google does not tell us the real number: this counts the calls made since this update against " +
+            fmt(Q.limit) + " per key (change it with GEMINI_DAILY_LIMIT in Vercel). A key shows \"empty\" when Google itself says its daily quota is finished.";
+
         // translation health
         var hd = d.health.daily, ht = hd[hd.length - 1];
         var hg = $("healthToday"); hg.textContent = "";
