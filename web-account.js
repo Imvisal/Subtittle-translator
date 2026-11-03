@@ -148,7 +148,7 @@
     function signIn() {
         var btn = document.getElementById("waIn");
         if (btn) { btn.disabled = true; }
-        loadSdk().then(function () {
+        return loadSdk().then(function () {
             return fb.signInWithPopup(fb.auth, new fb.GoogleAuthProvider());
         }).then(function () {
             toast("Signed in");
@@ -162,6 +162,9 @@
             if (b) { b.disabled = false; }
         });
     }
+
+    // used by script.js: translating needs a Google account
+    window.__sinsubzSignIn = function () { return signIn(); };
 
     function signOutNow() {
         if (!fb) { return; }

@@ -3530,6 +3530,19 @@ async function translateSubtitleChunksImpl(
 
     subtitles = dropBracketCues(subtitles);
 
+    // translating needs a Google account (website + Android app; the Windows app has no sign-in yet)
+    if (!/Electron/i.test(navigator.userAgent || "")) {
+        const getTok = async () => {
+            try { return window.__sinsubzIdToken ? await window.__sinsubzIdToken() : ""; } catch (e) { return ""; }
+        };
+        if (!(await getTok())) {
+            if (window.__sinsubzSignIn) { try { await window.__sinsubzSignIn(); } catch (e) { /* ignore */ } }
+            if (!(await getTok())) {
+                throw new Error("Please sign in with Google to translate (top right: Sign in).");
+            }
+        }
+    }
+
     const CHUNK_SIZE = 40;
 
     // How many chunks are translated at the same time.
@@ -3590,7 +3603,7 @@ async function translateSubtitleChunksImpl(
                     );
 
                     // daily limit reached on every key/model: retrying will not help
-                    if (data.code === "QUOTA_EXHAUSTED" || data.code === "DAILY_LIMIT") {
+                    if (data.code === "QUOTA_EXHAUSTED" || data.code === "DAILY_LIMIT" || data.code === "LOGIN_REQUIRED") {
                         apiError.quotaExhausted = true;
                     }
 

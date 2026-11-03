@@ -423,10 +423,18 @@ module.exports = async function handler(req, res) {
         }
 
 
-        // ---- daily limit per user: films / TV episodes (see api/_admin.js checkDailyLimit) ----
+        // ---- Google sign-in required + daily limit per user (see api/_admin.js) ----
         {
-            const lim = await require("./_admin.js").checkDailyLimit(
-                req, (req.body && req.body.job) || title
+            const adm = require("./_admin.js");
+            const who = await adm.authUser(req);
+            if (adm.loginRequired(who, req)) {
+                return res.status(401).json({
+                    error: "Please sign in with Google to translate.",
+                    code: "LOGIN_REQUIRED"
+                });
+            }
+            const lim = await adm.checkDailyLimit(
+                req, (req.body && req.body.job) || title, who
             );
             if (!lim.ok) {
                 return res.status(429).json({ error: lim.message, code: "DAILY_LIMIT" });

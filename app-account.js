@@ -231,6 +231,14 @@
         });
     }
 
+    // used by script.js: translating needs a Google account
+    window.__sinsubzIdToken = function () { return token().catch(function () { return ""; }); };
+    window.__sinsubzSignIn = function () {
+        var pl = auth();
+        if (!pl) { return Promise.resolve(); }
+        return pl.signInWithGoogle().then(function (r) { setUser(r && r.user); sync(); }).catch(function () { /* cancelled */ });
+    };
+
     function signOut() {
         var a = auth();
         var p = user ? push().catch(function () { /* best effort */ }) : Promise.resolve();

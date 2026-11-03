@@ -42,6 +42,7 @@ function run(c) {
 }
 
 const users = { "tok-visal": { localId: "uid-1", displayName: "Visal", email: "v@example.com", photoUrl: "https://lh3.example/p1.jpg", emailVerified: true },
+                "tok-base": { localId: "uid-9", displayName: "Base", email: "b@example.com", emailVerified: true },
                 "tok-nimal": { localId: "uid-2", displayName: "Nimal", email: "n@example.com", emailVerified: true } };
 global.fetch = async (url, opt) => {
     if (String(url).startsWith("http://redis.test")) {
@@ -199,7 +200,7 @@ function call(method, url, { headers = {}, body } = {}) {
         const translate = require("../api/translate.js");
         const t = (job, headers) => new Promise(resolve => {
             const res = { code: 200, setHeader() {}, status(c) { this.code = c; return this; }, json(b) { resolve({ code: this.code, body: b }); } };
-            translate({ method: "POST", url: "/api/translate", headers: Object.assign({ "x-forwarded-for": "6.6.6.6" }, headers), body: { subtitles: [{ number: 1, timestamp: "00:00:01,000 --> 00:00:02,000", text: "Hi" }], job }, socket: {} }, res);
+            translate({ method: "POST", url: "/api/translate", headers: Object.assign({ "x-forwarded-for": "6.6.6.6", authorization: "Bearer tok-base" }, headers), body: { subtitles: [{ number: 1, timestamp: "00:00:01,000 --> 00:00:02,000", text: "Hi" }], job }, socket: {} }, res);
         });
         const lim = r => r.code === 429 && r.body.code === "DAILY_LIMIT";
         ok(!lim(await t("Movie.One.2025.Sinhala.SinSubz")), "film 1 allowed");
@@ -215,6 +216,21 @@ function call(method, url, { headers = {}, body } = {}) {
         await t("Movie.Six", { authorization: "Bearer tok-nimal", "x-forwarded-for": "6.6.6.9" });
         ok(lim(await t("Movie.Seven", { authorization: "Bearer tok-nimal", "x-forwarded-for": "6.6.6.10" })), "signed-in account is counted across different IPs");
         ok(!lim(await t("Movie.Eight", { authorization: "Bearer tok-visal", "x-forwarded-for": "6.6.6.11" })), "other account fine");
+        // ---- sign-in required ----
+        const nolog = (headers, ua) => new Promise(resolve => {
+            const res = { code: 200, setHeader() {}, status(c) { this.code = c; return this; }, json(b) { resolve({ code: this.code, body: b }); } };
+            translate({ method: "POST", url: "/api/translate", headers: Object.assign({ "x-forwarded-for": "4.4.4." + (++ipN) }, ua ? { "user-agent": ua } : {}, headers), body: { subtitles: [{ number: 1, timestamp: "00:00:01,000 --> 00:00:02,000", text: "Hi" }], job: "Login.Test" }, socket: {} }, res);
+        });
+        let r1 = await nolog({});
+        ok(r1.code === 401 && r1.body.code === "LOGIN_REQUIRED", "no token -> 401 LOGIN_REQUIRED");
+        r1 = await nolog({ authorization: "Bearer garbage" });
+        ok(r1.code === 401 && r1.body.code === "LOGIN_REQUIRED", "invalid token -> 401");
+        r1 = await nolog({}, "Mozilla/5.0 SinSubz Electron/30.0.0");
+        ok(r1.code !== 401, "Windows (Electron) app is let through");
+        ok((await nolog({ authorization: "Bearer tok-visal" })).code !== 401, "signed-in user passes");
+        process.env.REQUIRE_LOGIN = "0";
+        ok((await nolog({})).code !== 401, "REQUIRE_LOGIN=0 turns it off");
+        delete process.env.REQUIRE_LOGIN;
         process.env.LIMIT_MOVIES_PER_DAY = "0";
         ok(!lim(await t("Movie.Nine")), "0 = no limit");
         delete process.env.LIMIT_MOVIES_PER_DAY;

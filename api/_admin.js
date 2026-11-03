@@ -350,6 +350,31 @@ function pacificParts(ms) {
 function pacificDay() { return pacificParts(Date.now()).day; }
 function pacificResetAt() { return Date.now() + (86400 - pacificParts(Date.now()).secs) * 1000; }
 
+// ---------------------------------------------------------------- login required to translate
+// Verified Google user for this request (cached 5 min per token so a film's ~35 chunks do not ask Google 35 times).
+const authCache = new Map();
+async function authUser(req) {
+    const h = String((req.headers && req.headers.authorization) || "");
+    if (!/^Bearer\s+/i.test(h)) { return null; }
+    const ck = sha(h).toString("hex").slice(0, 32);
+    const hit = authCache.get(ck);
+    if (hit && hit.exp > Date.now()) { return hit.who; }
+    const who = await verifyGoogleUser(req).catch(() => null);
+    if (who) {
+        authCache.set(ck, { who: who, exp: Date.now() + 5 * 60 * 1000 });
+        if (authCache.size > 2000) { for (const [k, v] of authCache) { if (v.exp < Date.now()) { authCache.delete(k); } } }
+    }
+    return who;
+}
+
+// The Windows app has no Google sign-in yet, so it is let through (the per-IP daily limit still applies to it).
+function loginRequired(who, req) {
+    if (who) { return false; }
+    if (String(process.env.REQUIRE_LOGIN || "1") === "0") { return false; }
+    if (/Electron\//.test(String((req.headers && req.headers["user-agent"]) || ""))) { return false; }
+    return true;
+}
+
 // ---------------------------------------------------------------- daily limit per user
 // One user (signed-in Google account, otherwise the visitor's IP address) may translate
 // LIMIT_MOVIES_PER_DAY films (default 2) and LIMIT_EPISODES_PER_DAY TV episodes (default 5) per Sri Lanka day.
@@ -362,7 +387,7 @@ function jobName(raw) {
         .replace(/[._]+/g, " ").replace(/[\u0000-\u001F\u007F]/g, "").replace(/\s+/g, " ").trim().toLowerCase().slice(0, 100);
 }
 
-async function checkDailyLimit(req, rawJob) {
+async function checkDailyLimit(req, rawJob, knownWho) {
     try {
         if (!hasRedis()) { return { ok: true }; }
         const maxMovies = process.env.LIMIT_MOVIES_PER_DAY != null && process.env.LIMIT_MOVIES_PER_DAY !== "" ? Number(process.env.LIMIT_MOVIES_PER_DAY) : 2;
@@ -373,8 +398,7 @@ async function checkDailyLimit(req, rawJob) {
         const max = isEpisode ? maxEps : maxMovies;
         if (!(max > 0)) { return { ok: true }; }
 
-        let who = null;
-        if (/^Bearer\s+/i.test(String((req.headers && req.headers.authorization) || ""))) { who = await verifyGoogleUser(req).catch(() => null); }
+        const who = knownWho !== undefined ? knownWho : await authUser(req);
         if (who && who.owner) { return { ok: true }; }
         const user = who ? "u" + uidKeyOf(who.uid) : "i" + sha(clientIp(req)).toString("hex").slice(0, 20);
 
@@ -482,4 +506,4 @@ async function action(req, res) {
     }
 }
 
-module.exports = { checkDailyLimit, pacificDay, ping, overview, health, action, publicAnnouncement, cleanAnnouncement, dayKey, uidKeyOf };
+module.exports = { authUser, loginRequired, checkDailyLimit, pacificDay, ping, overview, health, action, publicAnnouncement, cleanAnnouncement, dayKey, uidKeyOf };
