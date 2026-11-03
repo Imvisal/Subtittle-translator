@@ -3523,6 +3523,43 @@ function dropBracketCues(subs) {
 }
 
 
+// Popup shown when someone presses Translate without being signed in. Resolves when the box closes
+// (after a successful sign-in, or when the person cancels).
+function askToSignIn(getTok) {
+    return new Promise(function (resolve) {
+        const old = document.getElementById("signInAsk");
+        if (old) old.remove();
+
+        const wrap = document.createElement("div");
+        wrap.id = "signInAsk";
+        wrap.setAttribute("role", "dialog");
+        wrap.setAttribute("aria-modal", "true");
+        wrap.style.cssText = "position:fixed;inset:0;z-index:99997;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(5,6,18,.72);backdrop-filter:blur(4px)";
+        wrap.innerHTML =
+            '<div style="max-width:380px;width:100%;background:#14172b;color:#eceaff;border:1px solid #2c3050;border-radius:20px;padding:24px;text-align:center;font-family:inherit;box-shadow:0 20px 60px rgba(0,0,0,.5)">' +
+            '<div style="font-size:19px;font-weight:800;margin-bottom:8px">Sign in to translate</div>' +
+            '<div style="font-size:14.5px;line-height:1.55;opacity:.85">Translating needs a free Google account. Each account can translate <b>2 films and 5 TV episodes per day</b>.</div>' +
+            '<div id="signInAskMsg" style="min-height:20px;margin-top:8px;font-size:13px;color:#ff9a9a"></div>' +
+            '<button id="signInAskGo" type="button" style="margin-top:10px;width:100%;padding:13px;border:0;border-radius:14px;background:#fff;color:#1f1f1f;font-size:16px;font-weight:700;cursor:pointer">Sign in with Google</button>' +
+            '<button id="signInAskNo" type="button" style="margin-top:8px;background:none;border:0;color:inherit;opacity:.65;font-size:14px;text-decoration:underline;cursor:pointer">Not now</button>' +
+            '</div>';
+        document.body.appendChild(wrap);
+
+        const done = function () { wrap.remove(); resolve(); };
+        wrap.querySelector("#signInAskNo").addEventListener("click", done);
+        wrap.addEventListener("click", function (e) { if (e.target === wrap) done(); });
+
+        const go = wrap.querySelector("#signInAskGo");
+        go.addEventListener("click", async function () {
+            go.disabled = true;
+            try { if (window.__sinsubzSignIn) await window.__sinsubzSignIn(); } catch (e) { /* ignore */ }
+            if (await getTok()) { done(); return; }
+            go.disabled = false;
+            wrap.querySelector("#signInAskMsg").textContent = "Sign-in did not finish. Allow pop-ups for this site and try again.";
+        });
+    });
+}
+
 async function translateSubtitleChunksImpl(
     subtitles,
     meta
@@ -3530,15 +3567,16 @@ async function translateSubtitleChunksImpl(
 
     subtitles = dropBracketCues(subtitles);
 
-    // translating needs a Google account (website + Android app; the Windows app has no sign-in yet)
+    // translating needs a Google account (website + Android app; the Windows app has no sign-in yet).
+    // Nothing opens by itself: a message explains it and the person presses the button.
     if (!/Electron/i.test(navigator.userAgent || "")) {
         const getTok = async () => {
             try { return window.__sinsubzIdToken ? await window.__sinsubzIdToken() : ""; } catch (e) { return ""; }
         };
         if (!(await getTok())) {
-            if (window.__sinsubzSignIn) { try { await window.__sinsubzSignIn(); } catch (e) { /* ignore */ } }
+            await askToSignIn(getTok);
             if (!(await getTok())) {
-                throw new Error("Please sign in with Google to translate (top right: Sign in).");
+                throw new Error("Please sign in with Google to translate.");
             }
         }
     }
