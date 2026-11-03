@@ -1,6 +1,6 @@
 {
-  "version": "1.1.30",
-  "notes": "New SinSubz logo and app icon. Saved Sinhala translations are re-used when you pick another release (BluRay / WEB-DL) of the same movie, so it is faster. Spelling of names and of නැහැ / නෑ is kept the same through a subtitle, and fast lines stay on screen a little longer.",
+  "version": "1.1.31",
+  "notes": "Sign in with Google is now needed to translate (a sign-in screen opens with the app). Limit of 2 films and 5 TV episodes per day for each account. All four categories (Trending, Movies, TV Series, Anime) are visible at once. Subtitles use more everyday spoken Sinhala and short lines are joined.",
   "android": {
     "url": "https://sinsubs.site/get/android"
   },
