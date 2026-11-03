@@ -26,6 +26,23 @@
         return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
     }
 
+    function postAction(payload) {
+        return fetch("/api/stats?admin=1", { method: "POST", headers: { "x-admin-key": KEY, "Content-Type": "application/json" }, body: JSON.stringify(payload) })
+            .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { if (!r.ok) { throw new Error(d.error || "Failed"); } return d; }); });
+    }
+    var annFilled = false;
+    function renderAnnouncement(a) {
+        var live = a && a.enabled && (!a.expires || Date.now() <= Date.parse(a.expires) + 86400e3);
+        $("annState").textContent = !a ? "none yet" : (live ? "live: " + a.id : "stopped: " + a.id);
+        if (annFilled || !a) { return; }
+        annFilled = true;
+        $("anId").value = a.id || ""; $("anTitle").value = a.title || ""; $("anBody").value = a.body || "";
+        $("anImg").value = a.image || ""; $("anUrl").value = a.url || ""; $("anOpen").value = a.openLabel || ""; $("anLater").value = a.laterLabel || "";
+        $("anExp").value = a.expires || "";
+        $("anAnd").checked = !a.platforms || a.platforms.indexOf("android") !== -1;
+        $("anWin").checked = !a.platforms || a.platforms.indexOf("windows") !== -1;
+    }
+
     function post(action, id) {
         return fetch("/api/stats?admin=1", {
             method: "POST",
@@ -118,6 +135,7 @@
     }
 
     function render(d) {
+        renderAnnouncement(d.announcement);
         DATA = d;
         var t = d.totals;
 
@@ -304,6 +322,22 @@
         try { sessionStorage.removeItem(KEYNAME); } catch (e) { /* ignore */ }
         show(false);
         $("sub").textContent = "Locked.";
+    });
+    $("anSend").addEventListener("click", function () {
+        var pf = [];
+        if ($("anAnd").checked) { pf.push("android"); }
+        if ($("anWin").checked) { pf.push("windows"); }
+        if (!window.confirm("Send this announcement to all app users?")) { return; }
+        postAction({ action: "announce", announcement: {
+            enabled: true, id: $("anId").value.trim(), title: $("anTitle").value, body: $("anBody").value,
+            image: $("anImg").value.trim(), url: $("anUrl").value.trim(), openLabel: $("anOpen").value, laterLabel: $("anLater").value,
+            platforms: pf, expires: $("anExp").value
+        } }).then(function () { $("anMsg").textContent = "Sent. Apps get it within about 15 minutes (Android) / 6 hours (Windows)."; annFilled = false; load(); })
+            .catch(function (e) { $("anMsg").textContent = e.message; window.alert(e.message); });
+    });
+    $("anStop").addEventListener("click", function () {
+        postAction({ action: "announceStop" }).then(function () { $("anMsg").textContent = "Stopped."; annFilled = false; load(); })
+            .catch(function (e) { window.alert(e.message); });
     });
     $("find").addEventListener("input", function () { if (DATA) { renderUsers(); } });
     $("csv").addEventListener("click", function () {

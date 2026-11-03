@@ -6,9 +6,10 @@ No new app release is needed: just edit `announcement.json` and deploy.
 
 ## How to send one
 
-1. Edit `announcement.json` in the project root.
-2. Set `"enabled": true` and give it a **new `id`** (e.g. `"promo-2"`).
-3. Commit and push; Vercel deploys it.
+Open `/admin.html`, sign in with the admin key and use the **Announcement** card: fill the
+fields, press **Send announcement** (a new ID = shown again to everyone) or **Stop it**.
+It is saved in the database, so no deploy or app release is needed. The apps still read
+`/announcement.json`, which the site answers from the database (`vercel.json` rewrite).
 
 Users get it:
 - Android: within about 15 minutes even when the app is closed (a notification

@@ -145,6 +145,8 @@ async function overview(req, res) {
         for (let i = 0; i < 7; i++) { cmds.push(["ZREVRANGE", "stats:top:" + days[i], 0, 29, "WITHSCORES"]); }   // X+5..X+11
         days.forEach(d => { cmds.push(["HGETALL", "h:d:" + d]); });                                              // X+12..X+25
         for (let i = 0; i < 7; i++) { cmds.push(["HGETALL", "h:k:" + days[i]]); }                                // X+26..X+32
+        cmds.push(["GET", "an:cur"]);                                                                            // last: current announcement
+        const ANI = cmds.length - 1;
 
         const r = await redis(cmds);
 
@@ -231,6 +233,7 @@ async function overview(req, res) {
         const startOfToday = Date.parse(dayKey(0) + "T00:00:00+05:30");
 
         return res.status(200).json({
+            announcement: parse(r[ANI]),
             enabled: true,
             totals: {
                 translated: Number(r[0]) || 0,
@@ -324,6 +327,40 @@ async function health(req, res) {
     return res.status(200).json({ checked: Date.now(), results: await Promise.all(checks) });
 }
 
+// ---------------------------------------------------------------- announcements
+// The apps fetch /announcement.json; vercel.json rewrites that to /api/stats?announcement=1.
+function cleanAnnouncement(a) {
+    a = a && typeof a === "object" ? a : {};
+    const https = u => (/^https:\/\/\S{3,500}$/i.test(String(u || "").trim()) ? String(u).trim() : "");
+    const id = String(a.id || "").trim();
+    if (!/^[A-Za-z0-9._-]{1,40}$/.test(id)) { return { error: "ID must be 1-40 letters, digits, - _ ." }; }
+    const title = clean(a.title, 100);
+    const body = String(a.body || "").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "").slice(0, 600).trim();
+    if (!title && !body) { return { error: "Write a title or a message" }; }
+    const expires = String(a.expires || "").trim();
+    if (expires && !/^\d{4}-\d{2}-\d{2}$/.test(expires)) { return { error: "Expires must look like 2026-12-31" }; }
+    if (a.image && !https(a.image)) { return { error: "Image must be an https link" }; }
+    if (a.url && !https(a.url)) { return { error: "Link must be an https link" }; }
+    const platforms = (Array.isArray(a.platforms) ? a.platforms : []).filter(p => p === "android" || p === "windows");
+    return { value: {
+        enabled: a.enabled !== false, id: id, title: title, body: body,
+        image: https(a.image), url: https(a.url),
+        openLabel: clean(a.openLabel, 30) || "Open", laterLabel: clean(a.laterLabel, 30) || "Not now",
+        platforms: platforms.length ? platforms : ["android", "windows"], expires: expires
+    } };
+}
+
+async function publicAnnouncement(req, res) {
+    res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
+    if (!hasRedis()) { return res.status(200).json({ enabled: false }); }
+    try {
+        const [raw] = await redis([["GET", "an:cur"]]);
+        return res.status(200).json(parse(raw) || { enabled: false });
+    } catch (e) {
+        return res.status(200).json({ enabled: false });
+    }
+}
+
 // ---------------------------------------------------------------- admin: actions
 async function action(req, res) {
     res.setHeader("Cache-Control", "no-store");
@@ -342,6 +379,18 @@ async function action(req, res) {
             await redis([[what === "block" ? "SADD" : "SREM", "u:blocked", id]]);
             return res.status(200).json({ ok: true });
         }
+        if (what === "announce") {
+            const c = cleanAnnouncement(body.announcement);
+            if (c.error) { return res.status(400).json({ error: c.error }); }
+            await redis([["SET", "an:cur", JSON.stringify(c.value)]]);
+            return res.status(200).json({ ok: true });
+        }
+        if (what === "announceStop") {
+            const [raw] = await redis([["GET", "an:cur"]]);
+            const cur = parse(raw);
+            if (cur) { cur.enabled = false; await redis([["SET", "an:cur", JSON.stringify(cur)]]); }
+            return res.status(200).json({ ok: true });
+        }
         if (what === "deleteComment") {
             if (!id) { return res.status(400).json({ error: "Bad id" }); }
             await redis([["DEL", "cm:c:" + id, "cm:r:" + id], ["LREM", "cm:ids", 1, id]]);
@@ -357,4 +406,4 @@ async function action(req, res) {
     }
 }
 
-module.exports = { ping, overview, health, action, dayKey, uidKeyOf };
+module.exports = { ping, overview, health, action, publicAnnouncement, cleanAnnouncement, dayKey, uidKeyOf };

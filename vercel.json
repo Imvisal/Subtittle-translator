@@ -48,6 +48,9 @@
       ]
     }
   ],
+  "rewrites": [
+    { "source": "/announcement.json", "destination": "/api/stats?announcement=1" }
+  ],
   "redirects": [
     {
       "source": "/get/android",

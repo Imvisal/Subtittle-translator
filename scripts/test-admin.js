@@ -163,6 +163,24 @@ function call(method, url, { headers = {}, body } = {}) {
     ok(byName["TMDB"].ok && byName["OMDb"].ok && !byName["SubDL"].ok && byName["Redis database"].ok, "other services checked");
     ok(!JSON.stringify(hc.body).includes("good-gemini") && !JSON.stringify(hc.body).includes("bad-gemini"), "keys never appear in the answer");
 
+    // ---- announcements from the panel ----
+    {
+        const A = { "x-admin-key": "secret-key-123" };
+        const act = body => call("POST", "/api/stats?admin=1", { headers: A, body });
+        ok((await call("GET", "/api/stats?announcement=1")).body.enabled === false, "no announcement yet");
+        ok((await call("POST", "/api/stats?admin=1", { body: { action: "announce", announcement: { id: "a1", title: "Hi" } } })).code === 401, "announce needs the key");
+        ok((await act({ action: "announce", announcement: { id: "bad id!", title: "Hi" } })).code === 400, "bad id refused");
+        ok((await act({ action: "announce", announcement: { id: "a1", title: "Hi", image: "http://x.com/a.png" } })).code === 400, "http image refused");
+        ok((await act({ action: "announce", announcement: { id: "a1" } })).code === 400, "empty message refused");
+        ok((await act({ action: "announce", announcement: { id: "tg-10", title: "Join us", body: "Telegram", url: "https://t.me/sinsubz", platforms: ["android", "bogus"], expires: "2026-12-31" } })).code === 200, "announcement saved");
+        const pub = await call("GET", "/api/stats?announcement=1");
+        ok(pub.body.enabled === true && pub.body.id === "tg-10" && pub.body.platforms.join() === "android" && /s-maxage/.test(pub.headers["Cache-Control"]), "public announcement served: " + JSON.stringify(pub.body));
+        const ov = (await call("GET", "/api/stats?admin=1", { headers: A })).body;
+        ok(ov.announcement && ov.announcement.id === "tg-10", "panel gets the current announcement");
+        await act({ action: "announceStop" });
+        ok((await call("GET", "/api/stats?announcement=1")).body.enabled === false, "announcement stopped");
+    }
+
     // brute force
     let blocked = false;
     for (let i = 0; i < 40; i++) { const x = await (async () => { ipN = 5000; return call("GET", "/api/stats?admin=1", { headers: { "x-forwarded-for": "7.7.7.7", "x-admin-key": "guess" + i } }); })(); if (x.code === 429) blocked = true; }

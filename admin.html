@@ -145,6 +145,25 @@
             <div class="card"><h2>Latest comments</h2><div id="commentList"></div></div>
         </div>
 
+        <div class="card" id="annCard">
+            <h2>Announcement to the apps (Android + Windows) <span id="annState" class="tag"></span></h2>
+            <div class="two">
+                <div><label for="anId">ID (a new ID is shown again to everyone)</label><input id="anId" maxlength="40" style="width:100%"></div>
+                <div><label for="anExp">Expires (optional)</label><input id="anExp" type="date" style="width:100%"></div>
+            </div>
+            <label for="anTitle">Title</label><input id="anTitle" maxlength="100" style="width:100%">
+            <label for="anBody">Message</label><textarea id="anBody" maxlength="600" rows="3" style="width:100%;padding:11px 13px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:inherit;font:inherit"></textarea>
+            <div class="two">
+                <div><label for="anImg">Image link (https, optional)</label><input id="anImg" style="width:100%"></div>
+                <div><label for="anUrl">Open link (https, optional)</label><input id="anUrl" style="width:100%"></div>
+                <div><label for="anOpen">Open button text</label><input id="anOpen" maxlength="30" style="width:100%"></div>
+                <div><label for="anLater">Later button text</label><input id="anLater" maxlength="30" style="width:100%"></div>
+            </div>
+            <p><label><input type="checkbox" id="anAnd" checked style="flex:none;min-width:0"> Android</label> &nbsp; <label><input type="checkbox" id="anWin" checked style="flex:none;min-width:0"> Windows</label></p>
+            <div class="row"><button id="anSend" type="button">Send announcement</button><button class="ghost" id="anStop" type="button">Stop it</button></div>
+            <p class="empty" id="anMsg"></p>
+        </div>
+
         <div class="two">
             <div class="card"><h2>Latest translated titles</h2><ul class="list" id="recent"></ul></div>
             <div class="card"><h2>Downloads</h2><ul class="list" id="downloads"></ul></div>
