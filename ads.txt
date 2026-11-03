@@ -1,2 +1,1 @@
-# SinSubz ads.txt
-# Replace this file by running: node scripts/set-adsense.js ca-pub-XXXXXXXXXXXXXXXX
+google.com, pub-5082678285312215, DIRECT, f08c47fec0942fa0

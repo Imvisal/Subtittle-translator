@@ -5,7 +5,7 @@
  *   3. <body data-ads="on"> (guide/article pages only – never the tool or app screens)
  * Never included in the Android/Windows app builds. */
 (function () {
-    var PUB_ID = ""; // e.g. "ca-pub-1234567890123456"
+    var PUB_ID = "ca-pub-5082678285312215"; // e.g. "ca-pub-1234567890123456"
     if (!PUB_ID) return;
     if (document.documentElement.lang !== "en") return;
     if (!document.body || document.body.getAttribute("data-ads") !== "on") return;
