@@ -228,6 +228,11 @@ function call(method, url, { headers = {}, body } = {}) {
         r1 = await nolog({}, "Mozilla/5.0 SinSubz Electron/30.0.0");
         ok(r1.code !== 401, "Windows (Electron) app is let through");
         ok((await nolog({ authorization: "Bearer tok-visal" })).code !== 401, "signed-in user passes");
+        const wv = "Mozilla/5.0 (Linux; Android 14; Pixel 8 Build/UP1A; wv) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36";
+        ok((await nolog({}, wv)).code !== 401, "old Android app (WebView) is let through for now");
+        process.env.LOGIN_EXEMPT_ANDROID = "0";
+        ok((await nolog({}, wv)).code === 401, "LOGIN_EXEMPT_ANDROID=0 requires login in the app too");
+        delete process.env.LOGIN_EXEMPT_ANDROID;
         process.env.REQUIRE_LOGIN = "0";
         ok((await nolog({})).code !== 401, "REQUIRE_LOGIN=0 turns it off");
         delete process.env.REQUIRE_LOGIN;

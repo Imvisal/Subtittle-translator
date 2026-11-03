@@ -371,7 +371,11 @@ async function authUser(req) {
 function loginRequired(who, req) {
     if (who) { return false; }
     if (String(process.env.REQUIRE_LOGIN || "1") === "0") { return false; }
-    if (/Electron\//.test(String((req.headers && req.headers["user-agent"]) || ""))) { return false; }
+    const ua = String((req.headers && req.headers["user-agent"]) || "");
+    if (/Electron\//.test(ua)) { return false; }
+    // Android apps older than 1.1.31 cannot send a Google token yet: let them through until the new app is out.
+    // Set LOGIN_EXEMPT_ANDROID=0 in Vercel when people have updated.
+    if (String(process.env.LOGIN_EXEMPT_ANDROID || "1") !== "0" && /;\s*wv\)/.test(ua)) { return false; }
     return true;
 }
 
