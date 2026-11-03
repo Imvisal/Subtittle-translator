@@ -604,6 +604,7 @@
             '<a class="ap-item" href="about.html"><span class="ap-ic"><i class="fa-solid fa-circle-info"></i></span><span class="ap-main"><span class="ap-title">About SinSubz</span></span></a>' +
             '<a class="ap-item" href="privacy.html"><span class="ap-ic"><i class="fa-solid fa-shield-halved"></i></span><span class="ap-main"><span class="ap-title">Privacy Policy</span></span></a>' +
             '<a class="ap-item" href="terms.html"><span class="ap-ic"><i class="fa-solid fa-file-contract"></i></span><span class="ap-main"><span class="ap-title">Terms of Service</span></span></a>' +
+            '<a class="ap-item" href="https://t.me/sinsubz" target="_blank" rel="noopener"><span class="ap-ic"><i class="fa-brands fa-telegram"></i></span><span class="ap-main"><span class="ap-title">Telegram group</span><span class="ap-meta" style="display:block">Join t.me/sinsubz for updates and help</span></span></a>' +
             '<a class="ap-item" href="contact.html"><span class="ap-ic"><i class="fa-solid fa-envelope"></i></span><span class="ap-main"><span class="ap-title">Contact</span></span></a>' +
             '</div>' +
             '<div class="ap-version">SinSubz · version ' + esc(VERSION) + '</div>';

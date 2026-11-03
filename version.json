@@ -1,6 +1,6 @@
 {
   "version": "1.1.32",
-  "notes": "Fixed: \"Please sign in with Google to translate\" appeared even when you were signed in.",
+  "notes": "Fixed translating while signed in. New sign-in screen with the SinSubz banner, Terms and Privacy links, and a Telegram group link in About.",
   "android": {
     "url": "https://sinsubs.site/get/android"
   },
