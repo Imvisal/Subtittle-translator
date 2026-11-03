@@ -10,7 +10,7 @@ const root = path.join(__dirname, "..");
 const out = path.join(root, "www");
 
 const files = [
-    "index.html", "about.html", "contact.html", "privacy.html", "terms.html",
+    "index.html", "about.html", "contact.html", "privacy.html", "terms.html", "copyright.html",
     "style.css", "script.js", "subtitle-cleanup.js", "retime.js", "library.js", "ui.js", "sync.js", "app-update.js", "app-shim.js",
     "app-ui.js", "app-ui.css", "app-account.js",
     "logo.png", "logo-128.png", "hero-banner.png", "hero-banner.webp",
