@@ -43,11 +43,11 @@
         $("anWin").checked = !a.platforms || a.platforms.indexOf("windows") !== -1;
     }
 
-    function post(action, id) {
+    function post(action, id, extra) {
         return fetch("/api/stats?admin=1", {
             method: "POST",
             headers: { "x-admin-key": KEY, "Content-Type": "application/json" },
-            body: JSON.stringify({ action: action, id: id })
+            body: JSON.stringify(Object.assign({ action: action, id: id }, extra || {}))
         }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { if (!r.ok) { throw new Error(d.error || "Failed"); } return d; }); });
     }
     function simpleList(host, rows, emptyText) {
@@ -118,6 +118,21 @@
 
             var tda = el("td", "act");
             if (u.blocked) { tda.appendChild(el("span", "pill on", "blocked")); tda.appendChild(document.createTextNode(" ")); }
+            if (u.premium) { tda.appendChild(el("span", "pill on", "Premium until " + new Date(u.premium).toISOString().slice(0, 10))); tda.appendChild(document.createTextNode(" ")); }
+            var pb = el("button", "ghost mini", u.premium ? "Extend / end" : "Give premium");
+            pb.type = "button";
+            pb.addEventListener("click", function () {
+                var who = u.email || u.name;
+                var ans = window.prompt((u.premium ? "Add days to premium for " : "Premium for ") + who + ".\nHow many days? (30 = 1 month, 365 = 1 year)" + (u.premium ? "\nType 0 to end premium now." : ""), "30");
+                if (ans === null) { return; }
+                var n = Math.floor(Number(ans));
+                if (u.premium && n === 0) { pb.disabled = true; post("premiumOff", u.k).then(load).catch(function (e) { pb.disabled = false; window.alert(e.message); }); return; }
+                if (!(n >= 1 && n <= 3650)) { window.alert("Enter a number of days from 1 to 3650"); return; }
+                pb.disabled = true;
+                post("premium", u.k, { days: n }).then(load).catch(function (e) { pb.disabled = false; window.alert(e.message); });
+            });
+            tda.appendChild(pb);
+            tda.appendChild(document.createTextNode(" "));
             var bb = el("button", "ghost mini" + (u.blocked ? "" : " danger"), u.blocked ? "Unblock" : "Block");
             bb.type = "button";
             bb.addEventListener("click", function () {

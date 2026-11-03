@@ -20,6 +20,7 @@ function run(c) {
         case "SCARD": return db.set[k] ? db.set[k].size : 0;
         case "HSET": { (db.hash[k] = db.hash[k] || {})[a[0]] = a[1]; return 1; }
         case "HGET": return (db.hash[k] || {})[a[0]] == null ? null : db.hash[k][a[0]];
+        case "HDEL": { const h = db.hash[k] || {}; const had = h[a[0]] != null; delete h[a[0]]; return had ? 1 : 0; }
         case "HLEN": return Object.keys(db.hash[k] || {}).length;
         case "HINCRBY": { const h = (db.hash[k] = db.hash[k] || {}); h[a[0]] = String((Number(h[a[0]]) || 0) + Number(a[1])); return Number(h[a[0]]); }
         case "HGETALL": return Object.entries(db.hash[k] || {}).flat();
@@ -43,6 +44,7 @@ function run(c) {
 
 const users = { "tok-visal": { localId: "uid-1", displayName: "Visal", email: "v@example.com", photoUrl: "https://lh3.example/p1.jpg", emailVerified: true },
                 "tok-base": { localId: "uid-9", displayName: "Base", email: "b@example.com", emailVerified: true },
+                "tok-pro": { localId: "uid-3", displayName: "Pro", email: "p@example.com", emailVerified: true },
                 "tok-nimal": { localId: "uid-2", displayName: "Nimal", email: "n@example.com", emailVerified: true } };
 global.fetch = async (url, opt) => {
     if (String(url).startsWith("http://redis.test")) {
@@ -216,6 +218,28 @@ function call(method, url, { headers = {}, body } = {}) {
         await t("Movie.Six", { authorization: "Bearer tok-nimal", "x-forwarded-for": "6.6.6.9" });
         ok(lim(await t("Movie.Seven", { authorization: "Bearer tok-nimal", "x-forwarded-for": "6.6.6.10" })), "signed-in account is counted across different IPs");
         ok(!lim(await t("Movie.Eight", { authorization: "Bearer tok-visal", "x-forwarded-for": "6.6.6.11" })), "other account fine");
+
+        // ---- premium ----
+        {
+            const pk = require("crypto").createHash("sha256").update("uid-3").digest("hex").slice(0, 24);
+            const meCall = tok => call("GET", "/api/stats?me=1", { headers: tok ? { authorization: "Bearer " + tok } : {} });
+            let m = await meCall("tok-pro");
+            ok(m.code === 200 && m.body.premium === false && m.body.movies === 2, "free plan shows 2 films: " + JSON.stringify(m.body));
+            ok((await meCall("")).body.signedIn === false, "me without token -> not signed in");
+            ok((await call("POST", "/api/stats?admin=1", { body: { action: "premium", id: pk, days: 30 } })).code === 401, "give premium needs the admin key");
+            ok((await call("POST", "/api/stats?admin=1", { headers: AK, body: { action: "premium", id: pk, days: 0 } })).code === 400, "0 days refused");
+            const g = await call("POST", "/api/stats?admin=1", { headers: AK, body: { action: "premium", id: pk, days: 30 } });
+            ok(g.code === 200 && Math.abs(g.body.until - (Date.now() + 30 * 86400e3)) < 5000, "30 days of premium given");
+            const g2 = await call("POST", "/api/stats?admin=1", { headers: AK, body: { action: "premium", id: pk, days: 10 } });
+            ok(Math.abs(g2.body.until - (g.body.until + 10 * 86400e3)) < 5000, "more days are added to the time left");
+            m = await meCall("tok-pro");
+            ok(m.body.premium === true && m.body.movies === 10 && m.body.episodes === 30 && m.body.until > Date.now(), "me shows premium: " + JSON.stringify(m.body));
+            for (let i = 1; i <= 10; i++) { ok(!lim(await t("Prem.Film." + i, { authorization: "Bearer tok-pro", "x-forwarded-for": "6.7.7.7" })), "premium film " + i + " allowed"); }
+            ok(lim(await t("Prem.Film.11", { authorization: "Bearer tok-pro", "x-forwarded-for": "6.7.7.7" })), "premium film 11 refused");
+            await call("POST", "/api/stats?admin=1", { headers: AK, body: { action: "premiumOff", id: pk } });
+            const ov = (await call("GET", "/api/stats?admin=1", { headers: AK })).body.users.find(u => u.email === "p@example.com");
+            ok(ov && ov.premium === 0, "admin list shows the account without premium after it was ended");
+        }
         // ---- sign-in required ----
         const nolog = (headers, ua) => new Promise(resolve => {
             const res = { code: 200, setHeader() {}, status(c) { this.code = c; return this; }, json(b) { resolve({ code: this.code, body: b }); } };

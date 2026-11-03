@@ -145,6 +145,8 @@ async function overview(req, res) {
         for (let i = 0; i < 7; i++) { cmds.push(["ZREVRANGE", "stats:top:" + days[i], 0, 29, "WITHSCORES"]); }   // X+5..X+11
         days.forEach(d => { cmds.push(["HGETALL", "h:d:" + d]); });                                              // X+12..X+25
         for (let i = 0; i < 7; i++) { cmds.push(["HGETALL", "h:k:" + days[i]]); }                                // X+26..X+32
+        cmds.push(["HGETALL", "u:prem"]);                                                                        // premium accounts
+        const PRI = cmds.length - 1;
         cmds.push(["GET", "an:cur"]);                                                                            // current announcement
         const ANI = cmds.length - 1;
         cmds.push(["HGETALL", "q:" + pacificDay()]);                                                             // Gemini requests used today (Pacific day)
@@ -165,9 +167,10 @@ async function overview(req, res) {
         const info = pairs(r[10]);
         const tc = pairs(r[11]);
         const blocked = new Set(Array.isArray(r[X + 3]) ? r[X + 3] : []);
+        const prem = pairs(r[PRI]);
         const users = Object.keys(info).map(k => {
             const u = parse(info[k]) || {};
-            return { id: k.slice(0, 8), k: k, blocked: blocked.has(k), name: u.n || "", email: u.e || "", photo: u.p || "", first: u.f || 0, last: u.l || 0, platform: u.pl || "web", translated: Number(tc[k]) || 0 };
+            return { id: k.slice(0, 8), k: k, blocked: blocked.has(k), name: u.n || "", email: u.e || "", photo: u.p || "", first: u.f || 0, last: u.l || 0, platform: u.pl || "web", translated: Number(tc[k]) || 0, premium: Number(prem[k]) > Date.now() ? Number(prem[k]) : 0 };
         }).sort((a, b) => b.last - a.last);
 
         const platforms = { web: 0, android: 0, windows: 0 };
@@ -379,6 +382,44 @@ function loginRequired(who, req) {
     return true;
 }
 
+// ---------------------------------------------------------------- premium
+// Hash u:prem: uidKey -> expiry time in ms. The owner gives premium from the admin panel (days from today,
+// or added to the time still left). Premium accounts get higher daily limits and no ads in the Android app.
+const premCache = new Map();            // uidKey -> { until, exp }
+async function premiumUntil(uidKey) {
+    try {
+        const hit = premCache.get(uidKey);
+        if (hit && hit.exp > Date.now()) { return hit.until; }
+        const [v] = await redis([["HGET", "u:prem", uidKey]]);
+        const until = Number(v) || 0;
+        premCache.set(uidKey, { until: until, exp: Date.now() + 60 * 1000 });
+        if (premCache.size > 3000) { for (const [k, e] of premCache) { if (e.exp < Date.now()) { premCache.delete(k); } } }
+        return until;
+    } catch (e) { return 0; }
+}
+function envNum(name, dflt) {
+    const v = process.env[name];
+    return v != null && v !== "" && !isNaN(Number(v)) ? Number(v) : dflt;
+}
+
+// GET /api/stats?me=1 : the signed-in user's own plan (the apps hide ads and show a badge when premium).
+async function me(req, res) {
+    res.setHeader("Cache-Control", "no-store");
+    try {
+        const who = await authUser(req);
+        if (!who) { return res.status(200).json({ signedIn: false, premium: false }); }
+        const until = hasRedis() ? await premiumUntil(uidKeyOf(who.uid)) : 0;
+        const premium = until > Date.now();
+        return res.status(200).json({
+            signedIn: true, premium: premium, until: premium ? until : 0,
+            movies: premium ? envNum("PREMIUM_MOVIES_PER_DAY", 10) : envNum("LIMIT_MOVIES_PER_DAY", 2),
+            episodes: premium ? envNum("PREMIUM_EPISODES_PER_DAY", 30) : envNum("LIMIT_EPISODES_PER_DAY", 5)
+        });
+    } catch (e) {
+        return res.status(200).json({ signedIn: false, premium: false });
+    }
+}
+
 // ---------------------------------------------------------------- daily limit per user
 // One user (signed-in Google account, otherwise the visitor's IP address) may translate
 // LIMIT_MOVIES_PER_DAY films (default 2) and LIMIT_EPISODES_PER_DAY TV episodes (default 5) per Sri Lanka day.
@@ -394,16 +435,16 @@ function jobName(raw) {
 async function checkDailyLimit(req, rawJob, knownWho) {
     try {
         if (!hasRedis()) { return { ok: true }; }
-        const maxMovies = process.env.LIMIT_MOVIES_PER_DAY != null && process.env.LIMIT_MOVIES_PER_DAY !== "" ? Number(process.env.LIMIT_MOVIES_PER_DAY) : 2;
-        const maxEps = process.env.LIMIT_EPISODES_PER_DAY != null && process.env.LIMIT_EPISODES_PER_DAY !== "" ? Number(process.env.LIMIT_EPISODES_PER_DAY) : 5;
-
         const job = jobName(rawJob) || "untitled";
         const isEpisode = /\bs\d{1,2}\s?e\d{1,3}\b/i.test(job) || /\b\d{1,2}x\d{2}\b/i.test(job);
-        const max = isEpisode ? maxEps : maxMovies;
-        if (!(max > 0)) { return { ok: true }; }
 
         const who = knownWho !== undefined ? knownWho : await authUser(req);
         if (who && who.owner) { return { ok: true }; }
+        const isPrem = who ? (await premiumUntil(uidKeyOf(who.uid))) > Date.now() : false;
+        const maxMovies = isPrem ? envNum("PREMIUM_MOVIES_PER_DAY", 10) : envNum("LIMIT_MOVIES_PER_DAY", 2);
+        const maxEps = isPrem ? envNum("PREMIUM_EPISODES_PER_DAY", 30) : envNum("LIMIT_EPISODES_PER_DAY", 5);
+        const max = isEpisode ? maxEps : maxMovies;
+        if (!(max > 0)) { return { ok: true }; }
         const user = who ? "u" + uidKeyOf(who.uid) : "i" + sha(clientIp(req)).toString("hex").slice(0, 20);
 
         const cacheKey = user + "|" + job + "|" + dayKey(0);
@@ -418,7 +459,7 @@ async function checkDailyLimit(req, rawJob, knownWho) {
                 return {
                     ok: false, isEpisode: isEpisode, max: max,
                     message: "Daily limit reached: you can translate " + maxMovies + " films and " + maxEps +
-                        " TV episodes per day. Please try again tomorrow."
+                        " TV episodes per day." + (isPrem ? " Please try again tomorrow." : " Premium members get more every day. Please try again tomorrow.")
                 };
             }
             await redis([["SADD", setKey, job], ["EXPIRE", setKey, 2 * 86400]]);
@@ -483,6 +524,22 @@ async function action(req, res) {
             await redis([[what === "block" ? "SADD" : "SREM", "u:blocked", id]]);
             return res.status(200).json({ ok: true });
         }
+        if (what === "premium" || what === "premiumOff") {
+            if (!/^[0-9a-f]{24}$/.test(id)) { return res.status(400).json({ error: "Bad id" }); }
+            if (what === "premiumOff") {
+                await redis([["HDEL", "u:prem", id]]);
+                premCache.delete(id);
+                return res.status(200).json({ ok: true });
+            }
+            const days = Math.floor(Number(body.days));
+            if (!(days >= 1 && days <= 3650)) { return res.status(400).json({ error: "Days must be 1 to 3650" }); }
+            const [cur] = await redis([["HGET", "u:prem", id]]);
+            const from = Math.max(Date.now(), Number(cur) || 0);
+            const until = from + days * 86400e3;
+            await redis([["HSET", "u:prem", id, String(until)]]);
+            premCache.delete(id);
+            return res.status(200).json({ ok: true, until: until });
+        }
         if (what === "announce") {
             const c = cleanAnnouncement(body.announcement);
             if (c.error) { return res.status(400).json({ error: c.error }); }
@@ -510,4 +567,4 @@ async function action(req, res) {
     }
 }
 
-module.exports = { authUser, loginRequired, checkDailyLimit, pacificDay, ping, overview, health, action, publicAnnouncement, cleanAnnouncement, dayKey, uidKeyOf };
+module.exports = { me, premiumUntil, authUser, loginRequired, checkDailyLimit, pacificDay, ping, overview, health, action, publicAnnouncement, cleanAnnouncement, dayKey, uidKeyOf };

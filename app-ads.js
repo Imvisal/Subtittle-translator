@@ -58,6 +58,17 @@
 
     var root = document.documentElement;
 
+    // Premium accounts see no ads. The last known plan is remembered so ads never flash for them on start.
+    function isPremium() {
+        try {
+            if (window.__sinsubzIsPremium && window.__sinsubzIsPremium()) { return true; }
+            return Number(localStorage.getItem("sinsubz-premium") || 0) > Date.now();
+        } catch (e) { return false; }
+    }
+    document.addEventListener("sinsubz-plan", function () {
+        if (isPremium()) { hideBanner(); } else { showBanner(); }
+    });
+
     function admob() { return (cap.Plugins || {}).AdMob || null; }
     function safe(p) { try { return Promise.resolve(p); } catch (e) { return Promise.resolve(); } }
 
@@ -101,7 +112,7 @@
 
     function showBanner() {
         var ad = admob();
-        if (!ready || !ad || !bannerId() || bannerShown) { return; }
+        if (!ready || !ad || !bannerId() || bannerShown || isPremium()) { return; }
         safe(ad.showBanner({
             adId: bannerId(),
             adSize: "ADAPTIVE_BANNER",
@@ -133,7 +144,7 @@
 
     function maybeShowInterstitial() {
         var ad = admob();
-        if (!ready || !ad || !interstitialLoaded) { return; }
+        if (!ready || !ad || !interstitialLoaded || isPremium()) { return; }
         if (document.hidden) { return; }                       // user left the app: don't ambush them later
         if (Date.now() - lastInterstitial < INTERSTITIAL_GAP_MS) { return; }
         interstitialLoaded = false;

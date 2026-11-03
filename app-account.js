@@ -199,9 +199,30 @@
     // ---------------------------------------------------------
     // sign in / out
     // ---------------------------------------------------------
+    // Plan (premium or free), asked from the server after sign-in. Premium: no ads + a badge.
+    var plan = { premium: false, until: 0, movies: 0, episodes: 0 };
+    window.__sinsubzIsPremium = function () { return !!plan.premium; };
+
+    function loadPlan() {
+        if (!user) { return; }
+        token().then(function (tk) {
+            return fetch("/api/stats?me=1", { headers: { Authorization: "Bearer " + tk } });
+        }).then(function (r) { return r.json(); }).then(function (d) {
+            plan = { premium: !!(d && d.premium), until: Number(d && d.until) || 0, movies: Number(d && d.movies) || 0, episodes: Number(d && d.episodes) || 0 };
+            try { localStorage.setItem("sinsubz-premium", plan.premium ? String(plan.until) : ""); } catch (e) { /* ignore */ }
+            renderCard();
+            try { document.dispatchEvent(new CustomEvent("sinsubz-plan", { detail: plan })); } catch (e) { /* ignore */ }
+        }).catch(function () { /* offline: keep what we know */ });
+    }
+
     function setUser(u) {
+        var was = user && user.uid;
         user = u ? { uid: u.uid, displayName: u.displayName || "", email: u.email || "" } : null;
-        if (user) { hideGate(); } else { showGate(); }
+        if (user) { hideGate(); if (was !== user.uid) { loadPlan(); } } else {
+            plan = { premium: false, until: 0, movies: 0, episodes: 0 };
+            try { localStorage.setItem("sinsubz-premium", ""); } catch (e) { /* ignore */ }
+            showGate();
+        }
         renderCard();
     }
 
@@ -266,8 +287,11 @@
             card.innerHTML =
                 '<div class="ap-sec">Account</div><div class="ap-card">' +
                 '<div class="ap-item"><span class="ap-ic"><i class="fa-solid fa-circle-user"></i></span>' +
-                '<span class="ap-main"><span class="ap-title">' + esc(user.displayName || "Signed in") + '</span>' +
-                '<span class="ap-meta" style="display:block">' + esc(user.email) + '</span></span></div>' +
+                '<span class="ap-main"><span class="ap-title">' + esc(user.displayName || "Signed in") + (plan.premium ? ' <span style="background:linear-gradient(135deg,#f7c948,#f59e0b);color:#2a1d00;font-size:11px;font-weight:800;padding:2px 8px;border-radius:99px;vertical-align:middle">PREMIUM</span>' : '') + '</span>' +
+                '<span class="ap-meta" style="display:block">' + esc(user.email) + '</span>' +
+                '<span class="ap-meta" style="display:block">' + (plan.premium
+                    ? 'Premium until ' + new Date(plan.until).toISOString().slice(0, 10) + (plan.movies ? ' · ' + plan.movies + ' films + ' + plan.episodes + ' episodes per day · no ads' : '')
+                    : (plan.movies ? 'Free plan · ' + plan.movies + ' films + ' + plan.episodes + ' episodes per day' : '')) + '</span></span></div>' +
                 '<button type="button" class="ap-item" id="accSync"><span class="ap-ic"><i class="fa-solid fa-rotate"></i></span>' +
                 '<span class="ap-main"><span class="ap-title">Sync now</span>' +
                 '<span class="ap-meta" style="display:block">History &amp; settings are saved to your account</span></span></button>' +
