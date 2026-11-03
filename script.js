@@ -3606,13 +3606,17 @@ async function translateSubtitleChunksImpl(
 
             try {
 
+                const authHeaders = { "Content-Type": "application/json" };
+                try {
+                    const tk = window.__sinsubzIdToken ? await window.__sinsubzIdToken() : "";
+                    if (tk) { authHeaders.Authorization = "Bearer " + tk; }
+                } catch (e) { /* server decides */ }
+
                 const response = await fetch(
                     "/api/translate",
                     {
                         method: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
+                        headers: authHeaders,
                         body: JSON.stringify({
                             subtitles: chunk,
                             language: "si",
