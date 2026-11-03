@@ -59,6 +59,7 @@ global.fetch = async (url, opt) => {
         const u = users[JSON.parse(opt.body).idToken];
         return { ok: !!u, status: u ? 200 : 400, json: async () => ({ users: u ? [u] : [] }) };
     }
+    if (String(url).includes("generativelanguage")) { return { ok: true, status: 200, text: async () => "{}", json: async () => ({}) }; }
     return realFetch(url, opt);
 };
 
@@ -191,6 +192,32 @@ function call(method, url, { headers = {}, body } = {}) {
         ok(q.keys.length === 2 && q.keys[0].left === 75 && q.keys[0].used === 250, "key 1: 250 of 1000 used -> 75% left " + JSON.stringify(q.keys[0]));
         ok(q.keys[1].exhausted && q.keys[1].left === 0, "key 2: Google said finished -> 0%");
         ok(q.resetAt > Date.now() && q.resetAt - Date.now() <= 86400e3, "reset time is within a day");
+    }
+
+    // ---- daily limit: 2 films + 5 episodes per user ----
+    {
+        const translate = require("../api/translate.js");
+        const t = (job, headers) => new Promise(resolve => {
+            const res = { code: 200, setHeader() {}, status(c) { this.code = c; return this; }, json(b) { resolve({ code: this.code, body: b }); } };
+            translate({ method: "POST", url: "/api/translate", headers: Object.assign({ "x-forwarded-for": "6.6.6.6" }, headers), body: { subtitles: [{ number: 1, timestamp: "00:00:01,000 --> 00:00:02,000", text: "Hi" }], job }, socket: {} }, res);
+        });
+        const lim = r => r.code === 429 && r.body.code === "DAILY_LIMIT";
+        ok(!lim(await t("Movie.One.2025.Sinhala.SinSubz")), "film 1 allowed");
+        ok(!lim(await t("Movie.One.2025")), "same film again (more chunks / re-run) still allowed");
+        ok(!lim(await t("Movie.Two.2025")), "film 2 allowed");
+        const third = await t("Movie.Three.2025");
+        ok(lim(third) && /2 films and 5 TV episodes/.test(third.body.error), "film 3 refused: " + JSON.stringify(third.body));
+        ok(!lim(await t("Movie.Two.2025")), "film 2 can still be continued after the limit");
+        for (let i = 1; i <= 5; i++) { ok(!lim(await t("Show.S01E0" + i)), "episode " + i + " allowed"); }
+        ok(lim(await t("Show.S01E06")), "episode 6 refused");
+        ok(!lim(await t("Movie.One.2025", { "x-forwarded-for": "6.6.6.7" })), "another visitor has their own count");
+        ok(!lim(await t("Movie.Five", { authorization: "Bearer tok-nimal", "x-forwarded-for": "6.6.6.8" })), "signed-in film 1");
+        await t("Movie.Six", { authorization: "Bearer tok-nimal", "x-forwarded-for": "6.6.6.9" });
+        ok(lim(await t("Movie.Seven", { authorization: "Bearer tok-nimal", "x-forwarded-for": "6.6.6.10" })), "signed-in account is counted across different IPs");
+        ok(!lim(await t("Movie.Eight", { authorization: "Bearer tok-visal", "x-forwarded-for": "6.6.6.11" })), "other account fine");
+        process.env.LIMIT_MOVIES_PER_DAY = "0";
+        ok(!lim(await t("Movie.Nine")), "0 = no limit");
+        delete process.env.LIMIT_MOVIES_PER_DAY;
     }
 
     // brute force

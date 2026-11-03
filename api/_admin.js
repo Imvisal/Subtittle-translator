@@ -350,6 +350,59 @@ function pacificParts(ms) {
 function pacificDay() { return pacificParts(Date.now()).day; }
 function pacificResetAt() { return Date.now() + (86400 - pacificParts(Date.now()).secs) * 1000; }
 
+// ---------------------------------------------------------------- daily limit per user
+// One user (signed-in Google account, otherwise the visitor's IP address) may translate
+// LIMIT_MOVIES_PER_DAY films (default 2) and LIMIT_EPISODES_PER_DAY TV episodes (default 5) per Sri Lanka day.
+// A film / episode counts ONCE however many requests it needs (a film is ~35). "0" in the env var = no limit.
+// The owner account is exempt. Used by api/translate.js. Never throws: if the database is down, translating still works.
+const limitCache = new Map();           // "<user>|<job>" -> expiry ms (skip the database for the rest of a running job)
+
+function jobName(raw) {
+    return String(raw || "").replace(/\.(Sinhala\.SinSubz|synced)(\.srt)?$/i, "").replace(/\.srt$/i, "")
+        .replace(/[._]+/g, " ").replace(/[\u0000-\u001F\u007F]/g, "").replace(/\s+/g, " ").trim().toLowerCase().slice(0, 100);
+}
+
+async function checkDailyLimit(req, rawJob) {
+    try {
+        if (!hasRedis()) { return { ok: true }; }
+        const maxMovies = process.env.LIMIT_MOVIES_PER_DAY != null && process.env.LIMIT_MOVIES_PER_DAY !== "" ? Number(process.env.LIMIT_MOVIES_PER_DAY) : 2;
+        const maxEps = process.env.LIMIT_EPISODES_PER_DAY != null && process.env.LIMIT_EPISODES_PER_DAY !== "" ? Number(process.env.LIMIT_EPISODES_PER_DAY) : 5;
+
+        const job = jobName(rawJob) || "untitled";
+        const isEpisode = /\bs\d{1,2}\s?e\d{1,3}\b/i.test(job) || /\b\d{1,2}x\d{2}\b/i.test(job);
+        const max = isEpisode ? maxEps : maxMovies;
+        if (!(max > 0)) { return { ok: true }; }
+
+        let who = null;
+        if (/^Bearer\s+/i.test(String((req.headers && req.headers.authorization) || ""))) { who = await verifyGoogleUser(req).catch(() => null); }
+        if (who && who.owner) { return { ok: true }; }
+        const user = who ? "u" + uidKeyOf(who.uid) : "i" + sha(clientIp(req)).toString("hex").slice(0, 20);
+
+        const cacheKey = user + "|" + job + "|" + dayKey(0);
+        if ((limitCache.get(cacheKey) || 0) > Date.now()) { return { ok: true }; }
+
+        const setKey = "lim:" + dayKey(0) + ":" + user + ":" + (isEpisode ? "e" : "m");
+        const [already] = await redis([["SISMEMBER", setKey, job]]);
+        if (Number(already) !== 1) {
+            const [count] = await redis([["SCARD", setKey]]);
+            if ((Number(count) || 0) >= max) {
+                await redis([["HINCRBY", "stats:d:" + dayKey(0), "limited", 1]]).catch(() => null);
+                return {
+                    ok: false, isEpisode: isEpisode, max: max,
+                    message: "Daily limit reached: you can translate " + maxMovies + " films and " + maxEps +
+                        " TV episodes per day. Please try again tomorrow."
+                };
+            }
+            await redis([["SADD", setKey, job], ["EXPIRE", setKey, 2 * 86400]]);
+        }
+        limitCache.set(cacheKey, Date.now() + 30 * 60 * 1000);
+        if (limitCache.size > 3000) { for (const [k, v] of limitCache) { if (v < Date.now()) { limitCache.delete(k); } } }
+        return { ok: true };
+    } catch (e) {
+        return { ok: true };
+    }
+}
+
 // ---------------------------------------------------------------- announcements
 // The apps fetch /announcement.json; vercel.json rewrites that to /api/stats?announcement=1.
 function cleanAnnouncement(a) {
@@ -429,4 +482,4 @@ async function action(req, res) {
     }
 }
 
-module.exports = { pacificDay, ping, overview, health, action, publicAnnouncement, cleanAnnouncement, dayKey, uidKeyOf };
+module.exports = { checkDailyLimit, pacificDay, ping, overview, health, action, publicAnnouncement, cleanAnnouncement, dayKey, uidKeyOf };

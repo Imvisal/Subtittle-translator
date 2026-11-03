@@ -423,6 +423,16 @@ module.exports = async function handler(req, res) {
         }
 
 
+        // ---- daily limit per user: films / TV episodes (see api/_admin.js checkDailyLimit) ----
+        {
+            const lim = await require("./_admin.js").checkDailyLimit(
+                req, (req.body && req.body.job) || title
+            );
+            if (!lim.ok) {
+                return res.status(429).json({ error: lim.message, code: "DAILY_LIMIT" });
+            }
+        }
+
         // ---- input limits: nobody should burn the free quota with huge bodies ----
         if (subtitles.length > MAX_LINES) {
             return res.status(413).json({

@@ -3567,6 +3567,7 @@ async function translateSubtitleChunksImpl(
                             language: "si",
                             style: selectedTranslationStyle,
                             title: (meta && meta.title) || "",
+                            job: String(uploadedFileName || (meta && meta.title) || ""),
                             context: getChunkContext(subtitles, chunkStart, chunk.length)
                         })
                     }
@@ -3589,7 +3590,7 @@ async function translateSubtitleChunksImpl(
                     );
 
                     // daily limit reached on every key/model: retrying will not help
-                    if (data.code === "QUOTA_EXHAUSTED") {
+                    if (data.code === "QUOTA_EXHAUSTED" || data.code === "DAILY_LIMIT") {
                         apiError.quotaExhausted = true;
                     }
 
