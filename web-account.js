@@ -64,14 +64,14 @@
     // ---------------------------------------------------------
     // UI
     // ---------------------------------------------------------
-    var prof = { nick: "", pic: "" };       // nickname + picture chosen on the profile page
+    var prof = { nick: "", pic: "", premium: false };       // nickname + picture chosen on the profile page
     function loadProfileBits() {
         if (!user || !window.__sinsubzIdToken) { return; }
         window.__sinsubzIdToken().then(function (tk) {
             return fetch("/api/stats?me=1", { headers: { Authorization: "Bearer " + tk }, cache: "no-store" });
         }).then(function (r) { return r.json(); }).then(function (d) {
             if (!d || !d.signedIn) { return; }
-            if ((d.nick || "") !== prof.nick || (d.pic || "") !== prof.pic) { prof = { nick: d.nick || "", pic: d.pic || "" }; render(); }
+            if ((d.nick || "") !== prof.nick || (d.pic || "") !== prof.pic || !!d.premium !== prof.premium) { prof = { nick: d.nick || "", pic: d.pic || "", premium: !!d.premium }; render(); }
         }).catch(function () { /* ignore */ });
     }
 
@@ -93,7 +93,7 @@
             '<button type="button" class="wa-avatar" id="waAv" aria-haspopup="true" aria-expanded="false" ' +
             'aria-label="Account menu">' + photo + '</button>' +
             '<div class="wa-menu" id="waMenu" hidden>' +
-            '<div class="wa-who"><strong>' + esc(shownName) + '</strong>' +
+            '<div class="wa-who"><strong>' + esc(shownName) + (prof.premium ? ' <span class="wa-prem">&#128081; Premium</span>' : '') + '</strong>' +
             '<small>' + esc(user.email) + '</small></div>' +
             '<div class="wa-plan" id="waPlan" hidden></div>' +
             '<a class="wa-out" href="profile.html" style="text-decoration:none"><i class="fa-solid fa-user"></i> My profile &amp; downloads</a>' +

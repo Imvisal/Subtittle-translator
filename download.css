@@ -285,3 +285,6 @@ html[data-theme="light"] .wa-menu { background: #fff; color: #1c1b33; border-col
     .hero-banner.wall-on .hero-wall { opacity: 0.55; }
 }
 @media (prefers-reduced-motion: reduce) { .hw-col { animation: none; } .hw-img { transition: none; } }
+
+.wa-prem { display: inline-block; margin-left: 6px; padding: 1px 9px; border-radius: 99px; font-size: 11px; font-weight: 800; letter-spacing: .02em;
+    color: #3a2600; background: linear-gradient(135deg, #ffd75e, #f5a30c); vertical-align: middle; box-shadow: 0 2px 8px rgba(245,163,12,.3); }
