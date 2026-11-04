@@ -14,7 +14,7 @@
             if (d.freeMovies != null) { $("planFreeM").textContent = d.freeMovies; $("planFreeE").textContent = d.freeEpisodes; }
             if (d.movies != null) { $("planProM").textContent = d.movies; $("planProE").textContent = d.episodes; }
             if (d.price) { $("planPrice").textContent = d.price; }
-            if (d.until && d.until > Date.now()) { if (window.__sinsubzMarkPremium) { window.__sinsubzMarkPremium(true); } else { document.documentElement.classList.add("is-premium"); } }
+            if (d.until && d.until > Date.now()) { if (window.__sinsubzMarkPremium) { window.__sinsubzMarkPremium(true, d.until); } else { document.documentElement.classList.add("is-premium"); } }
             if (d.until) {
                 var st = $("planState"); st.hidden = false;
                 st.textContent = "Active until " + new Date(d.until).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });

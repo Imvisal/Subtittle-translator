@@ -65,7 +65,10 @@
     // UI
     // ---------------------------------------------------------
     // Premium members do not see the header "Premium" link or the plans section (CSS class on <html>)
-    window.__sinsubzMarkPremium = function (on) { document.documentElement.classList.toggle("is-premium", !!on); };
+    window.__sinsubzMarkPremium = function (on, until) {
+        document.documentElement.classList.toggle("is-premium", !!on);
+        try { if (on) { localStorage.setItem("sinsubz-web-premium", String(until || Date.now() + 86400e3)); } else { localStorage.removeItem("sinsubz-web-premium"); } } catch (e) { /* ignore */ }
+    };
 
     var prof = { nick: "", pic: "", premium: false };       // nickname + picture chosen on the profile page
     function loadProfileBits() {
@@ -75,7 +78,7 @@
         }).then(function (r) { return r.json(); }).then(function (d) {
             if (!d || !d.signedIn) { return; }
             if ((d.nick || "") !== prof.nick || (d.pic || "") !== prof.pic || !!d.premium !== prof.premium) { prof = { nick: d.nick || "", pic: d.pic || "", premium: !!d.premium }; render(); }
-            window.__sinsubzMarkPremium(!!d.premium);       // gold header badge, hides the "get Premium" section
+            window.__sinsubzMarkPremium(!!d.premium, d.until);       // gold header badge, hides the "get Premium" section
         }).catch(function () { /* ignore */ });
     }
 
