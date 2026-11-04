@@ -87,3 +87,5 @@ html[data-theme="dark"] .cm-owner { color: #7be5ae; }
     box-shadow: 0 0 0 1px rgba(245, 163, 12, .35), 0 2px 8px rgba(245, 163, 12, .25);
     vertical-align: middle;
 }
+
+.cm-av-pic { object-fit: cover; background: none; }

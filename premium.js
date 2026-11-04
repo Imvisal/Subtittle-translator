@@ -166,9 +166,7 @@
     }
 
     // the Google sign-in state is restored by web-account.js; give it a moment, then load
-    var tries = 0;
-    (function wait() {
-        tries++;
-        if (window.__sinsubzIdToken && (tries > 3)) { load(); } else if (tries > 20) { load(); } else { setTimeout(wait, 250); }
-    })();
+    (function wait(n) {
+        if (window.__sinsubzAuthReady) { window.__sinsubzAuthReady().then(load); } else if (n > 40) { load(); } else { setTimeout(function () { wait(n + 1); }, 100); }
+    })(0);
 })();

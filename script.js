@@ -1182,6 +1182,11 @@ uploadProgressUI.status.textContent =
             filename
         );
 
+        saveMyTranslation({
+            title: String(uploadedFileName || "").replace(/[._]+/g, " ").replace(/\s+/g, " ").trim(), year: "", poster: "",
+            type: /\bs\d{1,2}\s?e\d{1,3}\b/i.test(String(uploadedFileName || "")) ? "tv" : "movie"
+        }, sinhalaSRT, filename);
+
 
         alert(
             "Translation completed!\n\n" +
@@ -3195,6 +3200,11 @@ async function selectSubtitle(
             filename
         );
 
+        saveMyTranslation({
+            title: (item && item.title ? item.title : baseName) + (season ? " S" + String(season).padStart(2, "0") + (episode ? "E" + String(episode).padStart(2, "0") : "") : ""),
+            year: item && item.year, poster: item && item.poster, type: season ? "tv" : "movie"
+        }, sinhalaSRT, filename);
+
 
         if (searchStatus) {
 
@@ -3328,6 +3338,24 @@ function offerPremiumSoon() {
     if (/Electron/i.test(navigator.userAgent || "") || !window.__sinsubzPremiumInfo) { return; }
     clearTimeout(premiumOfferTimer);
     premiumOfferTimer = setTimeout(function () { window.__sinsubzPremiumInfo("done"); }, 400);
+}
+
+// Keeps a copy of the finished Sinhala subtitle in the signed-in user's account ("My translations").
+// Free users see it as a poster card; downloading it again is a Premium feature. Never blocks or breaks translating.
+async function saveMyTranslation(info, srt, filename) {
+    try {
+        if (/Electron/i.test(navigator.userAgent || "") || !window.__sinsubzIdToken) { return; }
+        const tk = await window.__sinsubzIdToken();
+        if (!tk) { return; }
+        await fetch("/api/stats?mytr=save", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: "Bearer " + tk },
+            body: JSON.stringify({
+                title: info.title || "", year: info.year || "", type: info.type || "movie",
+                poster: info.poster && info.poster !== "N/A" ? info.poster : "", srt: srt, filename: filename
+            })
+        });
+    } catch (e) { /* optional */ }
 }
 
 // Wrapper: lets the Android / desktop apps show notifications
@@ -6561,9 +6589,11 @@ window.__sinsubzPremiumInfo = async function (mode) {
     const fm = (me && me.movies) || 2, fe = (me && me.episodes) || 5;
     const contact = String(offer.contact || "https://t.me/sinsubz");
 
-    const head = mode === "done" ? "Your subtitles are ready! \uD83C\uDF89"
+    const head = mode === "download" ? "Downloading again is Premium"
+        : mode === "done" ? "Your subtitles are ready! \uD83C\uDF89"
         : mode === "limit" ? "You reached today\u2019s free limit" : "Go Premium";
-    const sub = mode === "done" ? "Enjoy SinSubz more with Premium."
+    const sub = mode === "download" ? "Your subtitle is saved. Premium members can download their saved subtitles any time."
+        : mode === "done" ? "Enjoy SinSubz more with Premium."
         : mode === "limit" ? "Premium lets you translate a lot more every day." : "Support SinSubz and get more.";
 
     const check = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" style="flex:none"><circle cx="12" cy="12" r="11" fill="#2fbf71"/><path d="M7 12.5l3.3 3.3L17 9" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';

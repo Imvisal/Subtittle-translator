@@ -98,6 +98,12 @@ module.exports = async function handler(req, res) {
     if (/(?:^|[?&])announcement(?:=|&|$)/.test(String(req.url || "")) && req.method === "GET") {
         return require("./_admin.js").publicAnnouncement(req, res);
     }
+    if (/(?:^|[?&])profile(?:=|&|$)/.test(String(req.url || ""))) {
+        return require("./_profile.js").profile(req, res);
+    }
+    if (/(?:^|[?&])mytr(?:=|&|$)/.test(String(req.url || ""))) {
+        return require("./_profile.js").mytr(req, res);
+    }
     if (/(?:^|[?&])me(?:=|&|$)/.test(String(req.url || "")) && req.method === "GET") {
         return require("./_admin.js").me(req, res);
     }

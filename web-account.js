@@ -24,6 +24,14 @@
     var host = document.getElementById("webAcct");
     if (!host) { return; }
 
+    // resolves once we know whether the visitor is signed in (pages like profile.html wait for it)
+    var readyDone = null;
+    var readyP = new Promise(function (r) { readyDone = r; });
+    window.__sinsubzAuthReady = function () { return readyP; };
+    if (lsGetEarly() !== "1") { readyDone(); }
+    setTimeout(function () { readyDone(); }, 6000);                       // never wait forever
+    function lsGetEarly() { try { return localStorage.getItem("sinsubz-web-signed-in"); } catch (e) { return null; } }
+
     var fb = null;          // { auth, signInWithPopup, GoogleAuthProvider, signOut }
     var user = null;
     var pushTimer = null;
@@ -56,6 +64,17 @@
     // ---------------------------------------------------------
     // UI
     // ---------------------------------------------------------
+    var prof = { nick: "", pic: "" };       // nickname + picture chosen on the profile page
+    function loadProfileBits() {
+        if (!user || !window.__sinsubzIdToken) { return; }
+        window.__sinsubzIdToken().then(function (tk) {
+            return fetch("/api/stats?me=1", { headers: { Authorization: "Bearer " + tk }, cache: "no-store" });
+        }).then(function (r) { return r.json(); }).then(function (d) {
+            if (!d || !d.signedIn) { return; }
+            if ((d.nick || "") !== prof.nick || (d.pic || "") !== prof.pic) { prof = { nick: d.nick || "", pic: d.pic || "" }; render(); }
+        }).catch(function () { /* ignore */ });
+    }
+
     function render() {
         if (!user) {
             host.innerHTML =
@@ -64,17 +83,20 @@
             document.getElementById("waIn").addEventListener("click", signIn);
             return;
         }
-        var initial = esc((user.displayName || user.email || "?").trim().charAt(0).toUpperCase());
-        var photo = user.photoURL
-            ? '<img src="' + esc(user.photoURL) + '" alt="" referrerpolicy="no-referrer">'
+        var shownName = prof.nick || user.displayName || "Signed in";
+        var initial = esc((prof.nick || user.displayName || user.email || "?").trim().charAt(0).toUpperCase());
+        var pic = /^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(prof.pic || "") ? prof.pic : user.photoURL;
+        var photo = pic
+            ? '<img src="' + esc(pic) + '" alt="" referrerpolicy="no-referrer">'
             : '<span>' + initial + '</span>';
         host.innerHTML =
             '<button type="button" class="wa-avatar" id="waAv" aria-haspopup="true" aria-expanded="false" ' +
             'aria-label="Account menu">' + photo + '</button>' +
             '<div class="wa-menu" id="waMenu" hidden>' +
-            '<div class="wa-who"><strong>' + esc(user.displayName || "Signed in") + '</strong>' +
+            '<div class="wa-who"><strong>' + esc(shownName) + '</strong>' +
             '<small>' + esc(user.email) + '</small></div>' +
             '<div class="wa-plan" id="waPlan" hidden></div>' +
+            '<a class="wa-out" href="profile.html" style="text-decoration:none"><i class="fa-solid fa-user"></i> My profile &amp; downloads</a>' +
             '<button type="button" class="wa-out" id="waPrem"><i class="fa-solid fa-crown" style="color:#f5b316"></i> Go Premium</button>' +
             '<button type="button" class="wa-out" id="waOut"><i class="fa-solid fa-right-from-bracket"></i> Sign out</button>' +
             '</div>';
@@ -148,6 +170,8 @@
                 user = u ? { uid: u.uid, displayName: u.displayName || "", email: u.email || "", photoURL: u.photoURL || "" } : null;
                 if (user) { lsSet(K.flag, "1"); } else { lsDel(K.flag); }
                 render();
+                readyDone();
+                if (user) { loadProfileBits(); }
                 if (first) { sync().catch(function () { /* offline */ }); }
                 if (user) { pingServer(); }
             });

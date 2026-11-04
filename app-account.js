@@ -297,6 +297,9 @@
                 (plan.premium ? '' : '<button type="button" class="ap-item" id="accPrem"><span class="ap-ic"><i class="fa-solid fa-crown" style="color:#f5b316"></i></span>' +
                 '<span class="ap-main"><span class="ap-title">Go Premium</span>' +
                 '<span class="ap-meta" style="display:block">More films per day, no ads</span></span></button>') +
+                '<a class="ap-item" href="https://sinsubs.site/profile.html" target="_blank" rel="noopener"><span class="ap-ic"><i class="fa-solid fa-user"></i></span>' +
+                '<span class="ap-main"><span class="ap-title">My profile &amp; downloads</span>' +
+                '<span class="ap-meta" style="display:block">Name, picture and your saved subtitles</span></span></a>' +
                 '<button type="button" class="ap-item" id="accSync"><span class="ap-ic"><i class="fa-solid fa-rotate"></i></span>' +
                 '<span class="ap-main"><span class="ap-title">Sync now</span>' +
                 '<span class="ap-meta" style="display:block">History &amp; settings are saved to your account</span></span></button>' +

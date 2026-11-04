@@ -22,6 +22,7 @@ function run(c) {
         case "HGET": return (db.hash[k] || {})[a[0]] == null ? null : db.hash[k][a[0]];
         case "HDEL": { const h = db.hash[k] || {}; const had = h[a[0]] != null; delete h[a[0]]; return had ? 1 : 0; }
         case "HMGET": return a.map(x => ((db.hash[k] || {})[x] == null ? null : db.hash[k][x]));
+        case "EXISTS": return db.kv[k] != null ? 1 : 0;
         case "HLEN": return Object.keys(db.hash[k] || {}).length;
         case "HINCRBY": { const h = (db.hash[k] = db.hash[k] || {}); h[a[0]] = String((Number(h[a[0]]) || 0) + Number(a[1])); return Number(h[a[0]]); }
         case "HGETALL": return Object.entries(db.hash[k] || {}).flat();
@@ -263,6 +264,41 @@ function call(method, url, { headers = {}, body } = {}) {
             await call("POST", "/api/stats?user=1", { headers: { authorization: "Bearer tok-pro" }, body: { platform: "android" } });
             const ov = (await call("GET", "/api/stats?admin=1", { headers: AK })).body.users.find(u => u.email === "p@example.com");
             ok(ov && ov.premium === 0, "admin list shows the account without premium after it was ended");
+        }
+
+        // ---- profile + my translations ----
+        {
+            const H = tok => ({ authorization: "Bearer " + tok });
+            ok((await call("GET", "/api/stats?profile=1")).code === 401, "profile needs sign-in");
+            ok((await call("POST", "/api/stats?profile=1", { headers: H("tok-pro"), body: { nick: "x" } })).code === 400, "1-letter name refused");
+            ok((await call("POST", "/api/stats?profile=1", { headers: H("tok-pro"), body: { nick: "visit www.spam.com" } })).code === 400, "link in name refused");
+            ok((await call("POST", "/api/stats?profile=1", { headers: H("tok-pro"), body: { pic: "data:image/png;base64,AAAA" } })).code === 400, "non-jpeg picture refused");
+            const pic = "data:image/jpeg;base64," + "A".repeat(200);
+            const sv = await call("POST", "/api/stats?profile=1", { headers: H("tok-pro"), body: { nick: "Kasun K", pic } });
+            ok(sv.code === 200 && sv.body.nick === "Kasun K", "profile saved");
+            const mm = await call("GET", "/api/stats?me=1", { headers: H("tok-pro") });
+            ok(mm.body.nick === "Kasun K" && mm.body.pic === pic, "me returns nickname + picture");
+
+            const srt = "1\n00:00:01,000 --> 00:00:02,000\nආයුබෝවන්\n\n2\n00:00:03,000 --> 00:00:04,000\nහරි\n";
+            const bad = await call("POST", "/api/stats?mytr=save", { headers: H("tok-pro"), body: { title: "X", srt: "nope" } });
+            ok(bad.code === 400, "bad subtitle refused");
+            const sv2 = await call("POST", "/api/stats?mytr=save", { headers: H("tok-pro"), body: { title: "Verity", year: "2026", type: "movie", poster: "https://image.tmdb.org/t/p/w342/x.jpg", srt, filename: "Verity.2026.Sinhala.SinSubz.srt" } });
+            ok(sv2.code === 200 && /^[0-9a-f]{12}$/.test(sv2.body.id), "translation saved");
+            await call("POST", "/api/stats?mytr=save", { headers: H("tok-pro"), body: { title: "Verity", year: "2026", srt, filename: "Verity.2026.Sinhala.SinSubz.srt" } });
+            let ls = await call("GET", "/api/stats?mytr=list", { headers: H("tok-pro") });
+            ok(ls.body.items.length === 1 && ls.body.items[0].title === "Verity" && ls.body.items[0].poster.startsWith("https://"), "list shows it once: " + JSON.stringify(ls.body).slice(0, 200));
+            ok((await call("GET", "/api/stats?mytr=list", { headers: H("tok-nimal") })).body.items.length === 0, "other account sees nothing");
+            const id = sv2.body.id;
+            ok((await call("GET", "/api/stats?mytr=get&id=" + id, { headers: H("tok-pro") })).code === 403, "free user cannot download (PREMIUM_ONLY)");
+            const pk2 = require("crypto").createHash("sha256").update("uid-3").digest("hex").slice(0, 24);
+            await call("POST", "/api/stats?admin=1", { headers: AK, body: { action: "premium", id: pk2, days: 3 } });
+            const gt = await call("GET", "/api/stats?mytr=get&id=" + id, { headers: H("tok-pro") });
+            ok(gt.code === 200 && gt.body.srt === srt && gt.body.filename === "Verity.2026.Sinhala.SinSubz.srt", "premium user downloads the exact file");
+            ok((await call("GET", "/api/stats?mytr=get&id=" + id, { headers: H("tok-nimal") })).code === 403, "other account cannot read it");
+            ok((await call("POST", "/api/stats?mytr=del&id=" + id, { headers: H("tok-pro") })).code === 200, "delete");
+            ls = await call("GET", "/api/stats?mytr=list", { headers: H("tok-pro") });
+            ok(ls.body.items.length === 0, "list empty after delete");
+            await call("POST", "/api/stats?admin=1", { headers: AK, body: { action: "premiumOff", id: pk2 } });
         }
         // ---- sign-in required ----
         const nolog = (headers, ua) => new Promise(resolve => {

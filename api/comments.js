@@ -25,18 +25,21 @@ const uidKey = uid => sha(String(uid)).toString("hex").slice(0, 24);
 async function premiumSet(items) {
     const keys = [...new Set(items.filter(Boolean).map(c => uidKey(c.uid)))];
     const set = new Set();
+    set.profiles = {};
     if (!keys.length) { return set; }
     try {
-        const [vals] = await redis([["HMGET", "u:prem", ...keys]]);
+        const [vals, profs] = await redis([["HMGET", "u:prem", ...keys], ["HMGET", "u:prof", ...keys]]);
         (vals || []).forEach((v, i) => { if (Number(v) > Date.now()) { set.add(keys[i]); } });
-    } catch (e) { /* no badge if the database hiccups */ }
+        (profs || []).forEach((v, i) => { const p = v && parse(v); if (p) { set.profiles[keys[i]] = p; } });
+    } catch (e) { /* no badge / nickname if the database hiccups */ }
     return set;
 }
 
 function publicView(c, who, prem) {
     const mine = !!who && c.uid === who.uid;
+    const prof = (prem && prem.profiles && prem.profiles[uidKey(c.uid)]) || {};
     return {
-        id: c.id, t: c.t, name: c.name, text: c.text,
+        id: c.id, t: c.t, name: prof.n || c.name, pic: prof.p || "", text: c.text,
         owner: !!c.owner, film: c.film || "", premium: !!(prem && prem.has(uidKey(c.uid))),
         mine, can: mine || !!(who && who.owner)
     };

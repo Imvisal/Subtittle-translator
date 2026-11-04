@@ -77,8 +77,13 @@
 
     // ------------------------------------------------------------ small pieces
     var COLORS = ["#7fb4ff", "#8f86ff", "#c58bff", "#36e0c8", "#ffb86b", "#ff8aa8", "#7bd88f"];
-    function avatar(name) {
+    function avatar(name, pic) {
         var n = (name || "?").trim();
+        if (/^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(pic || "")) {
+            var im = document.createElement("img");
+            im.src = pic; im.alt = ""; im.className = "cm-av cm-av-pic";
+            return im;
+        }
         var h = 0;
         for (var i = 0; i < n.length; i++) { h = (h * 31 + n.charCodeAt(i)) >>> 0; }
         var a = el("span", "cm-av", n.charAt(0).toUpperCase());
@@ -174,7 +179,7 @@
     // ------------------------------------------------------------ one comment
     function item(c, parent) {
         var li = el("li", "cm-item" + (c.owner ? " is-owner" : "") + (parent ? " is-reply" : ""));
-        li.appendChild(avatar(c.name));
+        li.appendChild(avatar(c.name, c.pic));
         var main = el("div", "cm-main");
 
         var head = el("div", "cm-head");

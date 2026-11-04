@@ -497,13 +497,18 @@ async function me(req, res) {
             const [m, e] = await redis([["SCARD", "lim:" + dayKey(0) + ":" + ukey + ":m"], ["SCARD", "lim:" + dayKey(0) + ":" + ukey + ":e"]]);
             usedM = Number(m) || 0; usedE = Number(e) || 0;
         }
+        let nick = "", pic = "";
+        if (hasRedis()) {
+            const prof = parse((await redis([["HGET", "u:prof", uidKeyOf(who.uid)]]))[0]) || {};
+            nick = prof.n || ""; pic = prof.p || "";
+        }
         let price = "";
         if (!premium && hasRedis()) {
             const cfg = parse((await redis([["GET", "prem:cfg"]]))[0]) || {};
             price = String(cfg.price || "").slice(0, 40);
         }
         return res.status(200).json({
-            signedIn: true, premium: premium, until: premium ? until : 0, usedMovies: usedM, usedEpisodes: usedE,
+            signedIn: true, nick: nick, pic: pic, premium: premium, until: premium ? until : 0, usedMovies: usedM, usedEpisodes: usedE,
             movies: premium ? envNum("PREMIUM_MOVIES_PER_DAY", 10) : envNum("LIMIT_MOVIES_PER_DAY", 2),
             episodes: premium ? envNum("PREMIUM_EPISODES_PER_DAY", 30) : envNum("LIMIT_EPISODES_PER_DAY", 5),
             premiumMovies: envNum("PREMIUM_MOVIES_PER_DAY", 10),

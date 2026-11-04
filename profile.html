@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="google-adsense-account" content="ca-pub-5082678285312215">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Your SinSubz profile and saved Sinhala subtitles.">
+    <meta name="theme-color" content="#07080d">
+    <title>My profile | SinSubz</title>
+
+    <link rel="canonical" href="https://sinsubs.site/profile.html">
+    <meta name="robots" content="noindex, follow">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="SinSubz">
+    <meta property="og:title" content="My profile | SinSubz">
+    <meta property="og:description" content="Your SinSubz profile and saved Sinhala subtitles.">
+    <meta property="og:url" content="https://sinsubs.site/profile.html">
+    <meta property="og:image" content="https://sinsubs.site/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:locale" content="en_US">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="My profile | SinSubz">
+    <meta name="twitter:description" content="Your SinSubz profile and saved Sinhala subtitles.">
+    <meta name="twitter:image" content="https://sinsubs.site/og-image.png">
+
+
+    <link rel="icon" href="/favicon.ico?v=1133" sizes="48x48">
+    <link rel="icon" href="/favicon.svg?v=1133" type="image/svg+xml" sizes="any">
+    <link rel="icon" href="/favicon-96.png?v=1133" type="image/png" sizes="96x96">
+    <link rel="icon" href="/favicon-192.png?v=1133" type="image/png" sizes="192x192">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png?v=1133">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="guides.css">
+    <link rel="stylesheet" href="premium.css">
+    <link rel="stylesheet" href="profile.css">
+    <script>
+        (function () {
+            try {
+                var t = localStorage.getItem("sinsubz-theme");
+                if (t === "light" || t === "dark") {
+                    document.documentElement.setAttribute("data-theme", t);
+                }
+            } catch (e) {}
+        })();
+    </script>
+</head>
+
+<body class="pm-page">
+
+<div class="pm-wrap">
+    <div class="pm-glow" aria-hidden="true"></div>
+
+    <a href="index.html" class="pm-back">← Back to SinSubz</a>
+
+    <header class="pm-hero" style="padding-bottom:0">
+        <h1>My <span>profile</span></h1>
+        <p id="plLead">Your name, your picture and your saved subtitles.</p>
+    </header>
+
+    <div id="webAcct" hidden></div>
+
+    <div id="pfBox"><p style="text-align:center;opacity:.7">Loading…</p></div>
+
+    <div class="pm-foot">
+        <a href="index.html">SinSubz</a>•<a href="guides.html">Guides</a>•<a href="privacy.html">Privacy</a>•<a href="terms.html">Terms</a>•<a href="contact.html">Contact</a>
+    </div>
+</div>
+
+<script src="web-account.js" defer></script>
+<script src="profile.js" defer></script>
+</body>
+
+</html>
