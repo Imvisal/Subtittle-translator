@@ -37,86 +37,128 @@
         });
     }
 
+    function cls(tag, c, text) { var n = el(tag, text); n.className = c; return n; }
+    function card(title) { var c = cls("section", "pm-card"); if (title) { c.appendChild(el("h2", title)); } return c; }
+
     function render(d) {
         box.textContent = "";
         if (!d.enabled && !d.until) {
-            box.appendChild(el("p", "Premium is not open yet. Please check again soon."));
+            var c0 = card(); c0.appendChild(el("p", "Premium is not open yet. Please check again soon.")); box.appendChild(c0);
             return;
         }
-        var perks = el("ul");
-        [d.movies + " films and " + d.episodes + " TV episodes every day (free: " + d.freeMovies + " films and " + d.freeEpisodes + " episodes)",
-         "No ads in the Android app", "Premium badge in the app", d.days + " days per payment"].forEach(function (t) { perks.appendChild(el("li", t)); });
-        box.appendChild(perks);
-        if (d.price) { box.appendChild(el("p", "Price: " + d.price, "font-size:20px;font-weight:800")); }
+
+        if (d.price) {
+            var pr = cls("div", "pm-price");
+            pr.appendChild(el("b", d.price));
+            pr.appendChild(el("small", "for " + d.days + " days of Premium"));
+            box.appendChild(pr);
+        }
 
         if (d.until) {
-            box.appendChild(el("p", "✅ Your Premium is active until " + new Date(d.until).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) + ".", "font-weight:700"));
+            box.appendChild(cls("div", "pm-active", "✅ Your Premium is active until " + new Date(d.until).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })));
         }
+
+        // Free vs Premium
+        var cmp = card("What you get");
+        var tb = el("table"); tb.className = "pm-table";
+        var hr = el("tr"); ["", "Free", "Premium"].forEach(function (t, i) { var th = el("th", t); if (i === 2) { th.className = "pro"; } hr.appendChild(th); });
+        var th0 = el("thead"); th0.appendChild(hr); tb.appendChild(th0);
+        var tbody = el("tbody");
+        [["Films per day", String(d.freeMovies), String(d.movies)], ["TV episodes per day", String(d.freeEpisodes), String(d.episodes)],
+         ["Ads in the app", "Yes", "None"], ["Premium badge on comments", "–", "✓"]].forEach(function (r) {
+            var tr = el("tr");
+            r.forEach(function (t, i) { var td = el("td", t); if (i === 2) { td.className = "pro"; if (t === "✓" || t === "None") { td.classList.add("pm-yes"); } } if (i === 1 && t === "–") { td.className = "pm-no"; } tr.appendChild(td); });
+            tbody.appendChild(tr);
+        });
+        tb.appendChild(tbody); cmp.appendChild(tb); box.appendChild(cmp);
+
         if (!d.enabled) { return; }
 
-        box.appendChild(el("h2", "How to pay"));
-        var ol = el("ol");
-        ["Send the amount by bank transfer to the account below.", "Take a photo or screenshot of the slip.", "Sign in with Google here, add the slip and the transfer reference, and send.", "We check the payment and switch Premium on, usually within a day."].forEach(function (t) { ol.appendChild(el("li", t)); });
-        box.appendChild(ol);
-        // each detail on its own row with its own Copy button
-        var card = el("div", null, "border-radius:14px;background:rgba(128,128,160,.15);padding:6px 14px;margin:10px 0");
+        // how to pay
+        var how = card("How to pay");
+        var ol = cls("ol", "pm-steps");
+        ["Send the amount by bank transfer to the account below.", "Take a photo or screenshot of the slip.", "Sign in with Google, add the slip and the transfer reference, and send.", "We check the payment and switch Premium on, usually within a day."].forEach(function (t) { ol.appendChild(el("li", t)); });
+        how.appendChild(ol);
+
+        var bank = cls("div", "pm-bank");
         [["Account name", d.holder], ["Bank", d.bankName], ["Branch", d.branch], ["Account number", d.account]].forEach(function (x) {
             if (!x[1]) { return; }
-            var row = el("div", null, "display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid rgba(128,128,160,.25)");
+            var row = cls("div", "pm-row");
             var txt = el("div");
-            txt.appendChild(el("small", x[0], "display:block;opacity:.65"));
-            txt.appendChild(el("strong", x[1], "font-size:16px;word-break:break-word"));
-            var cp = btn("Copy", false);
-            cp.style.padding = "7px 14px";
+            txt.appendChild(el("small", x[0]));
+            txt.appendChild(el("strong", x[1]));
+            var cp = cls("button", "pm-copy", "Copy"); cp.type = "button";
             cp.addEventListener("click", function () {
-                var done = function () { cp.textContent = "Copied ✓"; setTimeout(function () { cp.textContent = "Copy"; }, 1500); };
-                if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(x[1]).then(done).catch(function () { cp.textContent = "Press and hold to copy"; }); }
+                var done = function () { cp.textContent = "Copied ✓"; cp.classList.add("ok"); setTimeout(function () { cp.textContent = "Copy"; cp.classList.remove("ok"); }, 1500); };
+                if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(x[1]).then(done).catch(function () { cp.textContent = "Hold to copy"; }); }
                 else { var ta = document.createElement("textarea"); ta.value = x[1]; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); done(); } catch (e) { /* ignore */ } ta.remove(); }
             });
             row.appendChild(txt); row.appendChild(cp);
-            card.appendChild(row);
+            bank.appendChild(row);
         });
-        if (d.bank) { card.appendChild(el("p", d.bank, "white-space:pre-wrap;margin:10px 0")); }
-        box.appendChild(card);
+        if (d.bank) { bank.appendChild(cls("div", "pm-note", d.bank)); }
+        how.appendChild(bank);
+        box.appendChild(how);
 
+        // send the slip
+        var send = card("Send your slip");
         if (!d.signedIn) {
-            var b = btn("Sign in with Google", true);
+            send.appendChild(el("p", "Sign in with Google so we know which account to upgrade.", "color:inherit;opacity:.8;margin:0"));
+            var b = cls("button", "pm-btn g", "Sign in with Google"); b.type = "button";
             b.addEventListener("click", function () {
                 b.disabled = true;
                 (window.__sinsubzSignIn ? window.__sinsubzSignIn() : Promise.resolve()).catch(function () { /* ignore */ }).then(load);
             });
-            box.appendChild(b);
+            send.appendChild(b);
+            box.appendChild(send);
+            box.appendChild(tgLink());
             return;
         }
         if (d.request && d.request.status === "pending") {
-            box.appendChild(el("p", "⏳ Your request (" + d.request.ref + ") is waiting for approval.", "font-weight:700"));
+            box.appendChild(cls("div", "pm-pending", "⏳ Your request (" + d.request.ref + ") is waiting for approval. We usually check within a day."));
+            box.appendChild(tgLink());
             return;
         }
         if (d.request && d.request.status === "rejected") {
-            box.appendChild(el("p", "Your last request was not approved. Check the slip and send it again.", "color:#ff8a8a"));
+            send.appendChild(cls("div", "pm-bad", "Your last request was not approved. Check the slip and send it again."));
         }
 
-        var form = el("div");
-        form.appendChild(el("label", "Transfer reference or the name on the transfer", "display:block;margin:12px 0 4px"));
-        var ref = el("input"); ref.maxLength = 80; ref.style.cssText = "width:100%;padding:11px;border-radius:10px;border:1px solid rgba(128,128,160,.5);background:transparent;color:inherit;font:inherit";
-        form.appendChild(ref);
-        form.appendChild(el("label", "Photo of the slip", "display:block;margin:12px 0 4px"));
+        send.appendChild(cls("label", "pm-label", "Transfer reference or the name on the transfer"));
+        var ref = cls("input", "pm-input"); ref.maxLength = 80; ref.placeholder = "e.g. Kasun Perera / ref 12345";
+        send.appendChild(ref);
+        send.appendChild(cls("label", "pm-label", "Photo of the slip"));
+        var drop = cls("label", "pm-drop");
+        var hint = el("span", "📷  Tap to choose the slip photo");
         var file = el("input"); file.type = "file"; file.accept = "image/*";
-        form.appendChild(file);
-        var msg = el("p", "", "min-height:22px;color:#ff8a8a");
-        var send = btn("Send for approval", true);
-        send.style.marginTop = "12px";
-        send.addEventListener("click", function () {
-            msg.style.color = "#ff8a8a"; msg.textContent = "";
+        drop.appendChild(hint); drop.appendChild(file);
+        file.addEventListener("change", function () {
+            var f = file.files[0]; if (!f) { return; }
+            var u = URL.createObjectURL(f), im = new Image();
+            im.onload = function () { URL.revokeObjectURL(u); };
+            im.src = u; im.alt = "Slip preview";
+            drop.textContent = ""; drop.appendChild(im); drop.appendChild(el("span", f.name)); drop.appendChild(file);
+        });
+        send.appendChild(drop);
+        var msg = cls("p", "pm-msg");
+        var go = cls("button", "pm-btn", "Send for approval"); go.type = "button";
+        go.addEventListener("click", function () {
+            msg.textContent = "";
             if (ref.value.trim().length < 3) { msg.textContent = "Write the transfer reference or the name."; return; }
             if (!file.files[0]) { msg.textContent = "Choose the photo of the slip."; return; }
-            send.disabled = true; send.textContent = "Sending…";
+            go.disabled = true; go.textContent = "Sending…";
             shrink(file.files[0]).then(function (slip) { return api("POST", { ref: ref.value.trim(), slip: slip }); })
                 .then(function () { load(); })
-                .catch(function (e) { msg.textContent = e.message; send.disabled = false; send.textContent = "Send for approval"; });
+                .catch(function (e) { msg.textContent = e.message; go.disabled = false; go.textContent = "Send for approval"; });
         });
-        form.appendChild(send); form.appendChild(msg);
-        box.appendChild(form);
+        send.appendChild(go); send.appendChild(msg);
+        box.appendChild(send);
+        box.appendChild(tgLink());
+    }
+
+    function tgLink() {
+        var a = cls("a", "pm-tg", "Need help? Message us on Telegram");
+        a.href = "https://t.me/sinsubz"; a.target = "_blank"; a.rel = "noopener";
+        return a;
     }
 
     function load() {
