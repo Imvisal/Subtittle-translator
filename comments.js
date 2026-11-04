@@ -110,6 +110,13 @@
         }
         line.appendChild(el("b", "", c.name || "Google user"));
         if (c.owner) { line.appendChild(el("span", "cm-owner", "Owner")); }
+        if (c.premium) {
+            var pb = el("span", "cm-prem");
+            pb.title = "SinSubz Premium member";
+            pb.innerHTML = '<svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><path fill="currentColor" d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5L3 8z"/></svg>';   // fixed markup
+            pb.appendChild(document.createTextNode("Premium"));
+            line.appendChild(pb);
+        }
         return line;
     }
 

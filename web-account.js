@@ -74,6 +74,7 @@
             '<div class="wa-menu" id="waMenu" hidden>' +
             '<div class="wa-who"><strong>' + esc(user.displayName || "Signed in") + '</strong>' +
             '<small>' + esc(user.email) + '</small></div>' +
+            '<button type="button" class="wa-out" id="waPrem"><i class="fa-solid fa-crown" style="color:#f5b316"></i> Go Premium</button>' +
             '<button type="button" class="wa-out" id="waOut"><i class="fa-solid fa-right-from-bracket"></i> Sign out</button>' +
             '</div>';
         var menu = document.getElementById("waMenu");
@@ -85,6 +86,10 @@
             av.setAttribute("aria-expanded", open ? "true" : "false");
         });
         document.getElementById("waOut").addEventListener("click", signOutNow);
+        document.getElementById("waPrem").addEventListener("click", function () {
+            menu.hidden = true;
+            if (window.__sinsubzPremiumInfo) { window.__sinsubzPremiumInfo("settings"); }
+        });
     }
 
     document.addEventListener("click", function (e) {
@@ -127,6 +132,7 @@
 
     // Lets the server know this Google account is using the site (shown only in the owner's admin panel).
     // The ID token is verified by Google on the server; nothing else is sent.
+    window.__sinsubzUser = function () { return user; };
     window.__sinsubzIdToken = function () {
         if (!fb || !fb.auth || !fb.auth.currentUser) { return Promise.resolve(""); }
         return fb.auth.currentUser.getIdToken();

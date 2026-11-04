@@ -3344,6 +3344,11 @@ async function translateSubtitleChunks(
             try { notify.done(result.length); } catch (e) { /* ignore */ }
         }
 
+        // free signed-in users get a short Premium offer once their subtitles are ready (not the Windows app)
+        if (!/Electron/i.test(navigator.userAgent || "") && window.__sinsubzPremiumInfo) {
+            setTimeout(function () { window.__sinsubzPremiumInfo("done"); }, 2500);
+        }
+
         return result;
 
     } catch (error) {
@@ -3647,6 +3652,9 @@ async function translateSubtitleChunksImpl(
                     // daily limit reached on every key/model: retrying will not help
                     if (data.code === "QUOTA_EXHAUSTED" || data.code === "DAILY_LIMIT" || data.code === "LOGIN_REQUIRED") {
                         apiError.quotaExhausted = true;
+                    }
+                    if (data.code === "DAILY_LIMIT" && window.__sinsubzPremiumInfo) {
+                        setTimeout(function () { window.__sinsubzPremiumInfo("limit"); }, 600);
                     }
 
                     throw apiError;
@@ -6518,3 +6526,75 @@ document.addEventListener(
 console.log(
     "SinSubz script loaded successfully."
 );
+
+
+/* ---------------------------------------------------------
+   "Go Premium" window (bank transfer for now): benefits, price, bank details, and a button to message us on
+   Telegram with the account email.
+   mode: "settings" (opened from the app Settings card), "limit" (daily limit reached) or
+         "done" (a translation just finished; shown to free signed-in users only).
+--------------------------------------------------------- */
+window.__sinsubzPremiumInfo = async function (mode) {
+    if (mode === true) { mode = "limit"; }
+    if (document.getElementById("premiumAsk")) { return; }
+    const esc = function (t) { return String(t == null ? "" : t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[c]; }); };
+    let me = null, email = "";
+    try {
+        const tk = window.__sinsubzIdToken ? await window.__sinsubzIdToken() : "";
+        const r = await fetch("/api/stats?me=1", { headers: tk ? { Authorization: "Bearer " + tk } : {} });
+        me = await r.json();
+    } catch (e) { me = null; }
+    if (mode === "done" && (!me || !me.signedIn || me.premium)) { return; }      // never bother Premium members
+    if (document.getElementById("premiumAsk")) { return; }
+    try {
+        const u = window.__sinsubzUser ? window.__sinsubzUser() : null;
+        email = (u && u.email) || "";
+    } catch (e) { /* ignore */ }
+    const offer = (me && me.offer) || { price: "", bank: "", contact: "https://t.me/sinsubz" };
+    const pm = (me && me.premiumMovies) || 10, pe = (me && me.premiumEpisodes) || 30;
+    const fm = (me && me.movies) || 2, fe = (me && me.episodes) || 5;
+    const contact = String(offer.contact || "https://t.me/sinsubz");
+    const msg = "Hi, I want SinSubz Premium. My account email: " + (email || "(your Google email)");
+
+    const head = mode === "done" ? "Your subtitles are ready! \uD83C\uDF89"
+        : mode === "limit" ? "You reached today\u2019s free limit" : "Go Premium";
+    const sub = mode === "done" ? "Enjoy SinSubz more with Premium."
+        : mode === "limit" ? "Premium lets you translate a lot more every day." : "Support SinSubz and get more.";
+
+    const check = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" style="flex:none"><circle cx="12" cy="12" r="11" fill="#2fbf71"/><path d="M7 12.5l3.3 3.3L17 9" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    const perk = function (t) { return '<div style="display:flex;gap:10px;align-items:center;padding:6px 0;font-size:14.5px">' + check + '<span>' + t + '</span></div>'; };
+
+    const wrap = document.createElement("div");
+    wrap.id = "premiumAsk";
+    wrap.setAttribute("role", "dialog");
+    wrap.setAttribute("aria-modal", "true");
+    wrap.style.cssText = "position:fixed;inset:0;z-index:99997;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(5,6,18,.78);backdrop-filter:blur(5px);overflow:auto";
+    wrap.innerHTML =
+        '<div style="max-width:410px;width:100%;margin:auto;background:linear-gradient(170deg,#1c1f3a,#12142a 55%);color:#eceaff;border:1px solid #3a3f6b;border-radius:22px;overflow:hidden;font-family:inherit;box-shadow:0 24px 70px rgba(0,0,0,.55)">' +
+        '<div style="padding:22px 22px 14px;text-align:center;background:radial-gradient(120% 90% at 50% 0%,rgba(245,163,12,.28),transparent 70%)">' +
+        '<div style="width:58px;height:58px;margin:0 auto 10px;border-radius:18px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#ffd75e,#f5a30c);box-shadow:0 8px 26px rgba(245,163,12,.45)">' +
+        '<svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path fill="#3a2600" d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5L3 8z"/></svg></div>' +
+        '<div style="font-size:21px;font-weight:800;line-height:1.25">' + head + '</div>' +
+        '<div style="font-size:13.5px;opacity:.8;margin-top:4px">' + sub + '</div></div>' +
+        '<div style="padding:4px 22px 20px">' +
+        '<div style="background:#0f1122;border:1px solid #2c3050;border-radius:14px;padding:6px 14px">' +
+        perk('<b>' + pm + ' films</b> a day <span style="opacity:.6">(free: ' + fm + ')</span>') +
+        perk('<b>' + pe + ' TV episodes</b> a day <span style="opacity:.6">(free: ' + fe + ')</span>') +
+        perk('<b>No ads</b> in the app') +
+        perk('<b>Premium badge</b> on your comments') +
+        perk('Supports SinSubz to keep growing') + '</div>' +
+        (offer.price ? '<div style="text-align:center;font-size:18px;font-weight:800;margin:14px 0 0;color:#ffd75e">' + esc(offer.price) + '</div>' : '') +
+        '<div style="font-size:13px;opacity:.85;margin-top:14px">Pay by bank transfer:</div>' +
+        '<div style="white-space:pre-line;font-size:13.5px;line-height:1.55;background:#0f1122;border:1px dashed #3a3f6b;border-radius:12px;padding:10px 12px;margin-top:6px">' +
+        (offer.bank ? esc(offer.bank) : 'Message us on Telegram for the bank details.') + '</div>' +
+        '<div style="font-size:12.5px;opacity:.75;margin-top:10px;line-height:1.5">Then send the payment slip and your account email' + (email ? ' (<b>' + esc(email) + '</b>)' : '') + ' to our Telegram. We turn Premium on within a few hours.</div>' +
+        '<a id="premiumTg" href="' + esc(contact) + '" target="_blank" rel="noopener" style="display:block;margin-top:14px;text-align:center;padding:14px;border-radius:14px;background:#2aabee;color:#fff;font-weight:700;text-decoration:none">Message us on Telegram</a>' +
+        '<button id="premiumNo" type="button" style="display:block;margin:10px auto 0;background:none;border:0;color:inherit;opacity:.65;font-size:14px;text-decoration:underline;cursor:pointer">' + (mode === "done" ? "Maybe later" : "Close") + '</button></div></div>';
+    document.body.appendChild(wrap);
+    const done = function () { wrap.remove(); };
+    wrap.querySelector("#premiumNo").addEventListener("click", done);
+    wrap.addEventListener("click", function (e) { if (e.target === wrap) { done(); } });
+    wrap.querySelector("#premiumTg").addEventListener("click", function () {
+        try { if (navigator.clipboard) { navigator.clipboard.writeText(msg); } } catch (e) { /* ignore */ }
+    });
+};

@@ -20,11 +20,24 @@ const LINK = /(https?:\/\/|www\.|\b[a-z0-9-]+\.(com|net|org|io|lk|xyz|info|ru|to
 const parse = raw => { try { return JSON.parse(raw); } catch (e) { return null; } };
 
 // who = the verified signed-in visitor (or null). can = may this visitor delete it (own comment, or the owner)
-function publicView(c, who) {
+// Premium accounts get a badge next to their name. Looked up live (u:prem: uidKey -> expiry ms), so it ends with the plan.
+const uidKey = uid => sha(String(uid)).toString("hex").slice(0, 24);
+async function premiumSet(items) {
+    const keys = [...new Set(items.filter(Boolean).map(c => uidKey(c.uid)))];
+    const set = new Set();
+    if (!keys.length) { return set; }
+    try {
+        const [vals] = await redis([["HMGET", "u:prem", ...keys]]);
+        (vals || []).forEach((v, i) => { if (Number(v) > Date.now()) { set.add(keys[i]); } });
+    } catch (e) { /* no badge if the database hiccups */ }
+    return set;
+}
+
+function publicView(c, who, prem) {
     const mine = !!who && c.uid === who.uid;
     return {
         id: c.id, t: c.t, name: c.name, text: c.text,
-        owner: !!c.owner, film: c.film || "",
+        owner: !!c.owner, film: c.film || "", premium: !!(prem && prem.has(uidKey(c.uid))),
         mine, can: mine || !!(who && who.owner)
     };
 }
@@ -68,12 +81,19 @@ module.exports = async function handler(req, res) {
                 ...ids.map(id => ["LRANGE", "cm:r:" + id, 0, MAX_REPLIES - 1])
             ]);
 
+            const all = [];
+            ids.forEach((id, i) => {
+                all.push(parse((rows[0] || [])[i]));
+                (rows[i + 1] || []).forEach(r => all.push(parse(r)));
+            });
+            const prem = await premiumSet(all);
+
             const comments = [];
             ids.forEach((id, i) => {
                 const c = parse((rows[0] || [])[i]);
                 if (!c) return;
-                const view = publicView(c, who);
-                view.replies = (rows[i + 1] || []).map(parse).filter(Boolean).map(r => publicView(r, who));
+                const view = publicView(c, who, prem);
+                view.replies = (rows[i + 1] || []).map(parse).filter(Boolean).map(r => publicView(r, who, prem));
                 comments.push(view);
             });
 
@@ -102,15 +122,15 @@ module.exports = async function handler(req, res) {
             const parent = clean(body.parent, 40);
             const film = clean(body.film, 80);
 
-            const uidKey = sha(who.uid).toString("hex").slice(0, 24);
-            const [count] = await redis([["INCR", "cm:rl:" + uidKey], ["EXPIRE", "cm:rl:" + uidKey, 3600]]);
+            const uk = uidKey(who.uid);
+            const [count] = await redis([["INCR", "cm:rl:" + uk], ["EXPIRE", "cm:rl:" + uk, 3600]]);
             if (Number(count) > MAX_PER_HOUR) return res.status(429).json({ error: "Too many comments. Please try again later." });
 
             // the exact same text twice in a row is almost always a double click or a bot
             const hash = sha(text).toString("hex").slice(0, 16);
-            const last = (await redis([["GET", "cm:last:" + uidKey]]))[0];
+            const last = (await redis([["GET", "cm:last:" + uk]]))[0];
             if (last === hash) return res.status(200).json({ ok: true });
-            await redis([["SET", "cm:last:" + uidKey, hash, "EX", 600]]);
+            await redis([["SET", "cm:last:" + uk, hash, "EX", 600]]);
 
             const item = {
                 id: crypto.randomBytes(7).toString("hex"),
@@ -128,7 +148,7 @@ module.exports = async function handler(req, res) {
                 const n = Number((await redis([["LLEN", "cm:r:" + parent]]))[0]) || 0;
                 if (n >= MAX_REPLIES) return res.status(400).json({ error: "This conversation is full." });
                 await redis([["RPUSH", "cm:r:" + parent, JSON.stringify(item)]]);
-                return res.status(200).json({ ok: true, comment: publicView(item, who) });
+                return res.status(200).json({ ok: true, comment: publicView(item, who, await premiumSet([item])) });
             }
 
             await redis([
@@ -145,7 +165,7 @@ module.exports = async function handler(req, res) {
                 ]);
             }
 
-            return res.status(200).json({ ok: true, comment: publicView(item, who) });
+            return res.status(200).json({ ok: true, comment: publicView(item, who, await premiumSet([item])) });
         }
 
         if (req.method === "DELETE") {

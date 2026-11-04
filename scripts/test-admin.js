@@ -21,6 +21,7 @@ function run(c) {
         case "HSET": { (db.hash[k] = db.hash[k] || {})[a[0]] = a[1]; return 1; }
         case "HGET": return (db.hash[k] || {})[a[0]] == null ? null : db.hash[k][a[0]];
         case "HDEL": { const h = db.hash[k] || {}; const had = h[a[0]] != null; delete h[a[0]]; return had ? 1 : 0; }
+        case "HMGET": return a.map(x => ((db.hash[k] || {})[x] == null ? null : db.hash[k][x]));
         case "HLEN": return Object.keys(db.hash[k] || {}).length;
         case "HINCRBY": { const h = (db.hash[k] = db.hash[k] || {}); h[a[0]] = String((Number(h[a[0]]) || 0) + Number(a[1])); return Number(h[a[0]]); }
         case "HGETALL": return Object.entries(db.hash[k] || {}).flat();
@@ -240,6 +241,24 @@ function call(method, url, { headers = {}, body } = {}) {
             let ov0 = (await call("GET", "/api/stats?admin=1", { headers: AK })).body.users.find(u => u.email === "p@example.com");
             ok(ov0 && ov0.premium > Date.now(), "admin list shows premium until a date");
             await call("POST", "/api/stats?admin=1", { headers: AK, body: { action: "premiumOff", id: pk } });
+            // comments: premium badge shows while premium lasts
+            const commentsH = require("../api/comments.js");
+            const getComments = () => new Promise(resolve => {
+                const res = { setHeader() {}, status(c) { this.code = c; return this; }, json(o) { resolve(o); } };
+                commentsH({ method: "GET", url: "/api/comments", query: {}, headers: { "x-forwarded-for": "3.3.3.3" }, socket: {} }, res);
+            });
+            const saveIds = db.list["cm:ids"], saveC = db.kv["cm:c:c9"];
+            db.list["cm:ids"] = ["c9"];
+            db.kv["cm:c:c9"] = JSON.stringify({ id: "c9", t: Date.now(), name: "Pro", text: "love it", uid: "uid-3" });
+            let cm = await getComments();
+            ok(cm.comments.length === 1 && cm.comments[0].premium === false, "no badge without premium");
+            await call("POST", "/api/stats?admin=1", { headers: AK, body: { action: "premium", id: pk, days: 5 } });
+            cm = await getComments();
+            ok(cm.comments[0].premium === true, "premium badge on the comment");
+            await call("POST", "/api/stats?admin=1", { headers: AK, body: { action: "premiumOff", id: pk } });
+            cm = await getComments();
+            ok(cm.comments[0].premium === false, "badge gone after premium ends");
+            db.list["cm:ids"] = saveIds; if (saveC) { db.kv["cm:c:c9"] = saveC; } else { delete db.kv["cm:c:c9"]; }
             await call("POST", "/api/stats?user=1", { headers: { authorization: "Bearer tok-pro" }, body: { platform: "android" } });
             const ov = (await call("GET", "/api/stats?admin=1", { headers: AK })).body.users.find(u => u.email === "p@example.com");
             ok(ov && ov.premium === 0, "admin list shows the account without premium after it was ended");

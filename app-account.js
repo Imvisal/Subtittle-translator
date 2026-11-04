@@ -201,6 +201,7 @@
     // ---------------------------------------------------------
     // Plan (premium or free), asked from the server after sign-in. Premium: no ads + a badge.
     var plan = { premium: false, until: 0, movies: 0, episodes: 0 };
+    window.__sinsubzUser = function () { return user; };
     window.__sinsubzIsPremium = function () { return !!plan.premium; };
 
     function loadPlan() {
@@ -292,12 +293,16 @@
                 '<span class="ap-meta" style="display:block">' + (plan.premium
                     ? 'Premium until ' + new Date(plan.until).toISOString().slice(0, 10) + (plan.movies ? ' · ' + plan.movies + ' films + ' + plan.episodes + ' episodes per day · no ads' : '')
                     : (plan.movies ? 'Free plan · ' + plan.movies + ' films + ' + plan.episodes + ' episodes per day' : '')) + '</span></span></div>' +
+                (plan.premium ? '' : '<button type="button" class="ap-item" id="accPrem"><span class="ap-ic"><i class="fa-solid fa-crown" style="color:#f5b316"></i></span>' +
+                '<span class="ap-main"><span class="ap-title">Go Premium</span>' +
+                '<span class="ap-meta" style="display:block">More films per day, no ads</span></span></button>') +
                 '<button type="button" class="ap-item" id="accSync"><span class="ap-ic"><i class="fa-solid fa-rotate"></i></span>' +
                 '<span class="ap-main"><span class="ap-title">Sync now</span>' +
                 '<span class="ap-meta" style="display:block">History &amp; settings are saved to your account</span></span></button>' +
                 '<button type="button" class="ap-item" id="accOut"><span class="ap-ic"><i class="fa-solid fa-right-from-bracket"></i></span>' +
                 '<span class="ap-main"><span class="ap-title">Sign out</span></span></button></div>';
             $("accOut").addEventListener("click", signOut);
+            if ($("accPrem")) { $("accPrem").addEventListener("click", function () { if (window.__sinsubzPremiumInfo) { window.__sinsubzPremiumInfo("settings"); } }); }
             $("accSync").addEventListener("click", function () {
                 push().then(function () { toast("Saved"); }).catch(function () { toast("Sync failed"); });
             });
