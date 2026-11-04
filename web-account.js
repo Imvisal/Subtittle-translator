@@ -64,6 +64,18 @@
     // ---------------------------------------------------------
     // UI
     // ---------------------------------------------------------
+    // Premium members: the header "Premium" link becomes a gold badge that opens their profile
+    window.__sinsubzMarkPremium = function (on) {
+        document.documentElement.classList.toggle("is-premium", !!on);
+        var a = document.querySelector('.header-nav a[href="#plans"], .header-nav a.nav-prem');
+        if (!a) { return; }
+        if (on) {
+            a.className = "nav-prem"; a.setAttribute("href", "profile.html"); a.textContent = "\uD83D\uDC51 Premium"; a.title = "Your Premium profile";
+        } else {
+            a.className = ""; a.setAttribute("href", "#plans"); a.textContent = "Premium"; a.removeAttribute("title");
+        }
+    };
+
     var prof = { nick: "", pic: "", premium: false };       // nickname + picture chosen on the profile page
     function loadProfileBits() {
         if (!user || !window.__sinsubzIdToken) { return; }
@@ -72,7 +84,7 @@
         }).then(function (r) { return r.json(); }).then(function (d) {
             if (!d || !d.signedIn) { return; }
             if ((d.nick || "") !== prof.nick || (d.pic || "") !== prof.pic || !!d.premium !== prof.premium) { prof = { nick: d.nick || "", pic: d.pic || "", premium: !!d.premium }; render(); }
-            document.documentElement.classList.toggle("is-premium", !!d.premium);       // hides the "get Premium" ads on the page
+            window.__sinsubzMarkPremium(!!d.premium);       // gold header badge, hides the "get Premium" section
         }).catch(function () { /* ignore */ });
     }
 
