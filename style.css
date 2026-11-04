@@ -4057,3 +4057,19 @@ html.tm-open, html.tm-open body { overflow: hidden; }
 }
 @keyframes tmFade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes tmPop { from { opacity: 0; transform: translateY(18px) scale(.97); } to { opacity: 1; transform: none; } }
+
+/* ---------- Free / Premium plans (website) ---------- */
+.plans { padding: 56px 0 8px; text-align: center; }
+.plans h2 { font-size: clamp(24px, 4vw, 32px); margin: 0 0 6px; }
+.plans-sub { color: var(--text-2); margin: 0 0 26px; }
+.plans-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; max-width: 760px; margin: 0 auto; text-align: left; }
+.plan-card { position: relative; padding: 22px; border-radius: 22px; background: var(--surface); border: 1px solid var(--line); }
+.plan-card h3 { margin: 0 0 4px; font-size: 19px; }
+.plan-price { font-size: 22px; font-weight: 800; margin: 4px 0 14px; }
+.plan-card ul { list-style: none; margin: 0 0 18px; padding: 0; display: grid; gap: 8px; color: var(--text-2); }
+.plan-card li::before { content: "✓"; color: var(--accent); font-weight: 800; margin-right: 8px; }
+.plan-pro { border-color: var(--accent); box-shadow: 0 10px 40px var(--glow); }
+.plan-badge { position: absolute; top: 14px; right: 14px; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 99px; background: var(--accent); color: #0b0d1f; }
+.plan-card .btn { display: inline-flex; justify-content: center; width: 100%; }
+.plan-state { margin: 10px 0 0; font-weight: 700; color: var(--accent); }
+@media (max-width: 640px) { .plans-grid { grid-template-columns: 1fr; } }
