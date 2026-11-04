@@ -6554,7 +6554,6 @@ window.__sinsubzPremiumInfo = async function (mode) {
     const pm = (me && me.premiumMovies) || 10, pe = (me && me.premiumEpisodes) || 30;
     const fm = (me && me.movies) || 2, fe = (me && me.episodes) || 5;
     const contact = String(offer.contact || "https://t.me/sinsubz");
-    const msg = "Hi, I want SinSubz Premium. My account email: " + (email || "(your Google email)");
 
     const head = mode === "done" ? "Your subtitles are ready! \uD83C\uDF89"
         : mode === "limit" ? "You reached today\u2019s free limit" : "Go Premium";
@@ -6584,17 +6583,12 @@ window.__sinsubzPremiumInfo = async function (mode) {
         perk('<b>Premium badge</b> on your comments') +
         perk('Supports SinSubz to keep growing') + '</div>' +
         (offer.price ? '<div style="text-align:center;font-size:18px;font-weight:800;margin:14px 0 0;color:#ffd75e">' + esc(offer.price) + '</div>' : '') +
-        '<div style="font-size:13px;opacity:.85;margin-top:14px">Pay by bank transfer:</div>' +
-        '<div style="white-space:pre-line;font-size:13.5px;line-height:1.55;background:#0f1122;border:1px dashed #3a3f6b;border-radius:12px;padding:10px 12px;margin-top:6px">' +
-        (offer.bank ? esc(offer.bank) : 'Message us on Telegram for the bank details.') + '</div>' +
-        '<div style="font-size:12.5px;opacity:.75;margin-top:10px;line-height:1.5">Then send the payment slip and your account email' + (email ? ' (<b>' + esc(email) + '</b>)' : '') + ' to our Telegram. We turn Premium on within a few hours.</div>' +
-        '<a id="premiumTg" href="' + esc(contact) + '" target="_blank" rel="noopener" style="display:block;margin-top:14px;text-align:center;padding:14px;border-radius:14px;background:#2aabee;color:#fff;font-weight:700;text-decoration:none">Message us on Telegram</a>' +
+        '<a id="premiumBuy" href="' + esc(offer.buy || "https://sinsubs.site/premium.html") + '" target="_blank" rel="noopener" style="display:block;margin-top:16px;text-align:center;padding:14px;border-radius:14px;background:linear-gradient(135deg,#ffd75e,#f5a30c);color:#3a2600;font-weight:800;text-decoration:none">Get Premium</a>' +
+        '<div style="font-size:12.5px;opacity:.7;margin-top:8px;text-align:center;line-height:1.5">Pay by bank transfer and upload the slip. Premium is turned on after we check it.</div>' +
+        '<a href="' + esc(contact) + '" target="_blank" rel="noopener" style="display:block;margin-top:8px;text-align:center;font-size:13.5px;color:#7fd0ff">Questions? Message us on Telegram</a>' +
         '<button id="premiumNo" type="button" style="display:block;margin:10px auto 0;background:none;border:0;color:inherit;opacity:.65;font-size:14px;text-decoration:underline;cursor:pointer">' + (mode === "done" ? "Maybe later" : "Close") + '</button></div></div>';
     document.body.appendChild(wrap);
     const done = function () { wrap.remove(); };
     wrap.querySelector("#premiumNo").addEventListener("click", done);
     wrap.addEventListener("click", function (e) { if (e.target === wrap) { done(); } });
-    wrap.querySelector("#premiumTg").addEventListener("click", function () {
-        try { if (navigator.clipboard) { navigator.clipboard.writeText(msg); } } catch (e) { /* ignore */ }
-    });
 };

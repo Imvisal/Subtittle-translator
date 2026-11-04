@@ -491,18 +491,19 @@ async function me(req, res) {
         if (!who) { return res.status(200).json({ signedIn: false, premium: false }); }
         const until = hasRedis() ? await premiumUntil(uidKeyOf(who.uid)) : 0;
         const premium = until > Date.now();
+        let price = "";
+        if (!premium && hasRedis()) {
+            const cfg = parse((await redis([["GET", "prem:cfg"]]))[0]) || {};
+            price = String(cfg.price || "").slice(0, 40);
+        }
         return res.status(200).json({
             signedIn: true, premium: premium, until: premium ? until : 0,
             movies: premium ? envNum("PREMIUM_MOVIES_PER_DAY", 10) : envNum("LIMIT_MOVIES_PER_DAY", 2),
             episodes: premium ? envNum("PREMIUM_EPISODES_PER_DAY", 30) : envNum("LIMIT_EPISODES_PER_DAY", 5),
             premiumMovies: envNum("PREMIUM_MOVIES_PER_DAY", 10),
             premiumEpisodes: envNum("PREMIUM_EPISODES_PER_DAY", 30),
-            // shown in the "Go Premium" window; set PREMIUM_PRICE and PREMIUM_BANK in Vercel (BANK may have line breaks)
-            offer: {
-                price: String(process.env.PREMIUM_PRICE || "").slice(0, 120),
-                bank: String(process.env.PREMIUM_BANK || "").replace(/\\n/g, "\n").slice(0, 600),
-                contact: "https://t.me/sinsubz"
-            }
+            // the price set in the admin panel (Premium card); the buy page holds the bank details
+            offer: { price: price, buy: "https://sinsubs.site/premium.html", contact: "https://t.me/sinsubz" }
         });
     } catch (e) {
         return res.status(200).json({ signedIn: false, premium: false });
