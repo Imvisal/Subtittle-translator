@@ -145,6 +145,8 @@ async function overview(req, res) {
         for (let i = 0; i < 7; i++) { cmds.push(["ZREVRANGE", "stats:top:" + days[i], 0, 29, "WITHSCORES"]); }   // X+5..X+11
         days.forEach(d => { cmds.push(["HGETALL", "h:d:" + d]); });                                              // X+12..X+25
         for (let i = 0; i < 7; i++) { cmds.push(["HGETALL", "h:k:" + days[i]]); }                                // X+26..X+32
+        cmds.push(["GET", "prem:cfg"], ["HGETALL", "prem:req"]);
+        const PLI = cmds.length - 2;
         cmds.push(["HGETALL", "u:prem"]);                                                                        // premium accounts
         const PRI = cmds.length - 1;
         cmds.push(["GET", "an:cur"]);                                                                            // current announcement
@@ -239,6 +241,10 @@ async function overview(req, res) {
 
         return res.status(200).json({
             announcement: parse(r[ANI]),
+            plan: (function () {
+                const reqs = Object.values(pairs(r[PLI + 1])).map(parse).filter(Boolean).sort((a, b) => b.t - a.t).slice(0, 30);
+                return { config: parse(r[PLI]) || { price: "", bank: "", enabled: false }, requests: reqs, pending: reqs.filter(x => x.status === "pending").length };
+            })(),
             quota: (function () {
                 const used = pairs(r[QI]);
                 const limit = Math.max(1, Number(process.env.GEMINI_DAILY_LIMIT) || 1000);
@@ -402,6 +408,79 @@ function envNum(name, dflt) {
     return v != null && v !== "" && !isNaN(Number(v)) ? Number(v) : dflt;
 }
 
+// ---------------------------------------------------------------- Premium purchase by bank transfer
+// prem:cfg        JSON { price, bank, enabled }   (set in the admin panel, the bank text is shown to everyone)
+// prem:req        hash id -> JSON request (no photo)   prem:slip:<id>  slip photo as a data URL (kept 90 days, deleted when handled)
+// prem:rl:<key>   at most 3 requests a day per account.  Approving adds 30 days to u:prem (same as "Give premium").
+function cleanPlanCfg(c) {
+    c = c && typeof c === "object" ? c : {};
+    return {
+        price: clean(c.price, 40),
+        bank: String(c.bank || "").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "").slice(0, 600).trim(),
+        enabled: c.enabled !== false
+    };
+}
+
+// GET /api/stats?plan=1 -> price, bank details and the signed-in user's own request / premium status
+async function planPublic(req, res) {
+    res.setHeader("Cache-Control", "no-store");
+    if (!hasRedis()) { return res.status(200).json({ enabled: false }); }
+    try {
+        const who = await authUser(req);
+        const key = who ? uidKeyOf(who.uid) : "";
+        const cmds = [["GET", "prem:cfg"]];
+        if (key) { cmds.push(["HGET", "u:prem", key], ["HGETALL", "prem:req"]); }
+        const r = await redis(cmds);
+        const cfg = Object.assign({ price: "", bank: "", enabled: false }, parse(r[0]) || {});
+        const out = {
+            enabled: !!(cfg.enabled && cfg.bank), price: cfg.price, bank: cfg.bank, days: 30,
+            movies: envNum("PREMIUM_MOVIES_PER_DAY", 10), episodes: envNum("PREMIUM_EPISODES_PER_DAY", 30),
+            freeMovies: envNum("LIMIT_MOVIES_PER_DAY", 2), freeEpisodes: envNum("LIMIT_EPISODES_PER_DAY", 5),
+            signedIn: !!who
+        };
+        if (who) {
+            const until = Number(r[1]) || 0;
+            out.until = until > Date.now() ? until : 0;
+            const mine = Object.values(pairs(r[2])).map(parse).filter(x => x && x.uk === key).sort((a, b) => b.t - a.t)[0];
+            out.request = mine ? { t: mine.t, status: mine.status, ref: mine.ref } : null;
+        }
+        return res.status(200).json(out);
+    } catch (e) {
+        return res.status(200).json({ enabled: false });
+    }
+}
+
+// POST /api/stats?plan=1  { ref, slip: "data:image/jpeg;base64,..." }
+async function planSubmit(req, res) {
+    res.setHeader("Cache-Control", "no-store");
+    if (!hasRedis()) { return res.status(503).json({ error: "Not available right now." }); }
+    if (limited("p:" + clientIp(req), 10)) { return res.status(429).json({ error: "Too many requests. Wait a minute." }); }
+    try {
+        const who = await authUser(req);
+        if (!who) { return res.status(401).json({ error: "Please sign in with Google first." }); }
+        const key = uidKeyOf(who.uid);
+        const b = req.body && typeof req.body === "object" ? req.body : {};
+        const ref = clean(b.ref, 80);
+        if (ref.length < 3) { return res.status(400).json({ error: "Write the transfer reference or the name on the transfer." }); }
+        const slip = String(b.slip || "");
+        if (!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(slip) || slip.length > 700000) {
+            return res.status(400).json({ error: "Upload a photo of the slip (JPG or PNG, a small file)." });
+        }
+        const [all] = await redis([["HGETALL", "prem:req"]]);
+        if (Object.values(pairs(all)).map(parse).some(x => x && x.uk === key && x.status === "pending")) {
+            return res.status(409).json({ error: "You already have a request waiting for approval." });
+        }
+        const [n] = await redis([["INCR", "prem:rl:" + key], ["EXPIRE", "prem:rl:" + key, 86400]]);
+        if (Number(n) > 3) { return res.status(429).json({ error: "Too many requests today. Try again tomorrow." }); }
+        const id = require("crypto").randomBytes(6).toString("hex");
+        const rec = { id: id, uk: key, name: clean(who.name, 60), email: clean(who.email, 120), ref: ref, t: Date.now(), status: "pending" };
+        await redis([["SET", "prem:slip:" + id, slip, "EX", 90 * 86400], ["HSET", "prem:req", id, JSON.stringify(rec)]]);
+        return res.status(200).json({ ok: true });
+    } catch (e) {
+        return res.status(500).json({ error: "Could not send. Try again." });
+    }
+}
+
 // GET /api/stats?me=1 : the signed-in user's own plan (the apps hide ads and show a badge when premium).
 async function me(req, res) {
     res.setHeader("Cache-Control", "no-store");
@@ -540,6 +619,33 @@ async function action(req, res) {
             premCache.delete(id);
             return res.status(200).json({ ok: true, until: until });
         }
+        if (what === "planConfig") {
+            await redis([["SET", "prem:cfg", JSON.stringify(cleanPlanCfg(body.config))]]);
+            return res.status(200).json({ ok: true });
+        }
+        if (what === "planSlip") {
+            if (!/^[0-9a-f]{12}$/.test(id)) { return res.status(400).json({ error: "Bad id" }); }
+            const [slip] = await redis([["GET", "prem:slip:" + id]]);
+            return res.status(200).json({ slip: slip || "" });
+        }
+        if (what === "planApprove" || what === "planReject") {
+            if (!/^[0-9a-f]{12}$/.test(id)) { return res.status(400).json({ error: "Bad id" }); }
+            const [raw] = await redis([["HGET", "prem:req", id]]);
+            const rq = parse(raw);
+            if (!rq) { return res.status(404).json({ error: "Request not found" }); }
+            if (rq.status !== "pending") { return res.status(409).json({ error: "Already " + rq.status }); }
+            if (what === "planApprove") {
+                const days = Math.min(Math.max(Math.round(Number(body.days) || 30), 1), 366);
+                const [cur] = await redis([["HGET", "u:prem", rq.uk]]);
+                const until = Math.max(Date.now(), Number(cur) || 0) + days * 86400e3;
+                await redis([["HSET", "u:prem", rq.uk, String(until)]]);
+                premCache.delete(rq.uk);
+                rq.status = "approved"; rq.until = until;
+            } else { rq.status = "rejected"; }
+            rq.done = Date.now();
+            await redis([["HSET", "prem:req", id, JSON.stringify(rq)], ["DEL", "prem:slip:" + id]]);
+            return res.status(200).json({ ok: true });
+        }
         if (what === "announce") {
             const c = cleanAnnouncement(body.announcement);
             if (c.error) { return res.status(400).json({ error: c.error }); }
@@ -567,4 +673,4 @@ async function action(req, res) {
     }
 }
 
-module.exports = { me, premiumUntil, authUser, loginRequired, checkDailyLimit, pacificDay, ping, overview, health, action, publicAnnouncement, cleanAnnouncement, dayKey, uidKeyOf };
+module.exports = { planPublic, planSubmit, me, premiumUntil, authUser, loginRequired, checkDailyLimit, pacificDay, ping, overview, health, action, publicAnnouncement, cleanAnnouncement, dayKey, uidKeyOf };

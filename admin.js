@@ -30,6 +30,50 @@
         return fetch("/api/stats?admin=1", { method: "POST", headers: { "x-admin-key": KEY, "Content-Type": "application/json" }, body: JSON.stringify(payload) })
             .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { if (!r.ok) { throw new Error(d.error || "Failed"); } return d; }); });
     }
+    var planFilled = false;
+    function renderPlan(pl) {
+        if (!pl) { return; }
+        $("planState").textContent = pl.pending ? pl.pending + " waiting" : "no requests waiting";
+        if (!planFilled) {
+            planFilled = true;
+            $("plPrice").value = pl.config.price || ""; $("plBank").value = pl.config.bank || ""; $("plOn").checked = pl.config.enabled !== false;
+        }
+        var host = $("plReqs"); host.textContent = "";
+        if (!pl.requests.length) { host.appendChild(el("p", "empty", "No requests yet.")); }
+        pl.requests.forEach(function (q) {
+            var row = el("div"); row.style.cssText = "border-top:1px solid var(--line);padding:10px 0";
+            row.appendChild(el("div", "", (q.name || "(no name)") + " · " + (q.email || "") + " · " + q.status + (q.until ? " until " + new Date(q.until).toISOString().slice(0, 10) : "")));
+            row.appendChild(el("small", "", "Ref: " + q.ref + " · " + when(q.t)));
+            if (q.status === "pending") {
+                var bar = el("div", "row"); bar.style.marginTop = "6px";
+                var img = el("img"); img.style.cssText = "display:none;max-width:100%;max-height:420px;border-radius:10px;margin-top:8px";
+                var view = el("button", "ghost mini", "View slip");
+                view.type = "button";
+                view.addEventListener("click", function () {
+                    view.disabled = true;
+                    postAction({ action: "planSlip", id: q.id }).then(function (d) {
+                        view.disabled = false;
+                        if (/^data:image\//.test(d.slip)) { img.src = d.slip; img.style.display = "block"; } else { window.alert("No slip photo found."); }
+                    }).catch(function (e) { view.disabled = false; window.alert(e.message); });
+                });
+                var ok = el("button", "mini", "Approve 30 days"); ok.type = "button";
+                ok.addEventListener("click", function () {
+                    if (!window.confirm("Approve Premium for " + (q.email || q.name) + " for 30 days? Check that the money arrived.")) { return; }
+                    ok.disabled = true;
+                    postAction({ action: "planApprove", id: q.id, days: 30 }).then(load).catch(function (e) { ok.disabled = false; window.alert(e.message); });
+                });
+                var no = el("button", "ghost mini danger", "Reject"); no.type = "button";
+                no.addEventListener("click", function () {
+                    if (!window.confirm("Reject this request?")) { return; }
+                    postAction({ action: "planReject", id: q.id }).then(load).catch(function (e) { window.alert(e.message); });
+                });
+                bar.appendChild(view); bar.appendChild(ok); bar.appendChild(no);
+                row.appendChild(bar); row.appendChild(img);
+            }
+            host.appendChild(row);
+        });
+    }
+
     var annFilled = false;
     function renderAnnouncement(a) {
         var live = a && a.enabled && (!a.expires || Date.now() <= Date.parse(a.expires) + 86400e3);
@@ -151,6 +195,7 @@
 
     function render(d) {
         renderAnnouncement(d.announcement);
+        renderPlan(d.plan);
         DATA = d;
         var t = d.totals;
 
@@ -355,6 +400,10 @@
         try { sessionStorage.removeItem(KEYNAME); } catch (e) { /* ignore */ }
         show(false);
         $("sub").textContent = "Locked.";
+    });
+    $("plSave").addEventListener("click", function () {
+        postAction({ action: "planConfig", config: { price: $("plPrice").value, bank: $("plBank").value, enabled: $("plOn").checked } })
+            .then(function () { window.alert("Saved."); }).catch(function (e) { window.alert(e.message); });
     });
     $("anSend").addEventListener("click", function () {
         var pf = [];

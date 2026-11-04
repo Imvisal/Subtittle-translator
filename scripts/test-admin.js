@@ -269,6 +269,43 @@ function call(method, url, { headers = {}, body } = {}) {
         delete process.env.LIMIT_MOVIES_PER_DAY;
     }
 
+    // ---- Premium purchase by bank transfer ----
+    {
+        const A = { "x-admin-key": "secret-key-123" };
+        const act = body => call("POST", "/api/stats?admin=1", { headers: A, body });
+        const slip = "data:image/jpeg;base64," + Buffer.from("fake-slip").toString("base64");
+        let pl = (await call("GET", "/api/stats?plan=1")).body;
+        ok(pl.enabled === false, "buy page closed until the owner saves bank details");
+        ok((await act({ action: "planConfig", config: { price: "Rs. 500 / month", bank: "Bank X\nAcc 123", enabled: true } })).code === 200, "config saved");
+        pl = (await call("GET", "/api/stats?plan=1")).body;
+        ok(pl.enabled && pl.price === "Rs. 500 / month" && /Acc 123/.test(pl.bank) && pl.signedIn === false && pl.movies === 10, "public plan " + JSON.stringify(pl));
+        ok((await call("POST", "/api/stats?plan=1", { body: { ref: "abc", slip } })).code === 401, "must sign in to send a slip");
+        const H = { authorization: "Bearer tok-nimal" };
+        ok((await call("POST", "/api/stats?plan=1", { headers: H, body: { ref: "a", slip } })).code === 400, "reference too short");
+        ok((await call("POST", "/api/stats?plan=1", { headers: H, body: { ref: "NIMAL 1234", slip: "not an image" } })).code === 400, "slip must be an image");
+        ok((await call("POST", "/api/stats?plan=1", { headers: H, body: { ref: "NIMAL 1234", slip } })).code === 200, "request sent");
+        ok((await call("POST", "/api/stats?plan=1", { headers: H, body: { ref: "NIMAL 1234", slip } })).code === 409, "second request while one is pending");
+        pl = (await call("GET", "/api/stats?plan=1", { headers: H })).body;
+        ok(pl.request && pl.request.status === "pending" && pl.until === 0, "user sees pending");
+        let ov = (await call("GET", "/api/stats?admin=1", { headers: A })).body;
+        ok(ov.plan.pending === 1 && ov.plan.requests[0].email === "n@example.com" && !JSON.stringify(ov.plan).includes("fake-slip"), "admin sees the request, no photo in the list");
+        const id = ov.plan.requests[0].id;
+        ok((await act({ action: "planSlip", id })).body.slip === slip, "admin can view the slip");
+        ok((await act({ action: "planApprove", id: "zz" })).code === 400, "bad id refused");
+        ok((await act({ action: "planApprove", id, days: 30 })).code === 200, "approved");
+        ok((await act({ action: "planApprove", id })).code === 409, "cannot approve twice");
+        pl = (await call("GET", "/api/stats?plan=1", { headers: H })).body;
+        ok(pl.until > Date.now() + 29 * 86400e3 && pl.request.status === "approved", "user is premium for 30 days");
+        ok((await act({ action: "planSlip", id })).body.slip === "", "slip photo deleted after approval");
+        ov = (await call("GET", "/api/stats?admin=1", { headers: A })).body;
+        ok(ov.users.find(u => u.email === "n@example.com").premium > Date.now(), "panel shows the account as premium");
+        // rejection path
+        await call("POST", "/api/stats?plan=1", { headers: { authorization: "Bearer tok-visal" }, body: { ref: "VISAL 99", slip } });
+        const rid = (await call("GET", "/api/stats?admin=1", { headers: A })).body.plan.requests.find(x => x.status === "pending").id;
+        ok((await act({ action: "planReject", id: rid })).code === 200, "rejected");
+        ok((await call("GET", "/api/stats?plan=1", { headers: { authorization: "Bearer tok-visal" } })).body.request.status === "rejected", "user sees rejected");
+    }
+
     // brute force
     let blocked = false;
     for (let i = 0; i < 40; i++) { const x = await (async () => { ipN = 5000; return call("GET", "/api/stats?admin=1", { headers: { "x-forwarded-for": "7.7.7.7", "x-admin-key": "guess" + i } }); })(); if (x.code === 429) blocked = true; }

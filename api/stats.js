@@ -101,6 +101,10 @@ module.exports = async function handler(req, res) {
     if (/(?:^|[?&])me(?:=|&|$)/.test(String(req.url || "")) && req.method === "GET") {
         return require("./_admin.js").me(req, res);
     }
+    if (/(?:^|[?&])plan(?:=|&|$)/.test(String(req.url || ""))) {
+        if (req.method === "GET") return require("./_admin.js").planPublic(req, res);
+        if (req.method === "POST") return require("./_admin.js").planSubmit(req, res);
+    }
     if (/(?:^|[?&])user(?:=|&|$)/.test(String(req.url || "")) && req.method === "POST") {
         return require("./_admin.js").ping(req, res);
     }
