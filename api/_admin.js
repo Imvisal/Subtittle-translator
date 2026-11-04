@@ -540,7 +540,8 @@ async function checkDailyLimit(req, rawJob, knownWho) {
         const isEpisode = /\bs\d{1,2}\s?e\d{1,3}\b/i.test(job) || /\b\d{1,2}x\d{2}\b/i.test(job);
 
         const who = knownWho !== undefined ? knownWho : await authUser(req);
-        if (who && who.owner) { return { ok: true }; }
+        // the owner is exempt; LIMIT_APPLY_TO_OWNER=1 makes the owner account follow the limits too (for testing)
+        if (who && who.owner && process.env.LIMIT_APPLY_TO_OWNER !== "1") { return { ok: true }; }
         const isPrem = who ? (await premiumUntil(uidKeyOf(who.uid))) > Date.now() : false;
         const maxMovies = isPrem ? envNum("PREMIUM_MOVIES_PER_DAY", 10) : envNum("LIMIT_MOVIES_PER_DAY", 2);
         const maxEps = isPrem ? envNum("PREMIUM_EPISODES_PER_DAY", 30) : envNum("LIMIT_EPISODES_PER_DAY", 5);
