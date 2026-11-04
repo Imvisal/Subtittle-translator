@@ -36,7 +36,8 @@
         $("planState").textContent = pl.pending ? pl.pending + " waiting" : "no requests waiting";
         if (!planFilled) {
             planFilled = true;
-            $("plPrice").value = pl.config.price || ""; $("plBank").value = pl.config.bank || ""; $("plOn").checked = pl.config.enabled !== false;
+            $("plPrice").value = pl.config.price || ""; $("plBank").value = pl.config.bank || "";
+            $("plHolder").value = pl.config.holder || ""; $("plBankName").value = pl.config.bankName || ""; $("plBranch").value = pl.config.branch || ""; $("plAcc").value = pl.config.account || ""; $("plOn").checked = pl.config.enabled !== false;
         }
         var host = $("plReqs"); host.textContent = "";
         if (!pl.requests.length) { host.appendChild(el("p", "empty", "No requests yet.")); }
@@ -402,7 +403,7 @@
         $("sub").textContent = "Locked.";
     });
     $("plSave").addEventListener("click", function () {
-        postAction({ action: "planConfig", config: { price: $("plPrice").value, bank: $("plBank").value, enabled: $("plOn").checked } })
+        postAction({ action: "planConfig", config: { price: $("plPrice").value, holder: $("plHolder").value, bankName: $("plBankName").value, branch: $("plBranch").value, account: $("plAcc").value, bank: $("plBank").value, enabled: $("plOn").checked } })
             .then(function () { window.alert("Saved."); }).catch(function (e) { window.alert(e.message); });
     });
     $("anSend").addEventListener("click", function () {

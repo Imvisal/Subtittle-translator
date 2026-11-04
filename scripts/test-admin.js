@@ -276,9 +276,9 @@ function call(method, url, { headers = {}, body } = {}) {
         const slip = "data:image/jpeg;base64," + Buffer.from("fake-slip").toString("base64");
         let pl = (await call("GET", "/api/stats?plan=1")).body;
         ok(pl.enabled === false, "buy page closed until the owner saves bank details");
-        ok((await act({ action: "planConfig", config: { price: "Rs. 500 / month", bank: "Bank X\nAcc 123", enabled: true } })).code === 200, "config saved");
+        ok((await act({ action: "planConfig", config: { price: "Rs. 500 / month", holder: "A B", bankName: "Bank X", branch: "Town", account: "Acc 123", bank: "", enabled: true } })).code === 200, "config saved");
         pl = (await call("GET", "/api/stats?plan=1")).body;
-        ok(pl.enabled && pl.price === "Rs. 500 / month" && /Acc 123/.test(pl.bank) && pl.signedIn === false && pl.movies === 10, "public plan " + JSON.stringify(pl));
+        ok(pl.enabled && pl.price === "Rs. 500 / month" && pl.account === "Acc 123" && pl.holder === "A B" && pl.bankName === "Bank X" && pl.branch === "Town" && pl.signedIn === false && pl.movies === 10, "public plan " + JSON.stringify(pl));
         ok((await call("POST", "/api/stats?plan=1", { body: { ref: "abc", slip } })).code === 401, "must sign in to send a slip");
         const H = { authorization: "Bearer tok-nimal" };
         ok((await call("POST", "/api/stats?plan=1", { headers: H, body: { ref: "a", slip } })).code === 400, "reference too short");

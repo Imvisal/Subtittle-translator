@@ -157,7 +157,13 @@
                 <div><label for="plPrice">Price (shown to users, e.g. Rs. 500 / month)</label><input id="plPrice" maxlength="40" style="width:100%"></div>
                 <div><label><input type="checkbox" id="plOn" checked style="flex:none;min-width:0"> Show the buy page</label></div>
             </div>
-            <label for="plBank">Bank details (bank, account name, number, branch). Everyone can see this.</label>
+            <div class="two">
+                <div><label for="plHolder">Account name</label><input id="plHolder" maxlength="80" style="width:100%"></div>
+                <div><label for="plBankName">Bank</label><input id="plBankName" maxlength="80" style="width:100%"></div>
+                <div><label for="plBranch">Branch</label><input id="plBranch" maxlength="80" style="width:100%"></div>
+                <div><label for="plAcc">Account number</label><input id="plAcc" maxlength="40" style="width:100%"></div>
+            </div>
+            <label for="plBank">Extra note for the payer (optional). Everyone can see the bank details.</label>
             <textarea id="plBank" maxlength="600" rows="4" style="width:100%;padding:11px 13px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:inherit;font:inherit"></textarea>
             <div class="row" style="margin-top:8px"><button id="plSave" type="button">Save</button><a class="btn ghost" href="/premium.html" target="_blank" rel="noopener">Open buy page</a></div>
             <h2 style="margin-top:18px" id="plReqTitle">Requests</h2>

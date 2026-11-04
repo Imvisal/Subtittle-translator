@@ -58,7 +58,26 @@
         var ol = el("ol");
         ["Send the amount by bank transfer to the account below.", "Take a photo or screenshot of the slip.", "Sign in with Google here, add the slip and the transfer reference, and send.", "We check the payment and switch Premium on, usually within a day."].forEach(function (t) { ol.appendChild(el("li", t)); });
         box.appendChild(ol);
-        box.appendChild(el("pre", d.bank, "white-space:pre-wrap;padding:14px;border-radius:12px;background:rgba(128,128,160,.15);font:inherit"));
+        // each detail on its own row with its own Copy button
+        var card = el("div", null, "border-radius:14px;background:rgba(128,128,160,.15);padding:6px 14px;margin:10px 0");
+        [["Account name", d.holder], ["Bank", d.bankName], ["Branch", d.branch], ["Account number", d.account]].forEach(function (x) {
+            if (!x[1]) { return; }
+            var row = el("div", null, "display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid rgba(128,128,160,.25)");
+            var txt = el("div");
+            txt.appendChild(el("small", x[0], "display:block;opacity:.65"));
+            txt.appendChild(el("strong", x[1], "font-size:16px;word-break:break-word"));
+            var cp = btn("Copy", false);
+            cp.style.padding = "7px 14px";
+            cp.addEventListener("click", function () {
+                var done = function () { cp.textContent = "Copied ✓"; setTimeout(function () { cp.textContent = "Copy"; }, 1500); };
+                if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(x[1]).then(done).catch(function () { cp.textContent = "Press and hold to copy"; }); }
+                else { var ta = document.createElement("textarea"); ta.value = x[1]; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); done(); } catch (e) { /* ignore */ } ta.remove(); }
+            });
+            row.appendChild(txt); row.appendChild(cp);
+            card.appendChild(row);
+        });
+        if (d.bank) { card.appendChild(el("p", d.bank, "white-space:pre-wrap;margin:10px 0")); }
+        box.appendChild(card);
 
         if (!d.signedIn) {
             var b = btn("Sign in with Google", true);

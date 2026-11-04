@@ -416,6 +416,7 @@ function cleanPlanCfg(c) {
     c = c && typeof c === "object" ? c : {};
     return {
         price: clean(c.price, 40),
+        holder: clean(c.holder, 80), bankName: clean(c.bankName, 80), branch: clean(c.branch, 80), account: clean(c.account, 40),
         bank: String(c.bank || "").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "").slice(0, 600).trim(),
         enabled: c.enabled !== false
     };
@@ -433,7 +434,8 @@ async function planPublic(req, res) {
         const r = await redis(cmds);
         const cfg = Object.assign({ price: "", bank: "", enabled: false }, parse(r[0]) || {});
         const out = {
-            enabled: !!(cfg.enabled && cfg.bank), price: cfg.price, bank: cfg.bank, days: 30,
+            enabled: !!(cfg.enabled && (cfg.bank || cfg.account)), price: cfg.price, bank: cfg.bank || "",
+            holder: cfg.holder || "", bankName: cfg.bankName || "", branch: cfg.branch || "", account: cfg.account || "", days: 30,
             movies: envNum("PREMIUM_MOVIES_PER_DAY", 10), episodes: envNum("PREMIUM_EPISODES_PER_DAY", 30),
             freeMovies: envNum("LIMIT_MOVIES_PER_DAY", 2), freeEpisodes: envNum("LIMIT_EPISODES_PER_DAY", 5),
             signedIn: !!who
