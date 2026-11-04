@@ -233,6 +233,7 @@ function call(method, url, { headers = {}, body } = {}) {
             ok(g.code === 200 && Math.abs(g.body.until - (Date.now() + 30 * 86400e3)) < 5000, "30 days of premium given");
             const g2 = await call("POST", "/api/stats?admin=1", { headers: AK, body: { action: "premium", id: pk, days: 10 } });
             ok(Math.abs(g2.body.until - (g.body.until + 10 * 86400e3)) < 5000, "more days are added to the time left");
+            ok(typeof m.body.usedMovies === "number" && m.body.usedMovies === 0 && m.body.usedEpisodes === 0, "me shows today's usage (none yet)");
             m = await meCall("tok-pro");
             ok(m.body.premium === true && m.body.movies === 10 && m.body.episodes === 30 && m.body.until > Date.now(), "me shows premium: " + JSON.stringify(m.body));
             for (let i = 1; i <= 10; i++) { ok(!lim(await t("Prem.Film." + i, { authorization: "Bearer tok-pro", "x-forwarded-for": "6.7.7.7" })), "premium film " + i + " allowed"); }

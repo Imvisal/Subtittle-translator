@@ -74,6 +74,7 @@
             '<div class="wa-menu" id="waMenu" hidden>' +
             '<div class="wa-who"><strong>' + esc(user.displayName || "Signed in") + '</strong>' +
             '<small>' + esc(user.email) + '</small></div>' +
+            '<div class="wa-plan" id="waPlan" hidden></div>' +
             '<button type="button" class="wa-out" id="waPrem"><i class="fa-solid fa-crown" style="color:#f5b316"></i> Go Premium</button>' +
             '<button type="button" class="wa-out" id="waOut"><i class="fa-solid fa-right-from-bracket"></i> Sign out</button>' +
             '</div>';
@@ -83,6 +84,7 @@
             e.stopPropagation();
             var open = menu.hidden;
             menu.hidden = !open;
+            if (open) { loadPlan(); }
             av.setAttribute("aria-expanded", open ? "true" : "false");
         });
         document.getElementById("waOut").addEventListener("click", signOutNow);
@@ -90,6 +92,32 @@
             menu.hidden = true;
             if (window.__sinsubzPremiumInfo) { window.__sinsubzPremiumInfo("settings"); }
         });
+    }
+
+    // today's usage + plan, shown inside the account menu
+    function loadPlan() {
+        var box = document.getElementById("waPlan");
+        if (!box || !window.__sinsubzIdToken) { return; }
+        window.__sinsubzIdToken().then(function (tk) {
+            return fetch("/api/stats?me=1", { headers: { Authorization: "Bearer " + tk }, cache: "no-store" });
+        }).then(function (r) { return r.json(); }).then(function (d) {
+            if (!d || !d.signedIn) { return; }
+            box.textContent = "";
+            box.className = "wa-plan" + (d.premium ? " pro" : "");
+            var t = document.createElement("b");
+            t.textContent = d.premium ? "Premium until " + new Date(d.until).toISOString().slice(0, 10) : "Free plan";
+            box.appendChild(t);
+            [["Films today", d.usedMovies, d.movies], ["Episodes today", d.usedEpisodes, d.episodes]].forEach(function (x) {
+                var row = document.createElement("div"); row.className = "wa-row";
+                var a = document.createElement("span"); a.textContent = x[0];
+                var b = document.createElement("span"); b.textContent = x[1] + " / " + x[2];
+                row.appendChild(a); row.appendChild(b); box.appendChild(row);
+                var bar = document.createElement("div"); bar.className = "wa-bar";
+                var i = document.createElement("i"); i.style.width = Math.min(100, x[2] ? Math.round(100 * x[1] / x[2]) : 0) + "%";
+                bar.appendChild(i); box.appendChild(bar);
+            });
+            box.hidden = false;
+        }).catch(function () { /* ignore */ });
     }
 
     document.addEventListener("click", function (e) {

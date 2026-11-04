@@ -3322,6 +3322,14 @@ async function selectSubtitle(
 // TRANSLATE CHUNKS
 // ========================================================
 
+// Premium offer right after a translation (also when a saved Sinhala subtitle was reused). One popup per finish.
+let premiumOfferTimer = null;
+function offerPremiumSoon() {
+    if (/Electron/i.test(navigator.userAgent || "") || !window.__sinsubzPremiumInfo) { return; }
+    clearTimeout(premiumOfferTimer);
+    premiumOfferTimer = setTimeout(function () { window.__sinsubzPremiumInfo("done"); }, 400);
+}
+
 // Wrapper: lets the Android / desktop apps show notifications
 // (window.__appNotify is only defined by app-shim.js / desktop-shim.js).
 async function translateSubtitleChunks(
@@ -3345,9 +3353,7 @@ async function translateSubtitleChunks(
         }
 
         // free signed-in users get a short Premium offer once their subtitles are ready (not the Windows app)
-        if (!/Electron/i.test(navigator.userAgent || "") && window.__sinsubzPremiumInfo) {
-            setTimeout(function () { window.__sinsubzPremiumInfo("done"); }, 2500);
-        }
+        offerPremiumSoon();
 
         return result;
 
@@ -3397,7 +3403,7 @@ async function translateWithLibrary(subtitles, item, season, episode, meta) {
     if (key) {
         try {
             const reused = await reuseSavedTranslation(lib, retimer, key, hash, english, meta);
-            if (reused) { return reused; }
+            if (reused) { offerPremiumSoon(); return reused; }
         } catch (error) {
             console.warn("Saved translation not used:", error);
         }

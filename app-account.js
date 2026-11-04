@@ -209,7 +209,7 @@
         token().then(function (tk) {
             return fetch("/api/stats?me=1", { headers: { Authorization: "Bearer " + tk } });
         }).then(function (r) { return r.json(); }).then(function (d) {
-            plan = { premium: !!(d && d.premium), until: Number(d && d.until) || 0, movies: Number(d && d.movies) || 0, episodes: Number(d && d.episodes) || 0 };
+            plan = { premium: !!(d && d.premium), until: Number(d && d.until) || 0, movies: Number(d && d.movies) || 0, episodes: Number(d && d.episodes) || 0, um: Number(d && d.usedMovies) || 0, ue: Number(d && d.usedEpisodes) || 0 };
             try { localStorage.setItem("sinsubz-premium", plan.premium ? String(plan.until) : ""); } catch (e) { /* ignore */ }
             renderCard();
             try { document.dispatchEvent(new CustomEvent("sinsubz-plan", { detail: plan })); } catch (e) { /* ignore */ }
@@ -291,8 +291,9 @@
                 '<span class="ap-main"><span class="ap-title">' + esc(user.displayName || "Signed in") + (plan.premium ? ' <span style="background:linear-gradient(135deg,#f7c948,#f59e0b);color:#2a1d00;font-size:11px;font-weight:800;padding:2px 8px;border-radius:99px;vertical-align:middle">PREMIUM</span>' : '') + '</span>' +
                 '<span class="ap-meta" style="display:block">' + esc(user.email) + '</span>' +
                 '<span class="ap-meta" style="display:block">' + (plan.premium
-                    ? 'Premium until ' + new Date(plan.until).toISOString().slice(0, 10) + (plan.movies ? ' · ' + plan.movies + ' films + ' + plan.episodes + ' episodes per day · no ads' : '')
-                    : (plan.movies ? 'Free plan · ' + plan.movies + ' films + ' + plan.episodes + ' episodes per day' : '')) + '</span></span></div>' +
+                    ? 'Premium until ' + new Date(plan.until).toISOString().slice(0, 10) + (plan.movies ? ' · no ads' : '')
+                    : (plan.movies ? 'Free plan' : '')) + '</span>' +
+                (plan.movies ? '<span class="ap-meta" style="display:block">Today: films ' + plan.um + ' / ' + plan.movies + ' · episodes ' + plan.ue + ' / ' + plan.episodes + '</span>' : '') + '</span></div>' +
                 (plan.premium ? '' : '<button type="button" class="ap-item" id="accPrem"><span class="ap-ic"><i class="fa-solid fa-crown" style="color:#f5b316"></i></span>' +
                 '<span class="ap-main"><span class="ap-title">Go Premium</span>' +
                 '<span class="ap-meta" style="display:block">More films per day, no ads</span></span></button>') +

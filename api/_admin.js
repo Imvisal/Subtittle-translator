@@ -491,13 +491,19 @@ async function me(req, res) {
         if (!who) { return res.status(200).json({ signedIn: false, premium: false }); }
         const until = hasRedis() ? await premiumUntil(uidKeyOf(who.uid)) : 0;
         const premium = until > Date.now();
+        let usedM = 0, usedE = 0;
+        if (hasRedis()) {
+            const ukey = "u" + uidKeyOf(who.uid);
+            const [m, e] = await redis([["SCARD", "lim:" + dayKey(0) + ":" + ukey + ":m"], ["SCARD", "lim:" + dayKey(0) + ":" + ukey + ":e"]]);
+            usedM = Number(m) || 0; usedE = Number(e) || 0;
+        }
         let price = "";
         if (!premium && hasRedis()) {
             const cfg = parse((await redis([["GET", "prem:cfg"]]))[0]) || {};
             price = String(cfg.price || "").slice(0, 40);
         }
         return res.status(200).json({
-            signedIn: true, premium: premium, until: premium ? until : 0,
+            signedIn: true, premium: premium, until: premium ? until : 0, usedMovies: usedM, usedEpisodes: usedE,
             movies: premium ? envNum("PREMIUM_MOVIES_PER_DAY", 10) : envNum("LIMIT_MOVIES_PER_DAY", 2),
             episodes: premium ? envNum("PREMIUM_EPISODES_PER_DAY", 30) : envNum("LIMIT_EPISODES_PER_DAY", 5),
             premiumMovies: envNum("PREMIUM_MOVIES_PER_DAY", 10),
