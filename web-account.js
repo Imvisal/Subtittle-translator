@@ -64,17 +64,8 @@
     // ---------------------------------------------------------
     // UI
     // ---------------------------------------------------------
-    // Premium members: the header "Premium" link becomes a gold badge that opens their profile
-    window.__sinsubzMarkPremium = function (on) {
-        document.documentElement.classList.toggle("is-premium", !!on);
-        var a = document.querySelector('.header-nav a[href="#plans"], .header-nav a.nav-prem');
-        if (!a) { return; }
-        if (on) {
-            a.className = "nav-prem"; a.setAttribute("href", "profile.html"); a.textContent = "\uD83D\uDC51 Premium"; a.title = "Your Premium profile";
-        } else {
-            a.className = ""; a.setAttribute("href", "#plans"); a.textContent = "Premium"; a.removeAttribute("title");
-        }
-    };
+    // Premium members do not see the header "Premium" link or the plans section (CSS class on <html>)
+    window.__sinsubzMarkPremium = function (on) { document.documentElement.classList.toggle("is-premium", !!on); };
 
     var prof = { nick: "", pic: "", premium: false };       // nickname + picture chosen on the profile page
     function loadProfileBits() {
