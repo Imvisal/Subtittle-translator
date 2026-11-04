@@ -1947,7 +1947,8 @@ function openTitleModal() {
 
 }
 
-function closeTitleModal() {
+// keepResults = true: translating started, so the popup closes and the progress is shown in the normal page place
+function closeTitleModal(keepResults) {
 
     if (!titleModalOpen) {
         return;
@@ -1970,17 +1971,19 @@ function closeTitleModal() {
         }
     });
 
-    const results = document.getElementById("searchResults");
-    if (results) results.innerHTML = "";
+    if (!keepResults) {
+        const results = document.getElementById("searchResults");
+        if (results) results.innerHTML = "";
 
-    if (searchStatus) searchStatus.textContent = "";
+        if (searchStatus) searchStatus.textContent = "";
+    }
 
     if (modal) modal.hidden = true;
 
     document.documentElement.classList.remove("tm-open");
     titleModalOpen = false;
 
-    showCategoryResults();
+    if (!keepResults) { showCategoryResults(); }
 
 }
 
@@ -2967,6 +2970,9 @@ async function selectSubtitle(
 
     }
 
+
+    // the translation itself is shown on the page, not inside the title popup
+    closeTitleModal(true);
 
     if (searchStatus) {
 
