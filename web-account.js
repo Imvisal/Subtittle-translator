@@ -72,6 +72,7 @@
         }).then(function (r) { return r.json(); }).then(function (d) {
             if (!d || !d.signedIn) { return; }
             if ((d.nick || "") !== prof.nick || (d.pic || "") !== prof.pic || !!d.premium !== prof.premium) { prof = { nick: d.nick || "", pic: d.pic || "", premium: !!d.premium }; render(); }
+            document.documentElement.classList.toggle("is-premium", !!d.premium);       // hides the "get Premium" ads on the page
         }).catch(function () { /* ignore */ });
     }
 
@@ -97,7 +98,7 @@
             '<small>' + esc(user.email) + '</small></div>' +
             '<div class="wa-plan" id="waPlan" hidden></div>' +
             '<a class="wa-out" href="profile.html" style="text-decoration:none"><i class="fa-solid fa-user"></i> My profile &amp; downloads</a>' +
-            '<button type="button" class="wa-out" id="waPrem"><i class="fa-solid fa-crown" style="color:#f5b316"></i> Go Premium</button>' +
+            (prof.premium ? '' : '<button type="button" class="wa-out" id="waPrem"><i class="fa-solid fa-crown" style="color:#f5b316"></i> Go Premium</button>') +
             '<button type="button" class="wa-out" id="waOut"><i class="fa-solid fa-right-from-bracket"></i> Sign out</button>' +
             '</div>';
         var menu = document.getElementById("waMenu");
@@ -110,10 +111,13 @@
             av.setAttribute("aria-expanded", open ? "true" : "false");
         });
         document.getElementById("waOut").addEventListener("click", signOutNow);
-        document.getElementById("waPrem").addEventListener("click", function () {
-            menu.hidden = true;
-            if (window.__sinsubzPremiumInfo) { window.__sinsubzPremiumInfo("settings"); }
-        });
+        var wp = document.getElementById("waPrem");
+        if (wp) {
+            wp.addEventListener("click", function () {
+                menu.hidden = true;
+                if (window.__sinsubzPremiumInfo) { window.__sinsubzPremiumInfo("settings"); }
+            });
+        }
     }
 
     // today's usage + plan, shown inside the account menu
