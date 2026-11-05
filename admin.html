@@ -28,6 +28,12 @@
         .stat span { color:var(--muted); font-size:12.5px; }
         .stat.hi b { color:var(--acc2); }
         .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:16px; }
+        .tabbar { position:sticky; top:0; z-index:5; display:flex; gap:6px; overflow-x:auto; padding:10px 0; margin:0 0 14px; background:var(--bg); border-bottom:1px solid var(--line); scrollbar-width:none; }
+        .tabbar::-webkit-scrollbar { display:none; }
+        .tab { flex:none; background:transparent; color:var(--muted); border:1px solid var(--line); padding:9px 16px; border-radius:99px; font-weight:600; white-space:nowrap; }
+        .tab.on { background:var(--acc); color:#0b0d1f; border-color:var(--acc); }
+        .tabn { display:inline-block; min-width:18px; padding:0 6px; margin-left:4px; border-radius:99px; background:var(--bad); color:#fff; font-size:11.5px; line-height:18px; text-align:center; }
+        .tabpane[hidden] { display:none; }
         .two { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
         @media (max-width:760px) { .two { grid-template-columns:1fr; } }
         .chart { display:flex; align-items:flex-end; gap:4px; height:130px; }
@@ -95,6 +101,16 @@
     <div class="err" id="err"></div>
 
     <div id="panel" hidden>
+        <nav class="tabbar" id="tabbar" aria-label="Admin sections">
+            <button type="button" class="tab on" data-go="overview">Overview</button>
+            <button type="button" class="tab" data-go="health">Translations</button>
+            <button type="button" class="tab" data-go="users">Users</button>
+            <button type="button" class="tab" data-go="premium">Premium <span class="tabn" id="tabnPrem" hidden></span></button>
+            <button type="button" class="tab" data-go="announce">Announcement</button>
+            <button type="button" class="tab" data-go="inbox">Messages</button>
+        </nav>
+
+        <div class="tabpane" data-tab="overview">
         <div class="grid" id="today"></div>
         <h2>All time</h2>
         <div class="grid" id="totals"></div>
@@ -109,6 +125,14 @@
             <div class="card"><h2>Where people use it (signed-in accounts)</h2><div class="bars" id="platforms"></div></div>
         </div>
 
+        <div class="two">
+            <div class="card"><h2>Latest translated titles</h2><ul class="list" id="recent"></ul></div>
+            <div class="card"><h2>Downloads</h2><ul class="list" id="downloads"></ul></div>
+        </div>
+
+        </div>
+
+        <div class="tabpane" data-tab="health" hidden>
         <h2>Translation health</h2>
         <div class="grid" id="healthToday"></div>
         <div class="card">
@@ -142,15 +166,26 @@
             </div>
         </div>
 
-        <div class="two">
-            <div class="card">
-                <h2 id="inboxTitle">Inbox</h2>
-                <div id="inboxList"></div>
-                <p style="margin:10px 0 0"><a class="btn ghost" href="/inbox.html">Open inbox</a></p>
-            </div>
-            <div class="card"><h2>Latest comments</h2><div id="commentList"></div></div>
         </div>
 
+        <div class="tabpane" data-tab="users" hidden>
+        <div class="card">
+            <div class="top" style="margin-bottom:8px">
+                <h2 style="margin:0" id="usersTitle">Signed-in Google accounts</h2>
+                <div class="row">
+                    <input id="find" placeholder="Search name or email" style="min-width:200px;padding:8px 11px">
+                    <button class="ghost" id="csv" type="button">Download CSV</button>
+                </div>
+            </div>
+            <div class="tbl"><table>
+                <thead><tr><th>Account</th><th>Using</th><th>First seen</th><th>Last seen</th><th>Translated</th><th></th></tr></thead>
+                <tbody id="users"></tbody>
+            </table></div>
+            <p class="empty" id="usersNote"></p>
+        </div>
+        </div>
+
+        <div class="tabpane" data-tab="premium" hidden>
         <div class="card" id="planCard">
             <h2>Premium plan: bank transfer <span id="planState" class="tag"></span></h2>
             <div class="two">
@@ -170,6 +205,9 @@
             <div id="plReqs"></div>
         </div>
 
+        </div>
+
+        <div class="tabpane" data-tab="announce" hidden>
         <div class="card" id="annCard">
             <h2>Announcement to the apps (Android + Windows) <span id="annState" class="tag"></span></h2>
             <div class="two">
@@ -189,25 +227,20 @@
             <p class="empty" id="anMsg"></p>
         </div>
 
-        <div class="two">
-            <div class="card"><h2>Latest translated titles</h2><ul class="list" id="recent"></ul></div>
-            <div class="card"><h2>Downloads</h2><ul class="list" id="downloads"></ul></div>
         </div>
 
-        <div class="card">
-            <div class="top" style="margin-bottom:8px">
-                <h2 style="margin:0" id="usersTitle">Signed-in Google accounts</h2>
-                <div class="row">
-                    <input id="find" placeholder="Search name or email" style="min-width:200px;padding:8px 11px">
-                    <button class="ghost" id="csv" type="button">Download CSV</button>
-                </div>
+        <div class="tabpane" data-tab="inbox" hidden>
+        <div class="two">
+            <div class="card">
+                <h2 id="inboxTitle">Inbox</h2>
+                <div id="inboxList"></div>
+                <p style="margin:10px 0 0"><a class="btn ghost" href="/inbox.html">Open inbox</a></p>
             </div>
-            <div class="tbl"><table>
-                <thead><tr><th>Account</th><th>Using</th><th>First seen</th><th>Last seen</th><th>Translated</th><th></th></tr></thead>
-                <tbody id="users"></tbody>
-            </table></div>
-            <p class="empty" id="usersNote"></p>
+            <div class="card"><h2>Latest comments</h2><div id="commentList"></div></div>
         </div>
+
+        </div>
+
     </div>
 </main>
 <script src="admin.js"></script>

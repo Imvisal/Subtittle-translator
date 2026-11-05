@@ -33,6 +33,7 @@
     var planFilled = false;
     function renderPlan(pl) {
         if (!pl) { return; }
+        var tn = $("tabnPrem"); if (tn) { tn.hidden = !pl.pending; tn.textContent = pl.pending || ""; }
         $("planState").textContent = pl.pending ? pl.pending + " waiting" : "no requests waiting";
         if (!planFilled) {
             planFilled = true;
@@ -353,6 +354,20 @@
             var li = el("li"); li.appendChild(el("span", "", x[0])); li.appendChild(el("span", "", fmt(x[1]))); ul.appendChild(li);
         });
     }
+
+    // ---- tabs (the last one is remembered in this browser) ----
+    function openTab(name) {
+        var found = false;
+        Array.prototype.forEach.call(document.querySelectorAll(".tabpane"), function (p) { var on = p.getAttribute("data-tab") === name; p.hidden = !on; if (on) { found = true; } });
+        if (!found) { openTab("overview"); return; }
+        Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (b) { b.classList.toggle("on", b.getAttribute("data-go") === name); });
+        try { localStorage.setItem("sinsubz-admin-tab", name); } catch (e) { /* ignore */ }
+        window.scrollTo(0, 0);
+    }
+    Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (b) {
+        b.addEventListener("click", function () { openTab(b.getAttribute("data-go")); });
+    });
+    try { var savedTab = localStorage.getItem("sinsubz-admin-tab"); if (savedTab) { openTab(savedTab); } } catch (e) { /* ignore */ }
 
     function show(on) {
         $("links").hidden = !on;
