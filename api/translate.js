@@ -569,6 +569,27 @@ Meaning over words:
   Idioms, jokes, slang and swearing should become the closest natural Sinhala
   equivalent (not a literal translation). Keep the strength of insults the same
   (do not soften or make them stiff).
+IDIOMS AND SET PHRASES - NEVER word-by-word. Pick the meaning that fits the scene and the tone:
+  "Oh come on" / "Come on" when annoyed or not believing -> අයියෝ, ඉතින්! / අනේ එපා කියන්න! / ඔහොම කියන්න එපා!
+  "Come on!" when urging -> ඉක්මන් කරන්න! / යං! / පුළුවන් ඔයාට!      "Come on in" -> ඇතුළට එන්න
+    ("එන්න" only when someone is really being asked to come to a place)
+  "Give me a break" -> අනේ මට පාඩුවේ ඉන්න දෙන්න      "No way" -> බෑ බෑ! / ඇත්තමද?
+  "You've got to be kidding" -> ඔයා විහිළු කරනවනේ?      "Are you out of your mind?" -> ඔයාට පිස්සුද?
+  "What the hell / What the heck" -> මොකක්ද මේ! (mild) / මොන මගුලක්ද (strong, only if the English is strong)
+  "Hang on / Hold on" -> ටිකක් ඉන්න      "Get out of here!" (disbelief) -> හාහ්, හරි යන්න! / ඇත්තටම?
+  "Cut it out / Knock it off" -> නවත්තන්න      "Shut up" -> කට වහගන්න (rude) / ඇති, නවත්තන්න (friendly)
+  "Nice try" -> හොඳ උත්සාහයක්, ඒත් බෑ      "Tell me about it" -> ඒක නම් ඇත්ත / මට කියන්නත් එපා
+  "You bet" -> අනිවා      "Piece of cake" -> ගොඩක් ලේසියි      "It's on me" -> මම ගෙවන්නම්
+  "Long time no see" -> ගොඩක් කාලෙකින් නේ දැක්කේ      "Look who's here" -> අනේ බලන්න කවුද ආවේ
+  "Fair enough" -> හරි, ඒක ඇත්ත      "Good for you" -> හොඳයි, සුබයි      "My bad" -> මගේ වැරැද්ද
+  "Whatever" -> ඕනෙ එකක්      "Seriously?" -> ඇත්තටම? / හැබෑටමද?      "Who cares" -> කාටද වැඩේ
+  "For God's sake" -> දෙයියනේ!      "Oh my God" -> අනේ දෙයියනේ      "Thank God" -> හොඳවෙලාවට / දෙයියන්ට පින්
+  "Holy crap / Holy shit" -> අම්මෝ!      "Hell yeah" -> අනිවා!      "Watch out" -> පරිස්සම!
+  "Take it easy" -> සන්සුන් වෙන්න      "How come?" -> ඒ කොහොමද? / ඇයි එහෙම?      "Let's roll" -> අපි යමු
+  "I'm sorry for your loss" -> ඔයාගේ අහිමිවීම ගැන මම කණගාටුයි      "Don't mention it" -> කමක් නෑ
+  "Dude / man" used to address someone -> මචං / (leave it out when it adds nothing)
+  If a phrase is not in this list and a word-by-word reading sounds odd or silly in Sinhala, it is an idiom:
+  translate what the person MEANS in that scene, in the way a Sri Lankan would say it.
 SOUND CUES / DESCRIPTIONS in [square brackets] or (parentheses):
   Keep the brackets, but write them SHORT and SPOKEN, never bookish.
   Use -නවා / -වෙනවා endings and everyday words, not -යි / -ඇසේ / -ඇසෙයි.
