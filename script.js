@@ -93,6 +93,44 @@ let isTranslating = false;
 
 // Subtitle editor settings
 let selectedTranslationStyle = "natural";
+
+// ---- yellow "word notes": the meaning of words almost nobody knows, under the subtitle (on by default) ----
+const WORD_NOTE_COLOR = "#FFD54F";
+let cueNotes = new Map();        // cue start time (ms) -> short meaning, filled while translating
+
+function wordNotesEnabled() {
+    try { return localStorage.getItem("sinsubz-word-notes") !== "0"; } catch (e) { return true; }
+}
+
+function bindWordNoteToggles() {
+    document.querySelectorAll(".wn-check").forEach(function (box) {
+        box.checked = wordNotesEnabled();
+        box.addEventListener("change", function () {
+            try { localStorage.setItem("sinsubz-word-notes", box.checked ? "1" : "0"); } catch (e) { /* ignore */ }
+            document.querySelectorAll(".wn-check").forEach(function (b) { b.checked = box.checked; });
+        });
+    });
+}
+if (document.readyState === "loading") { document.addEventListener("DOMContentLoaded", bindWordNoteToggles); } else { bindWordNoteToggles(); }
+
+function cueTimeMs(stamp) {
+    const m = /(\d+):(\d+):(\d+)[,.](\d+)/.exec(String(stamp || ""));
+    return m ? ((+m[1]) * 3600 + (+m[2]) * 60 + (+m[3])) * 1000 + Number(String(m[4]).padEnd(3, "0").slice(0, 3)) : -1;
+}
+
+// puts the notes under the cue they belong to (a cue that was merged with its neighbours gets their notes too)
+function applyWordNotes(cues) {
+    if (!cueNotes.size || !Array.isArray(cues)) { return cues; }
+    return cues.map(function (cue) {
+        const parts = String(cue.timestamp || "").split("-->");
+        const a = cueTimeMs(parts[0]), b = cueTimeMs(parts[1]);
+        if (a < 0 || b < 0) { return cue; }
+        const found = [];
+        cueNotes.forEach(function (note, start) { if (start >= a && start < b && found.indexOf(note) < 0) { found.push(note); } });
+        if (!found.length) { return cue; }
+        return Object.assign({}, cue, { text: cue.text + "\n<font color=\"" + WORD_NOTE_COLOR + "\">(" + found.slice(0, 2).join("; ") + ")</font>" });
+    });
+}
 let subtitleEditorPage = 0;
 
 const SUBTITLE_EDITOR_PAGE_SIZE = 40;
@@ -1164,7 +1202,7 @@ uploadProgressUI.status.textContent =
             );
 
         const sinhalaSRT =
-            buildSRT(addSinSubzCredit(translated));
+            buildSRT(addSinSubzCredit(applyWordNotes(translated)));
 
         askForComment(String(uploadedFileName || ""));
 
@@ -3184,7 +3222,7 @@ async function selectSubtitle(
 
 
         const sinhalaSRT =
-            buildSRT(addSinSubzCredit(translated));
+            buildSRT(addSinSubzCredit(applyWordNotes(translated)));
 
         askForComment((item && item.title) ? item.title + (item.year ? " (" + item.year + ")" : "") : "");
 
@@ -3611,6 +3649,7 @@ async function translateSubtitleChunksImpl(
 ) {
 
     subtitles = dropBracketCues(subtitles);
+    cueNotes = new Map();
 
     // translating needs a Google account (website + Android app; the Windows app has no sign-in yet).
     // Nothing opens by itself: a message explains it and the person presses the button.
@@ -3666,6 +3705,7 @@ async function translateSubtitleChunksImpl(
                             subtitles: chunk,
                             language: "si",
                             style: selectedTranslationStyle,
+                            notes: wordNotesEnabled(),
                             title: (meta && meta.title) || "",
                             job: String(uploadedFileName || (meta && meta.title) || ""),
                             context: getChunkContext(subtitles, chunkStart, chunk.length)
@@ -3705,6 +3745,13 @@ async function translateSubtitleChunksImpl(
                         "Translation API returned invalid subtitle data."
                     );
                 }
+
+                data.subtitles.forEach(function (sub) {
+                    if (sub && typeof sub.note === "string" && sub.note && typeof sub.timestamp === "string") {
+                        const t = cueTimeMs(sub.timestamp.split("-->")[0]);
+                        if (t >= 0) { cueNotes.set(t, sub.note); }
+                    }
+                });
 
                 return validateTranslatedChunk(chunk, data.subtitles);
 

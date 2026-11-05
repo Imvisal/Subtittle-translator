@@ -401,6 +401,9 @@ module.exports = async function handler(req, res) {
         const { subtitles, language = "si", style = "natural" } =
             req.body || {};
 
+        // optional: a short yellow "meaning" line for words almost nobody knows (Sinhala only)
+        const wantNotes = !!(req.body && req.body.notes) && language === "si";
+
         // optional extra context: show / movie title + neighbouring original lines
         const title = String((req.body && req.body.title) || "")
             .replace(/[\r\n]+/g, " ").slice(0, 150).trim();
@@ -642,7 +645,16 @@ SUBTITLE READABILITY & ENGLISH WORDS:
 - You may change line breaks naturally.
 - Return ONLY valid JSON.
 - Do not use markdown.
-
+${wantNotes ? `
+WORD NOTES (optional, rare):
+  If a line contains a word, term or reference that an ordinary Sinhala-speaking viewer would almost
+  certainly NOT understand (rare medical / military / legal / scientific terms, culture-specific references,
+  obscure slang kept as a loanword), add a "note" to that line: a very short plain Sinhala meaning in the form
+  "word = meaning", at most 40 characters, no brackets.
+  - Only for words people really do not know. NEVER for common words, names of people or places, or anything a normal viewer understands.
+  - At most ONE note per line, and only a few lines in the whole batch. Most lines have NO note: leave the field out.
+  - Never explain the same word twice in the batch.
+` : ""}
 ${title ? "TITLE OF THE FILM / SHOW: " + title + "\n(Use it to understand genre, setting, slang and character names. Do not translate or output it.)\n" : ""}${(ctxBefore.length || ctxAfter.length) ? `CONTEXT ONLY - do NOT translate or return these lines. They show who is speaking and the mood around the lines you must translate. Keep the same pronouns and name spellings as the flow of this conversation:
 LINES JUST BEFORE: ${JSON.stringify(ctxBefore)}
 LINES JUST AFTER: ${JSON.stringify(ctxAfter)}
@@ -653,7 +665,8 @@ Return exactly this format:
   "translations": [
     {
       "index": 0,
-      "text": "translated text"
+      "text": "translated text"${wantNotes ? `,
+      "note": "optional: word = short meaning (leave out when not needed)"` : ""}
     }
   ]
 }
@@ -664,6 +677,7 @@ ${JSON.stringify(inputItems)}
 `;
 
 
+        const noteMap = new Map();      // index -> short yellow meaning (only when wantNotes)
         const checkGlitch = language !== "ta";
         const MAX_TRIES = 3;
 
@@ -766,6 +780,12 @@ ${JSON.stringify(inputItems)}
                 }
 
                 translationMap.set(item.index, checkGlitch ? polishSinhala(text) : text);
+                if (wantNotes && typeof item.note === "string") {
+                    const note = item.note.replace(/[()\[\]<>\n\r]/g, " ").replace(/\s+/g, " ").trim();
+                    if (note.length >= 3 && note.length <= 45 && /=/.test(note) && !hasGlitch(note) && /[\u0D80-\u0DFF]/.test(note)) {
+                        noteMap.set(item.index, note);
+                    }
+                }
                 dirtyCandidates.delete(item.index);
                 stillPending.delete(item.index);
 
@@ -857,7 +877,10 @@ ${JSON.stringify(inputItems)}
                     text:
                         translationMap.get(
                             index
-                        )
+                        ),
+
+                    note:
+                        noteMap.get(index) || undefined
 
                 })
             );
