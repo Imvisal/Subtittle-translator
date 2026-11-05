@@ -3792,6 +3792,61 @@ async function translateSubtitleChunksImpl(
     }
 
 
+    // ---- a chunk can be running twice at the very end ("hedging") ----
+    // The last few chunks run alone, so ONE slow answer (busy Gemini key, broken JSON, a retry) makes the
+    // bar sit at 97% for a long time. When nothing new is left to start and a chunk has been running
+    // longer than HEDGE_AFTER_MS, the idle worker sends the same chunk again; whichever answer comes first
+    // is used and the other one is ignored.
+    const HEDGE_AFTER_MS = 25000;
+    const runs = new Map();           // chunk index -> { startedAt, launches, failures, settled, hedged, launch }
+
+    function runChunk(index) {
+
+        const start = index * CHUNK_SIZE;
+        const chunk = subtitles.slice(start, start + CHUNK_SIZE);
+
+        return new Promise(function (resolve, reject) {
+
+            const r = { startedAt: Date.now(), launches: 0, failures: 0, settled: false, hedged: false };
+
+            r.launch = function () {
+                r.launches++;
+                translateOneChunk(chunk, index + 1, start).then(function (value) {
+                    if (!r.settled) { r.settled = true; resolve(value); }
+                }).catch(function (error) {
+                    r.failures++;
+                    if (!r.settled && r.failures >= r.launches) { r.settled = true; reject(error); }
+                });
+            };
+
+            runs.set(index, r);
+            r.launch();
+
+        });
+    }
+
+    let watching = false;
+
+    async function watchTail() {
+
+        if (watching) { return; }
+        watching = true;
+
+        while (!failure) {
+
+            const open = Array.from(runs.values()).filter(function (r) { return !r.settled; });
+            if (!open.length) { return; }
+
+            await sleep(2000);
+
+            const now = Date.now();
+            const slow = open.filter(function (r) { return !r.settled && !r.hedged && now - r.startedAt > HEDGE_AFTER_MS; });
+            slow.slice(0, 2).forEach(function (r) { r.hedged = true; r.launch(); });
+
+        }
+    }
+
+
     // Each worker keeps taking the next untranslated chunk.
     async function worker(workerIndex) {
 
@@ -3803,6 +3858,7 @@ async function translateSubtitleChunksImpl(
             const index = nextChunk++;
 
             if (index >= totalChunks) {
+                watchTail();           // idle: help the last chunks along (only one watcher runs)
                 return;
             }
 
@@ -3811,8 +3867,7 @@ async function translateSubtitleChunksImpl(
 
             try {
 
-                results[index] =
-                    await translateOneChunk(chunk, index + 1, start);
+                results[index] = await runChunk(index);
 
                 completed += chunk.length;
 
