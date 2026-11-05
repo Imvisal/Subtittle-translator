@@ -4073,9 +4073,3 @@ html.tm-open, html.tm-open body { overflow: hidden; }
 .plan-card .btn { display: inline-flex; justify-content: center; width: 100%; }
 .plan-state { margin: 10px 0 0; font-weight: 700; color: var(--accent); }
 @media (max-width: 640px) { .plans-grid { grid-template-columns: 1fr; } }
-
-/* "Explain rare words" switch */
-.wn-toggle { display: inline-flex; align-items: center; gap: 8px; margin: 10px 4px 0; font-size: 13.5px; cursor: pointer; color: inherit; opacity: .9; user-select: none; }
-.wn-toggle input { width: 17px; height: 17px; accent-color: #f5c518; cursor: pointer; }
-.wn-toggle small { opacity: .75; }
-.wn-toggle em { color: #f5c518; font-style: normal; font-weight: 700; }
