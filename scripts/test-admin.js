@@ -64,6 +64,7 @@ global.fetch = async (url, opt) => {
         const u = users[JSON.parse(opt.body).idToken];
         return { ok: !!u, status: u ? 200 : 400, json: async () => ({ users: u ? [u] : [] }) };
     }
+    if (String(url).includes("api.resend.com")) { global.__mails = global.__mails || []; global.__mails.push({ url: String(url), headers: opt.headers, body: JSON.parse(opt.body) }); return { ok: true, status: 200, json: async () => ({}) }; }
     if (String(url).includes("generativelanguage")) { return { ok: true, status: 200, text: async () => "{}", json: async () => ({}) }; }
     return realFetch(url, opt);
 };
@@ -360,6 +361,29 @@ function call(method, url, { headers = {}, body } = {}) {
         const rid = (await call("GET", "/api/stats?admin=1", { headers: A })).body.plan.requests.find(x => x.status === "pending").id;
         ok((await act({ action: "planReject", id: rid })).code === 200, "rejected");
         ok((await call("GET", "/api/stats?plan=1", { headers: { authorization: "Bearer tok-visal" } })).body.request.status === "rejected", "user sees rejected");
+    }
+
+    // ---- e-mail to the owner on a new Premium request ----
+    {
+        global.__mails = [];
+        const slip = "data:image/jpeg;base64," + Buffer.from("fake-slip-2").toString("base64");
+        const send = () => call("POST", "/api/stats?plan=1", { headers: { authorization: "Bearer tok-base" }, body: { ref: "BASE REF 77", slip } });
+        ok((await send()).code === 200 && global.__mails.length === 0, "no RESEND_API_KEY: request works, no mail");
+        // clear the pending request so we can send another
+        const A2 = { "x-admin-key": "secret-key-123" };
+        let pend = (await call("GET", "/api/stats?admin=1", { headers: A2 })).body.plan.requests.find(x => x.status === "pending");
+        await call("POST", "/api/stats?admin=1", { headers: A2, body: { action: "planReject", id: pend.id } });
+        process.env.RESEND_API_KEY = "re_test_key";
+        ok((await send()).code === 200 && global.__mails.length === 1, "mail sent on a new request");
+        const m = global.__mails[0];
+        ok(m.url === "https://api.resend.com/emails" && m.headers.Authorization === "Bearer re_test_key", "Resend call");
+        ok(m.body.to[0] === "visaludyogi2002@gmail.com" && /BASE REF 77/.test(m.body.text) && /b@example.com/.test(m.body.text) && !/fake-slip/.test(JSON.stringify(m.body)), "mail goes to the owner, has the reference, no slip photo");
+        pend = (await call("GET", "/api/stats?admin=1", { headers: A2 })).body.plan.requests.find(x => x.status === "pending");
+        await call("POST", "/api/stats?admin=1", { headers: A2, body: { action: "planReject", id: pend.id } });
+        process.env.NOTIFY_EMAIL = "other@example.com";
+        await send();
+        ok(global.__mails[1].body.to[0] === "other@example.com", "NOTIFY_EMAIL overrides the address");
+        delete process.env.NOTIFY_EMAIL; delete process.env.RESEND_API_KEY;
     }
 
     // brute force

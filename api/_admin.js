@@ -408,6 +408,31 @@ function envNum(name, dflt) {
     return v != null && v !== "" && !isNaN(Number(v)) ? Number(v) : dflt;
 }
 
+// ---------------------------------------------------------------- e-mail to the owner (Resend, plain HTTPS: no extra package)
+// Env: RESEND_API_KEY  (resend.com, free).  NOTIFY_EMAIL (default = owner e-mail; with Resend's free
+// onboarding sender this must be the e-mail the Resend account was made with).  Never throws, never blocks long.
+async function notifyOwner(subject, text) {
+    try {
+        const key = String(process.env.RESEND_API_KEY || "").trim();
+        if (!key) { return false; }
+        const to = String(process.env.NOTIFY_EMAIL || process.env.OWNER_EMAIL || "visaludyogi2002@gmail.com").trim();
+        const ctl = new AbortController();
+        const timer = setTimeout(function () { ctl.abort(); }, 4000);
+        const r = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: { "Authorization": "Bearer " + key, "Content-Type": "application/json" },
+            body: JSON.stringify({ from: String(process.env.NOTIFY_FROM || "SinSubz <onboarding@resend.dev>"), to: [to], subject: subject, text: text }),
+            signal: ctl.signal
+        });
+        clearTimeout(timer);
+        if (!r.ok) { console.warn("notifyOwner: Resend answered " + r.status); }
+        return r.ok;
+    } catch (e) {
+        console.warn("notifyOwner failed: " + (e && e.name));
+        return false;
+    }
+}
+
 // ---------------------------------------------------------------- Premium purchase by bank transfer
 // prem:cfg        JSON { price, bank, enabled }   (set in the admin panel, the bank text is shown to everyone)
 // prem:req        hash id -> JSON request (no photo)   prem:slip:<id>  slip photo as a data URL (kept 90 days, deleted when handled)
@@ -477,6 +502,11 @@ async function planSubmit(req, res) {
         const id = require("crypto").randomBytes(6).toString("hex");
         const rec = { id: id, uk: key, name: clean(who.name, 60), email: clean(who.email, 120), ref: ref, t: Date.now(), status: "pending" };
         await redis([["SET", "prem:slip:" + id, slip, "EX", 90 * 86400], ["HSET", "prem:req", id, JSON.stringify(rec)]]);
+        await notifyOwner(
+            "SinSubz: new Premium request from " + (rec.name || rec.email),
+            "A new Premium request is waiting.\n\nName: " + rec.name + "\nEmail: " + rec.email + "\nReference: " + rec.ref +
+            "\nTime: " + new Date(rec.t).toISOString() + "\n\nCheck your bank, then approve or reject it here:\nhttps://sinsubs.site/admin.html (Premium tab)\n"
+        );
         return res.status(200).json({ ok: true });
     } catch (e) {
         return res.status(500).json({ error: "Could not send. Try again." });
@@ -696,4 +726,4 @@ async function action(req, res) {
     }
 }
 
-module.exports = { planPublic, planSubmit, me, premiumUntil, authUser, loginRequired, checkDailyLimit, pacificDay, ping, overview, health, action, publicAnnouncement, cleanAnnouncement, dayKey, uidKeyOf };
+module.exports = { notifyOwner, planPublic, planSubmit, me, premiumUntil, authUser, loginRequired, checkDailyLimit, pacificDay, ping, overview, health, action, publicAnnouncement, cleanAnnouncement, dayKey, uidKeyOf };
