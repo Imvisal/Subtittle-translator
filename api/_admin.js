@@ -563,30 +563,48 @@ function jobName(raw) {
         .replace(/[._]+/g, " ").replace(/[\u0000-\u001F\u007F]/g, "").replace(/\s+/g, " ").trim().toLowerCase().slice(0, 100);
 }
 
-async function checkDailyLimit(req, rawJob, knownWho) {
+// prog = { idx, total } from the page: the film / episode is COUNTED only when every chunk (1..total) has been
+// translated, so a failed or abandoned run costs nothing. Without prog (older apps) it is counted at the start.
+// Returns { ok:true, done() } - the caller runs done() after a chunk was translated successfully.
+async function checkDailyLimit(req, rawJob, knownWho, prog) {
+    const pass = { ok: true, done: async () => {} };
     try {
-        if (!hasRedis()) { return { ok: true }; }
+        if (!hasRedis()) { return pass; }
         const job = jobName(rawJob) || "untitled";
         const isEpisode = /\bs\d{1,2}\s?e\d{1,3}\b/i.test(job) || /\b\d{1,2}x\d{2}\b/i.test(job);
 
         const who = knownWho !== undefined ? knownWho : await authUser(req);
         // the owner is exempt; LIMIT_APPLY_TO_OWNER=1 makes the owner account follow the limits too (for testing)
-        if (who && who.owner && process.env.LIMIT_APPLY_TO_OWNER !== "1") { return { ok: true }; }
+        if (who && who.owner && process.env.LIMIT_APPLY_TO_OWNER !== "1") { return pass; }
         const isPrem = who ? (await premiumUntil(uidKeyOf(who.uid))) > Date.now() : false;
         const maxMovies = isPrem ? envNum("PREMIUM_MOVIES_PER_DAY", 10) : envNum("LIMIT_MOVIES_PER_DAY", 2);
         const maxEps = isPrem ? envNum("PREMIUM_EPISODES_PER_DAY", 30) : envNum("LIMIT_EPISODES_PER_DAY", 5);
         const max = isEpisode ? maxEps : maxMovies;
-        if (!(max > 0)) { return { ok: true }; }
+        if (!(max > 0)) { return pass; }
         const user = who ? "u" + uidKeyOf(who.uid) : "i" + sha(clientIp(req)).toString("hex").slice(0, 20);
 
-        const cacheKey = user + "|" + job + "|" + dayKey(0);
-        if ((limitCache.get(cacheKey) || 0) > Date.now()) { return { ok: true }; }
+        const kind = isEpisode ? "e" : "m";
+        const setKey = "lim:" + dayKey(0) + ":" + user + ":" + kind;          // finished titles (what the counter shows)
+        const startKey = "lim:" + dayKey(0) + ":" + user + ":s" + kind;       // started titles (abuse guard only)
+        const total = prog && Number(prog.total) >= 1 ? Math.min(200, Math.floor(Number(prog.total))) : 0;
+        const idx = prog && Number.isFinite(Number(prog.idx)) ? Math.max(0, Math.min(400, Math.floor(Number(prog.idx)))) : 0;
 
-        const setKey = "lim:" + dayKey(0) + ":" + user + ":" + (isEpisode ? "e" : "m");
+        const done = total > 1 ? async () => {
+            try {
+                const pk = "lim:" + dayKey(0) + ":" + user + ":p:" + sha(job).toString("hex").slice(0, 16);
+                const r = await redis([["SADD", pk, idx], ["EXPIRE", pk, 2 * 86400], ["SCARD", pk]]);
+                if ((Number(r[2]) || 0) >= total) { await redis([["SADD", setKey, job], ["EXPIRE", setKey, 2 * 86400]]); }
+            } catch (e) { /* never break translating */ }
+        } : async () => {};
+
+        const cacheKey = user + "|" + job + "|" + dayKey(0);
+        if ((limitCache.get(cacheKey) || 0) > Date.now()) { return { ok: true, done: done }; }
+
         const [already] = await redis([["SISMEMBER", setKey, job]]);
         if (Number(already) !== 1) {
-            const [count] = await redis([["SCARD", setKey]]);
-            if ((Number(count) || 0) >= max) {
+            const [count, started, startedBefore] = await redis([["SCARD", setKey], ["SCARD", startKey], ["SISMEMBER", startKey, job]]);
+            const tooMany = (Number(count) || 0) >= max || (Number(startedBefore) !== 1 && (Number(started) || 0) >= max * 3);
+            if (tooMany) {
                 await redis([["HINCRBY", "stats:d:" + dayKey(0), "limited", 1]]).catch(() => null);
                 return {
                     ok: false, isEpisode: isEpisode, max: max,
@@ -594,13 +612,14 @@ async function checkDailyLimit(req, rawJob, knownWho) {
                         " TV episodes per day." + (isPrem ? " Please try again tomorrow." : " Premium members get more every day. Please try again tomorrow.")
                 };
             }
-            await redis([["SADD", setKey, job], ["EXPIRE", setKey, 2 * 86400]]);
+            await redis([["SADD", startKey, job], ["EXPIRE", startKey, 2 * 86400]]);
+            if (!(total > 1)) { await redis([["SADD", setKey, job], ["EXPIRE", setKey, 2 * 86400]]); }
         }
         limitCache.set(cacheKey, Date.now() + 30 * 60 * 1000);
         if (limitCache.size > 3000) { for (const [k, v] of limitCache) { if (v < Date.now()) { limitCache.delete(k); } } }
-        return { ok: true };
+        return { ok: true, done: done };
     } catch (e) {
-        return { ok: true };
+        return pass;
     }
 }
 

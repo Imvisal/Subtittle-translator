@@ -46,6 +46,7 @@ function run(c) {
 
 const users = { "tok-visal": { localId: "uid-1", displayName: "Visal", email: "v@example.com", photoUrl: "https://lh3.example/p1.jpg", emailVerified: true },
                 "tok-base": { localId: "uid-9", displayName: "Base", email: "b@example.com", emailVerified: true },
+                "tok-chunk": { localId: "uid-chunk", displayName: "Chunk", email: "c@example.com", emailVerified: true },
                 "tok-pro": { localId: "uid-3", displayName: "Pro", email: "p@example.com", emailVerified: true },
                 "tok-nimal": { localId: "uid-2", displayName: "Nimal", email: "n@example.com", emailVerified: true } };
 global.fetch = async (url, opt) => {
@@ -216,6 +217,23 @@ function call(method, url, { headers = {}, body } = {}) {
         ok(!lim(await t("Movie.Two.2025")), "film 2 can still be continued after the limit");
         for (let i = 1; i <= 5; i++) { ok(!lim(await t("Show.S01E" + String(i).padStart(2, "0"))), "episode " + i + " allowed"); }
         ok(lim(await t("Show.S01E06")), "episode 6 refused");
+        // counted only when every chunk is done
+        const prevFetch = global.fetch;
+        const gBody = JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify({ translations: [{ index: 0, text: "\u0dc4\u0dd9\u0dbd\u0ddd" }] }) }] } }] });
+        global.fetch = async (u, o) => (/generativelanguage.*generateContent/.test(String(u)) ? { ok: true, status: 200, text: async () => gBody, json: async () => JSON.parse(gBody) } : prevFetch(u, o));
+        const tc = (job, idx, total) => new Promise(resolve => {
+            const res = { code: 200, setHeader() {}, status(c) { this.code = c; return this; }, json(b) { resolve({ code: this.code, body: b }); } };
+            translate({ method: "POST", url: "/api/translate", headers: { "x-forwarded-for": "6.6.9.9", authorization: "Bearer tok-chunk" }, body: { subtitles: [{ number: 1, timestamp: "00:00:01,000 --> 00:00:02,000", text: "Hi" }], job, chunk: idx, chunks: total }, socket: {} }, res);
+        });
+        const meUsed = async () => { const m = await call("GET", "/api/stats?me=1", { headers: { authorization: "Bearer tok-chunk", "x-forwarded-for": "6.6.9.9" } }); return m.body.usedMovies; };
+        await tc("Half.Film.2025", 1, 3); await tc("Half.Film.2025", 2, 3);
+        ok(await meUsed() === 0, "unfinished film is not counted yet: " + (await meUsed()));
+        await tc("Half.Film.2025", 3, 3);
+        await tc("Half.Film.2025", 3, 3);
+        ok(await meUsed() === 1, "finished film counted once");
+        await tc("Half.Film.2025", 1, 3); await tc("Half.Film.2025", 2, 3); await tc("Half.Film.2025", 3, 3);
+        ok(await meUsed() === 1, "re-running the same film does not count twice");
+        global.fetch = prevFetch;
         ok(!lim(await t("Movie.One.2025", { "x-forwarded-for": "6.6.6.7" })), "another visitor has their own count");
         ok(!lim(await t("Movie.Five", { authorization: "Bearer tok-nimal", "x-forwarded-for": "6.6.6.8" })), "signed-in film 1");
         await t("Movie.Six", { authorization: "Bearer tok-nimal", "x-forwarded-for": "6.6.6.9" });

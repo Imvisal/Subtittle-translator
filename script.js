@@ -3669,6 +3669,7 @@ async function translateSubtitleChunksImpl(
                             style: selectedTranslationStyle,
                             title: (meta && meta.title) || "",
                             job: String((meta && (meta.job || meta.title)) || uploadedFileName || ""),
+                            chunk: chunkNumber, chunks: totalChunks,
                             context: getChunkContext(subtitles, chunkStart, chunk.length)
                         })
                     }

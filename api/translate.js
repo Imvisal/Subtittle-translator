@@ -435,6 +435,7 @@ module.exports = async function handler(req, res) {
 
 
         // ---- Google sign-in required + daily limit per user (see api/_admin.js) ----
+        let limitDone = null;
         {
             const adm = require("./_admin.js");
             const who = await adm.authUser(req);
@@ -445,8 +446,10 @@ module.exports = async function handler(req, res) {
                 });
             }
             const lim = await adm.checkDailyLimit(
-                req, (req.body && req.body.job) || title, who
+                req, (req.body && req.body.job) || title, who,
+                { idx: req.body && req.body.chunk, total: req.body && req.body.chunks }
             );
+            limitDone = lim.done || null;
             if (!lim.ok) {
                 return res.status(429).json({ error: lim.message, code: "DAILY_LIMIT" });
             }
@@ -896,6 +899,7 @@ ${JSON.stringify(inputItems)}
 
 
         await track(today(), { ok: 1 });
+        if (limitDone) { await limitDone(); }     // this chunk is translated: counts toward the film / episode
 
         return res.status(200).json({
             subtitles: output
