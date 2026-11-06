@@ -350,6 +350,75 @@
         if (g && g.parentNode) { g.parentNode.removeChild(g); }
     }
 
+    // Animated poster wall behind the sign-in picture (the same current movies / series as on the website).
+    // The static banner stays as the fallback until at least 6 posters have loaded; it ends when the gate closes.
+    function gateWall(g) {
+        try {
+            var top = g.firstChild;
+            if (!top || !window.fetch) { return; }
+            var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            fetch("/api/hero-posters").then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+                if (!d || !d.posters || d.posters.length < 12 || !g.parentNode) { return; }
+                var st = document.createElement("style");
+                st.textContent = "#gateWall{position:absolute;inset:-18% -12%;display:flex;gap:8px;transform:rotate(-9deg);opacity:0;transition:opacity 1s}" +
+                    "#gateWall.on{opacity:1}#gateWall .gc{flex:1;display:flex;flex-direction:column;gap:8px;animation:gwDrift 24s ease-in-out infinite alternate}" +
+                    "#gateWall .gc:nth-child(even){animation-duration:31s;animation-direction:alternate-reverse}" +
+                    "#gateWall .gk{position:relative;aspect-ratio:2/3;border-radius:10px;overflow:hidden;background:#171a33}" +
+                    "#gateWall img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 1s}#gateWall img.show{opacity:1}" +
+                    "@keyframes gwDrift{from{transform:translateY(-8%)}to{transform:translateY(8%)}}" +
+                    "@media (prefers-reduced-motion:reduce){#gateWall .gc{animation:none}}";
+                g.appendChild(st);
+                var wall = document.createElement("div");
+                wall.id = "gateWall";
+                var cards = [], inUse = {}, queue = d.posters.slice().sort(function () { return Math.random() - 0.5; }), loaded = 0;
+                var IMG = "https://image.tmdb.org/t/p/w185";
+                function nextUrl() {
+                    for (var k = 0; k < queue.length; k++) {
+                        var u = IMG + queue[k].p;
+                        if (!inUse[u]) { var it = queue.splice(k, 1)[0]; queue.push(it); return u; }
+                    }
+                    return IMG + queue[0].p;
+                }
+                function setCard(c, url) {
+                    var im = new Image();
+                    im.alt = "";
+                    im.onload = function () {
+                        var old = c.img;
+                        if (c.url) { delete inUse[c.url]; }
+                        inUse[url] = true; c.url = url; c.img = im;
+                        c.el.appendChild(im);
+                        loaded++;
+                        if (loaded >= 6) { wall.classList.add("on"); }
+                        requestAnimationFrame(function () { im.classList.add("show"); });
+                        if (old) { setTimeout(function () { if (old.parentNode) { old.parentNode.removeChild(old); } }, 1100); }
+                    };
+                    im.src = url;
+                }
+                for (var i = 0; i < 4; i++) {
+                    var col = document.createElement("div");
+                    col.className = "gc";
+                    for (var j = 0; j < 5; j++) {
+                        var el = document.createElement("div");
+                        el.className = "gk";
+                        col.appendChild(el);
+                        cards.push({ el: el, img: null, url: "" });
+                    }
+                    wall.appendChild(col);
+                }
+                // behind the dark fade and the logo, in front of the static banner
+                top.insertBefore(wall, top.children[1] || null);
+                cards.forEach(function (c, n) { setTimeout(function () { setCard(c, nextUrl()); }, reduce ? 0 : n * 90); });
+                if (!reduce) {
+                    var timer = setInterval(function () {
+                        if (!wall.parentNode || !document.body.contains(wall)) { clearInterval(timer); return; }
+                        if (document.hidden) { return; }
+                        setCard(cards[Math.floor(Math.random() * cards.length)], nextUrl());
+                    }, 1800);
+                }
+            }).catch(function () { /* the static banner stays */ });
+        } catch (e) { /* ignore */ }
+    }
+
     function showGate() {
         if (user || gateSkipped || $("loginGate")) { return; }
         var g = document.createElement("div");
@@ -362,7 +431,7 @@
             '<img src="hero-banner.webp" alt="" style="width:100%;height:100%;object-fit:cover;display:block">' +
             '<div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(11,13,31,.1) 0%,rgba(11,13,31,.55) 60%,#0b0d1f 100%)"></div>' +
             '<div style="position:absolute;left:0;right:0;bottom:12px;text-align:center">' +
-            '<img src="logo.png" alt="" width="64" height="64" style="border-radius:16px;box-shadow:0 6px 20px rgba(0,0,0,.5)">' +
+            '<img src="logo.png" alt="" width="64" height="64" style="display:block;margin:0 auto;border-radius:16px;box-shadow:0 6px 20px rgba(0,0,0,.5)">' +
             '<div style="font-size:26px;font-weight:800;margin-top:6px">SinSubz</div></div></div>' +
             '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:12px;padding:8px 26px 22px;text-align:center">' +
             '<div style="font-size:15px;opacity:.85;max-width:320px;line-height:1.5">AI English to Sinhala subtitles for movies and TV series. Sign in with Google to start translating.</div>' +
@@ -373,6 +442,7 @@
             '<a href="https://sinsubs.site/privacy.html" target="_blank" rel="noopener" style="color:#fff;text-decoration:underline">Privacy Policy</a>.</div>' +
             '<button id="gateSkip" type="button" style="background:none;border:0;color:#fff;opacity:.6;font-size:14px;text-decoration:underline">Not now</button></div>';
         document.body.appendChild(g);
+        gateWall(g);
         $("gateIn").addEventListener("click", function () { signIn(); });
         $("gateSkip").addEventListener("click", function () { gateSkipped = true; hideGate(); });
     }
