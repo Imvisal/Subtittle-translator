@@ -6729,7 +6729,9 @@ window.__sinsubzPremiumInfo = async function (mode) {
                 '<div style="max-width:380px;width:100%;background:#17192f;color:#eceaff;border:1px solid #3a3f6b;border-radius:20px;padding:22px 20px 18px;text-align:center;font-family:inherit;box-shadow:0 20px 60px rgba(0,0,0,.5)">' +
                 '<div style="font-size:30px;line-height:1">🙏</div>' +
                 '<div style="font-size:18px;font-weight:800;margin:8px 0 8px">සමාවෙන්න!</div>' +
-                '<div style="font-size:14.5px;line-height:1.7;opacity:.9">අපේ වැරැද්දකින් Films / Episodes ගණන් කිරීම ටික වෙලාවක් වැරදි වුණා. ඒ වැරදි ගණන් අද රෑ 12ට පස්සේ ස්වයංක්‍රීයව අයින් වෙනවා (ලිමිට් එක ආයෙත් අලුතින් පටන් ගන්නවා). අපහසුතාවට සමාවෙන්න.</div>' +
+                '<div style="font-size:14.5px;line-height:1.7;opacity:.95">අපෙන් සිදු වූ තාක්ෂණික දෝෂයක් හේතුවෙන් ඊයේ දිනයේදී සහ අද දින subtitle translate කිරීමේ ක්‍රියාවලියේ දෝෂයක් පැවතිණි. එය දැන් යථා තත්ත්වයට පත් කර ඇත. සිදු වූ අපහසුතාවයට කණගාටුව ප්‍රකාශ කරමු. අප සමග රැඳී සිටින ඔබට ස්තූතියි.</div>' +
+                '<div style="font-size:13.5px;line-height:1.6;opacity:.75;margin-top:12px;padding-top:12px;border-top:1px solid #2c3050">Due to a technical issue on our side, there was a problem with subtitle translation yesterday and today. It has now been fixed. We apologise for the inconvenience, and thank you for staying with us.</div>' +
+                '<div style="margin-top:10px;font-weight:700">SinSubz Team \u2764\uFE0F</div>' +
                 '<button id="countNoticeOk" type="button" style="margin-top:16px;width:100%;padding:12px;border:0;border-radius:12px;background:linear-gradient(135deg,#8b7bff,#6a5af9);color:#fff;font-weight:700;font-size:15px;cursor:pointer">OK</button></div>';
             document.body.appendChild(w);
             const close = function () { try { localStorage.setItem("sinsubz-count-notice", "1"); } catch (e) { /* ignore */ } w.remove(); };
