@@ -6706,3 +6706,36 @@ window.__sinsubzPremiumInfo = async function (mode) {
     wrap.querySelector("#premiumNo").addEventListener("click", done);
     wrap.addEventListener("click", function (e) { if (e.target === wrap) { done(); } });
 };
+
+
+/* ---------------------------------------------------------
+   One-time notice (only on 2026-11-06, Sri Lanka time): the film / episode counter was wrong for a while
+   because of our mistake. The counts reset at midnight. Shown once per browser, then never again.
+--------------------------------------------------------- */
+(function () {
+    try {
+        const sl = new Date(Date.now() + 5.5 * 3600e3).toISOString().slice(0, 10);
+        if (sl !== "2026-11-06") { return; }
+        let seen = false;
+        try { seen = localStorage.getItem("sinsubz-count-notice") === "1"; } catch (e) { /* ignore */ }
+        if (seen) { return; }
+        const show = function () {
+            if (document.getElementById("countNotice")) { return; }
+            const w = document.createElement("div");
+            w.id = "countNotice";
+            w.setAttribute("role", "dialog");
+            w.style.cssText = "position:fixed;inset:0;z-index:99996;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(5,6,18,.7);backdrop-filter:blur(4px)";
+            w.innerHTML =
+                '<div style="max-width:380px;width:100%;background:#17192f;color:#eceaff;border:1px solid #3a3f6b;border-radius:20px;padding:22px 20px 18px;text-align:center;font-family:inherit;box-shadow:0 20px 60px rgba(0,0,0,.5)">' +
+                '<div style="font-size:30px;line-height:1">🙏</div>' +
+                '<div style="font-size:18px;font-weight:800;margin:8px 0 8px">සමාවෙන්න!</div>' +
+                '<div style="font-size:14.5px;line-height:1.7;opacity:.9">අපේ වැරැද්දකින් Films / Episodes ගණන් කිරීම ටික වෙලාවක් වැරදි වුණා. ඒ වැරදි ගණන් අද රෑ 12ට පස්සේ ස්වයංක්‍රීයව අයින් වෙනවා (ලිමිට් එක ආයෙත් අලුතින් පටන් ගන්නවා). අපහසුතාවට සමාවෙන්න.</div>' +
+                '<button id="countNoticeOk" type="button" style="margin-top:16px;width:100%;padding:12px;border:0;border-radius:12px;background:linear-gradient(135deg,#8b7bff,#6a5af9);color:#fff;font-weight:700;font-size:15px;cursor:pointer">OK</button></div>';
+            document.body.appendChild(w);
+            const close = function () { try { localStorage.setItem("sinsubz-count-notice", "1"); } catch (e) { /* ignore */ } w.remove(); };
+            w.querySelector("#countNoticeOk").addEventListener("click", close);
+            w.addEventListener("click", function (e) { if (e.target === w) { close(); } });
+        };
+        if (document.readyState === "loading") { document.addEventListener("DOMContentLoaded", function () { setTimeout(show, 1200); }); } else { setTimeout(show, 1200); }
+    } catch (e) { /* ignore */ }
+})();
