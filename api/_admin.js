@@ -602,7 +602,7 @@ async function checkDailyLimit(req, rawJob, knownWho, prog) {
         }
         const keyOf = (o, k) => "lim:" + dayKey(0) + ":" + o.id + ":" + k;
 
-        const done = total > 1 ? async () => {
+        const done = total >= 1 ? async () => {
             try {
                 const pk = "lim:" + dayKey(0) + ":" + user + ":p:" + sha(job).toString("hex").slice(0, 16);
                 const r = await redis([["SADD", pk, idx], ["EXPIRE", pk, 2 * 86400], ["SCARD", pk]]);
@@ -639,7 +639,7 @@ async function checkDailyLimit(req, rawJob, knownWho, prog) {
             }
             const w = [];
             owners.forEach(o => { w.push(["SADD", keyOf(o, "s" + kind), job], ["EXPIRE", keyOf(o, "s" + kind), 2 * 86400]); });
-            if (!(total > 1)) { owners.forEach(o => { w.push(["SADD", keyOf(o, kind), job], ["EXPIRE", keyOf(o, kind), 2 * 86400]); }); }
+            if (!(total >= 1)) { owners.forEach(o => { w.push(["SADD", keyOf(o, kind), job], ["EXPIRE", keyOf(o, kind), 2 * 86400]); }); }
             await redis(w);
         }
         limitCache.set(cacheKey, Date.now() + 30 * 60 * 1000);
