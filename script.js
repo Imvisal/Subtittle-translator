@@ -3606,6 +3606,19 @@ function askToSignIn(getTok) {
     });
 }
 
+// a random id kept on this browser / app: the daily limit also counts per device (account switching does not reset it)
+function getDeviceId() {
+    let id = "";
+    try { id = localStorage.getItem("sinsubz-device") || ""; } catch (e) { /* ignore */ }
+    if (!/^[A-Za-z0-9_-]{16,64}$/.test(id)) {
+        const a = new Uint8Array(18);
+        (window.crypto || window.msCrypto).getRandomValues(a);
+        id = Array.from(a, function (b) { return b.toString(36).padStart(2, "0"); }).join("").slice(0, 32);
+        try { localStorage.setItem("sinsubz-device", id); } catch (e) { /* ignore */ }
+    }
+    return id;
+}
+
 async function translateSubtitleChunksImpl(
     subtitles,
     meta
@@ -3653,6 +3666,7 @@ async function translateSubtitleChunksImpl(
             try {
 
                 const authHeaders = { "Content-Type": "application/json" };
+                try { authHeaders["x-sinsubz-device"] = getDeviceId(); } catch (e) { /* ignore */ }
                 try {
                     const tk = window.__sinsubzIdToken ? await window.__sinsubzIdToken() : "";
                     if (tk) { authHeaders.Authorization = "Bearer " + tk; }

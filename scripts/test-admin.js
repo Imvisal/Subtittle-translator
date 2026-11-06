@@ -46,6 +46,10 @@ function run(c) {
 
 const users = { "tok-visal": { localId: "uid-1", displayName: "Visal", email: "v@example.com", photoUrl: "https://lh3.example/p1.jpg", emailVerified: true },
                 "tok-base": { localId: "uid-9", displayName: "Base", email: "b@example.com", emailVerified: true },
+                "tok-dev1": { localId: "uid-dev1", displayName: "D1", email: "d1@example.com", emailVerified: true },
+                "tok-dev2": { localId: "uid-dev2", displayName: "D2", email: "d2@example.com", emailVerified: true },
+                "tok-dev3": { localId: "uid-dev3", displayName: "D3", email: "d3@example.com", emailVerified: true },
+                "tok-dev4": { localId: "uid-dev4", displayName: "D4", email: "d4@example.com", emailVerified: true },
                 "tok-chunk": { localId: "uid-chunk", displayName: "Chunk", email: "c@example.com", emailVerified: true },
                 "tok-pro": { localId: "uid-3", displayName: "Pro", email: "p@example.com", emailVerified: true },
                 "tok-nimal": { localId: "uid-2", displayName: "Nimal", email: "n@example.com", emailVerified: true } };
@@ -233,6 +237,17 @@ function call(method, url, { headers = {}, body } = {}) {
         ok(await meUsed() === 1, "finished film counted once");
         await tc("Half.Film.2025", 1, 3); await tc("Half.Film.2025", 2, 3); await tc("Half.Film.2025", 3, 3);
         ok(await meUsed() === 1, "re-running the same film does not count twice");
+        // another Google account on the SAME device / IP does not get a fresh count
+        const td = (tok, job, ip, dev) => new Promise(resolve => {
+            const res = { code: 200, setHeader() {}, status(c) { this.code = c; return this; }, json(b) { resolve({ code: this.code, body: b }); } };
+            translate({ method: "POST", url: "/api/translate", headers: { "x-forwarded-for": ip, authorization: "Bearer " + tok, "x-sinsubz-device": dev }, body: { subtitles: [{ number: 1, timestamp: "00:00:01,000 --> 00:00:02,000", text: "Hi" }], job }, socket: {} }, res);
+        });
+        const DEV = "device-aaaaaaaaaaaaaaaa";
+        ok(!lim(await td("tok-dev1", "DevFilm.A", "7.7.1.1", DEV)) && !lim(await td("tok-dev1", "DevFilm.B", "7.7.1.1", DEV)), "account 1: 2 films");
+        ok(!lim(await td("tok-dev2", "DevFilm.C", "7.7.1.2", DEV)), "account 2 on the same device: 3rd film on the device still allowed");
+        ok(lim(await td("tok-dev3", "DevFilm.D", "7.7.1.3", DEV)), "account 3 on the same device is refused (device cap 3 films)");
+        ok(!lim(await td("tok-dev3", "DevFilm.D", "7.7.1.3", "device-bbbbbbbbbbbbbbbb")), "a different device is fine");
+        ok(lim(await td("tok-dev1", "DevFilm.E", "7.7.1.1", "device-cccccccccccccccc")) , "same account is still limited on a new device");
         global.fetch = prevFetch;
         ok(!lim(await t("Movie.One.2025", { "x-forwarded-for": "6.6.6.7" })), "another visitor has their own count");
         ok(!lim(await t("Movie.Five", { authorization: "Bearer tok-nimal", "x-forwarded-for": "6.6.6.8" })), "signed-in film 1");

@@ -584,26 +584,51 @@ async function checkDailyLimit(req, rawJob, knownWho, prog) {
         const user = who ? "u" + uidKeyOf(who.uid) : "i" + sha(clientIp(req)).toString("hex").slice(0, 20);
 
         const kind = isEpisode ? "e" : "m";
-        const setKey = "lim:" + dayKey(0) + ":" + user + ":" + kind;          // finished titles (what the counter shows)
-        const startKey = "lim:" + dayKey(0) + ":" + user + ":s" + kind;       // started titles (abuse guard only)
         const total = prog && Number(prog.total) >= 1 ? Math.min(200, Math.floor(Number(prog.total))) : 0;
         const idx = prog && Number.isFinite(Number(prog.idx)) ? Math.max(0, Math.min(400, Math.floor(Number(prog.idx)))) : 0;
+
+        // Who is counted: the account (or IP when not signed in) AND - for free users - the device and the IP address, so
+        // signing in with another Google account on the same phone / network does not give a fresh count.
+        // The device / IP caps are higher than the account cap (shared mobile IPs).
+        const owners = [{ id: user, max: max }];
+        if (!isPrem) {
+            const dev = String((req.headers && req.headers["x-sinsubz-device"]) || "");
+            if (/^[A-Za-z0-9_-]{16,64}$/.test(dev) && who) {
+                owners.push({ id: "d" + dev, max: isEpisode ? envNum("LIMIT_DEVICE_EPISODES", 8) : envNum("LIMIT_DEVICE_MOVIES", 3) });
+            }
+            if (who) {
+                owners.push({ id: "i" + sha(clientIp(req)).toString("hex").slice(0, 20), max: isEpisode ? envNum("LIMIT_IP_EPISODES", 20) : envNum("LIMIT_IP_MOVIES", 8) });
+            }
+        }
+        const keyOf = (o, k) => "lim:" + dayKey(0) + ":" + o.id + ":" + k;
 
         const done = total > 1 ? async () => {
             try {
                 const pk = "lim:" + dayKey(0) + ":" + user + ":p:" + sha(job).toString("hex").slice(0, 16);
                 const r = await redis([["SADD", pk, idx], ["EXPIRE", pk, 2 * 86400], ["SCARD", pk]]);
-                if ((Number(r[2]) || 0) >= total) { await redis([["SADD", setKey, job], ["EXPIRE", setKey, 2 * 86400]]); }
+                if ((Number(r[2]) || 0) >= total) {
+                    const cmds = [];
+                    owners.forEach(o => { cmds.push(["SADD", keyOf(o, kind), job], ["EXPIRE", keyOf(o, kind), 2 * 86400]); });
+                    await redis(cmds);
+                }
             } catch (e) { /* never break translating */ }
         } : async () => {};
 
         const cacheKey = user + "|" + job + "|" + dayKey(0);
         if ((limitCache.get(cacheKey) || 0) > Date.now()) { return { ok: true, done: done }; }
 
-        const [already] = await redis([["SISMEMBER", setKey, job]]);
+        // already finished once today under the account -> may be run again
+        const [already] = await redis([["SISMEMBER", keyOf(owners[0], kind), job]]);
         if (Number(already) !== 1) {
-            const [count, started, startedBefore] = await redis([["SCARD", setKey], ["SCARD", startKey], ["SISMEMBER", startKey, job]]);
-            const tooMany = (Number(count) || 0) >= max || (Number(startedBefore) !== 1 && (Number(started) || 0) >= max * 3);
+            const q = [];
+            owners.forEach(o => { q.push(["SCARD", keyOf(o, kind)], ["SISMEMBER", keyOf(o, kind), job], ["SCARD", keyOf(o, "s" + kind)], ["SISMEMBER", keyOf(o, "s" + kind), job]); });
+            const r = await redis(q);
+            let tooMany = false;
+            owners.forEach((o, i) => {
+                const count = Number(r[i * 4]) || 0, finished = Number(r[i * 4 + 1]) === 1;
+                const started = Number(r[i * 4 + 2]) || 0, startedBefore = Number(r[i * 4 + 3]) === 1;
+                if (!finished && (count >= o.max || (!startedBefore && started >= o.max * 3))) { tooMany = true; }
+            });
             if (tooMany) {
                 await redis([["HINCRBY", "stats:d:" + dayKey(0), "limited", 1]]).catch(() => null);
                 return {
@@ -612,8 +637,10 @@ async function checkDailyLimit(req, rawJob, knownWho, prog) {
                         " TV episodes per day." + (isPrem ? " Please try again tomorrow." : " Premium members get more every day. Please try again tomorrow.")
                 };
             }
-            await redis([["SADD", startKey, job], ["EXPIRE", startKey, 2 * 86400]]);
-            if (!(total > 1)) { await redis([["SADD", setKey, job], ["EXPIRE", setKey, 2 * 86400]]); }
+            const w = [];
+            owners.forEach(o => { w.push(["SADD", keyOf(o, "s" + kind), job], ["EXPIRE", keyOf(o, "s" + kind), 2 * 86400]); });
+            if (!(total > 1)) { owners.forEach(o => { w.push(["SADD", keyOf(o, kind), job], ["EXPIRE", keyOf(o, kind), 2 * 86400]); }); }
+            await redis(w);
         }
         limitCache.set(cacheKey, Date.now() + 30 * 60 * 1000);
         if (limitCache.size > 3000) { for (const [k, v] of limitCache) { if (v < Date.now()) { limitCache.delete(k); } } }
