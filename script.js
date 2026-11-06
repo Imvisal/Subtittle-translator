@@ -3179,7 +3179,8 @@ async function selectSubtitle(
                 item,
                 season,
                 episode,
-                { title: (item && item.title) ? item.title + (item.year ? " (" + item.year + ")" : "") : "" }
+                { title: (item && item.title) ? item.title + (item.year ? " (" + item.year + ")" : "") : "",
+                  job: ((item && item.title) ? item.title : "") + (season ? " S" + String(season).padStart(2, "0") + (episode ? "E" + String(episode).padStart(2, "0") : "") : "") }
             );
 
 
@@ -3667,7 +3668,7 @@ async function translateSubtitleChunksImpl(
                             language: "si",
                             style: selectedTranslationStyle,
                             title: (meta && meta.title) || "",
-                            job: String(uploadedFileName || (meta && meta.title) || ""),
+                            job: String((meta && (meta.job || meta.title)) || uploadedFileName || ""),
                             context: getChunkContext(subtitles, chunkStart, chunk.length)
                         })
                     }
@@ -6648,7 +6649,7 @@ window.__sinsubzPremiumInfo = async function (mode) {
     } catch (e) { /* ignore */ }
     const offer = (me && me.offer) || { price: "", bank: "", contact: "https://t.me/sinsubz" };
     const pm = (me && me.premiumMovies) || 10, pe = (me && me.premiumEpisodes) || 30;
-    const fm = (me && me.movies) || 2, fe = (me && me.episodes) || 10;
+    const fm = (me && me.movies) || 2, fe = (me && me.episodes) || 5;
     const contact = String(offer.contact || "https://t.me/sinsubz");
 
     const head = mode === "download" ? "Downloading again is Premium"

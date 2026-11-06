@@ -212,10 +212,10 @@ function call(method, url, { headers = {}, body } = {}) {
         ok(!lim(await t("Movie.One.2025")), "same film again (more chunks / re-run) still allowed");
         ok(!lim(await t("Movie.Two.2025")), "film 2 allowed");
         const third = await t("Movie.Three.2025");
-        ok(lim(third) && /2 films and 10 TV episodes/.test(third.body.error), "film 3 refused: " + JSON.stringify(third.body));
+        ok(lim(third) && /2 films and 5 TV episodes/.test(third.body.error), "film 3 refused: " + JSON.stringify(third.body));
         ok(!lim(await t("Movie.Two.2025")), "film 2 can still be continued after the limit");
-        for (let i = 1; i <= 10; i++) { ok(!lim(await t("Show.S01E" + String(i).padStart(2, "0"))), "episode " + i + " allowed"); }
-        ok(lim(await t("Show.S01E11")), "episode 11 refused");
+        for (let i = 1; i <= 5; i++) { ok(!lim(await t("Show.S01E" + String(i).padStart(2, "0"))), "episode " + i + " allowed"); }
+        ok(lim(await t("Show.S01E06")), "episode 6 refused");
         ok(!lim(await t("Movie.One.2025", { "x-forwarded-for": "6.6.6.7" })), "another visitor has their own count");
         ok(!lim(await t("Movie.Five", { authorization: "Bearer tok-nimal", "x-forwarded-for": "6.6.6.8" })), "signed-in film 1");
         await t("Movie.Six", { authorization: "Bearer tok-nimal", "x-forwarded-for": "6.6.6.9" });
