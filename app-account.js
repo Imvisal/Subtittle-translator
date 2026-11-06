@@ -216,10 +216,25 @@
         }).catch(function () { /* offline: keep what we know */ });
     }
 
+    // Tells the server this account uses the app (counted per platform in the admin panel). Once per sign-in.
+    function pingServer() {
+        try {
+            var plat = /Electron/i.test(navigator.userAgent || "") ? "windows" : "android";
+            token().then(function (tk) {
+                return fetch("/api/stats?user=1", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", Authorization: "Bearer " + tk },
+                    body: JSON.stringify({ platform: plat }),
+                    keepalive: true
+                });
+            }).catch(function () { /* ignore */ });
+        } catch (e) { /* ignore */ }
+    }
+
     function setUser(u) {
         var was = user && user.uid;
         user = u ? { uid: u.uid, displayName: u.displayName || "", email: u.email || "" } : null;
-        if (user) { hideGate(); if (was !== user.uid) { loadPlan(); } } else {
+        if (user) { hideGate(); if (was !== user.uid) { loadPlan(); pingServer(); } } else {
             plan = { premium: false, until: 0, movies: 0, episodes: 0 };
             try { localStorage.setItem("sinsubz-premium", ""); } catch (e) { /* ignore */ }
             showGate();
