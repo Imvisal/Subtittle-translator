@@ -3693,6 +3693,7 @@ async function translateSubtitleChunksImpl(
                     if (data.code === "QUOTA_EXHAUSTED" || data.code === "DAILY_LIMIT" || data.code === "LOGIN_REQUIRED") {
                         apiError.quotaExhausted = true;
                     }
+                    if (data.code === "RATE_LIMITED") apiError.rateLimited = true;
                     if (data.code === "DAILY_LIMIT" && window.__sinsubzPremiumInfo) {
                         setTimeout(function () { window.__sinsubzPremiumInfo("limit"); }, 600);
                     }
@@ -3732,7 +3733,7 @@ async function translateSubtitleChunksImpl(
                         "Having a little trouble — retrying..."
                     );
 
-                    await sleep(attempt === 1 ? 3000 : 7000);
+                    await sleep(error && error.rateLimited ? (attempt === 1 ? 20000 : 35000) : (attempt === 1 ? 3000 : 7000));
                 }
             }
         }

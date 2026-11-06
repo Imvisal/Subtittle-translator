@@ -217,6 +217,7 @@ async function generateWithFallback(prompt) {
     let lastStatus = 500;
     let lastMessage = "Gemini API error";
     let sawQuota = false;
+    let sawDaily = false;
     let sawBusy = false;
     const startKey = Math.floor(Math.random() * keys.length);
 
@@ -242,6 +243,7 @@ async function generateWithFallback(prompt) {
 
             if ((cooldowns.get(id) || 0) > Date.now()) {
                 sawQuota = true;
+                if ((cooldowns.get(id) || 0) > Date.now() + 5 * 60 * 1000) sawDaily = true;   // long cooldown = daily quota
                 continue;
             }
 
@@ -304,7 +306,7 @@ async function generateWithFallback(prompt) {
             if (response.status === 429) {
                 sawQuota = true;
                 await track(today(), null, { [(k + 1) + ":429"]: 1 });
-                if (isDailyQuotaMessage(message)) await trackQuota(k, true);
+                if (isDailyQuotaMessage(message)) { sawDaily = true; await trackQuota(k, true); }
 
                 cooldowns.set(
                     id,
@@ -352,6 +354,15 @@ async function generateWithFallback(prompt) {
     }
 
     await track(today(), { [sawQuota ? "quota" : (sawBusy ? "busy" : "other")]: 1 });
+
+    // only per-minute limits were hit: the day's quota is NOT gone, so don't say so (the page waits and retries)
+    if (sawQuota && !sawDaily) {
+        return {
+            status: 429,
+            code: "RATE_LIMITED",
+            error: "Many people are translating right now. Retrying in a moment..."
+        };
+    }
 
     if (sawQuota) {
         return {
