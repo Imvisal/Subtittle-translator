@@ -462,7 +462,7 @@ async function planPublic(req, res) {
             enabled: !!(cfg.enabled && (cfg.bank || cfg.account)), price: cfg.price, bank: cfg.bank || "",
             holder: cfg.holder || "", bankName: cfg.bankName || "", branch: cfg.branch || "", account: cfg.account || "", days: 30,
             movies: envNum("PREMIUM_MOVIES_PER_DAY", 10), episodes: envNum("PREMIUM_EPISODES_PER_DAY", 30),
-            freeMovies: envNum("LIMIT_MOVIES_PER_DAY", 2), freeEpisodes: envNum("LIMIT_EPISODES_PER_DAY", 5),
+            freeMovies: envNum("LIMIT_MOVIES_PER_DAY", 2), freeEpisodes: envNum("LIMIT_EPISODES_PER_DAY", 10),
             signedIn: !!who
         };
         if (who) {
@@ -540,7 +540,7 @@ async function me(req, res) {
         return res.status(200).json({
             signedIn: true, nick: nick, pic: pic, premium: premium, until: premium ? until : 0, usedMovies: usedM, usedEpisodes: usedE,
             movies: premium ? envNum("PREMIUM_MOVIES_PER_DAY", 10) : envNum("LIMIT_MOVIES_PER_DAY", 2),
-            episodes: premium ? envNum("PREMIUM_EPISODES_PER_DAY", 30) : envNum("LIMIT_EPISODES_PER_DAY", 5),
+            episodes: premium ? envNum("PREMIUM_EPISODES_PER_DAY", 30) : envNum("LIMIT_EPISODES_PER_DAY", 10),
             premiumMovies: envNum("PREMIUM_MOVIES_PER_DAY", 10),
             premiumEpisodes: envNum("PREMIUM_EPISODES_PER_DAY", 30),
             // the price set in the admin panel (Premium card); the buy page holds the bank details
@@ -553,7 +553,7 @@ async function me(req, res) {
 
 // ---------------------------------------------------------------- daily limit per user
 // One user (signed-in Google account, otherwise the visitor's IP address) may translate
-// LIMIT_MOVIES_PER_DAY films (default 2) and LIMIT_EPISODES_PER_DAY TV episodes (default 5) per Sri Lanka day.
+// LIMIT_MOVIES_PER_DAY films (default 2) and LIMIT_EPISODES_PER_DAY TV episodes (default 10) per Sri Lanka day.
 // A film / episode counts ONCE however many requests it needs (a film is ~35). "0" in the env var = no limit.
 // The owner account is exempt. Used by api/translate.js. Never throws: if the database is down, translating still works.
 const limitCache = new Map();           // "<user>|<job>" -> expiry ms (skip the database for the rest of a running job)
@@ -574,7 +574,7 @@ async function checkDailyLimit(req, rawJob, knownWho) {
         if (who && who.owner && process.env.LIMIT_APPLY_TO_OWNER !== "1") { return { ok: true }; }
         const isPrem = who ? (await premiumUntil(uidKeyOf(who.uid))) > Date.now() : false;
         const maxMovies = isPrem ? envNum("PREMIUM_MOVIES_PER_DAY", 10) : envNum("LIMIT_MOVIES_PER_DAY", 2);
-        const maxEps = isPrem ? envNum("PREMIUM_EPISODES_PER_DAY", 30) : envNum("LIMIT_EPISODES_PER_DAY", 5);
+        const maxEps = isPrem ? envNum("PREMIUM_EPISODES_PER_DAY", 30) : envNum("LIMIT_EPISODES_PER_DAY", 10);
         const max = isEpisode ? maxEps : maxMovies;
         if (!(max > 0)) { return { ok: true }; }
         const user = who ? "u" + uidKeyOf(who.uid) : "i" + sha(clientIp(req)).toString("hex").slice(0, 20);

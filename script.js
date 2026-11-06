@@ -6648,7 +6648,7 @@ window.__sinsubzPremiumInfo = async function (mode) {
     } catch (e) { /* ignore */ }
     const offer = (me && me.offer) || { price: "", bank: "", contact: "https://t.me/sinsubz" };
     const pm = (me && me.premiumMovies) || 10, pe = (me && me.premiumEpisodes) || 30;
-    const fm = (me && me.movies) || 2, fe = (me && me.episodes) || 5;
+    const fm = (me && me.movies) || 2, fe = (me && me.episodes) || 10;
     const contact = String(offer.contact || "https://t.me/sinsubz");
 
     const head = mode === "download" ? "Downloading again is Premium"
