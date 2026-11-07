@@ -228,7 +228,11 @@ async function overview(req, res) {
         const seen = Number(r[X + 1]) || 0;
         const msgs = (r[X] || []).map(parse).filter(Boolean);
         const unread = msgs.filter(m => Date.parse(m.t) > seen).length;
-        const recentMessages = msgs.slice(0, 5).map(m => ({ id: m.id, t: m.t, name: m.name || "", email: m.email || "", text: String(m.message || "").slice(0, 160), unread: Date.parse(m.t) > seen }));
+        // Premium members' messages first (support priority), then the newest
+        const recentMessages = msgs.slice(0, 30)
+            .map(m => ({ id: m.id, t: m.t, name: m.name || "", email: m.email || "", text: String(m.message || "").slice(0, 160), unread: Date.parse(m.t) > seen, prem: !!m.prem }))
+            .sort((a, b) => (b.prem - a.prem) || (Date.parse(b.t) - Date.parse(a.t)))
+            .slice(0, 5);
         const cids = Array.isArray(r[X + 2]) ? r[X + 2] : [];
         let recentComments = [];
         if (cids.length) {
@@ -566,6 +570,28 @@ function jobName(raw) {
 // prog = { idx, total } from the page: the film / episode is COUNTED only when every chunk (1..total) has been
 // translated, so a failed or abandoned run costs nothing. Without prog (older apps) it is counted at the start.
 // Returns { ok:true, done() } - the caller runs done() after a chunk was translated successfully.
+// Share of today's Gemini quota that is still left (0-100), averaged over the keys. Cached for 20 s.
+let quotaLeftCache = { at: 0, day: "", pct: 100 };
+async function quotaLeftPct() {
+    const day = pacificDay();
+    if (quotaLeftCache.day === day && Date.now() - quotaLeftCache.at < 20000) { return quotaLeftCache.pct; }
+    let pct = 100;
+    try {
+        const [h] = await redis([["HGETALL", "q:" + day]]);
+        const used = pairs(h);
+        const limit = Math.max(1, Number(process.env.GEMINI_DAILY_LIMIT) || 1000);
+        const n = Math.max(geminiKeys().length, 1);
+        let sum = 0;
+        for (let i = 1; i <= n; i++) {
+            const dead = Number(used[i + ":x"]) > 0;
+            sum += dead ? 0 : Math.max(0, 1 - (Number(used[String(i)]) || 0) / limit);
+        }
+        pct = Math.round(sum / n * 100);
+    } catch (e) { pct = 100; }
+    quotaLeftCache = { at: Date.now(), day: day, pct: pct };
+    return pct;
+}
+
 async function checkDailyLimit(req, rawJob, knownWho, prog) {
     const pass = { ok: true, done: async () => {} };
     try {
@@ -635,6 +661,15 @@ async function checkDailyLimit(req, rawJob, knownWho, prog) {
                     ok: false, isEpisode: isEpisode, max: max,
                     message: "Daily limit reached: you can translate " + maxMovies + " films and " + maxEps +
                         " TV episodes per day." + (isPrem ? " Please try again tomorrow." : " Premium members get more every day. Please try again tomorrow.")
+                };
+            }
+            // Premium priority: the last PREMIUM_RESERVE_PCT % of today's Gemini quota is kept for Premium members.
+            // Only NEW titles are held back; a title already started today keeps going.
+            const reserve = envNum("PREMIUM_RESERVE_PCT", 15);
+            if (!isPrem && reserve > 0 && Number(r[3]) !== 1 && (await quotaLeftPct()) <= reserve) {
+                return {
+                    ok: false, code: "PREMIUM_PRIORITY", isEpisode: isEpisode, max: max,
+                    message: "Free translations are paused for now to keep capacity for Premium members. They start again when the daily AI quota resets, or go Premium to translate right away."
                 };
             }
             const w = [];
@@ -772,4 +807,4 @@ async function action(req, res) {
     }
 }
 
-module.exports = { notifyOwner, planPublic, planSubmit, me, premiumUntil, authUser, loginRequired, checkDailyLimit, pacificDay, ping, overview, health, action, publicAnnouncement, cleanAnnouncement, dayKey, uidKeyOf };
+module.exports = { quotaLeftPct, resetQuotaCache: function () { quotaLeftCache = { at: 0, day: "", pct: 100 }; }, notifyOwner, planPublic, planSubmit, me, premiumUntil, authUser, loginRequired, checkDailyLimit, pacificDay, ping, overview, health, action, publicAnnouncement, cleanAnnouncement, dayKey, uidKeyOf };

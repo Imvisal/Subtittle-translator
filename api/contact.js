@@ -138,16 +138,30 @@ module.exports = async function handler(req, res) {
         const name = clean(who.name, 80);
         const email = clean(who.email, 120);
 
+        // Premium members get support priority: flagged in the admin inbox (shown first) and e-mailed to the owner
+        let prem = false;
+        try {
+            const adm = require("./_admin.js");
+            prem = (await adm.premiumUntil(adm.uidKeyOf(who.uid))) > Date.now();
+        } catch (e) { prem = false; }
+
         const item = {
             id: crypto.randomBytes(8).toString("hex"),
             t: new Date().toISOString(),
-            name, email, message
+            name, email, message, prem
         };
 
         await redis([
             ["LPUSH", "contact:msgs", JSON.stringify(item)],
             ["LTRIM", "contact:msgs", 0, MAX_KEEP - 1]
         ]);
+
+        if (prem) {
+            try {
+                await require("./_admin.js").notifyOwner("Premium member message: " + (name || email),
+                    "A Premium member wrote to SinSubz (support priority).\n\nFrom: " + name + " <" + email + ">\n\n" + message);
+            } catch (e) { /* never block the sender */ }
+        }
 
         return res.status(200).json({ ok: true });
 

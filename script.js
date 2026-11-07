@@ -3706,11 +3706,11 @@ async function translateSubtitleChunksImpl(
                     );
 
                     // daily limit reached on every key/model: retrying will not help
-                    if (data.code === "QUOTA_EXHAUSTED" || data.code === "DAILY_LIMIT" || data.code === "LOGIN_REQUIRED") {
+                    if (data.code === "QUOTA_EXHAUSTED" || data.code === "DAILY_LIMIT" || data.code === "PREMIUM_PRIORITY" || data.code === "LOGIN_REQUIRED") {
                         apiError.quotaExhausted = true;
                     }
                     if (data.code === "RATE_LIMITED") apiError.rateLimited = true;
-                    if (data.code === "DAILY_LIMIT" && window.__sinsubzPremiumInfo) {
+                    if ((data.code === "DAILY_LIMIT" || data.code === "PREMIUM_PRIORITY") && window.__sinsubzPremiumInfo) {
                         setTimeout(function () { window.__sinsubzPremiumInfo("limit"); }, 600);
                     }
 
@@ -6693,6 +6693,8 @@ window.__sinsubzPremiumInfo = async function (mode) {
         '<div style="background:#0f1122;border:1px solid #2c3050;border-radius:14px;padding:6px 14px">' +
         perk('<b>' + pm + ' films</b> a day <span style="opacity:.6">(free: ' + fm + ')</span>') +
         perk('<b>' + pe + ' TV episodes</b> a day <span style="opacity:.6">(free: ' + fe + ')</span>') +
+        perk('<b>Priority</b> when the AI is busy') +
+        perk('<b>Priority support</b>') +
         perk('<b>No ads</b> in the app') +
         perk('<b>Premium badge</b> on your comments') +
         perk('Supports SinSubz to keep growing') + '</div>' +

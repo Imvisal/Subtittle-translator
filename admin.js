@@ -299,7 +299,8 @@
         if (!d.inbox.recent.length) { ib.appendChild(el("p", "empty", "No messages.")); }
         d.inbox.recent.forEach(function (m) {
             var row = el("div", "msg");
-            var top = el("div", "t", (m.unread ? "\u25CF " : "") + (m.name || "(no name)"));
+            var top = el("div", "t", (m.prem ? "\u2605 PREMIUM \u00B7 " : "") + (m.unread ? "\u25CF " : "") + (m.name || "(no name)"));
+            if (m.prem) { row.style.borderLeft = "3px solid #f5c84c"; }
             if (m.unread) { top.className = "t ok"; }
             row.appendChild(top);
             row.appendChild(el("small", "", m.email + " \u00B7 " + when(Date.parse(m.t))));

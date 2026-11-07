@@ -271,6 +271,20 @@ function call(method, url, { headers = {}, body } = {}) {
             ok(typeof m.body.usedMovies === "number" && m.body.usedMovies === 0 && m.body.usedEpisodes === 0, "me shows today's usage (none yet)");
             m = await meCall("tok-pro");
             ok(m.body.premium === true && m.body.movies === 10 && m.body.episodes === 30 && m.body.until > Date.now(), "me shows premium: " + JSON.stringify(m.body));
+            // ---- Premium priority: the last 15% of the Gemini quota is kept for Premium ----
+            {
+                const dayQ = require("../api/_admin.js").pacificDay();
+                const saved = db.hash["q:" + dayQ];
+                const pr = r => r.code === 429 && r.body.code === "PREMIUM_PRIORITY";
+                db.hash["q:" + dayQ] = { "1": "960", "2": "960" };
+                require("../api/_admin.js").resetQuotaCache();
+                const freeH = { "x-forwarded-for": "8.8.8.8", authorization: "Bearer tok-dev4" };
+                const proH = { "x-forwarded-for": "8.8.8.9", authorization: "Bearer tok-pro" };
+                ok(pr(await t("Reserve.Film.A.2025", freeH)), "free user: new title held back when only ~4% quota is left");
+                ok(!pr(await t("Reserve.Show.S01E01", proH)), "premium user is not held back");
+                db.hash["q:" + dayQ] = saved;
+                require("../api/_admin.js").resetQuotaCache();
+            }
             for (let i = 1; i <= 10; i++) { ok(!lim(await t("Prem.Film." + i, { authorization: "Bearer tok-pro", "x-forwarded-for": "6.7.7.7" })), "premium film " + i + " allowed"); }
             ok(lim(await t("Prem.Film.11", { authorization: "Bearer tok-pro", "x-forwarded-for": "6.7.7.7" })), "premium film 11 refused");
             await call("POST", "/api/stats?user=1", { headers: { authorization: "Bearer tok-pro" }, body: { platform: "android" } });

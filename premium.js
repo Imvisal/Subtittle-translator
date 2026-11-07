@@ -65,7 +65,7 @@
         var th0 = el("thead"); th0.appendChild(hr); tb.appendChild(th0);
         var tbody = el("tbody");
         [["Films per day", String(d.freeMovies), String(d.movies)], ["TV episodes per day", String(d.freeEpisodes), String(d.episodes)],
-         ["Ads in the app", "Yes", "None"], ["Premium badge on comments", "–", "✓"]].forEach(function (r) {
+         ["Ads in the app", "Yes", "None"], ["Priority when the AI is busy", "–", "✓"], ["Priority support", "–", "✓"], ["Premium badge on comments", "–", "✓"]].forEach(function (r) {
             var tr = el("tr");
             r.forEach(function (t, i) { var td = el("td", t); if (i === 2) { td.className = "pro"; if (t === "✓" || t === "None") { td.classList.add("pm-yes"); } } if (i === 1 && t === "–") { td.className = "pm-no"; } tr.appendChild(td); });
             tbody.appendChild(tr);

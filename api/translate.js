@@ -451,7 +451,7 @@ module.exports = async function handler(req, res) {
             );
             limitDone = lim.done || null;
             if (!lim.ok) {
-                return res.status(429).json({ error: lim.message, code: "DAILY_LIMIT" });
+                return res.status(429).json({ error: lim.message, code: lim.code || "DAILY_LIMIT" });
             }
         }
 
