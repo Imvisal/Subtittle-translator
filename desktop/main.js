@@ -95,7 +95,9 @@ ipcMain.handle("api-fetch", async (event, url, init) => {
     }
     const opts = {
         method: (init && init.method) || "GET",
-        headers: (init && init.headers) || {}
+        headers: Object.assign({}, (init && init.headers) || {}, {
+            "User-Agent": "SinSubzDesktop/" + app.getVersion() + " Electron/" + process.versions.electron
+        })
     };
     if (init && typeof init.body === "string") opts.body = init.body;
 

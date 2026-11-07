@@ -385,7 +385,9 @@ function loginRequired(who, req) {
     if (who) { return false; }
     if (String(process.env.REQUIRE_LOGIN || "1") === "0") { return false; }
     const ua = String((req.headers && req.headers["user-agent"]) || "");
-    if (/Electron\//.test(ua)) { return false; }
+    // The Windows app sends its API calls from the Electron main process, whose Node fetch identifies itself as just "node"
+    // (older builds) or as SinSubzDesktop/... Electron/... (new builds): both are let through until it has a sign-in.
+    if (/Electron\//.test(ua) || /SinSubzDesktop/.test(ua) || /^(node|undici)\b/i.test(ua)) { return false; }
     // Android apps older than 1.1.31 cannot send a Google token yet: let them through until the new app is out.
     // Set LOGIN_EXEMPT_ANDROID=0 in Vercel when people have updated.
     if (String(process.env.LOGIN_EXEMPT_ANDROID || "1") !== "0" && /;\s*wv\)/.test(ua)) { return false; }

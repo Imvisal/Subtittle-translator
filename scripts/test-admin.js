@@ -359,6 +359,8 @@ function call(method, url, { headers = {}, body } = {}) {
         ok(r1.code === 401 && r1.body.code === "LOGIN_REQUIRED", "invalid token -> 401");
         r1 = await nolog({}, "Mozilla/5.0 SinSubz Electron/30.0.0");
         ok(r1.code !== 401, "Windows (Electron) app is let through");
+        ok((await nolog({}, "node")).code !== 401, "Windows app main-process fetch (UA 'node') is let through");
+        ok((await nolog({}, "SinSubzDesktop/1.1.34 Electron/33.0.0")).code !== 401, "new Windows app UA is let through");
         ok((await nolog({ authorization: "Bearer tok-visal" })).code !== 401, "signed-in user passes");
         const wv = "Mozilla/5.0 (Linux; Android 14; Pixel 8 Build/UP1A; wv) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36";
         ok((await nolog({}, wv)).code !== 401, "old Android app (WebView) is let through for now");
