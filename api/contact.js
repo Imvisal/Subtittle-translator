@@ -94,13 +94,20 @@ module.exports = async function handler(req, res) {
 
             if (req.method === "GET") {
                 const messages = list.map(raw => { try { return JSON.parse(raw); } catch (e) { return null; } }).filter(Boolean);
+                // attach the owner's replies (hash contact:replies: message id -> { t, text })
+                try {
+                    const [rp] = await redis([["HGETALL", "contact:replies"]]);
+                    const map = {};
+                    for (let i = 0; rp && i + 1 < rp.length; i += 2) { try { map[rp[i]] = JSON.parse(rp[i + 1]); } catch (e) { /* ignore */ } }
+                    messages.forEach(m => { if (map[m.id]) { m.reply = map[m.id]; } m.canReply = !!m.uk; });
+                } catch (e) { /* the list still works */ }
                 return res.status(200).json({ messages });
             }
 
             const id = clean(req.query && req.query.id, 40);
             const raw = list.find(r => { try { return JSON.parse(r).id === id; } catch (e) { return false; } });
             if (!raw) return res.status(404).json({ error: "Not found" });
-            await redis([["LREM", "contact:msgs", 1, raw]]);
+            await redis([["LREM", "contact:msgs", 1, raw], ["HDEL", "contact:replies", id]]);
             return res.status(200).json({ ok: true });
         }
 
@@ -148,7 +155,8 @@ module.exports = async function handler(req, res) {
         const item = {
             id: crypto.randomBytes(8).toString("hex"),
             t: new Date().toISOString(),
-            name, email, message, prem
+            name, email, message, prem,
+            uk: (function () { try { return require("./_admin.js").uidKeyOf(who.uid); } catch (e) { return ""; } })()
         };
 
         await redis([

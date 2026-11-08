@@ -721,6 +721,37 @@ async function publicAnnouncement(req, res) {
     }
 }
 
+// ---------------------------------------------------------------- user notifications
+// List n:u:<uidKey> (newest first, max 30, kept 90 days): replies from the owner, Premium approved / rejected.
+// n:seen:<uidKey> = time the user last opened the list (everything newer is "unread").
+async function pushNotif(uk, item) {
+    if (!uk || !hasRedis()) { return; }
+    const rec = Object.assign({ id: require("crypto").randomBytes(6).toString("hex"), t: Date.now() }, item);
+    await redis([["LPUSH", "n:u:" + uk, JSON.stringify(rec)], ["LTRIM", "n:u:" + uk, 0, 29], ["EXPIRE", "n:u:" + uk, 90 * 86400]]);
+}
+
+async function notifications(req, res) {
+    res.setHeader("Cache-Control", "no-store");
+    try {
+        const who = await authUser(req);
+        if (!who) { return res.status(200).json({ signedIn: false, items: [], unread: 0 }); }
+        if (!hasRedis()) { return res.status(200).json({ signedIn: true, items: [], unread: 0 }); }
+        const uk = uidKeyOf(who.uid);
+        if (req.method === "POST") {
+            const body = req.body && typeof req.body === "object" ? req.body : {};
+            if (body.action === "clear") { await redis([["DEL", "n:u:" + uk], ["SET", "n:seen:" + uk, String(Date.now())]]); }
+            else { await redis([["SET", "n:seen:" + uk, String(Date.now())]]); }
+            return res.status(200).json({ ok: true });
+        }
+        const [list, seenRaw] = await redis([["LRANGE", "n:u:" + uk, 0, 29], ["GET", "n:seen:" + uk]]);
+        const seen = Number(seenRaw) || 0;
+        const items = (list || []).map(parse).filter(Boolean);
+        return res.status(200).json({ signedIn: true, items: items, seen: seen, unread: items.filter(i => i.t > seen).length });
+    } catch (e) {
+        return res.status(200).json({ signedIn: true, items: [], unread: 0 });
+    }
+}
+
 // ---------------------------------------------------------------- admin: actions
 async function action(req, res) {
     res.setHeader("Cache-Control", "no-store");
@@ -780,6 +811,21 @@ async function action(req, res) {
             } else { rq.status = "rejected"; }
             rq.done = Date.now();
             await redis([["HSET", "prem:req", id, JSON.stringify(rq)], ["DEL", "prem:slip:" + id]]);
+            await pushNotif(rq.uk, what === "planApprove"
+                ? { type: "premium", title: "Premium activated \uD83D\uDC51", body: "Thank you! Your Premium plan is active until " + new Date(rq.until).toISOString().slice(0, 10) + "." }
+                : { type: "premium", title: "Premium request not approved", body: "We could not approve your Premium request. Please check the payment slip and try again, or send us a message from the Contact page." }).catch(() => null);
+            return res.status(200).json({ ok: true });
+        }
+        if (what === "reply") {
+            const text = clean(body.text, 1500);
+            if (text.length < 2) { return res.status(400).json({ error: "Write a reply first." }); }
+            const [lst] = await redis([["LRANGE", "contact:msgs", 0, 299]]);
+            const msg = (lst || []).map(parse).filter(Boolean).find(m => m.id === id);
+            if (!msg) { return res.status(404).json({ error: "Message not found" }); }
+            if (!msg.uk) { return res.status(409).json({ error: "This is an older message with no account attached. Reply to " + (msg.email || "them") + " by email." }); }
+            const quote = String(msg.message || "").replace(/\s+/g, " ").slice(0, 120);
+            await pushNotif(msg.uk, { type: "reply", title: "Reply from SinSubz", body: text, quote: quote });
+            await redis([["HSET", "contact:replies", id, JSON.stringify({ t: Date.now(), text: text })]]);
             return res.status(200).json({ ok: true });
         }
         if (what === "announce") {
@@ -809,4 +855,4 @@ async function action(req, res) {
     }
 }
 
-module.exports = { quotaLeftPct, resetQuotaCache: function () { quotaLeftCache = { at: 0, day: "", pct: 100 }; }, notifyOwner, planPublic, planSubmit, me, premiumUntil, authUser, loginRequired, checkDailyLimit, pacificDay, ping, overview, health, action, publicAnnouncement, cleanAnnouncement, dayKey, uidKeyOf };
+module.exports = { notifications, pushNotif, quotaLeftPct, resetQuotaCache: function () { quotaLeftCache = { at: 0, day: "", pct: 100 }; }, notifyOwner, planPublic, planSubmit, me, premiumUntil, authUser, loginRequired, checkDailyLimit, pacificDay, ping, overview, health, action, publicAnnouncement, cleanAnnouncement, dayKey, uidKeyOf };

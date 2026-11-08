@@ -23,6 +23,13 @@
         .msg .top { display:flex; justify-content:space-between; gap:10px; align-items:baseline; flex-wrap:wrap; font-size:13px; color:var(--muted); }
         .msg .who { color:var(--text); font-weight:700; }
         .msg .body { white-space:pre-wrap; word-break:break-word; margin:8px 0 10px; }
+        .replied { margin:0 0 10px; padding:10px 12px; border-left:3px solid var(--acc); background:rgba(143,134,255,.08); border-radius:8px; white-space:pre-wrap; word-break:break-word; font-size:14px; }
+        .replied .rl { color:var(--muted); font-size:12px; margin-bottom:4px; }
+        .replybox textarea { width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:inherit; font:inherit; resize:vertical; }
+        .replybox .rrow { display:flex; align-items:center; gap:10px; margin:8px 0 10px; }
+        .replybox button { padding:8px 16px; }
+        .rst { color:var(--muted); font-size:13px; }
+        .noreply { color:var(--muted); font-size:12.5px; margin:0 0 10px; }
         .err { color:#ff8a8a; margin-top:10px; min-height:1.3em; }
         .empty { color:var(--muted); margin-top:24px; }
     </style>

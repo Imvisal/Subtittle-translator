@@ -286,13 +286,37 @@
         };
     }
 
+    // Notifications for the signed-in account (replies from SinSubz, Premium updates) live on the server and are
+    // merged into the same list as the new-release alerts. The Windows app has no sign-in, so it has none.
+    var srv = { items: [], unread: 0 };
+    function srvFetch(method, body) {
+        if (isDesktop || !window.__sinsubzIdToken) { return Promise.resolve(null); }
+        return window.__sinsubzIdToken().then(function (tk) {
+            if (!tk) { return null; }
+            return fetch("/api/stats?notif=1", {
+                method: method || "GET",
+                headers: { Authorization: "Bearer " + tk, "Content-Type": "application/json" },
+                body: body ? JSON.stringify(body) : undefined,
+                cache: "no-store"
+            }).then(function (r) { return r.json(); });
+        }).catch(function () { return null; });
+    }
+
     function loadInbox() {
         var api = inboxApi();
-        if (!api) { return; }
-        api.get().then(function (r) {
-            inbox = (r && r.items) || [];
-            inboxSeen = (r && r.seen) || 0;
-            inboxUnread = (r && r.unread) || 0;
+        var base = api ? api.get() : Promise.resolve({ items: [], seen: 0, unread: 0 });
+        base.then(function (r) {
+            return srvFetch("GET").then(function (d) {
+                srv = d && d.signedIn ? { items: d.items || [], unread: d.unread || 0, seen: d.seen || 0 } : { items: [], unread: 0, seen: 0 };
+                return r;
+            });
+        }).then(function (r) {
+            var mine = srv.items.map(function (n) {
+                return { key: "n:" + n.id, kind: "notice", title: n.title || "SinSubz", body: n.body || "", quote: n.quote || "", t: n.t };
+            });
+            inbox = ((r && r.items) || []).concat(mine).sort(function (a, b) { return (b.t || 0) - (a.t || 0); });
+            inboxSeen = Math.min((r && r.seen) || 0, srv.items.length ? (srv.seen || 0) : (r && r.seen) || 0);
+            inboxUnread = ((r && r.unread) || 0) + srv.unread;
             if (jobsOpen) {
                 // panel is open right now: nothing is "unread" any more
                 if (inboxUnread) { markInboxSeen(); }
@@ -306,9 +330,15 @@
     function markInboxSeen() {
         var api = inboxApi();
         if (api) { api.seen().catch(function () { /* ignore */ }); }
+        if (srv.unread) { srv.unread = 0; srvFetch("POST", { action: "seen" }); }
     }
 
     function inboxLine(it) {
+        if (it.kind === "notice") {
+            var first = String(it.body || "").split("\n")[0];
+            if (first.length > 90) { first = first.slice(0, 87) + "..."; }
+            return { title: it.title, meta: first || "Message" };
+        }
         if (it.kind === "announcement") {
             var firstLine = String(it.body || "").split("\n")[0];
             if (firstLine.length > 90) { firstLine = firstLine.slice(0, 87) + "..."; }
@@ -406,7 +436,7 @@
         }
 
         if (inbox.length) {
-            var hasNews = inbox.some(function (it) { return it.kind === "announcement"; });
+            var hasNews = inbox.some(function (it) { return it.kind === "announcement" || it.kind === "notice"; });
             html += '<div class="ap-sec"><span>' + (hasNews ? "News &amp; new releases" : "New releases") +
                 '</span><button type="button" id="ajClearNew">Clear</button></div>';
             inbox.forEach(function (it, idx) {
@@ -417,7 +447,7 @@
                 var tile = pic
                     ? '<div class="ap-tile poster"><img loading="lazy" alt="" src="' + esc(pic) + '"></div>'
                     : '<div class="ap-tile"><i class="fa-solid ' +
-                      (isNews ? "fa-bullhorn" : (it.type === "series" ? "fa-tv" : "fa-film")) + '"></i></div>';
+                      (it.kind === "notice" ? "fa-envelope" : isNews ? "fa-bullhorn" : (it.type === "series" ? "fa-tv" : "fa-film")) + '"></i></div>';
                 html += '<div class="ap-card ap-click' + (fresh ? " fresh" : "") + '" data-inbox="' + idx + '" role="button" tabindex="0">' +
                     '<div class="ap-row">' + tile +
                     '<div class="ap-main"><div class="ap-title">' + esc(ln.title) + '</div>' +
@@ -463,6 +493,7 @@
                 inboxUnread = 0;
                 var api = inboxApi();
                 if (api) { api.clear().catch(function () { /* ignore */ }); }
+                if (srv.items.length) { srv = { items: [], unread: 0, seen: 0 }; srvFetch("POST", { action: "clear" }); }
                 updateRing();
                 renderJobs();
             });
@@ -471,6 +502,12 @@
             function open() {
                 var it = inbox[+el.getAttribute("data-inbox")];
                 if (!it) { return; }
+                if (it.kind === "notice") {
+                    if (window.__appUpdates && window.__appUpdates.showAnnouncement) {
+                        window.__appUpdates.showAnnouncement({ key: it.key, title: it.title, body: it.body });
+                    }
+                    return;
+                }
                 if (it.kind === "announcement") {
                     // open the announcement again (picture, text and the Open button)
                     if (window.__appUpdates && window.__appUpdates.showAnnouncement) {

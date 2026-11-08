@@ -48,6 +48,45 @@
             card.appendChild(top);
             card.appendChild(el("div", "body", m.message || ""));
 
+            if (m.reply) {
+                var rb = el("div", "replied");
+                var rw = "";
+                try { rw = new Date(m.reply.t).toLocaleString(); } catch (e) { rw = ""; }
+                rb.appendChild(el("div", "rl", "\u2713 You replied" + (rw ? " \u00B7 " + rw : "")));
+                rb.appendChild(el("div", "", m.reply.text || ""));
+                card.appendChild(rb);
+            }
+            var replyBox = null;
+            if (m.canReply) {
+                replyBox = el("div", "replybox");
+                var ta = el("textarea");
+                ta.rows = 3; ta.maxLength = 1500;
+                ta.placeholder = m.reply ? "Send another reply\u2026" : "Write a reply. It shows up as a notification on their account.";
+                var send = el("button", "", "Send reply");
+                send.type = "button";
+                var st = el("span", "rst", "");
+                send.addEventListener("click", function () {
+                    var text = ta.value.trim();
+                    if (text.length < 2) { st.textContent = "Write a reply first."; return; }
+                    send.disabled = true; st.textContent = "Sending\u2026";
+                    fetch("/api/stats?admin=1", {
+                        method: "POST",
+                        headers: { "x-admin-key": KEY, "Content-Type": "application/json" },
+                        body: JSON.stringify({ action: "reply", id: m.id, text: text })
+                    }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { ok: r.ok, d: d }; }); })
+                      .then(function (r) {
+                          send.disabled = false;
+                          if (r.ok) { st.textContent = "Sent \u2713"; ta.value = ""; load(); } else { st.textContent = (r.d && r.d.error) || "Could not send."; }
+                      }).catch(function () { send.disabled = false; st.textContent = "No connection."; });
+                });
+                replyBox.appendChild(ta);
+                var rr = el("div", "rrow"); rr.appendChild(send); rr.appendChild(st);
+                replyBox.appendChild(rr);
+                card.appendChild(replyBox);
+            } else {
+                card.appendChild(el("div", "noreply", "Older message: no account attached, so it cannot be answered here. Use the email address."));
+            }
+
             var del = el("button", "ghost", "Delete");
             del.type = "button";
             del.addEventListener("click", function () {

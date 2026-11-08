@@ -255,6 +255,29 @@ function call(method, url, { headers = {}, body } = {}) {
         ok(lim(await t("Movie.Seven", { authorization: "Bearer tok-nimal", "x-forwarded-for": "6.6.6.10" })), "signed-in account is counted across different IPs");
         ok(!lim(await t("Movie.Eight", { authorization: "Bearer tok-visal", "x-forwarded-for": "6.6.6.11" })), "other account fine");
 
+        // ---- replies + notifications ----
+        {
+            const ukPro = require("../api/_admin.js").uidKeyOf("uid-3");
+            db.list["contact:msgs"].unshift(JSON.stringify({ id: "m2", t: new Date().toISOString(), name: "Pro", email: "p@example.com", message: "my question about premium", uk: ukPro }));
+            const nt = (method, tok, body) => call(method, "/api/stats?notif=1", { headers: tok ? { authorization: "Bearer " + tok } : {}, body });
+            ok((await nt("GET", null)).body.signedIn === false, "notifications: signed-out gets nothing");
+            ok((await call("POST", "/api/stats?admin=1", { body: { action: "reply", id: "m2", text: "hi" } })).code === 401, "reply needs the admin key");
+            ok((await call("POST", "/api/stats?admin=1", { headers: AK, body: { action: "reply", id: "m1", text: "hello" } })).code === 409, "old message without an account cannot be answered in-app");
+            ok((await call("POST", "/api/stats?admin=1", { headers: AK, body: { action: "reply", id: "m2", text: "x" } })).code === 400, "too short reply refused");
+            ok((await call("POST", "/api/stats?admin=1", { headers: AK, body: { action: "reply", id: "m2", text: "Thanks! It is fixed now." } })).code === 200, "reply sent");
+            let n1 = (await nt("GET", "tok-pro")).body;
+            ok(n1.unread === 1 && n1.items[0].type === "reply" && n1.items[0].body === "Thanks! It is fixed now." && /premium/.test(n1.items[0].quote), "user sees the reply as 1 unread notification: " + JSON.stringify(n1).slice(0, 160));
+            ok((await nt("GET", "tok-visal")).body.unread === 0, "another user sees nothing");
+            await nt("POST", "tok-pro", { action: "seen" });
+            ok((await nt("GET", "tok-pro")).body.unread === 0, "opening the list marks it read");
+            await new Promise(r => setTimeout(r, 15));
+            await call("POST", "/api/stats?admin=1", { headers: AK, body: { action: "reply", id: "m2", text: "One more thing." } });
+            n1 = (await nt("GET", "tok-pro")).body;
+            ok(n1.unread === 1 && n1.items.length === 2, "a new reply is unread again");
+            await nt("POST", "tok-pro", { action: "clear" });
+            n1 = (await nt("GET", "tok-pro")).body;
+            ok(n1.items.length === 0 && n1.unread === 0, "clear empties the list");
+        }
         // ---- premium ----
         {
             const pk = require("crypto").createHash("sha256").update("uid-3").digest("hex").slice(0, 24);
