@@ -758,7 +758,7 @@ async function logEvent(ev) {
     try {
         if (!hasRedis()) { return; }
         const rec = Object.assign({ t: Date.now() }, ev || {});
-        ["msg", "u", "job", "type"].forEach(k => { if (rec[k] != null) { rec[k] = String(rec[k]).slice(0, 160); } });
+        ["msg", "u", "job", "type"].forEach(k => { if (rec[k] != null) { rec[k] = String(rec[k]).slice(0, k === "msg" ? 420 : 160); } });
         await Promise.race([redis([["LPUSH", "log:ev", JSON.stringify(rec)], ["LTRIM", "log:ev", 0, 299], ["EXPIRE", "log:ev", 7 * 86400]]), new Promise(r => setTimeout(r, 1200))]);
     } catch (e) { /* logging must never break a request */ }
 }

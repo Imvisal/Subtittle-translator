@@ -204,6 +204,13 @@ function today() {
 }
 
 async function generateWithFallback(prompt) {
+    const trail = [];
+    const out = await generateInner(prompt, trail);
+    if (out && typeof out === "object") { out.trail = trail; }
+    return out;
+}
+
+async function generateInner(prompt, trail) {
     const keys = getKeys();
     const models = getModels();
 
@@ -242,6 +249,7 @@ async function generateWithFallback(prompt) {
             const id = k + "|" + model;
 
             if ((cooldowns.get(id) || 0) > Date.now()) {
+                trail.push("#" + (k + 1) + " " + model.replace(/^gemini-/, "") + " cooling");
                 sawQuota = true;
                 if ((cooldowns.get(id) || 0) > Date.now() + 5 * 60 * 1000) sawDaily = true;   // long cooldown = daily quota
                 continue;
@@ -283,7 +291,7 @@ async function generateWithFallback(prompt) {
                 modelBusyUntil.delete(model);
                 await track(today(), null, { [(k + 1) + ":ok"]: 1 });
                 await trackQuota(k, false);
-                return { data };
+                return { data, key: k + 1, model };
             }
 
             const message =
@@ -293,6 +301,7 @@ async function generateWithFallback(prompt) {
 
             lastStatus = response.status;
             lastMessage = message;
+            trail.push("#" + (k + 1) + " " + model.replace(/^gemini-/, "") + " " + response.status + (response.status === 429 ? (isDailyQuotaMessage(message) ? " daily" : " per-min") : ""));
 
             console.warn(
                 "Gemini failed:",
@@ -360,6 +369,7 @@ async function generateWithFallback(prompt) {
         return {
             status: 429,
             code: "RATE_LIMITED",
+            detail: lastMessage,
             error: "Many people are translating right now. Retrying in a moment..."
         };
     }
@@ -368,6 +378,7 @@ async function generateWithFallback(prompt) {
         return {
             status: 429,
             code: "QUOTA_EXHAUSTED",
+            detail: lastMessage,
             error:
                 "Today's free translation limit has been reached. " +
                 "Please try again later."
@@ -715,18 +726,21 @@ ${JSON.stringify(inputItems)}
         // lines still to be translated. First pass = every line,
         // retries = only the lines that came back with stray characters.
         let pending = input;
+        let usedKey = 0, usedModel = "", usedTries = 0;
 
         for (let attempt = 1; attempt <= MAX_TRIES; attempt++) {
 
             const generated =
                 await generateWithFallback(buildPrompt(pending));
 
+            if (!generated.error) { usedKey = generated.key; usedModel = generated.model; usedTries = attempt; }
+
             if (generated.error) {
 
                 // a failed RETRY must not throw away lines that already worked
                 if (attempt > 1) break;
 
-                await require("./_admin.js").logEvent({ type: "gemini", lvl: generated.status === 429 ? "warn" : "error", u: logCtx.u, job: logCtx.job, msg: (generated.code || "ERR") + " " + (generated.status || 500) + ": " + String(generated.error || "").slice(0, 90) });
+                await require("./_admin.js").logEvent({ type: "gemini", lvl: generated.status === 429 ? "warn" : "error", u: logCtx.u, job: logCtx.job, msg: (generated.code || "ERR") + " " + (generated.status || 500) + " | tried: " + ((generated.trail || []).join(", ") || "none") + " | " + String(generated.detail || generated.error || "").slice(0, 150) });
                 return res.status(
                     generated.status || 500
                 ).json({
@@ -907,7 +921,7 @@ ${JSON.stringify(inputItems)}
 
         await track(today(), { ok: 1 });
         if (limitDone) { await limitDone(); }     // this chunk is translated: counts toward the film / episode
-        await require("./_admin.js").logEvent({ type: "ok", lvl: "info", u: logCtx.u, job: logCtx.job, msg: "Translated " + subtitles.length + " lines" });
+        await require("./_admin.js").logEvent({ type: "ok", lvl: "info", u: logCtx.u, job: logCtx.job, msg: "Translated " + subtitles.length + " lines | key #" + (usedKey || "?") + " " + String(usedModel || "").replace(/^gemini-/, "") + (usedTries > 1 ? " (try " + usedTries + ")" : "") });
 
         return res.status(200).json({
             subtitles: output
