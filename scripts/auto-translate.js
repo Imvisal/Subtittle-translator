@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /* SinSubz auto-translate runner (GitHub Actions, .github/workflows/auto-translate.yml).
 
-   Right after the Gemini quota resets (midnight Pacific = 13:30 in Sri Lanka) it translates the episodes / films listed in
-   auto-queue.json that are not on the site yet, and stores them as "Ready" subtitles (api/_ready.js) so anybody can
+   In the LAST HOUR before the Gemini quota resets (midnight Pacific = 13:30 in Sri Lanka, so it starts about 12:40) it uses
+   the quota that is still unused (it would be lost anyway) to translate the episodes / films listed in
+   auto-queue.json that are not on the site yet. It stops at the reset, so visitors get the fresh quota, and stores them as "Ready" subtitles (api/_ready.js) so anybody can
    download them from the home page.
 
    It drives the REAL website in a headless browser (same code path as a visitor: SubDL search -> download -> clean ->
@@ -10,7 +11,7 @@
    difference: every /api/translate call carries the admin key, so there is no sign-in and no daily limit.
 
    Env:  ADMIN_KEY (required, same value as in Vercel)    SITE_URL (default https://sinsubs.site)
-         MAX_PER_RUN (override queue file)   MAX_MINUTES (default 300)   FORCE=1 (skip the "is it quota-reset time?" check)
+         MAX_PER_RUN (override queue file)   MAX_MINUTES (default 70)   FORCE=1 (skip the "is it quota-reset time?" check)
 
    Stops by itself when Gemini says the quota is used up, or after 3 failures in a row.  Safe to run again: finished
    episodes are skipped. */
@@ -21,7 +22,7 @@ const path = require("path");
 
 const SITE = (process.env.SITE_URL || "https://sinsubs.site").replace(/\/$/, "");
 const KEY = process.env.ADMIN_KEY || "";
-const MAX_MS = (Number(process.env.MAX_MINUTES) || 300) * 60 * 1000;
+const MAX_MS = (Number(process.env.MAX_MINUTES) || 70) * 60 * 1000;
 const started = Date.now();
 
 function log() { console.log.apply(console, ["[" + new Date().toISOString().slice(11, 19) + "]"].concat([].slice.call(arguments))); }
@@ -95,8 +96,8 @@ async function translateInPage(job) {
     if (!KEY) { console.error("ADMIN_KEY is not set"); process.exit(1); }
 
     const manual = process.env.GITHUB_EVENT_NAME === "workflow_dispatch" || process.env.FORCE === "1";
-    if (!manual && pacificHour() !== 0) {
-        log("Pacific hour is " + pacificHour() + ", not the quota-reset hour (0): nothing to do (the other cron entry covers it).");
+    if (!manual && pacificHour() !== 23) {
+        log("Pacific hour is " + pacificHour() + ", not the last hour before the reset (23): nothing to do (the other cron entry covers it).");
         return;
     }
 
@@ -127,6 +128,7 @@ async function translateInPage(job) {
     for (const job of todo) {
         if (done >= maxRun) { log("Reached the per-run limit."); break; }
         if (Date.now() - started > MAX_MS) { log("Time budget used."); break; }
+        if (!manual && pacificHour() !== 23) { log("Quota reset reached: the fresh quota is for visitors, stopping."); break; }
         const label = job.t.title + (job.t.type === "tv" ? " S" + String(job.season).padStart(2, "0") + "E" + String(job.episode).padStart(2, "0") : "");
         log("Translating " + label + " ...");
         try {

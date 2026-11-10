@@ -1,13 +1,14 @@
-# Translates the titles in auto-queue.json right after the Gemini quota resets (midnight Pacific time =
-# 13:30 in Sri Lanka in winter, 12:30 in summer), then they show up under "Ready Sinhala subtitles" on the home page.
+# Translates the titles in auto-queue.json in the LAST HOUR before the Gemini quota resets (midnight Pacific time =
+# 13:30 in Sri Lanka in winter, 12:30 in summer), using the quota that would be lost anyway. It stops at the reset so
+# visitors get the fresh quota. Results show up under "Ready Sinhala subtitles" on the home page.
 # Needs the repository secret ADMIN_KEY (same value as ADMIN_KEY in Vercel). Optional secret SITE_URL.
 # Run it by hand any time: Actions -> Auto translate -> Run workflow.
 name: Auto translate
 
 on:
   schedule:
-    - cron: "5 7 * * *"    # 00:05 Pacific in summer time (the script exits when it is not the reset hour)
-    - cron: "5 8 * * *"    # 00:05 Pacific in winter time
+    - cron: "10 6 * * *"   # 23:10 Pacific in summer time (the script exits when it is not Pacific hour 23)
+    - cron: "10 7 * * *"   # 23:10 Pacific in winter time = 12:40 in Sri Lanka
   workflow_dispatch:
 
 concurrency:
@@ -17,7 +18,7 @@ concurrency:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 340
+    timeout-minutes: 100
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

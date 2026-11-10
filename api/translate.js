@@ -425,8 +425,13 @@ module.exports = async function handler(req, res) {
 
         // The runner only gets the share of the daily Gemini quota above RUNNER_RESERVE_PCT (default 70% is kept for visitors)
         if (isRunner) {
+            // last hour before the Pacific-midnight reset (about 12:30-13:30 in Sri Lanka): what is left would be lost anyway,
+            // so the runner may use almost all of it (keeps RUNNER_LAST_HOUR_RESERVE_PCT, default 8%). Any other time: 70% stays for visitors.
+            const pacHour = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", hour: "numeric", hour12: false }).format(new Date())) % 24;
+            const lastHour = pacHour === 23;
             const reserve = Number(process.env.RUNNER_RESERVE_PCT);
-            const keep = Number.isFinite(reserve) ? reserve : 70;
+            const reserveLast = Number(process.env.RUNNER_LAST_HOUR_RESERVE_PCT);
+            const keep = lastHour ? (Number.isFinite(reserveLast) ? reserveLast : 8) : (Number.isFinite(reserve) ? reserve : 70);
             if (keep > 0 && (await require("./_admin.js").quotaLeftPct()) <= keep) {
                 return res.status(429).json({ error: "Gemini quota is reserved for visitors now (auto-runner stops).", code: "RUNNER_RESERVE" });
             }
