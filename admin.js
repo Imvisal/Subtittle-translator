@@ -365,6 +365,7 @@
         try { localStorage.setItem("sinsubz-admin-tab", name); } catch (e) { /* ignore */ }
         window.scrollTo(0, 0);
         if (name === "logs") { loadLogs(); }
+        if (name === "auto") { loadReady(); }
     }
     Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (b) {
         b.addEventListener("click", function () { openTab(b.getAttribute("data-go")); });
@@ -374,6 +375,36 @@
 
     // ---- live log tab: refreshes every 10 s while it is open ----
     var logFilter = "all", logTimer = null;
+    function loadReady() {
+        fetch("/api/stats?ready=list", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
+            var host = $("rdList"); if (!host) { return; }
+            host.textContent = "";
+            var items = d.items || [];
+            $("rdCount").textContent = items.reduce(function (a, i) { return a + i.eps.length; }, 0) + " files";
+            if (!items.length) { host.appendChild(el("div", "muted", "Nothing yet. The runner adds titles after its first run.")); return; }
+            function del(body, btn) {
+                if (!window.confirm("Remove from the Ready list?")) { return; }
+                btn.disabled = true;
+                fetch("/api/stats?ready=del", { method: "POST", headers: { "x-admin-key": KEY, "Content-Type": "application/json" }, body: JSON.stringify(body) })
+                    .then(function (r) { if (!r.ok) { throw new Error("Failed"); } loadReady(); }).catch(function (e) { btn.disabled = false; window.alert(e.message); });
+            }
+            items.forEach(function (it) {
+                var row = el("div", "row", "");
+                row.style.cssText = "justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line);flex-wrap:wrap";
+                var eps = it.type === "tv" ? it.eps.map(function (e) { return "S" + e.s + "E" + e.e; }).join(", ") : "Film";
+                var txt = el("div", "", "");
+                txt.appendChild(el("b", "", it.t + (it.y ? " (" + it.y + ")" : "")));
+                txt.appendChild(el("div", "muted", eps));
+                row.appendChild(txt);
+                var b = el("button", "ghost", "Remove all");
+                b.type = "button";
+                b.addEventListener("click", function () { del({ imdb: it.id }, b); });
+                row.appendChild(b);
+                host.appendChild(row);
+            });
+        }).catch(function () { /* ignore */ });
+    }
+
     function loadLogs() {
         if (!KEY) { return; }
         fetch("/api/stats?logs=1", { headers: { "x-admin-key": KEY }, cache: "no-store" })
