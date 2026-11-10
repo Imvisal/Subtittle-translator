@@ -1,5 +1,11 @@
 {
-  "note": "Titles the auto-runner translates every day just after the Gemini quota resets (see scripts/auto-translate.js). Add a title: imdb id, title, year, poster (https image), type 'tv' or 'movie', season + episodes list (tv).",
+  "note": "Titles the auto-runner translates in the last hour before the Gemini quota reset (see scripts/auto-translate.js). 'titles' = picked by hand (imdb id, title, year, poster, type tv|movie, season, episodes). 'auto_discover' = the runner also picks new TV series (from /api/new-releases) that have NO Sinhala subtitle on baiscope / cineru / sinhalasub.",
   "max_per_run": 40,
-  "titles": []
+  "titles": [],
+  "auto_discover": {
+    "enabled": true,
+    "max_titles": 2,
+    "season": 1,
+    "episodes_per_title": 12
+  }
 }

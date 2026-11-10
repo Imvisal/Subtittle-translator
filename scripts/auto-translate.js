@@ -52,6 +52,27 @@ function wanted(queue) {
     return out;
 }
 
+// Finds new TV series that have NO Sinhala subtitle yet: the site's own /api/new-releases list (TMDB, last 30 days),
+// where every title was already checked on baiscope.lk / cineru.lk / sinhalasub.lk (api/sinhala-search.js).
+async function discover(cfg, queuedIds) {
+    const r = await api("/api/new-releases");
+    const items = (r.json && r.json.items) || [];
+    const maxEp = Number(cfg.episodes_per_title) || 12;
+    const season = Number(cfg.season) || 1;
+    const out = [];
+    const picked = [];
+    items.forEach(it => {
+        if (it.type !== "series" || !/^tt\d{5,10}$/.test(String(it.imdbID || ""))) { return; }
+        if (it.sinhala && it.sinhala.found) { log("discover: " + it.title + " already has a Sinhala sub (" + (it.sinhala.source || "?") + "), skipped"); return; }
+        if (queuedIds.has(it.imdbID)) { return; }
+        picked.push(it.title);
+        const t = { imdb: it.imdbID, title: it.title, year: String(it.year || ""), poster: it.poster || "", type: "tv", season, discovered: true };
+        for (let e = 1; e <= maxEp; e++) { out.push({ t, season, episode: e, discovered: true }); }
+    });
+    log("discover: no Sinhala sub found for " + (picked.length ? picked.join(", ") : "any new series"));
+    return out;
+}
+
 // runs inside the website page
 async function translateInPage(job) {
     const item = {
@@ -108,7 +129,12 @@ async function translateInPage(job) {
     const have = new Set();
     ((list.json && list.json.items) || []).forEach(it => it.eps.forEach(e => have.add(it.id + "|" + (it.type === "tv" ? e.s : 0) + "|" + (it.type === "tv" ? e.e : 0))));
 
-    const todo = wanted(queue).filter(j => !have.has(j.t.imdb + "|" + j.season + "|" + j.episode));
+    let all = wanted(queue);
+    if (queue.auto_discover && queue.auto_discover.enabled !== false) {
+        try { all = all.concat(await discover(queue.auto_discover, new Set(all.map(j => j.t.imdb)))); } catch (e) { log("discover failed: " + e.message); }
+    }
+    if (process.env.LIST_ONLY === "1") { log("LIST_ONLY: would work on " + [...new Set(all.map(j => j.t.title))].join(", ")); return; }
+    const todo = all.filter(j => !have.has(j.t.imdb + "|" + j.season + "|" + j.episode));
     log("Queue: " + todo.length + " not translated yet, this run does at most " + maxRun + ".");
     if (!todo.length) { return; }
 
@@ -125,7 +151,15 @@ async function translateInPage(job) {
     await page.waitForFunction(() => typeof translateWithLibrary === "function" && typeof buildSRT === "function", null, { timeout: 60000 });
 
     let done = 0, failsInRow = 0;
+    const worked = new Set();
+    const maxTitles = Number(queue.auto_discover && queue.auto_discover.max_titles) || 2;
+    const noSub = {};      // discovered title -> consecutive episodes without an English subtitle (= not aired yet)
     for (const job of todo) {
+        if (job.discovered) {
+            if ((noSub[job.t.imdb] || 0) >= 2) { continue; }
+            if (!worked.has(job.t.imdb) && worked.size >= maxTitles) { continue; }   // only a few discovered series per run
+            worked.add(job.t.imdb);
+        }
         if (done >= maxRun) { log("Reached the per-run limit."); break; }
         if (Date.now() - started > MAX_MS) { log("Time budget used."); break; }
         if (!manual && pacificHour() !== 23) { log("Quota reset reached: the fresh quota is for visitors, stopping."); break; }
@@ -133,7 +167,12 @@ async function translateInPage(job) {
         log("Translating " + label + " ...");
         try {
             const out = await page.evaluate(translateInPage, Object.assign({}, job.t, { season: job.season, episode: job.episode }));
-            if (out.skip) { log("  skipped: " + out.skip); continue; }
+            if (out.skip) {
+                log("  skipped: " + out.skip);
+                if (job.discovered && /no English subtitle/.test(out.skip)) { noSub[job.t.imdb] = (noSub[job.t.imdb] || 0) + 1; }
+                continue;
+            }
+            noSub[job.t.imdb] = 0;
             const put = await api("/api/stats?ready=put", {
                 method: "POST",
                 headers: { "Content-Type": "application/json", "x-admin-key": KEY },
