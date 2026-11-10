@@ -21,7 +21,7 @@ const URL_BASE = findEnv(/(?:^|_)(?:KV|UPSTASH_REDIS)_REST_(?:API_)?URL$/);
 const TOKEN = findEnv(/(?:^|_)(?:KV|UPSTASH_REDIS)_REST_(?:API_)?TOKEN$/);
 
 // public web API key of the Firebase project (the same one the website already ships to browsers)
-const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || "AIzaSyBtVA4AdmAlkwVsBnZ3rqm7vjSGEA2NAO0";
+const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || "";
 
 const MAX_KEEP = 300;
 const MAX_PER_HOUR = 5;
