@@ -3655,6 +3655,22 @@ async function translateSubtitleChunksImpl(
     let completed = 0;
     let failure = null;
 
+    // ---- resume: finished chunks are kept in memory, so pressing Translate again after a failure
+    // continues from where it stopped instead of starting over (cleared when the whole file is done) ----
+    const resumeKey = (function () {
+        let h = 0;
+        const txt = subtitles.map(function (c) { return typeof c === "string" ? c : String((c && (c.text || c.original || c.line)) || ""); });
+        for (let i = 0; i < txt.length; i++) { const t = txt[i]; for (let j = 0; j < t.length; j += 3) { h = (h * 31 + t.charCodeAt(j)) | 0; } }
+        return subtitles.length + ":" + h + ":" + txt[0] + "|" + txt[txt.length - 1];
+    })();
+    window.__sinsubzResume = window.__sinsubzResume || { key: "", parts: {} };
+    if (window.__sinsubzResume.key !== resumeKey) { window.__sinsubzResume = { key: resumeKey, parts: {} }; }
+    const resumed = window.__sinsubzResume.parts;
+    Object.keys(resumed).forEach(function (i) {
+        const idx = Number(i);
+        if (idx < totalChunks && Array.isArray(resumed[i])) { results[idx] = resumed[i]; completed += resumed[i].length; }
+    });
+
 
     // Translates ONE chunk (with up to 3 attempts) and returns the checked result.
     async function translateOneChunk(chunk, chunkNumber, chunkStart) {
@@ -3832,12 +3848,15 @@ async function translateSubtitleChunksImpl(
                 return;
             }
 
+            if (results[index]) { continue; }     // already translated in an earlier try
+
             const start = index * CHUNK_SIZE;
             const chunk = subtitles.slice(start, start + CHUNK_SIZE);
 
             try {
 
                 results[index] = await runChunk(index);
+                window.__sinsubzResume.parts[index] = results[index];
 
                 completed += chunk.length;
 
@@ -3861,7 +3880,7 @@ async function translateSubtitleChunksImpl(
     updateTranslationProgress(
         1,
         totalChunks,
-        0,
+        completed,
         subtitles.length
     );
 
@@ -3875,6 +3894,8 @@ async function translateSubtitleChunksImpl(
     if (failure) {
         throw failure;
     }
+
+    window.__sinsubzResume = { key: "", parts: {} };     // finished: nothing to resume
 
     // results[] is indexed by chunk, so the order is always the original order
     // (and results.flat() lines up cue for cue with `subtitles`)
