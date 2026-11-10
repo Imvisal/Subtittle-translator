@@ -354,13 +354,18 @@ module.exports = async function handler(req, res) {
             );
 
 
+        const looksAss =
+            /^\[Events\]/im.test(text) &&
+            /^Dialogue:/im.test(text);
+
         if (
-            !text.includes("-->")
+            !text.includes("-->") &&
+            !looksAss
         ) {
 
             return res.status(422).json({
                 error:
-                    "Downloaded file is not a valid SRT subtitle"
+                    "Downloaded file is not a valid SRT or ASS subtitle"
             });
 
         }
