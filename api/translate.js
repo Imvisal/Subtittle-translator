@@ -106,6 +106,12 @@ function polishSinhala(text) {
         .replace(new RegExp("([" + SI + "])\\s*\\([A-Za-z][A-Za-z ]*\\)", "g"), "$1");
 }
 
+// one spoken form of "no / cannot" through the whole file: නැහැ -> නෑ, බැහැ -> බෑ
+// (not when the word continues with more Sinhala letters, and not for the formal style)
+function unifyNegation(text) {
+    return String(text).replace(/(?<![඀-෿])(නැ|බැ)හැ(?![඀-෿])/g, function (m, a) { return a === "නැ" ? "නෑ" : "බෑ"; });
+}
+
 // "-latest" aliases always point at a model that is still available,
 // so they keep working when Google retires a fixed model name.
 const DEFAULT_MODELS = [
@@ -820,7 +826,8 @@ ${JSON.stringify(inputItems)}
                     continue;
                 }
 
-                translationMap.set(item.index, checkGlitch ? polishSinhala(text) : text);
+                const polished = checkGlitch ? polishSinhala(text) : text;
+                translationMap.set(item.index, style === "formal" ? polished : unifyNegation(polished));
                 dirtyCandidates.delete(item.index);
                 stillPending.delete(item.index);
 
