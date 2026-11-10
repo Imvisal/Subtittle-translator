@@ -79,7 +79,7 @@ let ipN = 0;
 function call(method, url, { headers = {}, body } = {}) {
     return new Promise(resolve => {
         const res = { code: 200, headers: {}, setHeader(k, v) { this.headers[k] = v; }, status(c) { this.code = c; return this; },
-            json(o) { resolve({ code: this.code, body: o, headers: this.headers }); }, end() { resolve({ code: this.code, body: null, headers: this.headers }); } };
+            json(o) { resolve({ code: this.code, body: o, headers: this.headers }); }, send(b) { resolve({ code: this.code, body: b, headers: this.headers }); }, end() { resolve({ code: this.code, body: null, headers: this.headers }); } };
         const req = { method, url, headers: Object.assign({ "x-forwarded-for": "9.9.9." + (++ipN) }, headers), body, socket: {} };
         Promise.resolve(stats(req, res)).catch(e => resolve({ code: 500, body: String(e) }));
     });
@@ -375,6 +375,28 @@ function call(method, url, { headers = {}, body } = {}) {
             ls = await call("GET", "/api/stats?mytr=list", { headers: H("tok-pro") });
             ok(ls.body.items.length === 0, "list empty after delete");
             await call("POST", "/api/stats?admin=1", { headers: AK, body: { action: "premiumOff", id: pk2 } });
+        }
+        // ---- ready translations (auto-runner) ----
+        {
+            const cue = i => i + "\n00:00:0" + (i % 9) + ",000 --> 00:00:0" + (i % 9) + ",900\nසිංහල පේළිය " + i + "\n\n";
+            const srt = Array.from({ length: 30 }, (_, i) => cue(i + 1)).join("");
+            const put = b => call("POST", "/api/stats?ready=put", { headers: b.headers || AK, body: b.body });
+            ok((await call("GET", "/api/stats?ready=list")).body.items.length === 0, "ready list starts empty");
+            ok((await put({ headers: { "x-admin-key": "wrong" }, body: { imdb: "tt0944947", title: "GoT", type: "tv", season: 1, episode: 1, srt } })).code === 401, "ready put needs the admin key");
+            ok((await put({ body: { imdb: "bad", title: "GoT", srt } })).code === 400, "ready put checks the imdb id");
+            ok((await put({ body: { imdb: "tt0944947", title: "GoT", type: "tv", srt } })).code === 400, "tv episode needs season + episode");
+            ok((await put({ body: { imdb: "tt0944947", title: "Game of Thrones", year: "2011", poster: "https://img.example/p.jpg", type: "tv", season: 1, episode: 2, filename: "GoT.S01E02.Sinhala.SinSubz.srt", srt } })).code === 200, "ready put e2");
+            ok((await put({ body: { imdb: "tt0944947", title: "Game of Thrones", year: "2011", type: "tv", season: 1, episode: 1, srt } })).code === 200, "ready put e1");
+            const rl = await call("GET", "/api/stats?ready=list");
+            ok(rl.body.items.length === 1 && rl.body.items[0].eps.length === 2 && rl.body.items[0].eps[0].e === 1, "ready list groups episodes, sorted");
+            ok(rl.body.items[0].p === "https://img.example/p.jpg", "poster kept when a later put has none");
+            const g = await call("GET", "/api/stats?ready=get&id=tt0944947&s=1&e=2");
+            ok(g.code === 200 && String(g.body).includes("සිංහල පේළිය 7") && /attachment/.test(g.headers["Content-Disposition"]), "ready get works for everybody");
+            ok((await call("GET", "/api/stats?ready=get&id=tt0944947&s=9&e=9")).code === 404, "ready get 404");
+            ok((await call("POST", "/api/stats?ready=del", { headers: AK, body: { imdb: "tt0944947", season: 1, episode: 1 } })).code === 200, "ready delete one episode");
+            ok((await call("GET", "/api/stats?ready=list")).body.items[0].eps.length === 1, "one episode left");
+            await call("POST", "/api/stats?ready=del", { headers: AK, body: { imdb: "tt0944947" } });
+            ok((await call("GET", "/api/stats?ready=list")).body.items.length === 0, "whole title removed");
         }
         // ---- sign-in required ----
         const nolog = (headers, ua) => new Promise(resolve => {

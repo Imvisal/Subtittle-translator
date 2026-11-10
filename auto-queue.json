@@ -1,0 +1,5 @@
+{
+  "note": "Titles the auto-runner translates every day just after the Gemini quota resets (see scripts/auto-translate.js). Add a title: imdb id, title, year, poster (https image), type 'tv' or 'movie', season + episodes list (tv).",
+  "max_per_run": 20,
+  "titles": []
+}

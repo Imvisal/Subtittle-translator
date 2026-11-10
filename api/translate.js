@@ -420,7 +420,10 @@ module.exports = async function handler(req, res) {
         }
 
         // ---- abuse protection (best effort, per warm serverless instance) ----
-        if (isRateLimited(clientIp(req))) {
+        // the owner's scheduled runner (GitHub Actions, scripts/auto-translate.js) sends the admin key
+        const isRunner = require("./_admin.js").isAdmin(req);
+
+        if (!isRunner && isRateLimited(clientIp(req))) {
             return res.status(429).json({
                 error: "Too many requests. Please wait a minute and try again."
             });
@@ -456,7 +459,7 @@ module.exports = async function handler(req, res) {
         let logCtx = { u: "", job: "" };
         {
             const adm = require("./_admin.js");
-            const who = await adm.authUser(req);
+            const who = isRunner ? { uid: "runner", owner: true, email: "auto-runner" } : await adm.authUser(req);
             logCtx = { u: adm.whoLabel(who, req), job: String((req.body && req.body.job) || title || "").slice(0, 80) };
             if (adm.loginRequired(who, req)) {
                 await adm.logEvent({ type: "login", lvl: "warn", u: logCtx.u, msg: "Sign-in required (refused)" });

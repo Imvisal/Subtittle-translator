@@ -69,7 +69,7 @@
 
     <!-- Main CSS -->
     <link rel="stylesheet" href="style.css">
-    <!--WEBONLY--><link rel="stylesheet" href="download.css"><link rel="stylesheet" href="comments.css"><!--/WEBONLY-->
+    <!--WEBONLY--><link rel="stylesheet" href="download.css"><link rel="stylesheet" href="comments.css"><link rel="stylesheet" href="ready.css"><!--/WEBONLY-->
 
     <!-- Apply the saved theme before first paint (no flash) -->
     <script>
@@ -438,7 +438,18 @@
 
 
 
-        <!-- =====================================
+                <!--WEBONLY-->
+        <section class="ready-section reveal" id="readyTitles" hidden aria-labelledby="readyTitle">
+            <div class="rd-head">
+                <h2 id="readyTitle">Ready <span>Sinhala subtitles</span></h2>
+                <p>Already translated by SinSubz. Pick one and download it, no waiting.</p>
+            </div>
+            <div class="rd-grid"></div>
+            <div class="rd-panel" hidden></div>
+        </section>
+        <!--/WEBONLY-->
+
+<!-- =====================================
              HOW IT WORKS
         ====================================== -->
 
@@ -1075,7 +1086,7 @@
     <script src="sync.js"></script>
     <!--WEBONLY--><script src="download-promo.js"></script><script src="tg-promo.js" defer></script><!--/WEBONLY-->
     <!--WEBONLY--><script src="web-account.js" defer></script><script src="site-stats.js" defer></script>
-    <script src="hero-wall.js" defer></script><script src="comments.js" defer></script><!--/WEBONLY-->
+    <script src="hero-wall.js" defer></script><script src="comments.js" defer></script><script src="ready.js" defer></script><!--/WEBONLY-->
 
 <!--WEBONLY--><div id="titleModal" class="tm-back" hidden>
     <div class="tm-panel" role="dialog" aria-modal="true" aria-label="Title details and subtitles">

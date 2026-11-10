@@ -98,6 +98,9 @@ module.exports = async function handler(req, res) {
     if (/(?:^|[?&])announcement(?:=|&|$)/.test(String(req.url || "")) && req.method === "GET") {
         return require("./_admin.js").publicAnnouncement(req, res);
     }
+    if (/(?:^|[?&])ready(?:=|&|$)/.test(String(req.url || ""))) {
+        return require("./_ready.js")(req, res);
+    }
     if (/(?:^|[?&])profile(?:=|&|$)/.test(String(req.url || ""))) {
         return require("./_profile.js").profile(req, res);
     }
