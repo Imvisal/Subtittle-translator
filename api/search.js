@@ -1,4 +1,18 @@
-module.exports = async function handler(req, res) {
+// what visitors type into the search box -> a ranked list the owner's auto-translate runner uses as a demand signal
+async function logSearch(req) {
+    try {
+        const g = require("./_google");
+        if (!g.hasRedis()) { return; }
+        const text = String((req.query && req.query.query) || "").toLowerCase().replace(/\s+/g, " ").trim();
+        if (text.length < 3 || text.length > 60 || /https?:|www\.|[<>{}]/.test(text)) { return; }
+        await Promise.race([
+            g.redis([["ZINCRBY", "sq:z", 1, text], ["ZREMRANGEBYRANK", "sq:z", 0, -1501], ["EXPIRE", "sq:z", 90 * 86400]]),
+            new Promise(r => setTimeout(r, 900))
+        ]);
+    } catch (e) { /* logging must never break the search */ }
+}
+
+async function searchHandler(req, res) {
 
     try {
 
@@ -231,4 +245,13 @@ module.exports = async function handler(req, res) {
 
     }
 
+};
+
+module.exports = async function handler(req, res) {
+    const logging = req.method === "GET" ? logSearch(req) : null;
+    try {
+        return await searchHandler(req, res);
+    } finally {
+        if (logging) { await logging; }
+    }
 };

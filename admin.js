@@ -365,7 +365,7 @@
         try { localStorage.setItem("sinsubz-admin-tab", name); } catch (e) { /* ignore */ }
         window.scrollTo(0, 0);
         if (name === "logs") { loadLogs(); }
-        if (name === "auto") { loadReady(); }
+        if (name === "auto") { loadQueue(); loadReady(); }
     }
     Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (b) {
         b.addEventListener("click", function () { openTab(b.getAttribute("data-go")); });
@@ -375,6 +375,39 @@
 
     // ---- live log tab: refreshes every 10 s while it is open ----
     var logFilter = "all", logTimer = null;
+    function loadQueue() {
+        if (!KEY) { return; }
+        fetch("/api/stats?autoq=get", { headers: { "x-admin-key": KEY }, cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
+            var host = $("aqList"); if (!host) { return; }
+            host.textContent = "";
+            var list = d.list || [];
+            var pending = list.filter(function (x) { return x.todo && x.todo.length; });
+            $("aqCount").textContent = pending.length + " working / " + list.length + " total";
+            $("aqLast").textContent = d.meta && d.meta.lastRefill ? "Last refill: " + new Date(d.meta.lastRefill).toLocaleDateString() + "." : "Not filled yet: the first run fills it.";
+            if (!list.length) { host.appendChild(el("div", "muted", "Empty. The next runner start fills it.")); return; }
+            var firstPending = pending[0];
+            list.forEach(function (it, i) {
+                var row = el("div", "row", "");
+                row.style.cssText = "justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line);flex-wrap:wrap";
+                var state = it === firstPending ? "NOW" : (it.todo && it.todo.length ? "waiting" : "done");
+                var txt = el("div", "", "");
+                txt.appendChild(el("b", "", (i + 1) + ". " + it.title + (it.year ? " (" + it.year + ")" : "") + " "));
+                txt.appendChild(el("span", "tag", state));
+                txt.appendChild(el("div", "muted", it.done + " / " + it.total + " episodes" + (it.skipped ? " · " + it.skipped + " waiting for an English subtitle" : "") + " · from " + (it.src || "?")));
+                row.appendChild(txt);
+                var b = el("button", "btn ghost", "Remove");
+                b.type = "button";
+                b.addEventListener("click", function () {
+                    if (!window.confirm("Remove this series from the list?")) { return; }
+                    b.disabled = true;
+                    fetch("/api/stats?autoq=drop", { method: "POST", headers: { "x-admin-key": KEY, "Content-Type": "application/json" }, body: JSON.stringify({ imdb: it.imdb }) })
+                        .then(function () { loadQueue(); }).catch(function () { b.disabled = false; });
+                });
+                row.appendChild(b);
+                host.appendChild(row);
+            });
+        }).catch(function () { var h = $("aqList"); if (h) { h.textContent = "Could not load."; } });
+    }
     function loadReady() {
         fetch("/api/stats?ready=list", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
             var host = $("rdList"); if (!host) { return; }

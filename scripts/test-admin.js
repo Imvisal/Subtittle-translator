@@ -105,6 +105,31 @@ function call(method, url, { headers = {}, body } = {}) {
     // admin panel
     ok((await call("GET", "/api/stats?admin=1")).code === 401, "admin: no key");
     ok((await call("GET", "/api/stats?admin=1", { headers: { "x-admin-key": "wrong" } })).code === 401, "admin: wrong key");
+    // ---- auto series list (api/_autoq.js) ----
+    {
+        const AKH = { "x-admin-key": "secret-key-123" };
+        const aq = (m, a, body) => call(m, "/api/stats?autoq=" + a, { headers: AKH, body });
+        ok((await call("GET", "/api/stats?autoq=get", {})).code === 401, "autoq: needs the admin key");
+        const g0 = await aq("GET", "get");
+        ok(g0.code === 200 && g0.body.list.length === 0, "autoq: starts empty");
+        const mk = (id, t, n) => ({ imdb: id, tmdb: 1, title: t, year: "2024", src: "demand", poster: "https://image.tmdb.org/x.jpg", seasons: [{ s: 1, n: n, air: "2020-01-01" }, { s: 2, n: 2, air: "2999-01-01" }] });
+        const a1 = await aq("POST", "add", { items: [mk("tt1111111", "Alpha", 3), mk("tt2222222", "Beta", 2), mk("tt1111111", "Alpha again", 3), { imdb: "bad", seasons: [] }] });
+        ok(a1.body.added === 2 && a1.body.size === 2, "autoq: adds 2, ignores duplicate and bad ones");
+        const g1 = (await aq("GET", "get")).body;
+        ok(g1.list[0].title === "Alpha" && g1.list[0].total === 3 && g1.list[0].todo.length === 3, "autoq: order kept, future season not counted");
+        // a finished episode (Ready store) is not todo any more
+        await call("POST", "/api/stats?ready=put", { headers: AKH, body: { imdb: "tt1111111", title: "Alpha", type: "tv", season: 1, episode: 1, srt: "1\n00:00:01,000 --> 00:00:02,000\n" + "x".repeat(260) + "\n" } });
+        const g2 = (await aq("GET", "get")).body.list[0];
+        ok(g2.done === 1 && g2.todo.length === 2 && g2.todo[0][1] === 2, "autoq: done episodes are skipped (resume)");
+        await aq("POST", "mark", { imdb: "tt1111111", eps: [[1, 2]] });
+        const g3 = (await aq("GET", "get")).body.list[0];
+        ok(g3.skipped === 1 && g3.todo.length === 1, "autoq: marked episode waits 7 days");
+        await aq("POST", "drop", { imdb: "tt2222222" });
+        ok((await aq("GET", "get")).body.list.length === 1, "autoq: drop works");
+        await aq("POST", "meta", { lastRefill: true });
+        ok(((await aq("GET", "get")).body.meta || {}).lastRefill > 0, "autoq: remembers the last refill");
+        await call("POST", "/api/stats?ready=del", { headers: AKH, body: { imdb: "tt1111111" } });     // leave the Ready store as it was
+    }
     // live log: needs the admin key, newest first
     ok((await call("GET", "/api/stats?logs=1", {})).code === 401, "logs: needs admin key");
     await require("../api/_admin.js").logEvent({ type: "test", lvl: "error", u: "tester", msg: "hello log" });

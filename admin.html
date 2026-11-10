@@ -215,6 +215,11 @@
 
         <div class="tabpane" data-tab="auto" hidden>
         <div class="card">
+            <h2>Series list <span id="aqCount" class="tag"></span></h2>
+            <p class="muted" style="margin:0 0 10px">The runner works this list from the top: the first series until all its episodes are translated (it continues the next day from where it stopped), then the next one. Every Sunday up to 10 new series without a Sinhala subtitle are added at the bottom (what visitors translated / searched first, then new releases, then random good series). <span id="aqLast"></span></p>
+            <div id="aqList"></div>
+        </div>
+        <div class="card">
             <h2>Ready translations (auto-runner) <span id="rdCount" class="tag"></span></h2>
             <p class="muted" style="margin:0 0 10px">Made by GitHub Actions every day in the last hour before the Gemini reset (12:40 PM Sri Lanka). Shown to everybody on the home page. Titles to translate: <b>auto-queue.json</b> in the repo (by hand + auto-discover of new series without a Sinhala subtitle). Run it now: GitHub, Actions, Auto translate, Run workflow.</p>
             <div id="rdList"></div>

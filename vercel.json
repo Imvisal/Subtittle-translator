@@ -2,6 +2,9 @@
   "functions": {
     "api/new-releases.js": {
       "maxDuration": 30
+    },
+    "api/stats.js": {
+      "maxDuration": 30
     }
   },
   "headers": [

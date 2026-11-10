@@ -13,8 +13,14 @@
    Env:  ADMIN_KEY (required, same value as in Vercel)    SITE_URL (default https://sinsubs.site)
          MAX_PER_RUN (override queue file)   MAX_MINUTES (default 70)   FORCE=1 (skip the "is it quota-reset time?" check)
 
-   Stops by itself when Gemini says the quota is used up, or after 3 failures in a row.  Safe to run again: finished
-   episodes are skipped. */
+   WHAT it translates (api/_autoq.js keeps the list in the database):
+     1. titles listed by hand in auto-queue.json (worked first)
+     2. the SERIES LIST, in order: the first series until every episode is done (over as many days as it takes), then the
+        next one. Every Sunday up to 10 new series WITHOUT a Sinhala subtitle (baiscope / cineru / sinhalasub) are added
+        to the end: demand (what visitors translated / searched) first, then newly released, then random good ones.
+        The very first run fills the list at once (REFILL=1 forces a refill any day).
+   Stops by itself when Gemini says the quota is used up, at the quota reset, or after 3 failures in a row.  Safe to
+   run again: finished episodes are skipped and the next run continues where this one stopped. */
 "use strict";
 
 const fs = require("fs");
@@ -49,27 +55,6 @@ function wanted(queue) {
             out.push({ t, season: 0, episode: 0 });
         }
     });
-    return out;
-}
-
-// Finds new TV series that have NO Sinhala subtitle yet: the site's own /api/new-releases list (TMDB, last 30 days),
-// where every title was already checked on baiscope.lk / cineru.lk / sinhalasub.lk (api/sinhala-search.js).
-async function discover(cfg, queuedIds) {
-    const r = await api("/api/new-releases");
-    const items = (r.json && r.json.items) || [];
-    const maxEp = Number(cfg.episodes_per_title) || 12;
-    const season = Number(cfg.season) || 1;
-    const out = [];
-    const picked = [];
-    items.forEach(it => {
-        if (it.type !== "series" || !/^tt\d{5,10}$/.test(String(it.imdbID || ""))) { return; }
-        if (it.sinhala && it.sinhala.found) { log("discover: " + it.title + " already has a Sinhala sub (" + (it.sinhala.source || "?") + "), skipped"); return; }
-        if (queuedIds.has(it.imdbID)) { return; }
-        picked.push(it.title);
-        const t = { imdb: it.imdbID, title: it.title, year: String(it.year || ""), poster: it.poster || "", type: "tv", season, discovered: true };
-        for (let e = 1; e <= maxEp; e++) { out.push({ t, season, episode: e, discovered: true }); }
-    });
-    log("discover: no Sinhala sub found for " + (picked.length ? picked.join(", ") : "any new series"));
     return out;
 }
 
@@ -113,6 +98,48 @@ async function translateInPage(job) {
     return { srt, count: translated.length, filename: base + ".Sinhala.SinSubz.srt" };
 }
 
+const AK = () => ({ "x-admin-key": KEY });
+const post = (p, body) => api(p, { method: "POST", headers: Object.assign({ "Content-Type": "application/json" }, AK()), body: JSON.stringify(body) });
+
+function sriLankaWeekday() {
+    return new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Colombo", weekday: "short" }).format(new Date());
+}
+
+// does one of the Sinhala sites already have a subtitle for this series?  (null = could not check)
+async function hasSinhala(c) {
+    try {
+        const r = await api("/api/sinhala-search?title=" + encodeURIComponent(c.title) + "&year=" + encodeURIComponent(c.year || "") + "&type=series");
+        if (!r.ok || !r.json) { return null; }
+        return !!r.json.found;
+    } catch (e) { return null; }
+}
+
+// Sunday (or the very first run): add up to <weekly> new series without a Sinhala subtitle to the list
+async function refillIfDue(weekly, meta) {
+    const due = process.env.REFILL === "1" || !meta.lastRefill || (sriLankaWeekday() === "Sun" && Date.now() - meta.lastRefill > 5 * 86400000);
+    if (!due) { log("Weekly refill: not due (next Sunday)."); return false; }
+    log("Weekly refill: looking for up to " + weekly + " series without a Sinhala subtitle ...");
+    const cand = await api("/api/stats?autoq=candidates", { headers: AK() });
+    const items = (cand.json && cand.json.items) || [];
+    if (!cand.ok) { log("  candidates failed: " + cand.status + " " + cand.text.slice(0, 120)); return false; }
+    log("  " + items.length + " candidates (demand first, then new, then random).");
+    const picked = [];
+    for (const c of items) {
+        if (picked.length >= weekly) { break; }
+        const found = await hasSinhala(c);
+        if (found === true) { log("  skip " + c.title + " (" + c.src + "): already has a Sinhala subtitle"); continue; }
+        if (found === null) { log("  " + c.title + ": could not check Sinhala sites, adding anyway"); }
+        picked.push(c);
+        log("  + " + c.title + " (" + c.year + ", " + c.src + ", " + c.total + " episodes)");
+    }
+    if (picked.length) {
+        const r = await post("/api/stats?autoq=add", { items: picked });
+        log("  added " + ((r.json && r.json.added) || 0) + " series, list size " + ((r.json && r.json.size) || "?"));
+    } else { log("  nothing new to add this week."); }
+    await post("/api/stats?autoq=meta", { lastRefill: true });
+    return true;
+}
+
 (async () => {
     if (!KEY) { console.error("ADMIN_KEY is not set"); process.exit(1); }
 
@@ -123,19 +150,25 @@ async function translateInPage(job) {
     }
 
     const queue = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "auto-queue.json"), "utf8"));
-    const maxRun = Number(process.env.MAX_PER_RUN) || Number(queue.max_per_run) || 20;
+    const maxRun = Number(process.env.MAX_PER_RUN) || Number(queue.max_per_run) || 200;
+    const weekly = Number(process.env.WEEKLY_SERIES) || Number(queue.weekly_series) || 10;
+
+    let aq = await api("/api/stats?autoq=get", { headers: AK() });
+    if (!aq.ok) { console.error("Could not read the series list: " + aq.status + " " + aq.text.slice(0, 120)); process.exit(1); }
+    try { if (await refillIfDue(weekly, (aq.json && aq.json.meta) || {})) { aq = await api("/api/stats?autoq=get", { headers: AK() }); } } catch (e) { log("refill failed: " + e.message); }
 
     const list = await api("/api/stats?ready=list");
     const have = new Set();
     ((list.json && list.json.items) || []).forEach(it => it.eps.forEach(e => have.add(it.id + "|" + (it.type === "tv" ? e.s : 0) + "|" + (it.type === "tv" ? e.e : 0))));
 
+    // 1) hand-picked titles first, then 2) the series list in order (first series completely, then the next)
     let all = wanted(queue);
-    if (queue.auto_discover && queue.auto_discover.enabled !== false) {
-        try { all = all.concat(await discover(queue.auto_discover, new Set(all.map(j => j.t.imdb)))); } catch (e) { log("discover failed: " + e.message); }
-    }
+    ((aq.json && aq.json.list) || []).forEach(sr => {
+        (sr.todo || []).forEach(p => all.push({ t: { imdb: sr.imdb, title: sr.title, year: sr.year, poster: sr.poster, type: "tv" }, season: p[0], episode: p[1], queued: true }));
+    });
     if (process.env.LIST_ONLY === "1") { log("LIST_ONLY: would work on " + [...new Set(all.map(j => j.t.title))].join(", ")); return; }
     const todo = all.filter(j => !have.has(j.t.imdb + "|" + j.season + "|" + j.episode));
-    log("Queue: " + todo.length + " not translated yet, this run does at most " + maxRun + ".");
+    log("Queue: " + todo.length + " episodes / films to do in " + new Set(todo.map(j => j.t.imdb)).size + " titles, this run does at most " + maxRun + ".");
     if (!todo.length) { return; }
 
     const { chromium } = require("playwright");
@@ -151,15 +184,11 @@ async function translateInPage(job) {
     await page.waitForFunction(() => typeof translateWithLibrary === "function" && typeof buildSRT === "function", null, { timeout: 60000 });
 
     let done = 0, failsInRow = 0;
-    const worked = new Set();
-    const maxTitles = Number(queue.auto_discover && queue.auto_discover.max_titles) || 2;
-    const noSub = {};      // discovered title -> consecutive episodes without an English subtitle (= not aired yet)
-    for (const job of todo) {
-        if (job.discovered) {
-            if ((noSub[job.t.imdb] || 0) >= 2) { continue; }
-            if (!worked.has(job.t.imdb) && worked.size >= maxTitles) { continue; }   // only a few discovered series per run
-            worked.add(job.t.imdb);
-        }
+    const noSub = {};      // series -> consecutive episodes without an English subtitle (= not aired / not on SubDL yet)
+    const closed = new Set();   // series given up for now (7 days)
+    stop: for (const job of todo) {
+        const id = job.t.imdb;
+        if (closed.has(id)) { continue; }
         if (done >= maxRun) { log("Reached the per-run limit."); break; }
         if (Date.now() - started > MAX_MS) { log("Time budget used."); break; }
         if (!manual && pacificHour() !== 23) { log("Quota reset reached: the fresh quota is for visitors, stopping."); break; }
@@ -169,23 +198,28 @@ async function translateInPage(job) {
             const out = await page.evaluate(translateInPage, Object.assign({}, job.t, { season: job.season, episode: job.episode }));
             if (out.skip) {
                 log("  skipped: " + out.skip);
-                if (job.discovered && /no English subtitle/.test(out.skip)) { noSub[job.t.imdb] = (noSub[job.t.imdb] || 0) + 1; }
+                if (job.queued) {
+                    await post("/api/stats?autoq=mark", { imdb: id, eps: [[job.season, job.episode]] }).catch(() => null);
+                    if (/no English subtitle/.test(out.skip) && (noSub[id] = (noSub[id] || 0) + 1) >= 3) {
+                        // 3 in a row: the rest is not available yet -> leave the series for now, go on with the next one
+                        const rest = todo.filter(j => j.t.imdb === id && j.queued).map(j => [j.season, j.episode]);
+                        await post("/api/stats?autoq=mark", { imdb: id, eps: rest }).catch(() => null);
+                        closed.add(id);
+                        log("  3 episodes in a row without an English subtitle: leaving " + job.t.title + " for 7 days, next series.");
+                    }
+                }
                 continue;
             }
-            noSub[job.t.imdb] = 0;
-            const put = await api("/api/stats?ready=put", {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "x-admin-key": KEY },
-                body: JSON.stringify({ imdb: job.t.imdb, title: job.t.title, year: job.t.year, poster: job.t.poster, type: job.t.type === "tv" ? "tv" : "movie", season: job.season, episode: job.episode, filename: out.filename, srt: out.srt, count: out.count })
-            });
+            noSub[id] = 0;
+            const put = await post("/api/stats?ready=put", { imdb: id, title: job.t.title, year: job.t.year, poster: job.t.poster, type: job.t.type === "tv" ? "tv" : "movie", season: job.season, episode: job.episode, filename: out.filename, srt: out.srt, count: out.count });
             if (!put.ok) { throw new Error("store failed " + put.status + " " + put.text.slice(0, 120)); }
             log("  done: " + out.count + " lines");
             done++; failsInRow = 0;
         } catch (e) {
             const msg = String(e && e.message || e);
             log("  failed: " + msg);
-            if (/quota|limit|busy|exhaust|try again/i.test(msg)) { log("Gemini quota looks used up: stopping."); break; }
-            if (++failsInRow >= 3) { log("3 failures in a row: stopping."); break; }
+            if (/quota|limit|busy|exhaust|try again/i.test(msg)) { log("Gemini quota looks used up: stopping."); break stop; }
+            if (++failsInRow >= 3) { log("3 failures in a row: stopping."); break stop; }
         }
     }
     await browser.close();
