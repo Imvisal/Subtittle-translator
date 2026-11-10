@@ -423,6 +423,15 @@ module.exports = async function handler(req, res) {
         // the owner's scheduled runner (GitHub Actions, scripts/auto-translate.js) sends the admin key
         const isRunner = require("./_admin.js").isAdmin(req);
 
+        // The runner only gets the share of the daily Gemini quota above RUNNER_RESERVE_PCT (default 70% is kept for visitors)
+        if (isRunner) {
+            const reserve = Number(process.env.RUNNER_RESERVE_PCT);
+            const keep = Number.isFinite(reserve) ? reserve : 70;
+            if (keep > 0 && (await require("./_admin.js").quotaLeftPct()) <= keep) {
+                return res.status(429).json({ error: "Gemini quota is reserved for visitors now (auto-runner stops).", code: "RUNNER_RESERVE" });
+            }
+        }
+
         if (!isRunner && isRateLimited(clientIp(req))) {
             return res.status(429).json({
                 error: "Too many requests. Please wait a minute and try again."
