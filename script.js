@@ -3205,8 +3205,10 @@ async function selectSubtitle(
             );
 
 
+        const releaseTag = getReleaseTag(subtitle);
+
         const filename =
-            `${baseName}.Sinhala.SinSubz.srt`;
+            `${baseName}${releaseTag ? "." + releaseTag : ""}.Sinhala.SinSubz.srt`;
 
 
         downloadTextFile(
@@ -4594,6 +4596,30 @@ function downloadTextFile(
 // ========================================================
 // FILE NAME
 // ========================================================
+
+// "The.Odyssey.2026.1080p.WEBRip.x264-YTS" -> "WEBRip.1080p" (the release type goes into the saved file name)
+function getReleaseTag(subtitle) {
+    const text = [subtitle && subtitle.release, subtitle && subtitle.fileName, subtitle && subtitle.name]
+        .filter(Boolean).join(" ").replace(/[_\s]+/g, ".");
+
+    const sources = [
+        [/\bremux\b/i, "Remux"],
+        [/\bblu[-.]?ray\b|\bbdrip\b|\bbrrip\b|\bbd\b/i, "BluRay"],
+        [/\bweb[-.]?dl\b/i, "WEB-DL"],
+        [/\bweb[-.]?rip\b/i, "WEBRip"],
+        [/\bhdrip\b/i, "HDRip"],
+        [/\bdvd[-.]?rip\b|\bdvd\b/i, "DVDRip"],
+        [/\bhdtv\b/i, "HDTV"],
+        [/\bhd[-.]?cam\b|\bcam(?:rip)?\b|\bts\b|\btelesync\b/i, "CAM"],
+        [/\bweb\b/i, "WEB"]
+    ];
+    let source = "";
+    for (const [re, name] of sources) { if (re.test(text)) { source = name; break; } }
+
+    const res = (text.match(/\b(2160p|1080p|720p|480p)\b/i) || [])[1] || (/\b4k\b/i.test(text) ? "2160p" : "");
+
+    return [source, res ? res.toLowerCase() : ""].filter(Boolean).join(".");
+}
 
 function getSubtitleBaseName(
     item,
