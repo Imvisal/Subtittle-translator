@@ -3107,11 +3107,18 @@ async function selectSubtitle(
 
         if (searchResults) {
 
+            // the picked film / episode poster replaces the animated icon (no poster -> the icon)
+            const trPoster = item && /^https?:\/\//i.test(String(item.poster || "")) ? String(item.poster) : "";
+            const trPosterHtml = trPoster
+                ? '<div class="tr-poster" aria-hidden="true"><img src="' + escapeAttribute(trPoster) + '" alt="" referrerpolicy="no-referrer" onerror="this.closest(\'.tr-poster\').classList.add(\'tr-poster-fail\')"><span class="tr-shine"></span></div>'
+                : "";
+
             searchResults.innerHTML = `
 
                 <div class="translation-status">
 
-                    <div class="translation-icon tr-orb" aria-hidden="true">
+                    ${trPosterHtml}
+                    <div class="translation-icon tr-orb" aria-hidden="true"${trPoster ? ' hidden' : ''}>
                         <span class="tr-ring"></span>
                         <svg class="tr-svg" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                             <rect x="5" y="10" width="30" height="21" rx="6"></rect>
