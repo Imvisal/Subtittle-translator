@@ -267,7 +267,7 @@ module.exports = async function handler(req, res) {
                         .filter(
                             entry =>
                                 !entry.isDirectory &&
-                                /\.srt$/i.test(
+                                /\.(srt|ass|ssa)$/i.test(
                                     entry.entryName
                                 )
                         );
@@ -279,17 +279,19 @@ module.exports = async function handler(req, res) {
 
                     return res.status(422).json({
                         error:
-                            "Subtitle ZIP does not contain an SRT file"
+                            "Subtitle ZIP does not contain an SRT or ASS file"
                     });
 
                 }
 
 
-                // Prefer shortest SRT path
+                // Prefer an SRT over ASS/SSA, then the shortest path
+                const isSrt = e => /\.srt$/i.test(e.entryName) ? 0 : 1;
                 entries.sort(
                     (a, b) =>
-                        a.entryName.length -
-                        b.entryName.length
+                        (isSrt(a) - isSrt(b)) ||
+                        (a.entryName.length -
+                        b.entryName.length)
                 );
 
 

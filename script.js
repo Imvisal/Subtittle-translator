@@ -210,11 +210,11 @@ async function handleFileUpload(event) {
     if (
         !file.name
             .toLowerCase()
-            .endsWith(".srt")
+            .match(/\.(srt|ass|ssa)$/)
     ) {
 
         alert(
-            "Please select an SRT subtitle file."
+            "Please select an SRT or ASS subtitle file."
         );
 
         return;
@@ -224,7 +224,7 @@ async function handleFileUpload(event) {
 
     uploadedFileName =
         file.name.replace(
-            /\.srt$/i,
+            /\.(srt|ass|ssa)$/i,
             ""
         );
 
@@ -4276,7 +4276,61 @@ function updateTranslationStatus(
 // SRT PARSER
 // ========================================================
 
+// ========================================================
+// ASS / SSA -> SRT (some releases only have .ass subtitles)
+// ========================================================
+function assToSrt(text) {
+    const lines = String(text || "").replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n").split("\n");
+    let inEvents = false, fmt = null;
+    const cues = [];
+
+    const toMs = function (t) {
+        const m = /^(\d+):(\d{1,2}):(\d{1,2})[.,](\d{1,3})$/.exec(String(t).trim());
+        if (!m) { return null; }
+        return ((Number(m[1]) * 60 + Number(m[2])) * 60 + Number(m[3])) * 1000 + Number(String(m[4]).padEnd(3, "0").slice(0, 3));
+    };
+    const stamp = function (ms) {
+        const h = Math.floor(ms / 3600000), mi = Math.floor(ms / 60000) % 60, se = Math.floor(ms / 1000) % 60, r = ms % 1000;
+        const z = function (n, w) { return String(n).padStart(w, "0"); };
+        return z(h, 2) + ":" + z(mi, 2) + ":" + z(se, 2) + "," + z(r, 3);
+    };
+
+    for (const raw of lines) {
+        const line = raw.trim();
+        if (/^\[.*\]$/.test(line)) { inEvents = /^\[events\]$/i.test(line); continue; }
+        if (!inEvents) { continue; }
+        if (/^format:/i.test(line)) { fmt = line.slice(7).split(",").map(function (x) { return x.trim().toLowerCase(); }); continue; }
+        if (!/^dialogue:/i.test(line)) { continue; }
+        const f = fmt || ["layer", "start", "end", "style", "name", "marginl", "marginr", "marginv", "effect", "text"];
+        const parts = line.slice(9).trim().split(",");
+        const ti = f.indexOf("text");
+        if (parts.length < f.length) { continue; }
+        const body = parts.slice(ti).join(",");
+        const s0 = toMs(parts[f.indexOf("start")]), e0 = toMs(parts[f.indexOf("end")]);
+        if (s0 === null || e0 === null) { continue; }
+        if (/\{[^}]*\\p[1-9]/.test(body)) { continue; }              // drawing (shapes), not text
+        let t = body
+            .replace(/\{\\i1\}/g, "<i>").replace(/\{\\i0\}/g, "</i>")
+            .replace(/\{[^}]*\}/g, "")
+            .replace(/\\[Nn]/g, "\n").replace(/\\h/g, " ")
+            .replace(/[ \t]+\n/g, "\n").trim();
+        const open = (t.match(/<i>/g) || []).length, close = (t.match(/<\/i>/g) || []).length;
+        if (open > close) { t += "</i>"; }
+        if (!t) { continue; }
+        cues.push({ s: s0, e: Math.max(e0, s0 + 300), t: t });
+    }
+
+    cues.sort(function (a, b) { return a.s - b.s; });
+    return cues.map(function (c, i) { return (i + 1) + "\n" + stamp(c.s) + " --> " + stamp(c.e) + "\n" + c.t + "\n"; }).join("\n");
+}
+
+function looksLikeAss(text) {
+    const t = String(text || "").slice(0, 200000);
+    return /^\[Script Info\]/im.test(t) || (/^\[Events\]/im.test(t) && /^Dialogue:/im.test(t));
+}
+
 function parseSRT(srt) {
+    if (looksLikeAss(srt)) { srt = assToSrt(srt); }
 
     if (
         typeof srt !== "string"
