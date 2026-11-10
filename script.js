@@ -3108,7 +3108,10 @@ async function selectSubtitle(
         if (searchResults) {
 
             // the picked film / episode poster replaces the animated icon (no poster -> the icon)
-            const trPoster = item && /^https?:\/\//i.test(String(item.poster || "")) ? String(item.poster) : "";
+            var trPoster = item && /^https?:\/\//i.test(String(item.poster || "")) ? String(item.poster) : "";
+            var trName = (item && item.title) ? String(item.title) : "";
+            var trSub = (item && item.year ? String(item.year) : "") + (season ? (item && item.year ? " · " : "") + "S" + String(season).padStart(2, "0") + (episode ? "E" + String(episode).padStart(2, "0") : "") : "");
+            var trTitleHtml = trName ? '<div class="tr-title">' + escapeHTML(trName) + (trSub ? '<span>' + escapeHTML(trSub) + '</span>' : '') + '</div>' : "";
             const trPosterHtml = trPoster
                 ? '<div class="tr-poster" aria-hidden="true"><img src="' + escapeAttribute(trPoster) + '" alt="" referrerpolicy="no-referrer" onerror="this.closest(\'.tr-poster\').classList.add(\'tr-poster-fail\')"><span class="tr-shine"></span></div>'
                 : "";
@@ -3128,6 +3131,8 @@ async function selectSubtitle(
                             <path class="tr-spark tr-s2" d="M6 32.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z" fill="currentColor" stroke="none"></path>
                         </svg>
                     </div>
+
+                    ${trTitleHtml}
 
                     <h3>
                         Translating to Sinhala
@@ -3238,9 +3243,14 @@ async function selectSubtitle(
                     class="translation-status success"
                 >
 
-                    <div class="translation-complete-icon">
+                    ${trPoster
+                        ? '<div class="tr-poster tr-done" aria-hidden="true"><img src="' + escapeAttribute(trPoster) + '" alt="" referrerpolicy="no-referrer" onerror="this.closest(\'.tr-poster\').classList.add(\'tr-poster-fail\')"><span class="tr-check">✓</span></div>'
+                        : ''}
+                    <div class="translation-complete-icon"${trPoster ? ' hidden' : ''}>
                         ✓
                     </div>
+
+                    ${trTitleHtml}
 
                     <h2>
                         Translation Complete
@@ -3250,9 +3260,9 @@ async function selectSubtitle(
                         Your Sinhala subtitle is ready
                     </p>
 
-                    <div class="translation-count">
-                        ${translated.length}
-                        subtitles translated
+                    <div class="tr-chips">
+                        <span class="tr-chip">${translated.length} subtitles</span>
+                        <span class="tr-chip">🇱🇰 Sinhala</span>
                     </div>
 
                     <p class="translation-file-name">

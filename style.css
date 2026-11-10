@@ -4093,3 +4093,17 @@ html.tm-open, html.tm-open body { overflow: hidden; }
 .plan-card .btn { display: inline-flex; justify-content: center; width: 100%; }
 .plan-state { margin: 10px 0 0; font-weight: 700; color: var(--accent); }
 @media (max-width: 640px) { .plans-grid { grid-template-columns: 1fr; } }
+
+/* ---- film name + nicer "Translation Complete" card ---- */
+.app .tr-title { font-family: var(--font-display); font-size: 20px; font-weight: 800; color: var(--text); line-height: 1.25; margin: 0 auto 10px; max-width: 520px; }
+.app .tr-title span { display: block; margin-top: 3px; font-size: 13px; font-weight: 600; color: var(--muted); letter-spacing: 0.04em; }
+.app .tr-poster.tr-done { animation: popIn 0.7s var(--ease) both; box-shadow: 0 12px 38px rgba(0,0,0,0.5), 0 0 0 1px rgba(54,224,200,0.6), 0 0 40px rgba(54,224,200,0.25); }
+.app .tr-poster.tr-done img { animation: none; }
+.app .tr-check { position: absolute; right: 8px; bottom: 8px; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px; color: #06241f; background: linear-gradient(135deg, #5df0d8, #36e0c8); box-shadow: 0 4px 14px rgba(54,224,200,0.55); }
+.app .translation-complete-icon[hidden] { display: none; }
+.app .tr-poster.tr-poster-fail + .translation-complete-icon[hidden] { display: flex; }
+.app .translation-status.success h2 { background: linear-gradient(90deg, #5df0d8, #9aa6ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.app .tr-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 14px; }
+.app .tr-chip { padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 700; color: var(--text); background: rgba(127,180,255,0.12); border: 1px solid rgba(127,180,255,0.3); }
+.app .translation-status.success .translation-file-name { opacity: 0.8; }
+.app .translation-status.success .select-title-btn { margin-top: 18px; padding: 13px 28px; font-size: 15px; box-shadow: 0 10px 28px rgba(139,139,255,0.4); }
