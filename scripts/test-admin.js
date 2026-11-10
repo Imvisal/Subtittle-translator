@@ -105,6 +105,11 @@ function call(method, url, { headers = {}, body } = {}) {
     // admin panel
     ok((await call("GET", "/api/stats?admin=1")).code === 401, "admin: no key");
     ok((await call("GET", "/api/stats?admin=1", { headers: { "x-admin-key": "wrong" } })).code === 401, "admin: wrong key");
+    // live log: needs the admin key, newest first
+    ok((await call("GET", "/api/stats?logs=1", {})).code === 401, "logs: needs admin key");
+    await require("../api/_admin.js").logEvent({ type: "test", lvl: "error", u: "tester", msg: "hello log" });
+    const lgr = await call("GET", "/api/stats?logs=1", { headers: { "x-admin-key": "secret-key-123" } });
+    ok(lgr.code === 200 && lgr.body && Array.isArray(lgr.body.events) && lgr.body.events[0] && lgr.body.events[0].msg === "hello log", "logs: event stored and listed");
     const r = await call("GET", "/api/stats?admin=1", { headers: { "x-admin-key": "secret-key-123" } });
     ok(r.code === 200 && r.body.enabled, "admin: right key");
     const b = r.body;

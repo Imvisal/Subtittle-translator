@@ -33,6 +33,10 @@
         .tab { flex:none; background:transparent; color:var(--muted); border:1px solid var(--line); padding:9px 16px; border-radius:99px; font-weight:600; white-space:nowrap; }
         .tab.on { background:var(--acc); color:#0b0d1f; border-color:var(--acc); }
         .tabn { display:inline-block; min-width:18px; padding:0 6px; margin-left:4px; border-radius:99px; background:var(--bad); color:#fff; font-size:11.5px; line-height:18px; text-align:center; }
+        .lgf.on { background:var(--acc); color:#0b0d1f; }
+        .lg-error td:nth-child(2) { color:var(--bad); font-weight:700; }
+        .lg-warn td:nth-child(2) { color:#f5c451; font-weight:700; }
+        .lg-info td:nth-child(2) { color:var(--good, #5eead4); }
         .tabpane[hidden] { display:none; }
         .two { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
         @media (max-width:760px) { .two { grid-template-columns:1fr; } }
@@ -107,6 +111,7 @@
             <button type="button" class="tab" data-go="users">Users</button>
             <button type="button" class="tab" data-go="premium">Premium <span class="tabn" id="tabnPrem" hidden></span></button>
             <button type="button" class="tab" data-go="announce">Announcement</button>
+            <button type="button" class="tab" data-go="logs">Logs</button>
             <button type="button" class="tab" data-go="inbox">Messages</button>
         </nav>
 
@@ -227,6 +232,23 @@
             <p class="empty" id="anMsg"></p>
         </div>
 
+        </div>
+
+        <div class="tabpane" data-tab="logs" hidden>
+            <div class="card">
+                <h2>Live log <span class="empty" id="logSub"></span></h2>
+                <p style="margin:0 0 10px">
+                    <button type="button" class="btn ghost lgf on" data-f="all">All</button>
+                    <button type="button" class="btn ghost lgf" data-f="error">Errors</button>
+                    <button type="button" class="btn ghost lgf" data-f="warn">Warnings</button>
+                    <button type="button" class="btn ghost lgf" data-f="info">Translated</button>
+                </p>
+                <div class="tbl"><table>
+                    <thead><tr><th>Time</th><th>Type</th><th>User</th><th>Title</th><th>Details</th></tr></thead>
+                    <tbody id="logRows"></tbody>
+                </table></div>
+                <p class="empty" id="logEmpty">No events yet. They show up as people translate (last 300 are kept).</p>
+            </div>
         </div>
 
         <div class="tabpane" data-tab="inbox" hidden>

@@ -364,11 +364,45 @@
         Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (b) { b.classList.toggle("on", b.getAttribute("data-go") === name); });
         try { localStorage.setItem("sinsubz-admin-tab", name); } catch (e) { /* ignore */ }
         window.scrollTo(0, 0);
+        if (name === "logs") { loadLogs(); }
     }
     Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (b) {
         b.addEventListener("click", function () { openTab(b.getAttribute("data-go")); });
     });
     try { var savedTab = localStorage.getItem("sinsubz-admin-tab"); if (savedTab) { openTab(savedTab); } } catch (e) { /* ignore */ }
+
+
+    // ---- live log tab: refreshes every 10 s while it is open ----
+    var logFilter = "all", logTimer = null;
+    function loadLogs() {
+        if (!KEY) { return; }
+        fetch("/api/stats?logs=1", { headers: { "x-admin-key": KEY }, cache: "no-store" })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                var rows = $("logRows"); rows.textContent = "";
+                var ev = (d.events || []).filter(function (e) { return logFilter === "all" || e.lvl === logFilter; });
+                $("logEmpty").hidden = ev.length > 0;
+                ev.forEach(function (e) {
+                    var tr = el("tr", "lg-" + (e.lvl || "info"));
+                    var t = new Date(e.t);
+                    [t.toLocaleTimeString() + " " + t.toLocaleDateString(undefined, { day: "numeric", month: "short" }), e.type || "", e.u || "", e.job || "", e.msg || ""].forEach(function (v) { tr.appendChild(el("td", "", v)); });
+                    rows.appendChild(tr);
+                });
+                $("logSub").textContent = "Updated " + new Date().toLocaleTimeString();
+            })
+            .catch(function () { $("logSub").textContent = "Could not load."; });
+    }
+    Array.prototype.forEach.call(document.querySelectorAll(".lgf"), function (b) {
+        b.addEventListener("click", function () {
+            logFilter = b.getAttribute("data-f");
+            Array.prototype.forEach.call(document.querySelectorAll(".lgf"), function (x) { x.classList.toggle("on", x === b); });
+            loadLogs();
+        });
+    });
+    setInterval(function () {
+        var pane = document.querySelector('.tabpane[data-tab="logs"]');
+        if (pane && !pane.hidden && !document.hidden) { loadLogs(); }
+    }, 10000);
 
     function show(on) {
         $("links").hidden = !on;

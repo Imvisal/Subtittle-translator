@@ -104,6 +104,9 @@ module.exports = async function handler(req, res) {
     if (/(?:^|[?&])mytr(?:=|&|$)/.test(String(req.url || ""))) {
         return require("./_profile.js").mytr(req, res);
     }
+    if (/(?:^|[?&])logs(?:=|&|$)/.test(String(req.url || "")) && req.method === "GET") {
+        return require("./_admin.js").logs(req, res);
+    }
     if (/(?:^|[?&])notif(?:=|&|$)/.test(String(req.url || ""))) {
         return require("./_admin.js").notifications(req, res);
     }

@@ -753,6 +753,32 @@ async function notifications(req, res) {
 }
 
 // ---------------------------------------------------------------- admin: actions
+// ---- live event log (admin "Logs" tab): newest first, last 300 events, admin-only ----
+async function logEvent(ev) {
+    try {
+        if (!hasRedis()) { return; }
+        const rec = Object.assign({ t: Date.now() }, ev || {});
+        ["msg", "u", "job", "type"].forEach(k => { if (rec[k] != null) { rec[k] = String(rec[k]).slice(0, 160); } });
+        await Promise.race([redis([["LPUSH", "log:ev", JSON.stringify(rec)], ["LTRIM", "log:ev", 0, 299], ["EXPIRE", "log:ev", 7 * 86400]]), new Promise(r => setTimeout(r, 1200))]);
+    } catch (e) { /* logging must never break a request */ }
+}
+function whoLabel(who, req) {
+    if (who && who.email) { return String(who.email).split("@")[0].slice(0, 24); }
+    return "anon " + String(clientIp(req) || "").split(".").slice(0, 2).join(".") + ".x";
+}
+async function logs(req, res) {
+    res.setHeader("Cache-Control", "no-store");
+    if (!process.env.ADMIN_KEY) { return res.status(503).json({ error: "ADMIN_KEY is not set in Vercel" }); }
+    if (limited("lg:" + clientIp(req), 40)) { return res.status(429).json({ error: "Too many tries. Wait a minute." }); }
+    if (!isAdmin(req)) { return res.status(401).json({ error: "Wrong admin key" }); }
+    if (!hasRedis()) { return res.status(200).json({ enabled: false, events: [] }); }
+    try {
+        const r = await redis([["LRANGE", "log:ev", 0, 199]]);
+        const events = (r[0] || []).map(parse).filter(Boolean);
+        return res.status(200).json({ enabled: true, events: events });
+    } catch (e) { return res.status(200).json({ enabled: true, events: [], error: "read failed" }); }
+}
+
 async function action(req, res) {
     res.setHeader("Cache-Control", "no-store");
     if (!process.env.ADMIN_KEY) { return res.status(503).json({ error: "ADMIN_KEY is not set in Vercel" }); }
@@ -855,4 +881,4 @@ async function action(req, res) {
     }
 }
 
-module.exports = { notifications, pushNotif, quotaLeftPct, resetQuotaCache: function () { quotaLeftCache = { at: 0, day: "", pct: 100 }; }, notifyOwner, planPublic, planSubmit, me, premiumUntil, authUser, loginRequired, checkDailyLimit, pacificDay, ping, overview, health, action, publicAnnouncement, cleanAnnouncement, dayKey, uidKeyOf };
+module.exports = { logEvent, whoLabel, logs, notifications, pushNotif, quotaLeftPct, resetQuotaCache: function () { quotaLeftCache = { at: 0, day: "", pct: 100 }; }, notifyOwner, planPublic, planSubmit, me, premiumUntil, authUser, loginRequired, checkDailyLimit, pacificDay, ping, overview, health, action, publicAnnouncement, cleanAnnouncement, dayKey, uidKeyOf };

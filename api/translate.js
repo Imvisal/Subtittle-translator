@@ -436,10 +436,13 @@ module.exports = async function handler(req, res) {
 
         // ---- Google sign-in required + daily limit per user (see api/_admin.js) ----
         let limitDone = null;
+        let logCtx = { u: "", job: "" };
         {
             const adm = require("./_admin.js");
             const who = await adm.authUser(req);
+            logCtx = { u: adm.whoLabel(who, req), job: String((req.body && req.body.job) || title || "").slice(0, 80) };
             if (adm.loginRequired(who, req)) {
+                await adm.logEvent({ type: "login", lvl: "warn", u: logCtx.u, msg: "Sign-in required (refused)" });
                 return res.status(401).json({
                     error: "Please sign in with Google to translate.",
                     code: "LOGIN_REQUIRED"
@@ -451,6 +454,7 @@ module.exports = async function handler(req, res) {
             );
             limitDone = lim.done || null;
             if (!lim.ok) {
+                await adm.logEvent({ type: "limit", lvl: "warn", u: logCtx.u, job: logCtx.job, msg: (lim.code || "DAILY_LIMIT") + " refused" });
                 return res.status(429).json({ error: lim.message, code: lim.code || "DAILY_LIMIT" });
             }
         }
@@ -722,6 +726,7 @@ ${JSON.stringify(inputItems)}
                 // a failed RETRY must not throw away lines that already worked
                 if (attempt > 1) break;
 
+                await require("./_admin.js").logEvent({ type: "gemini", lvl: generated.status === 429 ? "warn" : "error", u: logCtx.u, job: logCtx.job, msg: (generated.code || "ERR") + " " + (generated.status || 500) + ": " + String(generated.error || "").slice(0, 90) });
                 return res.status(
                     generated.status || 500
                 ).json({
@@ -775,6 +780,7 @@ ${JSON.stringify(inputItems)}
 
                 if (translationMap.size > 0) break;
 
+                await require("./_admin.js").logEvent({ type: "json", lvl: "error", u: logCtx.u, job: logCtx.job, msg: modelText ? "Invalid JSON from Gemini" : "Empty reply from Gemini" });
                 return res.status(502).json({
                     error: modelText
                         ? "Gemini translation was not valid JSON."
@@ -857,6 +863,7 @@ ${JSON.stringify(inputItems)}
         if (neverReturned.length > 0) {
 
             console.error("Missing translations:", neverReturned);
+            await require("./_admin.js").logEvent({ type: "missing", lvl: "error", u: logCtx.u, job: logCtx.job, msg: neverReturned.length + " lines not translated" });
 
             return res.status(422).json({
                 error: "Some subtitles were not translated.",
@@ -900,6 +907,7 @@ ${JSON.stringify(inputItems)}
 
         await track(today(), { ok: 1 });
         if (limitDone) { await limitDone(); }     // this chunk is translated: counts toward the film / episode
+        await require("./_admin.js").logEvent({ type: "ok", lvl: "info", u: logCtx.u, job: logCtx.job, msg: "Translated " + subtitles.length + " lines" });
 
         return res.status(200).json({
             subtitles: output
@@ -912,6 +920,7 @@ ${JSON.stringify(inputItems)}
             "SERVER ERROR:",
             error
         );
+        try { await require("./_admin.js").logEvent({ type: "server", lvl: "error", msg: String((error && error.message) || error) }); } catch (e) { /* ignore */ }
 
         return res.status(500).json({
 
