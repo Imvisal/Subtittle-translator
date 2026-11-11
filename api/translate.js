@@ -155,6 +155,18 @@ function getModels() {
 // Lives as long as the serverless instance stays warm (best effort).
 const cooldowns = new Map();
 
+// Per key+model call counter (one-minute window). Shared through Redis when available, per instance otherwise.
+const KEY_MAX_PER_MIN = Math.max(1, parseInt(process.env.KEY_MAX_PER_MIN, 10) || 20);
+const keyUse = new Map();
+async function keyBusy(id) {
+    const w = Math.floor(Date.now() / 60000);
+    const cur = keyUse.get(id);
+    const n = (cur && cur.w === w ? cur.n : 0) + 1;
+    keyUse.set(id, { w: w, n: n });
+    if (n > KEY_MAX_PER_MIN) return true;
+    try { return await require("./_google").overLimit("kuse", id, KEY_MAX_PER_MIN, 60); } catch (e) { return false; }
+}
+
 // The same cooldowns, shared by every serverless instance through Redis (a cold instance used to learn the hard way,
 // by getting its own 429, that a key was already cooling). Best effort: Redis problems never block a translation.
 async function loadSharedCooldowns(keys, models) {
@@ -288,6 +300,12 @@ async function generateInner(prompt, trail) {
                 trail.push("#" + (k + 1) + " " + model.replace(/^gemini-/, "") + " cooling");
                 sawQuota = true;
                 if ((cooldowns.get(id) || 0) > Date.now() + 5 * 60 * 1000) sawDaily = true;   // long cooldown = daily quota
+                continue;
+            }
+
+            // a key that already served KEY_MAX_PER_MIN calls this minute rests until the next minute (before Google 429s it)
+            if (await keyBusy(id)) {
+                trail.push("#" + (k + 1) + " " + model.replace(/^gemini-/, "") + " full");
                 continue;
             }
 
