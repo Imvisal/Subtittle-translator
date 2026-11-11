@@ -49,30 +49,18 @@
     }
     window.addEventListener("resize", fit);
 
-    /* ---- side banners (wide desktop screens only), home page: a tall unit left and right of the content ----
-       Make a tall ad unit at a-ads.com (e.g. 160x600), paste its number here. Empty = off. */
-    var SIDE_ID = "", SIDE_W = 160, SIDE_H = 600;
+    /* ---- side banners (wide desktop screens only), home page: the two tall units (160x600) are written in
+       index.html (so the a-ads bot finds the code); this only shows them when there is room beside the content. */
+    var SIDE_W = 160, SIDE_H = 600;
     function sideRails() {
-        if (!/^\d{4,12}$/.test(SIDE_ID) || document.documentElement.classList.contains("is-premium")) { return; }
+        var rails = document.querySelectorAll(".aads-side");
+        if (!rails.length) { return; }
         var main = document.querySelector("main");
-        var rails = [];
-        ["left", "right"].forEach(function (side) {
-            var d = document.createElement("div");
-            d.className = "aads-side";
-            d.setAttribute("aria-label", "Advertisement");
-            d.style.cssText = "position:fixed;top:130px;" + side + ":6px;width:" + SIDE_W + "px;height:" + SIDE_H + "px;z-index:5;display:none;";
-            var f = document.createElement("iframe");
-            f.setAttribute("data-aa", SIDE_ID);
-            f.src = "https://ad.a-ads.com/" + SIDE_ID + "/?size=" + SIDE_W + "x" + SIDE_H;
-            f.loading = "lazy";
-            f.style.cssText = "border:0;padding:0;width:" + SIDE_W + "px;height:" + SIDE_H + "px;overflow:hidden;display:block;background:transparent";
-            d.appendChild(f); document.body.appendChild(d); rails.push(d);
-        });
         function place() {
             var r = main ? main.getBoundingClientRect() : null;
             var free = r ? Math.min(r.left, window.innerWidth - r.right) : 0;
             var ok = free >= SIDE_W + 14 && window.innerHeight >= SIDE_H + 150;
-            rails.forEach(function (d) { d.style.display = ok ? "block" : "none"; });
+            for (var i = 0; i < rails.length; i++) { rails[i].style.display = ok ? "block" : "none"; }
         }
         place(); window.addEventListener("resize", place);
     }
