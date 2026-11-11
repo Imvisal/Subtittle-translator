@@ -125,7 +125,7 @@ function pageHtml(d) {
         '<script type="application/ld+json">' + JSON.stringify(ld).replace(/</g, "\\u003c") + "</script></head>" +
         '<body class="tp-page"><div class="tp-wrap"><a class="tp-back" href="/">← SinSubz</a><div id="tp"><noscript>' + noscript + "</noscript></div>" +
         '<p class="tp-foot">Subtitles made by SinSubz. Only the subtitle is provided, not the video.</p></div>' +
-        '<script type="application/json" id="tp-data">' + seed + '</script><script src="/title.js"></script></body></html>';
+        '<script type="application/json" id="tp-data">' + seed + '</script><script src="/title.js"></script><script src="/aads.js" defer></script></body></html>';
 }
 
 function isAdmin(req) { return require("./_admin.js").isAdmin(req); }
