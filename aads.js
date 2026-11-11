@@ -20,27 +20,47 @@
         small.style.cssText = "font:11px/1.2 sans-serif;opacity:.55;margin-bottom:4px;";
         var box = document.createElement("div");
         box.style.cssText = "position:relative;width:100%;height:" + HEIGHT + "px;overflow:hidden;";
+        box.className = "aads-box";
         var f = document.createElement("iframe");
         f.setAttribute("data-aa", UNIT_ID);
-        f.src = "https://acceptable.a-ads.com/" + UNIT_ID;
+        f.src = "https://ad.a-ads.com/" + UNIT_ID + "/?size=" + WIDTH + "x" + HEIGHT;
         f.loading = "lazy";
         f.referrerPolicy = "no-referrer-when-downgrade";
         f.setAttribute("sandbox", "allow-scripts allow-popups allow-popups-to-escape-sandbox allow-same-origin");
-        f.style.cssText = "border:0;padding:0;width:100%;height:100%;overflow:hidden;background:transparent;";
+        f.style.cssText = "border:0;padding:0;width:" + WIDTH + "px;height:" + HEIGHT + "px;overflow:hidden;background:transparent;display:block;";
         box.appendChild(f); d.appendChild(small); d.appendChild(box);
         return d;
     }
+
+    /* The unit is a fixed 728x90: on a phone scale it down to the screen width instead of cutting it off. */
+    function fit() {
+        var boxes = document.querySelectorAll(".aads-slot .aads-box");
+        for (var i = 0; i < boxes.length; i++) {
+            var b = boxes[i], f = b.querySelector("iframe");
+            var w = b.parentNode.clientWidth || WIDTH;
+            var k = Math.min(1, w / WIDTH);
+            f.style.width = WIDTH + "px"; f.style.height = HEIGHT + "px";
+            f.style.transformOrigin = "0 0";
+            f.style.transform = k < 1 ? "scale(" + k + ")" : "none";
+            b.style.height = Math.round(HEIGHT * k) + "px";
+            b.style.width = Math.round(WIDTH * k) + "px";
+            b.style.margin = "0 auto";
+        }
+    }
+    window.addEventListener("resize", fit);
 
     var guide = document.querySelector("article.guide");
     if (document.body.getAttribute("data-ads") === "on" && guide) {
         var h2 = guide.querySelectorAll("h2");
         if (h2.length >= 3) { h2[2].parentNode.insertBefore(slot(), h2[2]); }
         if (!guide.querySelector(".aads-slot")) { guide.appendChild(slot()); }
+        fit();
         return;
     }
     var tp = document.querySelector(".tp-wrap");
     if (tp) {
         var foot = tp.querySelector(".tp-foot");
         tp.insertBefore(slot(), foot || null);
+        fit();
     }
 })();
