@@ -12,7 +12,7 @@ const out = path.join(root, "www");
 const files = [
     "index.html", "about.html", "contact.html", "privacy.html", "terms.html", "copyright.html",
     "style.css", "script.js", "subtitle-cleanup.js", "retime.js", "library.js", "ui.js", "sync.js", "app-update.js", "app-shim.js",
-    "app-ui.js", "app-ui.css", "app-account.js",
+    "app-ui.js", "app-ui.css", "app-account.js", "app-aads.js",
     "logo.png", "logo-128.png", "hero-banner.png", "hero-banner.webp",
     "favicon.svg", "favicon.ico", "apple-touch-icon.png"
 ];
@@ -49,7 +49,7 @@ const syncMarker = '<script src="sync.js"></script>';
 if (!html.includes(syncMarker)) {
     throw new Error("index.html: could not find " + syncMarker);
 }
-html = html.replace(syncMarker, syncMarker + '\n    <script src="app-ui.js"></script>\n    <script src="app-account.js"></script>');
+html = html.replace(syncMarker, syncMarker + '\n    <script src="app-ui.js"></script>\n    <script src="app-account.js"></script>\n    <script src="app-aads.js" defer></script>');
 
 // Firebase project id comes from android/app/google-services.json (not committed to www by hand)
 let projectId = "";
