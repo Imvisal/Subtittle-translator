@@ -57,6 +57,7 @@
         fit();
         return;
     }
+    if (document.querySelector(".aads-slot") && !guide && !document.querySelector(".tp-wrap")) { fit(); return; }
     var tp = document.querySelector(".tp-wrap");
     if (tp) {
         var foot = tp.querySelector(".tp-foot");

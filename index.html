@@ -779,7 +779,7 @@
 
         <div class="ad-container">
 
-            <!-- No ad code on the tool page: it has no publisher content. Ads: guide pages only (adsense.js). -->
+            <!-- No Google ad code on the tool page. A-Ads banner (aads.js) sits above the footer; guide pages carry Google/A-Ads via adsense.js / aads.js. -->
 
         </div>
 
@@ -1002,6 +1002,12 @@
         <section class="comments-section" id="comments">
             <div class="cm-wrap" id="commentsRoot" hidden></div>
         </section>
+        <!--/WEBONLY-->
+
+        <!--WEBONLY-->
+        <style>.is-premium .aads-slot{display:none}</style>
+        <div class="aads-slot" aria-label="Advertisement" style="width:100%;max-width:728px;margin:26px auto;text-align:center"><div style="font:11px/1.2 sans-serif;opacity:.55;margin-bottom:4px">Advertisement</div><!-- BEGIN AADS AD UNIT 2461670 --><div class="aads-box" style="position:relative;width:100%;height:90px;overflow:hidden"><iframe data-aa='2461670' src='https://ad.a-ads.com/2461670/?size=728x90' loading="lazy" style='border:0;padding:0;width:728px;height:90px;overflow:hidden;display:block'></iframe></div><!-- END AADS AD UNIT 2461670 --></div>
+        <script src="aads.js" defer></script>
         <!--/WEBONLY-->
 
         <!-- =====================================
