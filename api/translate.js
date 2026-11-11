@@ -158,6 +158,7 @@ const cooldowns = new Map();
 // Per key+model call counter (one-minute window). Shared through Redis when available, per instance otherwise.
 const KEY_MAX_PER_MIN = Math.max(1, parseInt(process.env.KEY_MAX_PER_MIN, 10) || 20);
 const keyUse = new Map();
+const KEY_TIMEOUT_MS = Math.max(3000, parseInt(process.env.KEY_TIMEOUT_MS, 10) || 20000);
 async function keyBusy(id) {
     const w = Math.floor(Date.now() / 60000);
     const cur = keyUse.get(id);
@@ -309,10 +310,16 @@ async function generateInner(prompt, trail) {
                 continue;
             }
 
-            const response = await fetch(
+            // a key that does not answer within KEY_TIMEOUT_MS (default 20 s) is dropped for a while and the next key is tried
+            const ctl = new AbortController();
+            const slowTimer = setTimeout(() => ctl.abort(), KEY_TIMEOUT_MS);
+            let response, raw;
+            try {
+            response = await fetch(
                 "https://generativelanguage.googleapis.com/v1beta/models/" +
                 model + ":generateContent",
                 {
+                    signal: ctl.signal,
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
@@ -329,7 +336,18 @@ async function generateInner(prompt, trail) {
                 }
             );
 
-            const raw = await response.text();
+            raw = await response.text();
+            } catch (e) {
+                clearTimeout(slowTimer);
+                if (ctl.signal.aborted) {
+                    cooldowns.set(id, Date.now() + 60 * 1000);
+                    trail.push("#" + (k + 1) + " " + model.replace(/^gemini-/, "") + " slow");
+                    lastStatus = 504; lastMessage = "Gemini key too slow";
+                    continue;
+                }
+                throw e;
+            }
+            clearTimeout(slowTimer);
 
             console.log("Gemini", model, "key#" + (k + 1), "status:", response.status);
 
