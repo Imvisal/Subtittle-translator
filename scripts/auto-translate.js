@@ -186,7 +186,9 @@ async function refillIfDue(weekly, meta) {
     let done = 0, failsInRow = 0;
     const noSub = {};      // series -> consecutive episodes without an English subtitle (= not aired / not on SubDL yet)
     const closed = new Set();   // series given up for now (7 days)
-    stop: for (const job of todo) {
+    let quotaWaits = 0;
+    stop: for (let i = 0; i < todo.length; i++) {
+        const job = todo[i];
         const id = job.t.imdb;
         if (closed.has(id)) { continue; }
         if (done >= maxRun) { log("Reached the per-run limit."); break; }
@@ -218,7 +220,19 @@ async function refillIfDue(weekly, meta) {
         } catch (e) {
             const msg = String(e && e.message || e);
             log("  failed: " + msg);
-            if (/quota|limit|busy|exhaust|try again/i.test(msg)) { log("Gemini quota looks used up: stopping."); break stop; }
+            if (/quota|limit|busy|exhaust|try again/i.test(msg)) {
+                // Not a reason to give up: wait a little and try this episode again, until the quota resets (the loop top
+                // stops at the reset hour). Outside the last hour before the reset (manual test runs) there is nothing to wait for.
+                if (pacificHour() !== 23) { log("Gemini quota is used up and the reset is far away: stopping."); break stop; }
+                quotaWaits++;
+                log("Gemini quota is used up: waiting 2 minutes, then trying " + label + " again (wait " + quotaWaits + ").");
+                for (let w = 0; w < 8; w++) {                      // 8 x 15 s, watching the clock
+                    await new Promise(r => setTimeout(r, 15000));
+                    if (pacificHour() !== 23 && !manual) { break; }
+                }
+                i--;                                               // same episode again
+                continue;
+            }
             if (++failsInRow >= 3) { log("3 failures in a row: stopping."); break stop; }
         }
     }
