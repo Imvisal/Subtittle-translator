@@ -271,6 +271,7 @@ async function generateInner(prompt, trail) {
     let lastMessage = "Gemini API error";
     let sawQuota = false;
     let sawDaily = false;
+    let sawShort = false;   // a per-minute (temporary) limit was seen: some key/model will be usable again soon
     let sawBusy = false;
     // Sticky keys: always start from key #1 and only move on to the next one while the earlier ones are cooling
     // (set GEMINI_KEY_ROTATE=1 to spread requests over all keys again).
@@ -301,6 +302,7 @@ async function generateInner(prompt, trail) {
                 trail.push("#" + (k + 1) + " " + model.replace(/^gemini-/, "") + " cooling");
                 sawQuota = true;
                 if ((cooldowns.get(id) || 0) > Date.now() + 5 * 60 * 1000) sawDaily = true;   // long cooldown = daily quota
+                else sawShort = true;
                 continue;
             }
 
@@ -387,7 +389,7 @@ async function generateInner(prompt, trail) {
             if (response.status === 429) {
                 sawQuota = true;
                 await track(today(), null, { [(k + 1) + ":429"]: 1 });
-                if (isDailyQuotaMessage(message)) { sawDaily = true; await trackQuota(k, true); }
+                if (isDailyQuotaMessage(message)) { sawDaily = true; await trackQuota(k, true); } else { sawShort = true; }
 
                 const coolUntil = isDailyQuotaMessage(message) ? nextPacificMidnight() : Date.now() + 60 * 1000;
                 cooldowns.set(id, coolUntil);
@@ -434,7 +436,8 @@ async function generateInner(prompt, trail) {
     await track(today(), { [sawQuota ? "quota" : (sawBusy ? "busy" : "other")]: 1 });
 
     // only per-minute limits were hit: the day's quota is NOT gone, so don't say so (the page waits and retries)
-    if (sawQuota && !sawDaily) {
+    // (also when only SOME models hit the daily quota: the others just need a minute, the page waits and retries)
+    if (sawQuota && (!sawDaily || sawShort)) {
         return {
             status: 429,
             code: "RATE_LIMITED",
