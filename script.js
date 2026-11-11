@@ -4585,6 +4585,52 @@ function countSavedFile(filename) {
     else if (/\.synced\.srt$/i.test(f)) trackStat("synced", f);
 }
 
+/* Website only: a short "your download is ready" screen with an A-Ads banner before the file is saved.
+   Not in the apps, not for Premium, never withholds the file (Download now is always there). */
+function showDownloadAd(done) {
+    var UNIT = "2461670", W = 728, H = 90, SECS = 4;
+    var de = document.documentElement;
+    var skip = typeof window.__appSaveTextFile === "function" || de.classList.contains("app-mode") ||
+        de.classList.contains("is-premium") || navigator.webdriver || !/^https?:$/.test(location.protocol) ||
+        document.getElementById("dlAdOverlay");
+    if (skip) { done(); return; }
+    var finished = false, left = SECS, timer = null;
+    function finish() {
+        if (finished) { return; }
+        finished = true; clearInterval(timer);
+        var o = document.getElementById("dlAdOverlay"); if (o) { o.remove(); }
+        window.removeEventListener("resize", fit);
+        done();
+    }
+    var o = document.createElement("div");
+    o.id = "dlAdOverlay";
+    o.setAttribute("role", "dialog"); o.setAttribute("aria-label", "Download ready");
+    o.style.cssText = "position:fixed;inset:0;z-index:100000;background:rgba(6,6,18,.82);display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)";
+    o.innerHTML =
+        '<div style="width:100%;max-width:780px;background:#161630;border:1px solid rgba(160,160,255,.35);border-radius:18px;padding:22px 18px;text-align:center;color:#eee;font-family:inherit;box-shadow:0 20px 60px rgba(0,0,0,.6)">' +
+        '<div style="font-size:20px;font-weight:700;margin-bottom:6px">✅ Your Sinhala subtitle is ready</div>' +
+        '<div id="dlAdSub" style="opacity:.8;margin-bottom:14px">Download starts in ' + SECS + 's</div>' +
+        '<div style="font:11px/1.2 sans-serif;opacity:.55;margin-bottom:4px">Advertisement</div>' +
+        '<div id="dlAdBox" style="position:relative;overflow:hidden;margin:0 auto;width:' + W + 'px;height:' + H + 'px"><iframe data-aa="' + UNIT +
+        '" src="https://ad.a-ads.com/' + UNIT + '/?size=' + W + 'x' + H + '" style="border:0;padding:0;width:' + W + 'px;height:' + H + 'px;overflow:hidden;display:block;transform-origin:0 0"></iframe></div>' +
+        '<button type="button" id="dlAdBtn" style="margin-top:18px;padding:12px 26px;border:0;border-radius:12px;background:#7c7cff;color:#fff;font-size:16px;font-weight:700;cursor:pointer">⬇ Download now</button>' +
+        '</div>';
+    document.body.appendChild(o);
+    function fit() {
+        var box = document.getElementById("dlAdBox"); if (!box) { return; }
+        var k = Math.min(1, (box.parentNode.clientWidth - 36) / W);
+        box.firstChild.style.transform = k < 1 ? "scale(" + k + ")" : "none";
+        box.style.width = Math.round(W * k) + "px"; box.style.height = Math.round(H * k) + "px";
+    }
+    fit(); window.addEventListener("resize", fit);
+    document.getElementById("dlAdBtn").addEventListener("click", finish);
+    timer = setInterval(function () {
+        left -= 1;
+        var t = document.getElementById("dlAdSub");
+        if (left <= 0) { finish(); } else if (t) { t.textContent = "Download starts in " + left + "s"; }
+    }, 1000);
+}
+
 function downloadTextFile(
     text,
     filename
@@ -4598,6 +4644,11 @@ function downloadTextFile(
         window.__appSaveTextFile(text, filename);
         return;
     }
+
+    showDownloadAd(function () { saveBlobFile(text, filename); });
+}
+
+function saveBlobFile(text, filename) {
 
     const blob =
         new Blob(
