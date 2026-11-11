@@ -93,7 +93,7 @@ async function translateInPage(job) {
 
     const translated = await translateWithLibrary(subs, item, job.season || null, job.episode || null,
         { title: job.title + (job.year ? " (" + job.year + ")" : "") });
-    const srt = buildSRT(addSinSubzCredit(applyWordNotes(translated)));
+    const srt = buildSRT(addSinSubzCredit(typeof applyWordNotes === "function" ? applyWordNotes(translated) : translated));
     const base = getSubtitleBaseName(item, job.season, job.episode);
     return { srt, count: translated.length, filename: base + ".Sinhala.SinSubz.srt", release };
 }
