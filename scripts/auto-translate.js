@@ -143,7 +143,7 @@ async function refillIfDue(weekly, meta) {
 (async () => {
     if (!KEY) { console.error("ADMIN_KEY is not set"); process.exit(1); }
 
-    const manual = process.env.GITHUB_EVENT_NAME === "workflow_dispatch" || process.env.FORCE === "1";
+    const manual = (process.env.GITHUB_EVENT_NAME === "workflow_dispatch" && process.env.FROM_CRON !== "1") || process.env.FORCE === "1";
     if (!manual && pacificHour() !== 23) {
         log("Pacific hour is " + pacificHour() + ", not the last hour before the reset (23): nothing to do (the other cron entry covers it).");
         return;

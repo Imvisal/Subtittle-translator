@@ -52,10 +52,22 @@
     }
   ],
   "rewrites": [
-    { "source": "/announcement.json", "destination": "/api/stats?announcement=1" },
-    { "source": "/tv/:slug", "destination": "/api/stats?ready=page&slug=:slug" },
-    { "source": "/film/:slug", "destination": "/api/stats?ready=page&slug=:slug" },
-    { "source": "/sitemap-titles.xml", "destination": "/api/stats?ready=sitemap" }
+    {
+      "source": "/announcement.json",
+      "destination": "/api/stats?announcement=1"
+    },
+    {
+      "source": "/tv/:slug",
+      "destination": "/api/stats?ready=page&slug=:slug"
+    },
+    {
+      "source": "/film/:slug",
+      "destination": "/api/stats?ready=page&slug=:slug"
+    },
+    {
+      "source": "/sitemap-titles.xml",
+      "destination": "/api/stats?ready=sitemap"
+    }
   ],
   "redirects": [
     {
@@ -72,6 +84,16 @@
       "source": "/get/portable",
       "destination": "https://github.com/Imvisal/Subtittle-translator/releases/latest/download/SinSubz-Portable.exe",
       "permanent": false
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/stats?cron=runner",
+      "schedule": "20 6 * * *"
+    },
+    {
+      "path": "/api/stats?cron=runner",
+      "schedule": "20 7 * * *"
     }
   ]
 }

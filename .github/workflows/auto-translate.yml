@@ -14,6 +14,10 @@ on:
     - cron: "40 6 * * *"
     - cron: "40 7 * * *"
   workflow_dispatch:
+    inputs:
+      source:
+        description: "cron = started by the Vercel cron (keeps the last-hour check); manual = ignore it"
+        default: manual
 
 concurrency:
   group: auto-translate
@@ -36,4 +40,5 @@ jobs:
         env:
           ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
           SITE_URL: ${{ secrets.SITE_URL }}
+          FROM_CRON: ${{ inputs.source == 'cron' && '1' || '' }}
         run: node scripts/auto-translate.js

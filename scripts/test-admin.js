@@ -401,6 +401,14 @@ function call(method, url, { headers = {}, body } = {}) {
             ok(ls.body.items.length === 0, "list empty after delete");
             await call("POST", "/api/stats?admin=1", { headers: AK, body: { action: "premiumOff", id: pk2 } });
         }
+        // ---- vercel cron -> GitHub workflow ----
+        {
+            ok((await call("GET", "/api/stats?cron=runner")).code === 401, "runner cron refuses callers without the secret");
+            process.env.CRON_SECRET = "cron-secret-123";
+            ok((await call("GET", "/api/stats?cron=runner", { headers: { authorization: "Bearer cron-secret-123" } })).code === 503, "runner cron: no GitHub token yet -> 503");
+            delete process.env.CRON_SECRET;
+        }
+
         // ---- ready translations (auto-runner) ----
         {
             const cue = i => i + "\n00:00:0" + (i % 9) + ",000 --> 00:00:0" + (i % 9) + ",900\nසිංහල පේළිය " + i + "\n\n";
