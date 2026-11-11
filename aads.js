@@ -55,7 +55,7 @@
     function sideRails() {
         var rails = document.querySelectorAll(".aads-side");
         if (!rails.length) { return; }
-        var main = document.querySelector("main");
+        var main = document.querySelector("main") || document.querySelector(".pm-wrap");
         function place() {
             var r = main ? main.getBoundingClientRect() : null;
             var free = r ? Math.min(r.left, window.innerWidth - r.right) : 0;
@@ -65,6 +65,8 @@
         place(); window.addEventListener("resize", place);
     }
 
+    sideRails();
+
     var guide = document.querySelector("article.guide");
     if (document.body.getAttribute("data-ads") === "on" && guide) {
         var h2 = guide.querySelectorAll("h2");
@@ -73,7 +75,7 @@
         fit();
         return;
     }
-    if (document.querySelector(".aads-slot") && !guide && !document.querySelector(".tp-wrap")) { fit(); sideRails(); return; }
+    if (document.querySelector(".aads-slot") && !guide && !document.querySelector(".tp-wrap")) { fit(); return; }
     var tp = document.querySelector(".tp-wrap");
     if (tp) {
         var foot = tp.querySelector(".tp-foot");
