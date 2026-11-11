@@ -4585,13 +4585,18 @@ function countSavedFile(filename) {
     else if (/\.synced\.srt$/i.test(f)) trackStat("synced", f);
 }
 
-/* Website only: a short "your download is ready" screen with an A-Ads banner before the file is saved.
-   Not in the apps, not for Premium, never withholds the file (Download now is always there). */
+/* Website + Android app: a short "your download is ready" screen with an A-Ads banner before the file is saved.
+   Not in the Windows app, not for Premium, never withholds the file (Download now is always there). */
 function showDownloadAd(done) {
     var UNIT = "2461670", W = 728, H = 90, SECS = 4, MOBILE = window.innerWidth < 740;
     var de = document.documentElement;
-    var skip = typeof window.__appSaveTextFile === "function" || de.classList.contains("app-mode") ||
-        de.classList.contains("is-premium") || navigator.webdriver || !/^https?:$/.test(location.protocol) ||
+    var prem = de.classList.contains("is-premium");
+    try {
+        if (!prem && window.__sinsubzIsPremium && window.__sinsubzIsPremium()) { prem = true; }
+        if (!prem && Number(localStorage.getItem("sinsubz-premium") || 0) > Date.now()) { prem = true; }
+    } catch (e) { /* ignore */ }
+    // website + Android app (https://localhost). The Windows app opens from file:// so it is skipped.
+    var skip = prem || navigator.webdriver || !/^https?:$/.test(location.protocol) ||
         document.getElementById("dlAdOverlay");
     if (skip) { done(); return; }
     var finished = false, left = SECS, timer = null;
@@ -4641,12 +4646,13 @@ function downloadTextFile(
 
     // Inside the Android app, blob downloads do not work in the WebView.
     // app-shim.js (only included in the app build) saves + shares the file.
-    if (typeof window.__appSaveTextFile === "function") {
-        window.__appSaveTextFile(text, filename);
-        return;
-    }
-
-    showDownloadAd(function () { saveBlobFile(text, filename); });
+    showDownloadAd(function () {
+        if (typeof window.__appSaveTextFile === "function") {
+            window.__appSaveTextFile(text, filename);
+            return;
+        }
+        saveBlobFile(text, filename);
+    });
 }
 
 function saveBlobFile(text, filename) {
