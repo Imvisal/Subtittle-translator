@@ -437,7 +437,7 @@ module.exports = async function handler(req, res) {
             }
         }
 
-        if (!isRunner && isRateLimited(clientIp(req))) {
+        if (!isRunner && (isRateLimited(clientIp(req)) || await require("./_google").overLimit("tr", clientIp(req), RATE_MAX_REQUESTS, 60))) {
             return res.status(429).json({
                 error: "Too many requests. Please wait a minute and try again."
             });

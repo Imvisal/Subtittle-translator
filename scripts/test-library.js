@@ -32,6 +32,7 @@ function runCommand(c) {
         case "DEL": return store.delete(key) ? 1 : 0;
         case "HINCRBY": { if (!store.has(key)) { store.set(key, new Map()); } const h = store.get(key); h.set(a, String((Number(h.get(a)) || 0) + Number(b))); return Number(h.get(a)); }
         case "EXPIRE": return 1;
+        case "INCR": { const n = (Number(store.get(key)) || 0) + 1; store.set(key, String(n)); return n; }
         default: throw new Error("unsupported " + cmd);
     }
 }
@@ -137,11 +138,13 @@ function pairsOf(n, tag) {
     process.env.KV_REST_API_URL = "http://127.0.0.1:" + redis.address().port;
     process.env.KV_REST_API_TOKEN = "test-token";
     process.env.ADMIN_KEY = "owner-secret";
+    // saving needs a signed-in user: fake the Google check ("Bearer ok" = signed in)
+    require("../api/_google").verifyGoogleUser = async req => (String(req.headers.authorization || "") === "Bearer ok" ? { uid: "u-" + req.headers["x-forwarded-for"] } : null);
     const api = require("../api/_library.js");
 
     const KEY = "tt0903747:s1e7:natural";
     const H1 = "aaaaaaaaaaaaaaaa", H2 = "bbbbbbbbbbbbbbbb";
-    const ip = n => ({ "x-forwarded-for": "10.0.0." + n });
+    const ip = n => ({ "x-forwarded-for": "10.0.0." + n, authorization: "Bearer ok" });
 
     await test("save + exact lookup round trip", async () => {
         const saved = await call(api, "POST", "/api/translate?lib=save", { k: KEY, h: H1, pairs: pairsOf(60, "one") }, ip(1));
@@ -153,6 +156,13 @@ function pairsOf(n, tag) {
         assert.strictEqual(got.body.entries[0].h, H1);
         assert.strictEqual(got.body.entries[0].pairs.length, 60);
         assert.strictEqual(got.body.entries[0].pairs[7].si, "මේක 7 වෙනි පේළිය one");
+    });
+
+    await test("saving without signing in is refused (library poisoning)", async () => {
+        const r = await call(api, "POST", "/api/translate?lib=save", { k: "tt5555555:natural", h: "abcdefabcdefabcd", pairs: pairsOf(60, "evil") }, { "x-forwarded-for": "10.9.9.9" });
+        assert.strictEqual(r.code, 401);
+        const g = await call(api, "GET", "/api/translate?lib=get&k=tt5555555:natural&h=abcdefabcdefabcd", null, { "x-forwarded-for": "10.9.9.9" });
+        assert.strictEqual(g.body.entries.length, 0);
     });
 
     await test("another release of the same title gets the saved copy", async () => {

@@ -67,6 +67,17 @@ function clean(v, max) {
         .slice(0, max);
 }
 
+// Rate limit shared by every serverless instance (a per-instance Map is lost on each cold start and does not add up).
+// Fixed window counter in Redis. Fails OPEN: if Redis is down nobody is blocked by it. Returns true when over the limit.
+async function overLimit(kind, id, max, windowSec) {
+    if (!hasRedis()) { return false; }
+    try {
+        const k = "rl:" + kind + ":" + String(id).slice(0, 64) + ":" + Math.floor(Date.now() / (windowSec * 1000));
+        const r = await redis([["INCR", k], ["EXPIRE", k, windowSec * 2]]);
+        return Number(r[0]) > max;
+    } catch (e) { return false; }
+}
+
 function sha(s) { return crypto.createHash("sha256").update(String(s)).digest(); }
 
-module.exports = { hasRedis, redis, verifyGoogleUser, clean, sha, crypto };
+module.exports = { hasRedis, redis, verifyGoogleUser, clean, sha, crypto, overLimit };

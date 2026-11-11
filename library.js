@@ -112,11 +112,17 @@
         if (!key || !hash || !Array.isArray(pairs) || pairs.length < 20) { return Promise.resolve(false); }
         if (englishCount && pairs.length < englishCount * 0.9) { return Promise.resolve(false); }
 
-        return fetch(API + "?lib=save", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ k: key, h: hash, pairs: pairs }),
-            keepalive: pairs.length < 300
+        // the server only accepts saves from signed-in users (Google ID token)
+        var tokenP = (typeof window !== "undefined" && window.__sinsubzIdToken) ? Promise.resolve().then(function () { return window.__sinsubzIdToken(); }).catch(function () { return ""; }) : Promise.resolve("");
+        return tokenP.then(function (token) {
+            var headers = { "Content-Type": "application/json" };
+            if (token) { headers.Authorization = "Bearer " + token; }
+            return fetch(API + "?lib=save", {
+                method: "POST",
+                headers: headers,
+                body: JSON.stringify({ k: key, h: hash, pairs: pairs }),
+                keepalive: pairs.length < 300
+            });
         })
             .then(function (r) { return r.ok || r.status === 204; })
             .catch(function () { return false; });

@@ -25,6 +25,7 @@
 
 const zlib = require("zlib");
 const crypto = require("crypto");
+const { verifyGoogleUser, overLimit } = require("./_google");
 
 function findEnv(re) {
     const key = Object.keys(process.env).find(k => re.test(k) && process.env[k]);
@@ -138,7 +139,7 @@ module.exports = async function libraryHandler(req, res) {
 
         // ---------- look up ----------
         if (req.method === "GET" && action === "get") {
-            if (limited("get", clientIp(req), RATE_MAX_GET)) { return res.status(429).json({ error: "Too many requests" }); }
+            if (limited("get", clientIp(req), RATE_MAX_GET) || await overLimit("libget", clientIp(req), RATE_MAX_GET, 60)) { return res.status(429).json({ error: "Too many requests" }); }
             if (!validKey(k)) { return res.status(400).json({ error: "Bad key" }); }
 
             const [all] = await redis([["HGETALL", "lib:t:" + k]]);
@@ -169,7 +170,14 @@ module.exports = async function libraryHandler(req, res) {
 
         // ---------- save ----------
         if (req.method === "POST" && action === "save") {
-            if (limited("save", clientIp(req), RATE_MAX_SAVE)) { return res.status(429).json({ error: "Too many requests" }); }
+            // Only signed-in users (Google token) or the owner's runner (admin key) may save: anonymous saves could poison
+            // the library with fake translations of popular titles (the first saved copy is what everybody gets).
+            const runner = !!process.env.ADMIN_KEY && sameKey(req.headers["x-admin-key"], process.env.ADMIN_KEY);
+            let who = runner ? { uid: "runner" } : null;
+            if (!who) { who = await verifyGoogleUser(req).catch(() => null); }
+            if (!who) { return res.status(401).json({ error: "Sign in to save" }); }
+            const rid = runner ? "runner" : clientIp(req);
+            if (!runner && (limited("save", rid, RATE_MAX_SAVE) || await overLimit("libsave", who.uid || rid, RATE_MAX_SAVE, 60))) { return res.status(429).json({ error: "Too many requests" }); }
             if (!validKey(k) || !validHash(h)) { return res.status(400).json({ error: "Bad key" }); }
 
             const pairs = cleanPairs(req.body && req.body.pairs);
