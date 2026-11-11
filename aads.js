@@ -67,8 +67,19 @@
         function place() {
             var r = main ? main.getBoundingClientRect() : null;
             var free = r ? Math.min(r.left, window.innerWidth - r.right) : 0;
-            var ok = free >= SIDE_W + 14 && window.innerHeight >= SIDE_H + 150;
-            for (var i = 0; i < rails.length; i++) { rails[i].style.display = ok ? "block" : "none"; }
+            /* short windows (laptops, 1366x768 with browser bars): shrink the tall unit to fit the height instead of hiding it,
+               and let it overlap the page padding by up to ~35px */
+            var top = 72;
+            var k = Math.min(1, (window.innerHeight - top - 12) / SIDE_H);
+            var ok = k >= 0.55 && free >= SIDE_W * k - 40;
+            for (var i = 0; i < rails.length; i++) {
+                var el = rails[i];
+                el.style.display = ok ? "block" : "none";
+                if (!ok) { continue; }
+                el.style.top = top + "px";
+                el.style.transformOrigin = el.style.right ? "right top" : "left top";
+                el.style.transform = k < 1 ? "scale(" + k.toFixed(3) + ")" : "none";
+            }
         }
         place(); window.addEventListener("resize", place);
     }
