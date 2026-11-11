@@ -231,15 +231,19 @@ and the existing /api/search, /api/subtitles and
 
         if (!file) { refresh(); return; }
 
-        if (!/\.srt$/i.test(file.name)) {
-            line(sinhalaInfo, "Please choose an .srt file.", "bad");
+        if (!/\.(srt|ass|ssa)$/i.test(file.name)) {
+            line(sinhalaInfo, "Please choose an .srt, .ass or .ssa file.", "bad");
             refresh();
             return;
         }
 
         try {
 
-            const text = await file.text();
+            let text = await file.text();
+            // .ass / .ssa -> plain SRT first (the sync works on SRT timing + text; the result is saved as .srt)
+            if (typeof looksLikeAss === "function" && typeof assToSrt === "function" && (/\.(ass|ssa)$/i.test(file.name) || looksLikeAss(text))) {
+                text = assToSrt(text);
+            }
             const parsed = (typeof parseSRT === "function") ? parseSRT(text) : [];
             const subs = toSubs(parsed);
 
@@ -1333,7 +1337,14 @@ and the existing /api/search, /api/subtitles and
 
         if (!state.result || typeof downloadTextFile !== "function") { return; }
 
-        const base = state.sinhala.name.replace(/\.srt$/i, "");
+        let base = state.sinhala.name.replace(/\.(srt|ass|ssa)$/i, "");
+
+        // put the video version (BluRay.1080p ...) into the name, unless the name already has it
+        let tag = "";
+        try { tag = (typeof getReleaseTag === "function") ? getReleaseTag({ name: state.movie && state.movie.name, release: state.movie && state.movie.release }) : ""; } catch (e) { tag = ""; }
+        if (tag && base.toLowerCase().replace(/[^a-z0-9]/g, "").indexOf(tag.split(".")[0].toLowerCase().replace(/[^a-z0-9]/g, "")) < 0) {
+            base += "." + tag;
+        }
 
         downloadTextFile(buildOutput(), base + ".synced.srt");
 
