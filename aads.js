@@ -4,7 +4,7 @@
  * Never on the home/tool page, login, admin, premium. Change SIZE to the size you picked when you made the unit. */
 (function () {
     "use strict";
-    var UNIT_ID = "";               // e.g. "2412345"
+    var UNIT_ID = "2461670";
     var WIDTH = 728, HEIGHT = 90;   // the unit size you created (728x90, 468x60, 300x250...)
     if (!/^\d{4,12}$/.test(UNIT_ID)) { return; }
     if (/^(capacitor|file|app):/.test(location.protocol)) { return; }
@@ -35,7 +35,7 @@
     if (document.body.getAttribute("data-ads") === "on" && guide) {
         var h2 = guide.querySelectorAll("h2");
         if (h2.length >= 3) { h2[2].parentNode.insertBefore(slot(), h2[2]); }
-        guide.appendChild(slot());
+        if (!guide.querySelector(".aads-slot")) { guide.appendChild(slot()); }
         return;
     }
     var tp = document.querySelector(".tp-wrap");
