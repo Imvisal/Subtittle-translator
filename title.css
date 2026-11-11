@@ -53,3 +53,13 @@
     .tp-poster { width: 160px; }
     .tp-chips { justify-content: center; }
 }
+
+.tp-crumb { font-size: 13.5px; color: var(--muted); }
+.tp-crumb a { color: var(--text); text-decoration: none; padding: 6px 2px; }
+.tp-crumb span { color: var(--text-2); }
+.tp-seo h2 { font-size: 18px; }
+.tp-seo > p { margin: 0 0 12px; color: var(--text-2); line-height: 1.6; font-size: 14.5px; }
+.tp-seo details { border-top: 1px solid var(--line); padding: 10px 0; }
+.tp-seo summary { cursor: pointer; font-weight: 700; font-size: 14.5px; }
+.tp-seo summary span { display: block; margin-top: 2px; font-weight: 600; font-size: 13px; color: var(--muted); }
+.tp-seo details p { margin: 8px 0 0; color: var(--text-2); font-size: 14px; line-height: 1.6; }

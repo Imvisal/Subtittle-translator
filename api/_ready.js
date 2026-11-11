@@ -104,11 +104,39 @@ function pageHtml(d) {
     const isTv = d.type === "tv";
     const readyCount = Object.values(d.seasons).reduce((a, l) => a + l.filter(e => e.ready).length, 0);
     const name = d.title + (d.year ? " (" + d.year + ")" : "");
-    const ttl = (isTv ? name + " Sinhala Subtitles (Sinhala Sub), all episodes" : name + " Sinhala Subtitles (Sinhala Sub)") + " | SinSubz";
+    const ttl = name + " Sinhala Subtitles | සිංහල උපසිරැසි" + (isTv ? " (all episodes)" : "") + " | SinSubz";
     const desc = (isTv
         ? "Download " + d.title + " Sinhala subtitles for " + readyCount + " episode" + (readyCount === 1 ? "" : "s") + ". "
-        : "Download " + d.title + " Sinhala subtitles. ") + "AI translated spoken Sinhala .srt files, free from SinSubz." + (d.overview ? " " + d.overview.slice(0, 120) : "");
-    const ld = { "@context": "https://schema.org", "@type": isTv ? "TVSeries" : "Movie", name: d.title, url: d.url, image: d.poster || undefined, description: d.overview || undefined, inLanguage: "si" };
+        : "Download " + d.title + " Sinhala subtitles. ") + "Free Sinhala sub (සිංහල උපසිරැසි) .srt files in natural spoken Sinhala from SinSubz." + (d.overview ? " " + d.overview.slice(0, 120) : "");
+    const faq = [
+        ["How do I download " + d.title + " Sinhala subtitles?",
+            "Open this page, " + (isTv ? "pick the season and episode, " : "") + "press Download and choose the video version you have. You get a .srt Sinhala subtitle file for free.",
+            d.title + " සිංහල උපසිරැසි ඩවුන්ලෝඩ් කරන්නේ කොහොමද?",
+            "මේ පිටුවේ " + (isTv ? "season එකයි episode එකයි තෝරලා " : "") + "Download ඔබලා ඔයාගේ video එකේ version එක තෝරන්න. නොමිලේ .srt සිංහල උපසිරැසි file එක ලැබෙනවා."],
+        ["How do I add the Sinhala subtitle to my video?",
+            "Save the .srt with the same name as the video file in the same folder, or load it in your player (VLC, MX Player, Kodi, a smart TV or a phone player).",
+            "උපසිරැසි video එකට දාගන්නේ කොහොමද?",
+            "Video file එකේ නමටම .srt file එක නම් කරලා එකම folder එකේ දාන්න, නැත්නම් VLC, MX Player වගේ player එකේ Subtitles → Add කරන්න."],
+        ["Which video version does the Sinhala subtitle fit?",
+            "Subtitle timing depends on the video release (WEB-DL, BluRay, WEBRip, HDTV). Choose \"Match my video\" and we sync the Sinhala subtitle to your version.",
+            "මේ උපසිරැසි මොන video version එකට ගැළපෙනවද?",
+            "Timing එක රඳා පවතින්නේ video release එක (WEB-DL, BluRay, WEBRip, HDTV) මතයි. \"Match my video\" තෝරන්න, අපි ඔයාගේ version එකට sync කරලා දෙනවා."],
+        ["Is it free?", "Yes. Downloading Sinhala subtitles from SinSubz is free.", "මේක නොමිලේද?", "ඔව්. SinSubz වලින් සිංහල උපසිරැසි ඩවුන්ලෝඩ් කිරීම නොමිලේ."]
+    ];
+    const crumbName = isTv ? "TV series" : "Films";
+    const ld = { "@context": "https://schema.org", "@graph": [
+        { "@type": isTv ? "TVSeries" : "Movie", name: d.title, url: d.url, image: d.poster || undefined, description: d.overview || undefined, inLanguage: "si" },
+        { "@type": "BreadcrumbList", itemListElement: [
+            { "@type": "ListItem", position: 1, name: "SinSubz", item: SITE + "/" },
+            { "@type": "ListItem", position: 2, name: crumbName + " Sinhala subtitles", item: SITE + "/#readyTitles" },
+            { "@type": "ListItem", position: 3, name: d.title, item: d.url }] },
+        { "@type": "FAQPage", mainEntity: faq.map(f => ({ "@type": "Question", name: f[0], acceptedAnswer: { "@type": "Answer", text: f[1] } })).concat(
+            faq.map(f => ({ "@type": "Question", name: f[2], acceptedAnswer: { "@type": "Answer", text: f[3] } }))) }
+    ] };
+    const faqHtml = faq.map(f => "<details><summary>" + esc(f[0]) + " <span>" + esc(f[2]) + "</span></summary><p>" + esc(f[1]) + "</p><p lang=\"si\">" + esc(f[3]) + "</p></details>").join("");
+    const seoBlock = '<section class="tp-card tp-seo"><h2>' + esc(d.title) + " Sinhala Subtitles (සිංහල උපසිරැසි)</h2>" +
+        "<p>Download " + esc(d.title) + " Sinhala sub for free. SinSubz makes natural spoken Sinhala subtitles (.srt) that fit your video. " +
+        esc(d.title) + " සිංහල උපසිරැසි නොමිලේ ඩවුන්ලෝඩ් කරගන්න.</p>" + faqHtml + "</section>";
     const seed = JSON.stringify(d).replace(/</g, "\\u003c");
     const noscript = Object.keys(d.seasons).map(n => "<h3>Season " + esc(n) + "</h3><ul>" + d.seasons[n].filter(e => e.ready).map(e =>
         '<li><a href="/api/stats?ready=get&amp;id=' + esc(d.id) + "&amp;s=" + esc(n) + "&amp;e=" + esc(e.e) + '">S' + String(n).padStart(2, "0") + "E" + String(e.e).padStart(2, "0") + (e.name ? " " + esc(e.name) : "") + " Sinhala subtitle (.srt)</a></li>").join("") + "</ul>").join("");
@@ -123,7 +151,7 @@ function pageHtml(d) {
         '<link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/title.css">' +
         '<script>try{var t=localStorage.getItem("sinsubz-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>' +
         '<script type="application/ld+json">' + JSON.stringify(ld).replace(/</g, "\\u003c") + "</script></head>" +
-        '<body class="tp-page"><div class="tp-wrap"><a class="tp-back" href="/">← SinSubz</a><div id="tp"><noscript>' + noscript + "</noscript></div>" +
+        '<body class="tp-page"><div class="tp-wrap"><nav class="tp-crumb" aria-label="Breadcrumb"><a href="/">SinSubz</a> › <a href="/#readyTitles">' + crumbName + '</a> › <span>' + esc(d.title) + '</span></nav><div id="tp"><noscript>' + noscript + "</noscript></div>" + seoBlock +
         '<p class="tp-foot">Subtitles made by SinSubz. Only the subtitle is provided, not the video.</p></div>' +
         '<script type="application/json" id="tp-data">' + seed + '</script><script src="/title.js"></script><script src="/aads.js" defer></script></body></html>';
 }
