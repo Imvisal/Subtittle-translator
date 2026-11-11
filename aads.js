@@ -5,12 +5,14 @@
 (function () {
     "use strict";
     var UNIT_ID = "2461670";
+    var MOBILE_ID = "2461674";      // adaptive unit for phones (< 740px wide)
     var WIDTH = 728, HEIGHT = 90;   // the unit size you created (728x90, 468x60, 300x250...)
     if (!/^\d{4,12}$/.test(UNIT_ID)) { return; }
     if (/^(capacitor|file|app):/.test(location.protocol)) { return; }
     if (!document.body) { return; }
 
     function slot() {
+        var mobile = window.innerWidth < 740;
         var d = document.createElement("div");
         d.className = "aads-slot";
         d.setAttribute("aria-label", "Advertisement");
@@ -19,15 +21,21 @@
         small.textContent = "Advertisement";
         small.style.cssText = "font:11px/1.2 sans-serif;opacity:.55;margin-bottom:4px;";
         var box = document.createElement("div");
-        box.style.cssText = "position:relative;width:100%;height:" + HEIGHT + "px;overflow:hidden;";
-        box.className = "aads-box";
         var f = document.createElement("iframe");
-        f.setAttribute("data-aa", UNIT_ID);
-        f.src = "https://ad.a-ads.com/" + UNIT_ID + "/?size=" + WIDTH + "x" + HEIGHT;
         f.loading = "lazy";
         f.referrerPolicy = "no-referrer-when-downgrade";
-        f.setAttribute("sandbox", "allow-scripts allow-popups allow-popups-to-escape-sandbox allow-same-origin");
-        f.style.cssText = "border:0;padding:0;width:" + WIDTH + "px;height:" + HEIGHT + "px;overflow:hidden;background:transparent;display:block;";
+        if (mobile) {
+            box.style.cssText = "position:relative;width:100%;min-height:100px;overflow:hidden;";
+            f.setAttribute("data-aa", MOBILE_ID);
+            f.src = "https://ad.a-ads.com/" + MOBILE_ID + "/?size=Adaptive";
+            f.style.cssText = "border:0;padding:0;width:100%;height:100px;overflow:hidden;display:block;background:transparent;";
+        } else {
+            box.style.cssText = "position:relative;width:100%;height:" + HEIGHT + "px;overflow:hidden;";
+            box.className = "aads-box";
+            f.setAttribute("data-aa", UNIT_ID);
+            f.src = "https://ad.a-ads.com/" + UNIT_ID + "/?size=" + WIDTH + "x" + HEIGHT;
+            f.style.cssText = "border:0;padding:0;width:" + WIDTH + "px;height:" + HEIGHT + "px;overflow:hidden;background:transparent;display:block;";
+        }
         box.appendChild(f); d.appendChild(small); d.appendChild(box);
         return d;
     }
@@ -71,6 +79,9 @@
     if (document.body.getAttribute("data-ads") === "on" && guide) {
         var h2 = guide.querySelectorAll("h2");
         if (h2.length >= 3) { h2[2].parentNode.insertBefore(slot(), h2[2]); }
+        if (window.innerWidth < 740) {   /* the page has a static 728x90 slot (for the a-ads check): swap it for the adaptive one on phones */
+            var st = guide.querySelectorAll(".aads-slot"); for (var q = 0; q < st.length; q++) { if (!st[q].querySelector('iframe[data-aa="2461674"]')) { st[q].remove(); } }
+        }
         if (!guide.querySelector(".aads-slot")) { guide.appendChild(slot()); }
         fit();
         return;

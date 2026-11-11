@@ -3,6 +3,8 @@
 (function () {
     "use strict";
     var UNIT_ID = "2461670", W = 728, H = 90;
+    var PHONE = window.innerWidth < 740;
+    if (PHONE) { UNIT_ID = "2461674"; }
     function premium() {
         try {
             if (window.__sinsubzIsPremium && window.__sinsubzIsPremium()) { return true; }
@@ -12,6 +14,7 @@
     var wrap = null;
     function fit() {
         if (!wrap) { return; }
+        if (PHONE) { return; }
         var k = Math.min(1, (wrap.parentNode.clientWidth || W) / W);
         var f = wrap.querySelector("iframe");
         f.style.transform = k < 1 ? "scale(" + k + ")" : "none";
@@ -27,12 +30,13 @@
         holder.style.cssText = "width:100%;margin:18px auto;text-align:center";
         holder.innerHTML = '<div style="font:11px/1.2 sans-serif;opacity:.55;margin-bottom:4px">Advertisement</div>';
         wrap = document.createElement("div");
-        wrap.style.cssText = "position:relative;overflow:hidden;margin:0 auto";
+        wrap.style.cssText = "position:relative;overflow:hidden;margin:0 auto" + (PHONE ? ";width:100%;height:100px" : "");
         var f = document.createElement("iframe");
         f.setAttribute("data-aa", UNIT_ID);
-        f.src = "https://ad.a-ads.com/" + UNIT_ID + "/?size=" + W + "x" + H;
+        f.src = "https://ad.a-ads.com/" + UNIT_ID + "/?size=" + (PHONE ? "Adaptive" : W + "x" + H);
         f.loading = "lazy";
-        f.style.cssText = "border:0;padding:0;width:" + W + "px;height:" + H + "px;overflow:hidden;display:block;transform-origin:0 0;background:transparent";
+        f.style.cssText = PHONE ? "border:0;padding:0;width:100%;height:100px;overflow:hidden;display:block;background:transparent"
+            : "border:0;padding:0;width:" + W + "px;height:" + H + "px;overflow:hidden;display:block;transform-origin:0 0;background:transparent";
         wrap.appendChild(f); holder.appendChild(wrap);
         foot.parentNode.insertBefore(holder, foot);
         fit();

@@ -4588,7 +4588,7 @@ function countSavedFile(filename) {
 /* Website only: a short "your download is ready" screen with an A-Ads banner before the file is saved.
    Not in the apps, not for Premium, never withholds the file (Download now is always there). */
 function showDownloadAd(done) {
-    var UNIT = "2461670", W = 728, H = 90, SECS = 4;
+    var UNIT = "2461670", W = 728, H = 90, SECS = 4, MOBILE = window.innerWidth < 740;
     var de = document.documentElement;
     var skip = typeof window.__appSaveTextFile === "function" || de.classList.contains("app-mode") ||
         de.classList.contains("is-premium") || navigator.webdriver || !/^https?:$/.test(location.protocol) ||
@@ -4611,13 +4611,14 @@ function showDownloadAd(done) {
         '<div style="font-size:20px;font-weight:700;margin-bottom:6px">✅ Your Sinhala subtitle is ready</div>' +
         '<div id="dlAdSub" style="opacity:.8;margin-bottom:14px">Download starts in ' + SECS + 's</div>' +
         '<div style="font:11px/1.2 sans-serif;opacity:.55;margin-bottom:4px">Advertisement</div>' +
-        '<div id="dlAdBox" style="position:relative;overflow:hidden;margin:0 auto;width:' + W + 'px;height:' + H + 'px"><iframe data-aa="' + UNIT +
-        '" src="https://ad.a-ads.com/' + UNIT + '/?size=' + W + 'x' + H + '" style="border:0;padding:0;width:' + W + 'px;height:' + H + 'px;overflow:hidden;display:block;transform-origin:0 0"></iframe></div>' +
+        '<div id="dlAdBox" style="position:relative;overflow:hidden;margin:0 auto;' + (MOBILE ? 'width:100%;height:100px' : 'width:' + W + 'px;height:' + H + 'px') + '"><iframe data-aa="' + (MOBILE ? "2461674" : UNIT) +
+        '" src="https://ad.a-ads.com/' + (MOBILE ? "2461674/?size=Adaptive" : UNIT + '/?size=' + W + 'x' + H) + '" style="border:0;padding:0;' + (MOBILE ? 'width:100%;height:100px' : 'width:' + W + 'px;height:' + H + 'px') + ';overflow:hidden;display:block;transform-origin:0 0"></iframe></div>' +
         '<button type="button" id="dlAdBtn" style="margin-top:18px;padding:12px 26px;border:0;border-radius:12px;background:#7c7cff;color:#fff;font-size:16px;font-weight:700;cursor:pointer">⬇ Download now</button>' +
         '</div>';
     document.body.appendChild(o);
     function fit() {
         var box = document.getElementById("dlAdBox"); if (!box) { return; }
+        if (MOBILE) { return; }
         var k = Math.min(1, (box.parentNode.clientWidth - 36) / W);
         box.firstChild.style.transform = k < 1 ? "scale(" + k + ")" : "none";
         box.style.width = Math.round(W * k) + "px"; box.style.height = Math.round(H * k) + "px";
