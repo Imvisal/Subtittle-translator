@@ -117,7 +117,11 @@ function unifyNegation(text) {
 const DEFAULT_MODELS = [
     "gemini-3.1-flash-lite",
     "gemini-flash-lite-latest",
-    "gemini-flash-latest"
+    "gemini-flash-latest",
+    // last resorts: each model has its OWN quota, so these still work when the three above are all cooling
+    // (a name Google has retired just answers 404 and is skipped for an hour)
+    "gemini-2.5-flash-lite",
+    "gemini-2.5-flash"
 ];
 
 function getKeys() {
@@ -129,7 +133,7 @@ function getKeys() {
 
     list.push(process.env.GEMINI_API_KEY);
 
-    for (let i = 2; i <= 10; i++) {
+    for (let i = 2; i <= 30; i++) {
         list.push(process.env["GEMINI_API_KEY_" + i]);
     }
 
@@ -150,6 +154,29 @@ function getModels() {
 // key|model -> time (ms) until which we skip that combo.
 // Lives as long as the serverless instance stays warm (best effort).
 const cooldowns = new Map();
+
+// The same cooldowns, shared by every serverless instance through Redis (a cold instance used to learn the hard way,
+// by getting its own 429, that a key was already cooling). Best effort: Redis problems never block a translation.
+async function loadSharedCooldowns(keys, models) {
+    try {
+        const g = require("./_google");
+        if (!g.hasRedis()) { return; }
+        const ids = [];
+        keys.forEach((_, k) => models.forEach(m => ids.push(k + "|" + m)));
+        const r = await g.redis([["MGET"].concat(ids.map(i => "gcd:" + i))]);
+        (r[0] || []).forEach((v, i) => {
+            const t = Number(v);
+            if (t > Date.now()) { cooldowns.set(ids[i], Math.max(cooldowns.get(ids[i]) || 0, t)); }
+        });
+    } catch (e) { /* ignore */ }
+}
+function shareCooldown(id, until) {
+    try {
+        const g = require("./_google");
+        if (!g.hasRedis()) { return; }
+        g.redis([["SET", "gcd:" + id, String(until), "EX", Math.max(1, Math.ceil((until - Date.now()) / 1000))]]).catch(() => { /* ignore */ });
+    } catch (e) { /* ignore */ }
+}
 
 // model -> time (ms) until which that whole model is treated as "busy" (503).
 // Without this every request wastes seconds on a model that is overloaded.
@@ -233,6 +260,8 @@ async function generateInner(prompt, trail) {
     let sawDaily = false;
     let sawBusy = false;
     const startKey = Math.floor(Math.random() * keys.length);
+
+    await loadSharedCooldowns(keys, models);
 
     // Two passes: if every model was only "busy" (503), wait a moment and retry once.
     for (let pass = 0; pass < 2; pass++) {
@@ -323,12 +352,9 @@ async function generateInner(prompt, trail) {
                 await track(today(), null, { [(k + 1) + ":429"]: 1 });
                 if (isDailyQuotaMessage(message)) { sawDaily = true; await trackQuota(k, true); }
 
-                cooldowns.set(
-                    id,
-                    isDailyQuotaMessage(message)
-                        ? nextPacificMidnight()
-                        : Date.now() + 60 * 1000
-                );
+                const coolUntil = isDailyQuotaMessage(message) ? nextPacificMidnight() : Date.now() + 60 * 1000;
+                cooldowns.set(id, coolUntil);
+                shareCooldown(id, coolUntil);
 
                 continue;
             }

@@ -3664,6 +3664,9 @@ async function translateSubtitleChunksImpl(
     // How many chunks are translated at the same time.
     // The server spreads them over all Gemini keys.
     const CONCURRENCY = 4;
+    // adaptive: a "many people are translating" answer lowers the number of chunks sent at once (never below 2),
+    // and it creeps back up after 90 quiet seconds
+    let conc = CONCURRENCY, lastRateLimitAt = 0, activeRuns = 0;
 
     const totalChunks =
         Math.ceil(subtitles.length / CHUNK_SIZE);
@@ -3769,6 +3772,11 @@ async function translateSubtitleChunksImpl(
                     error
                 );
 
+                if (error && error.rateLimited) {
+                    conc = Math.max(2, conc - 1);
+                    lastRateLimitAt = Date.now();
+                }
+
                 if (error && error.quotaExhausted) {
                     break;
                 }
@@ -3860,6 +3868,13 @@ async function translateSubtitleChunksImpl(
 
         while (!failure) {
 
+            // wait here while more chunks than `conc` are in flight (conc drops after rate limits)
+            while (!failure && activeRuns >= conc && nextChunk < totalChunks) {
+                if (conc < CONCURRENCY && Date.now() - lastRateLimitAt > 90000) { conc++; lastRateLimitAt = Date.now(); continue; }
+                await sleep(500);
+            }
+            if (failure) { return; }
+
             const index = nextChunk++;
 
             if (index >= totalChunks) {
@@ -3872,6 +3887,7 @@ async function translateSubtitleChunksImpl(
             const start = index * CHUNK_SIZE;
             const chunk = subtitles.slice(start, start + CHUNK_SIZE);
 
+            activeRuns++;
             try {
 
                 results[index] = await runChunk(index);
@@ -3891,6 +3907,8 @@ async function translateSubtitleChunksImpl(
                 failure = failure || error;
 
                 return;
+            } finally {
+                activeRuns--;
             }
         }
     }
