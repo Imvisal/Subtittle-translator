@@ -1,6 +1,6 @@
 {
-  "version": "1.1.35",
-  "notes": "New: SinSubz Premium (more films and episodes per day, no ads, Premium badge). Your translated films are saved in My profile, with your own name and picture. Today's usage is shown in Settings. A Premium offer appears when a translation finishes.",
+  "version": "1.1.36",
+  "notes": "New: the film poster shows while a subtitle is being translated. Supports .ass / .ssa subtitle files. Downloaded files now include the video version (BluRay, WEBRip...). A translation that failed can be resumed. Ready Sinhala subtitles on the home screen, with a banner ad (hidden for Premium).",
   "android": {
     "url": "https://sinsubs.site/get/android"
   },
