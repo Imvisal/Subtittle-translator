@@ -259,7 +259,9 @@ async function generateInner(prompt, trail) {
     let sawQuota = false;
     let sawDaily = false;
     let sawBusy = false;
-    const startKey = Math.floor(Math.random() * keys.length);
+    // Sticky keys: always start from key #1 and only move on to the next one while the earlier ones are cooling
+    // (set GEMINI_KEY_ROTATE=1 to spread requests over all keys again).
+    const startKey = process.env.GEMINI_KEY_ROTATE === "1" ? Math.floor(Math.random() * keys.length) : 0;
 
     await loadSharedCooldowns(keys, models);
 
@@ -278,8 +280,7 @@ async function generateInner(prompt, trail) {
 
         for (let n = 0; n < keys.length; n++) {
 
-            // start from a different key each request so ALL keys share the
-            // load (the rest still act as fallback when one is rate limited)
+            // keys are tried in order: use one as long as it works, the next only while it cools
             const k = (startKey + n) % keys.length;
             const id = k + "|" + model;
 
