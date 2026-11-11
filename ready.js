@@ -22,11 +22,11 @@
         grid.innerHTML = items.map(function (it) {
             var n = it.eps.length;
             var tag = it.type === "tv" ? n + (n === 1 ? " episode" : " episodes") : "Film";
-            return '<button type="button" class="rd-card' + (it.id === openId ? " is-open" : "") + '" data-id="' + esc(it.id) + '">' +
+            return '<a class="rd-card" href="' + (it.type === "tv" ? "/tv/" : "/film/") + esc(it.slug || it.id) + '">' +
                 '<span class="rd-poster">' + (posterOk(it.p) ? '<img src="' + esc(it.p) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '<i>🎬</i>') +
                 '<span class="rd-tag">' + esc(tag) + '</span></span>' +
                 '<span class="rd-name">' + esc(it.t) + '</span>' +
-                (it.y ? '<span class="rd-year">' + esc(it.y) + '</span>' : '') + '</button>';
+                (it.y ? '<span class="rd-year">' + esc(it.y) + '</span>' : '') + '</a>';
         }).join("");
 
         var panel = host.querySelector(".rd-panel");

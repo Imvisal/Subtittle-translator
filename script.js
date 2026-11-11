@@ -6861,3 +6861,29 @@ window.__sinsubzPremiumInfo = async function (mode) {
         if (document.readyState === "loading") { document.addEventListener("DOMContentLoaded", function () { setTimeout(show, 1200); }); } else { setTimeout(show, 1200); }
     } catch (e) { /* ignore */ }
 })();
+
+
+// ========================================================
+// "MATCH MY VIDEO" LINK (from a title page /tv/<slug>): /?match=tt123&t=Title&y=2014&s=1&e=3
+// Opens the English release list for that episode / film. Picking the release that matches the person's video
+// uses the saved Sinhala translation, retimed to that release (no AI wait).
+// ========================================================
+(function () {
+    try {
+        const p = new URLSearchParams(location.search);
+        const id = p.get("match");
+        if (!/^tt\d{5,10}$/.test(id || "")) { return; }
+        const season = Number(p.get("s")) || null;
+        const episode = Number(p.get("e")) || null;
+        const item = {
+            imdbID: id, title: (p.get("t") || "").slice(0, 150), year: (p.get("y") || "").slice(0, 4),
+            poster: /^https:\/\//.test(p.get("p") || "") ? p.get("p") : "", type: season ? "series" : "movie"
+        };
+        window.addEventListener("load", function () {
+            setTimeout(function () {
+                try { history.replaceState(null, "", location.pathname); } catch (e) { /* ignore */ }
+                searchSubtitles(item, season ? "episode" : "movie", season, episode);
+            }, 400);
+        });
+    } catch (e) { /* ignore */ }
+})();

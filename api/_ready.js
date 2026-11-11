@@ -2,7 +2,10 @@
    scripts/auto-translate.js). Everybody can list and download them from the home page.
    Served through /api/stats (?ready=...), so it is not a serverless function of its own.
 
-   GET  /api/stats?ready=list                      -> { items: [ { id, t, y, p, type, eps: [ { s, e, n, ts } ] } ] }
+   GET  /api/stats?ready=list                      -> { items: [ { id, slug, t, y, p, type, eps: [ { s, e, n, ts } ] } ] }
+   GET  /tv/<slug>  /film/<slug>  (vercel.json rewrites to ?ready=page&slug=)  -> the title page (HTML, title.js / title.css)
+   GET  /api/stats?ready=title&slug=<slug>         -> the same data as JSON
+   GET  /sitemap-titles.xml                        (rewrite to ?ready=sitemap)
    GET  /api/stats?ready=get&id=tt123&s=1&e=2      -> the .srt file (download)   (movies: s and e left out)
    POST /api/stats?ready=put   x-admin-key         -> { imdb, title, year, poster, type, season, episode, filename, srt }
    POST /api/stats?ready=del   x-admin-key         -> { imdb, season, episode }   (no season/episode = the whole title)
@@ -23,6 +26,108 @@ const imdbOk = v => /^tt\d{5,10}$/.test(String(v || ""));
 const q = req => { try { return Object.fromEntries(new URL(req.url, "http://x").searchParams); } catch (e) { return {}; } };
 const srtKey = (id, s, e) => "rdy:srt:" + id + ":" + s + ":" + e;
 
+const slugify = t => String(t || "").toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/&/g, " and ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60).replace(/-+$/, "") || "title";
+const esc = t => String(t == null ? "" : t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const SITE = "https://sinsubs.site";
+const pageUrl = m => SITE + (m.type === "tv" ? "/tv/" : "/film/") + m.slug;
+
+async function allTitles() {
+    const [flat] = await redis([["HGETALL", "rdy:idx"]]);
+    const out = [];
+    for (let i = 0; flat && i < flat.length; i += 2) { const m = parse(flat[i + 1]); if (m) { if (!m.slug) { m.slug = slugify(m.t); } out.push(m); } }
+    return out;
+}
+
+// TMDB: overview, genres, rating and the episode names of the seasons that have ready files. Cached 7 days in Redis.
+async function tmdbInfo(m) {
+    const key = process.env.TMDB_API_KEY;
+    if (!key) { return null; }
+    const seasons = [...new Set(Object.values(m.eps || {}).map(x => x.s).filter(Boolean))].sort((a, b) => a - b);
+    const ck = "rdy:tmdb:" + m.id;
+    const cached = parse((await redis([["GET", ck]]))[0]);
+    if (cached && seasons.every(n => cached.seasons && cached.seasons[n])) { return cached; }
+    const isToken = key.length > 40;
+    const get = async p => {
+        const url = "https://api.themoviedb.org/3" + p + (p.includes("?") ? "&" : "?") + "language=en-US" + (isToken ? "" : "&api_key=" + encodeURIComponent(key));
+        const r = await fetch(url, { headers: isToken ? { Authorization: "Bearer " + key } : {}, signal: AbortSignal.timeout(7000) });
+        if (!r.ok) { throw new Error("TMDB " + r.status); }
+        return r.json();
+    };
+    try {
+        const found = await get("/find/" + m.id + "?external_source=imdb_id");
+        const pick = m.type === "tv" ? (found.tv_results || [])[0] : (found.movie_results || [])[0];
+        if (!pick) { return cached || null; }
+        const d = await get("/" + (m.type === "tv" ? "tv" : "movie") + "/" + pick.id);
+        const info = {
+            overview: String(d.overview || "").replace(/\s+/g, " ").trim().slice(0, 700),
+            tagline: String(d.tagline || "").slice(0, 160),
+            genres: (d.genres || []).slice(0, 4).map(g => g.name),
+            rating: d.vote_average ? Math.round(d.vote_average * 10) / 10 : 0,
+            runtime: m.type === "tv" ? ((d.episode_run_time || [])[0] || 0) : (d.runtime || 0),
+            totalSeasons: d.number_of_seasons || 0,
+            seasons: {}
+        };
+        if (m.type === "tv") {
+            for (const n of seasons) {
+                try {
+                    const sd = await get("/tv/" + pick.id + "/season/" + n);
+                    info.seasons[n] = (sd.episodes || []).map(e => ({ e: e.episode_number, name: String(e.name || "").slice(0, 120), air: String(e.air_date || ""), min: e.runtime || 0 }));
+                } catch (err) { info.seasons[n] = []; }
+            }
+        }
+        await redis([["SET", ck, JSON.stringify(info), "EX", 7 * 86400]]);
+        return info;
+    } catch (err) {
+        return cached || null;
+    }
+}
+
+async function titleData(slug) {
+    const list = await allTitles();
+    const m = list.find(x => x.slug === slug) || list.find(x => x.id === slug);
+    if (!m) { return null; }
+    const info = (await tmdbInfo(m)) || { overview: "", tagline: "", genres: [], rating: 0, runtime: 0, seasons: {} };
+    const seasons = {};
+    const have = Object.values(m.eps || {});
+    have.forEach(x => { (seasons[x.s] = seasons[x.s] || { have: {} }).have[x.e] = { n: x.n, r: x.r || "", ts: x.ts }; });
+    Object.keys(seasons).forEach(n => {
+        const tm = (info.seasons && info.seasons[n]) || [];
+        const eps = new Map();
+        tm.forEach(e => eps.set(e.e, { e: e.e, name: e.name, air: e.air }));
+        Object.keys(seasons[n].have).forEach(e => { if (!eps.has(Number(e))) { eps.set(Number(e), { e: Number(e), name: "", air: "" }); } });
+        seasons[n] = [...eps.values()].sort((a, b) => a.e - b.e).map(e => Object.assign(e, { ready: !!seasons[n].have[e.e], r: (seasons[n].have[e.e] || {}).r || "", n: (seasons[n].have[e.e] || {}).n || 0 }));
+    });
+    return { id: m.id, slug: m.slug, title: m.t, year: m.y, poster: m.p, type: m.type, overview: info.overview, tagline: info.tagline, genres: info.genres, rating: info.rating, runtime: info.runtime, seasons, url: pageUrl(m) };
+}
+
+function pageHtml(d) {
+    const isTv = d.type === "tv";
+    const readyCount = Object.values(d.seasons).reduce((a, l) => a + l.filter(e => e.ready).length, 0);
+    const name = d.title + (d.year ? " (" + d.year + ")" : "");
+    const ttl = (isTv ? name + " Sinhala Subtitles (Sinhala Sub), all episodes" : name + " Sinhala Subtitles (Sinhala Sub)") + " | SinSubz";
+    const desc = (isTv
+        ? "Download " + d.title + " Sinhala subtitles for " + readyCount + " episode" + (readyCount === 1 ? "" : "s") + ". "
+        : "Download " + d.title + " Sinhala subtitles. ") + "AI translated spoken Sinhala .srt files, free from SinSubz." + (d.overview ? " " + d.overview.slice(0, 120) : "");
+    const ld = { "@context": "https://schema.org", "@type": isTv ? "TVSeries" : "Movie", name: d.title, url: d.url, image: d.poster || undefined, description: d.overview || undefined, inLanguage: "si" };
+    const seed = JSON.stringify(d).replace(/</g, "\\u003c");
+    const noscript = Object.keys(d.seasons).map(n => "<h3>Season " + esc(n) + "</h3><ul>" + d.seasons[n].filter(e => e.ready).map(e =>
+        '<li><a href="/api/stats?ready=get&amp;id=' + esc(d.id) + "&amp;s=" + esc(n) + "&amp;e=" + esc(e.e) + '">S' + String(n).padStart(2, "0") + "E" + String(e.e).padStart(2, "0") + (e.name ? " " + esc(e.name) : "") + " Sinhala subtitle (.srt)</a></li>").join("") + "</ul>").join("");
+    return '<!DOCTYPE html>\n<html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+        "<title>" + esc(ttl) + '</title><meta name="description" content="' + esc(desc) + '"><meta name="theme-color" content="#07080d">' +
+        '<link rel="canonical" href="' + esc(d.url) + '"><meta property="og:type" content="website"><meta property="og:site_name" content="SinSubz">' +
+        '<meta property="og:title" content="' + esc(ttl) + '"><meta property="og:description" content="' + esc(desc) + '"><meta property="og:url" content="' + esc(d.url) + '">' +
+        '<meta property="og:image" content="' + esc(d.poster || SITE + "/og-image.png") + '"><meta name="twitter:card" content="summary_large_image">' +
+        '<link rel="icon" href="/favicon.ico?v=1133" sizes="48x48"><link rel="icon" href="/favicon.svg?v=1133" type="image/svg+xml" sizes="any"><link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1133">' +
+        '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
+        '<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">' +
+        '<link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/title.css">' +
+        '<script>try{var t=localStorage.getItem("sinsubz-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>' +
+        '<script type="application/ld+json">' + JSON.stringify(ld).replace(/</g, "\\u003c") + "</script></head>" +
+        '<body class="tp-page"><div class="tp-wrap"><a class="tp-back" href="/">← SinSubz</a><div id="tp"><noscript>' + noscript + "</noscript></div>" +
+        '<p class="tp-foot">Subtitles made by SinSubz. Only the subtitle is provided, not the video.</p></div>' +
+        '<script type="application/json" id="tp-data">' + seed + '</script><script src="/title.js"></script></body></html>';
+}
+
 function isAdmin(req) { return require("./_admin.js").isAdmin(req); }
 
 module.exports = async function ready(req, res) {
@@ -39,10 +144,32 @@ module.exports = async function ready(req, res) {
                 if (!m) { continue; }
                 const eps = Object.values(m.eps || {}).map(x => ({ s: x.s, e: x.e, n: x.n, ts: x.ts }))
                     .sort((a, b) => a.s - b.s || a.e - b.e);
-                items.push({ id: m.id, t: m.t, y: m.y, p: m.p, type: m.type, eps, ts: Math.max(0, ...eps.map(x => x.ts || 0)) });
+                items.push({ id: m.id, slug: m.slug || slugify(m.t), t: m.t, y: m.y, p: m.p, type: m.type, eps, ts: Math.max(0, ...eps.map(x => x.ts || 0)) });
             }
             items.sort((a, b) => b.ts - a.ts);
             return res.status(200).json({ items });
+        }
+
+        if ((act === "page" || act === "title") && req.method === "GET") {
+            const slug = String(q(req).slug || "").toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 80);
+            const d = slug ? await titleData(slug) : null;
+            if (!d) {
+                if (act === "title") { return res.status(404).json({ error: "Not found" }); }
+                res.setHeader("Content-Type", "text/html; charset=utf-8");
+                return res.status(404).send('<!DOCTYPE html><meta charset="utf-8"><meta name="robots" content="noindex"><title>Not found | SinSubz</title><body style="font-family:system-ui;background:#07080d;color:#eee;text-align:center;padding:80px 20px"><h1>Not found</h1><p><a style="color:#9aa6ff" href="/">Go to SinSubz</a></p></body>');
+            }
+            res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=3600");
+            if (act === "title") { return res.status(200).json(d); }
+            res.setHeader("Content-Type", "text/html; charset=utf-8");
+            return res.status(200).send(pageHtml(d));
+        }
+
+        if (act === "sitemap" && req.method === "GET") {
+            const list = await allTitles();
+            res.setHeader("Content-Type", "application/xml; charset=utf-8");
+            res.setHeader("Cache-Control", "public, s-maxage=3600");
+            return res.status(200).send('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' +
+                list.map(m => "<url><loc>" + esc(pageUrl(m)) + "</loc><lastmod>" + new Date(Math.max(0, ...Object.values(m.eps || {}).map(x => x.ts || 0)) || Date.now()).toISOString().slice(0, 10) + "</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>").join("") + "</urlset>");
         }
 
         if (act === "get" && req.method === "GET") {
@@ -94,10 +221,18 @@ module.exports = async function ready(req, res) {
             const [raw] = await redis([["HGET", "rdy:idx", b.imdb]]);
             const m = parse(raw) || { id: b.imdb, eps: {} };
             m.t = clean(b.title, 100); m.y = clean(b.year, 8); m.type = type;
+            if (!m.slug) {
+                const taken = new Set((await allTitles()).filter(x => x.id !== b.imdb).map(x => x.slug));
+                let sl = slugify(m.t);
+                if (taken.has(sl) && m.y) { sl = slugify(m.t + " " + m.y); }
+                if (taken.has(sl)) { sl = sl + "-" + b.imdb; }
+                m.slug = sl;
+            }
             m.p = https(b.poster) || m.p || "";
             m.eps = m.eps || {};
             m.eps[s + "x" + e] = {
                 s, e, f: clean(b.filename, 140).replace(/[\\/:*?"<>|]+/g, "_") || (title + ".Sinhala.SinSubz.srt"),
+                r: clean(b.release, 120),
                 n: num(b.count) || (srt.match(/-->/g) || []).length, ts: Date.now()
             };
             const packed = zlib.gzipSync(Buffer.from(srt, "utf8")).toString("base64");
@@ -110,3 +245,4 @@ module.exports = async function ready(req, res) {
         return res.status(500).json({ error: "Server error" });
     }
 };
+module.exports.pageHtml = pageHtml;

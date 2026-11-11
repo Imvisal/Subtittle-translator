@@ -52,7 +52,10 @@
     }
   ],
   "rewrites": [
-    { "source": "/announcement.json", "destination": "/api/stats?announcement=1" }
+    { "source": "/announcement.json", "destination": "/api/stats?announcement=1" },
+    { "source": "/tv/:slug", "destination": "/api/stats?ready=page&slug=:slug" },
+    { "source": "/film/:slug", "destination": "/api/stats?ready=page&slug=:slug" },
+    { "source": "/sitemap-titles.xml", "destination": "/api/stats?ready=sitemap" }
   ],
   "redirects": [
     {

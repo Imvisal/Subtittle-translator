@@ -418,6 +418,14 @@ function call(method, url, { headers = {}, body } = {}) {
             const g = await call("GET", "/api/stats?ready=get&id=tt0944947&s=1&e=2");
             ok(g.code === 200 && String(g.body).includes("සිංහල පේළිය 7") && /attachment/.test(g.headers["Content-Disposition"]), "ready get works for everybody");
             ok((await call("GET", "/api/stats?ready=get&id=tt0944947&s=9&e=9")).code === 404, "ready get 404");
+            ok(rl.body.items[0].slug === "game-of-thrones", "title gets a slug");
+            const tj = await call("GET", "/api/stats?ready=title&slug=game-of-thrones");
+            ok(tj.code === 200 && tj.body.seasons[1].length === 2 && tj.body.seasons[1][1].ready === true, "title json lists the season episodes");
+            const pg = await call("GET", "/api/stats?ready=page&slug=game-of-thrones");
+            ok(pg.code === 200 && /<title>Game of Thrones \(2011\) Sinhala Subtitles/.test(pg.body) && /id="tp-data"/.test(pg.body) && /rel="canonical" href="https:\/\/sinsubs.site\/tv\/game-of-thrones"/.test(pg.body), "title page html has SEO tags + data");
+            ok((await call("GET", "/api/stats?ready=page&slug=nope")).code === 404, "unknown slug 404");
+            const sm = await call("GET", "/api/stats?ready=sitemap");
+            ok(sm.code === 200 && /sinsubs.site\/tv\/game-of-thrones/.test(sm.body), "titles sitemap");
             ok((await call("POST", "/api/stats?ready=del", { headers: AK, body: { imdb: "tt0944947", season: 1, episode: 1 } })).code === 200, "ready delete one episode");
             ok((await call("GET", "/api/stats?ready=list")).body.items[0].eps.length === 1, "one episode left");
             await call("POST", "/api/stats?ready=del", { headers: AK, body: { imdb: "tt0944947" } });

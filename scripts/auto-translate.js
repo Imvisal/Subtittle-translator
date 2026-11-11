@@ -73,7 +73,7 @@ async function translateInPage(job) {
     const list = (d.results || []).filter(s => !s.hearingImpaired).concat((d.results || []).filter(s => s.hearingImpaired));
     if (!list.length) { return { skip: "no English subtitle on SubDL" }; }
 
-    let subs = null;
+    let subs = null, release = "";
     for (const cand of list.slice(0, 4)) {
         try {
             const url = cand.downloadUrl || cand.url || cand.download_url;
@@ -86,7 +86,7 @@ async function translateInPage(job) {
             for (let i = 0; i < bin.length; i++) { bytes[i] = bin.charCodeAt(i); }
             if (isZipFile(bytes)) { continue; }
             const parsed = parseSRT(decodeSubtitleBytes(bytes));
-            if (parsed.length >= (isTv ? 150 : 400)) { subs = parsed; break; }
+            if (parsed.length >= (isTv ? 150 : 400)) { subs = parsed; release = String(cand.release || cand.fileName || ""); break; }
         } catch (e) { /* try the next file */ }
     }
     if (!subs) { return { skip: "no usable English file (too short / bad)" }; }
@@ -95,7 +95,7 @@ async function translateInPage(job) {
         { title: job.title + (job.year ? " (" + job.year + ")" : "") });
     const srt = buildSRT(addSinSubzCredit(applyWordNotes(translated)));
     const base = getSubtitleBaseName(item, job.season, job.episode);
-    return { srt, count: translated.length, filename: base + ".Sinhala.SinSubz.srt" };
+    return { srt, count: translated.length, filename: base + ".Sinhala.SinSubz.srt", release };
 }
 
 const AK = () => ({ "x-admin-key": KEY });
@@ -211,7 +211,7 @@ async function refillIfDue(weekly, meta) {
                 continue;
             }
             noSub[id] = 0;
-            const put = await post("/api/stats?ready=put", { imdb: id, title: job.t.title, year: job.t.year, poster: job.t.poster, type: job.t.type === "tv" ? "tv" : "movie", season: job.season, episode: job.episode, filename: out.filename, srt: out.srt, count: out.count });
+            const put = await post("/api/stats?ready=put", { imdb: id, title: job.t.title, year: job.t.year, poster: job.t.poster, type: job.t.type === "tv" ? "tv" : "movie", season: job.season, episode: job.episode, filename: out.filename, srt: out.srt, count: out.count, release: out.release });
             if (!put.ok) { throw new Error("store failed " + put.status + " " + put.text.slice(0, 120)); }
             log("  done: " + out.count + " lines");
             done++; failsInRow = 0;
