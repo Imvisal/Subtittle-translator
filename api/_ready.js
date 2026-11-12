@@ -127,7 +127,8 @@ async function sinhalaSummary(title, year, type, overview) {
     const prompt = "Write a short Sinhala story intro for the " + (type === "tv" ? "TV series" : "film") + " \"" + title + "\" (" + year + ").\n" +
         "Source (English overview): " + overview + "\n\n" +
         "Rules: 2 or 3 sentences, 40-70 words. Natural, friendly spoken Sinhala (ඔයා, මේක, ඒක; not bookish). Tell ONLY the set-up / the first part of the story that the overview gives. " +
-        "NO spoilers, no twists, no ending, nothing the overview does not say. Do not invent plot. Keep character and place names in English letters. " +
+        "NO spoilers: no twists or reveals, no deaths, no betrayals, no who-is-really-who, no ending, nothing that happens after the opening situation. If the overview itself hints at a later event, leave that part out. " +
+        "Use ONLY facts that are in the overview, do not invent plot, do not add opinions or praise. Keep character and place names in English letters. " +
         "Output only the Sinhala text, no quotes, no title, no markdown.";
     // ONE key only: GEMINI_SUMMARY_KEY if set, otherwise the last Gemini key (so the translation keys stay free)
     const key = (process.env.GEMINI_SUMMARY_KEY || "").trim() || keys[keys.length - 1];
@@ -135,7 +136,7 @@ async function sinhalaSummary(title, year, type, overview) {
         try {
             const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent", {
                 method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.4, maxOutputTokens: 400 } }),
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 400 } }),
                 signal: AbortSignal.timeout(6000)
             });
             if (!r.ok) { console.error("Gemini summary", r.status); return ""; }
