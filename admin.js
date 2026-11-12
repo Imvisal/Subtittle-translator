@@ -638,4 +638,31 @@
     });
 
     if (KEY) { load(); }
+
+    // ---- film pages from the library (backfill, a few films per call) ----
+    (function () {
+        var go = document.getElementById("fpGo"), out = document.getElementById("fpOut");
+        if (!go) { return; }
+        var running = false;
+        go.addEventListener("click", function () {
+            if (running) { return; }
+            running = true; go.disabled = true;
+            var tot = { created: 0, exists: 0, skipped: 0, errors: 0, scanned: 0 };
+            function step(cursor) {
+                fetch("/api/stats?ready=backfill", { method: "POST", headers: { "x-admin-key": KEY, "Content-Type": "application/json" }, body: JSON.stringify({ cursor: cursor }) })
+                    .then(function (r) { return r.json(); })
+                    .then(function (d) {
+                        if (!d || d.error) { throw new Error((d && d.error) || "failed"); }
+                        ["created", "exists", "skipped", "errors", "scanned"].forEach(function (k) { tot[k] += d[k] || 0; });
+                        out.textContent = "Working... " + tot.created + " pages made, " + tot.exists + " already there, " + tot.skipped + " skipped" + (tot.errors ? ", " + tot.errors + " errors (press again)" : "");
+                        if (d.done) { out.textContent = "Done. " + tot.created + " pages made, " + tot.exists + " already there, " + tot.skipped + " skipped (series or too short)" + (tot.errors ? ", " + tot.errors + " errors (press again)" : "") + "."; running = false; go.disabled = false; return; }
+                        step(d.cursor);
+                    })
+                    .catch(function (e) { out.textContent = "Stopped: " + e.message + ". Press again to continue."; running = false; go.disabled = false; });
+            }
+            out.textContent = "Starting...";
+            step("0");
+        });
+    })();
+
 })();

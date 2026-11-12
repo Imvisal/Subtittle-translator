@@ -189,6 +189,9 @@ module.exports = async function libraryHandler(req, res) {
             if (Number(count) >= MAX_ENTRIES_PER_TITLE) { return res.status(204).end(); }
 
             await redis([["HSETNX", key, h, pack(pairs)]]);
+            // a film (not an episode) gets its own /film/<slug> page the first time a translation of it is saved
+            const fm = /^(tt\d{5,10}):[a-z0-9_-]{1,24}$/.exec(k);
+            if (fm) { await Promise.race([require("./_ready.js").registerFilm(fm[1]), new Promise(r => setTimeout(r, 6000))]).catch(() => null); }
             return res.status(204).end();
         }
 

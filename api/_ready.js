@@ -7,6 +7,7 @@
    GET  /api/stats?ready=title&slug=<slug>         -> the same data as JSON
    GET  /sitemap-titles.xml                        (rewrite to ?ready=sitemap)
    GET  /api/stats?ready=get&id=tt123&s=1&e=2      -> the .srt file (download)   (movies: s and e left out)
+   POST /api/stats?ready=backfill x-admin-key     -> { cursor } makes /film pages from the saved translations (library), a few films per call
    POST /api/stats?ready=put   x-admin-key         -> { imdb, title, year, poster, type, season, episode, filename, srt }
    POST /api/stats?ready=del   x-admin-key         -> { imdb, season, episode }   (no season/episode = the whole title)
 
@@ -83,6 +84,87 @@ async function tmdbInfo(m) {
     } catch (err) {
         return cached || null;
     }
+}
+
+
+// ---------------------------------------------------------------------------------------------
+// FILM PAGES FROM THE LIBRARY: every film that a signed-in visitor translated (lib:t:<imdb>:<style>) gets a /film/<slug>
+// page and a ready file built from the saved Sinhala lines. Runs when a translation is saved and, for the old
+// ones, from the admin panel (ready=backfill). TV episodes are not touched here: the auto runner makes those pages.
+// ---------------------------------------------------------------------------------------------
+const tsrt = ms => { const t = Math.max(0, Math.round(ms)); const p = (n, l) => String(n).padStart(l, "0"); return p(Math.floor(t / 3600000), 2) + ":" + p(Math.floor(t / 60000) % 60, 2) + ":" + p(Math.floor(t / 1000) % 60, 2) + "," + p(t % 1000, 3); };
+function pairsToSrt(pairs) {
+    let n = 0, out = "";
+    pairs.forEach(x => { if (x && x.si) { n++; out += n + "\n" + tsrt(x.s) + " --> " + tsrt(x.e) + "\n" + String(x.si).trim() + "\n\n"; } });
+    return { srt: out, count: n };
+}
+async function tmdbRaw(p) {
+    const key = process.env.TMDB_API_KEY;
+    if (!key) { throw new Error("no TMDB key"); }
+    const isToken = key.length > 40;
+    const url = "https://api.themoviedb.org/3" + p + (p.includes("?") ? "&" : "?") + "language=en-US" + (isToken ? "" : "&api_key=" + encodeURIComponent(key));
+    const r = await fetch(url, { headers: isToken ? { Authorization: "Bearer " + key } : {}, signal: AbortSignal.timeout(7000) });
+    if (!r.ok) { throw new Error("TMDB " + r.status); }
+    return r.json();
+}
+// makes (or skips) the page of one film. opts.ts = time stamp (old films get an old one so they do not flood "newest").
+async function registerFilm(imdb, opts) {
+    try {
+        if (!hasRedis() || !imdbOk(imdb)) { return "skip"; }
+        const o = opts || {};
+        const [have] = await redis([["HEXISTS", "rdy:idx", imdb]]);
+        if (Number(have) === 1) { return "exists"; }
+        // every saved style of this film: take the longest saved copy
+        const [keys] = await redis([["SCAN", "0", "MATCH", "lib:t:" + imdb + ":*", "COUNT", "200"]]);
+        const klist = ((keys && keys[1]) || []).filter(k => /^lib:t:tt\d+:[a-z0-9_-]{1,24}$/.test(k));
+        if (!klist.length) { return "nolib"; }
+        let best = null;
+        const hashes = await redis(klist.map(k => ["HGETALL", k]));
+        for (const all of hashes) {
+            for (let i = 0; all && i + 1 < all.length; i += 2) {
+                try {
+                    const pairs = JSON.parse(zlib.gunzipSync(Buffer.from(all[i + 1], "base64")).toString("utf8"));
+                    if (Array.isArray(pairs) && (!best || pairs.length > best.length)) { best = pairs; }
+                } catch (e) { /* skip a damaged copy */ }
+            }
+        }
+        if (!best) { return "nolib"; }
+        const made = pairsToSrt(best);
+        if (made.count < 20) { return "short"; }
+        const found = await tmdbRaw("/find/" + imdb + "?external_source=imdb_id");
+        const mv = (found.movie_results || [])[0];
+        if (!mv) { return "notfilm"; }          // a series or unknown id
+        const title = clean(mv.title || mv.original_title, 100);
+        if (!title) { return "notfilm"; }
+        const year = String(mv.release_date || "").slice(0, 4);
+        const m = { id: imdb, t: title, y: year, type: "movie", p: mv.poster_path ? "https://image.tmdb.org/t/p/w342" + mv.poster_path : "", eps: {} };
+        const taken = new Set((await allTitles()).filter(x => x.id !== imdb).map(x => x.slug));
+        let sl = slugify(m.t);
+        if (taken.has(sl) && m.y) { sl = slugify(m.t + " " + m.y); }
+        if (taken.has(sl)) { sl = sl + "-" + imdb; }
+        m.slug = sl;
+        m.eps["0x0"] = { s: 0, e: 0, f: (title + (year ? " " + year : "") + ".Sinhala.SinSubz.srt").replace(/[\\/:*?"<>|]+/g, "_"), r: "", n: made.count, ts: o.ts || Date.now() };
+        const packed = zlib.gzipSync(Buffer.from(made.srt, "utf8")).toString("base64");
+        await redis([["SET", srtKey(imdb, 0, 0), packed], ["HSETNX", "rdy:idx", imdb, JSON.stringify(m)]]);
+        return "created";
+    } catch (e) { return "error"; }
+}
+
+async function backfill(req, res) {
+    res.setHeader("Cache-Control", "no-store");
+    if (!isAdmin(req)) { return res.status(401).json({ error: "Unauthorized" }); }
+    const b = req.body && typeof req.body === "object" ? req.body : {};
+    const cursor = /^\d{1,20}$/.test(String(b.cursor == null ? "0" : b.cursor)) ? String(b.cursor == null ? "0" : b.cursor) : "0";
+    const [scan] = await redis([["SCAN", cursor, "MATCH", "lib:t:tt*", "COUNT", "14"]]);
+    const next = String((scan && scan[0]) || "0");
+    const ids = [...new Set(((scan && scan[1]) || []).map(k => (/^lib:t:(tt\d{5,10}):[a-z0-9_-]{1,24}$/.exec(k) || [])[1]).filter(Boolean))];
+    const stats = { created: 0, exists: 0, skipped: 0, errors: 0 };
+    const old = Date.now() - 120 * 86400e3;          // old films go to the end of the "newest" list
+    for (let i = 0; i < ids.length; i += 5) {
+        const r = await Promise.all(ids.slice(i, i + 5).map(id => registerFilm(id, { ts: old })));
+        r.forEach(x => { if (x === "created") { stats.created++; } else if (x === "exists") { stats.exists++; } else if (x === "error") { stats.errors++; } else { stats.skipped++; } });
+    }
+    return res.status(200).json(Object.assign({ cursor: next, done: next === "0", scanned: ids.length }, stats));
 }
 
 async function titleData(slug) {
@@ -219,6 +301,8 @@ module.exports = async function ready(req, res) {
             return res.status(200).send("﻿" + text);
         }
 
+        if (act === "backfill" && req.method === "POST") { return backfill(req, res); }
+
         if ((act === "put" || act === "del") && req.method === "POST") {
             if (!isAdmin(req)) { return res.status(401).json({ error: "Unauthorized" }); }
             const b = req.body && typeof req.body === "object" ? req.body : {};
@@ -277,3 +361,4 @@ module.exports = async function ready(req, res) {
     }
 };
 module.exports.pageHtml = pageHtml;
+module.exports.registerFilm = registerFilm;
