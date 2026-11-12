@@ -121,6 +121,29 @@ async function translateLinesRaw(items, language) {
     return items.map((it, k) => ({ index: it.index, text: out[k] || String(it.text || "") }));
 }
 
+// ---- Cloudflare Workers AI chat model (Gemma): gets the SAME prompt/rules as Gemini, so the style rules apply ----
+const CF_LLM = () => process.env.CLOUDFLARE_LLM_MODEL || "@cf/google/gemma-3-12b-it";
+function llmEnabled() { return hasCloudflare() && String(process.env.MT_MODE || "").toLowerCase() !== "mt"; }
+
+async function llmText(prompt) {
+    const url = "https://api.cloudflare.com/client/v4/accounts/" + encodeURIComponent(process.env.CLOUDFLARE_ACCOUNT_ID) + "/ai/run/" + CF_LLM();
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 55000);
+    try {
+        const res = await fetch(url, {
+            method: "POST", signal: ctl.signal,
+            headers: { "Content-Type": "application/json", Authorization: "Bearer " + process.env.CLOUDFLARE_API_TOKEN },
+            body: JSON.stringify({ messages: [{ role: "user", content: prompt }], max_tokens: 6000, temperature: 0.3 })
+        });
+        if (!res.ok) { throw new Error("Cloudflare AI " + res.status); }
+        const data = await res.json();
+        const r = data && data.result;
+        const text = (r && (typeof r.response === "string" ? r.response : (r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content))) || "";
+        if (!String(text).trim()) { throw new Error("Cloudflare AI: empty reply"); }
+        return String(text);
+    } finally { clearTimeout(timer); }
+}
+
 function provider() {
     if (String(process.env.MT_FALLBACK || "").toLowerCase() === "off") { return "off"; }
     return hasCloudflare() ? "cloudflare" : (hasAzure() ? "azure" : "none");
@@ -165,4 +188,4 @@ async function testHandler(req, res) {
     return res.status(200).json(info);
 }
 
-module.exports = { enabled, translateLines, provider, testHandler, spokenSinhala };
+module.exports = { enabled, translateLines, provider, testHandler, spokenSinhala, llmEnabled, llmText };

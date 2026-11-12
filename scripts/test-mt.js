@@ -83,6 +83,17 @@ const ok = (c, m) => { if (c) { pass++; } else { fail++; console.log("FAIL:", m)
     ok(body2.lines.length === 2 && body2.total === 2 && body2.lines[0].en === "Hello there" && body2.lines[1].en === "<i>Bye</i>\nfriend", "srt cues read: " + JSON.stringify(body2.lines));
     ok(body2.lines[0].si === "ඔයා Hello there", "spoken fix applied to MT output: " + body2.lines[0].si);
 
+    // ---- Cloudflare chat model (Gemma): same prompt as Gemini ----
+    process.env.CLOUDFLARE_ACCOUNT_ID = "acc1"; process.env.CLOUDFLARE_API_TOKEN = "tok";
+    ok(mt.llmEnabled(), "LLM mode is on with Cloudflare settings");
+    let sent = null;
+    global.fetch = async (url, opt) => { sent = { url, body: JSON.parse(opt.body) }; return { ok: true, json: async () => ({ result: { response: "{\"translations\":[]}" } }) }; };
+    ok((await mt.llmText("PROMPT TEXT")) === "{\"translations\":[]}", "llm text returned (response field)");
+    ok(/ai\/run\/@cf\/google\/gemma/.test(sent.url) && sent.body.messages[0].content === "PROMPT TEXT", "prompt sent as the user message to gemma");
+    global.fetch = async () => ({ ok: true, json: async () => ({ result: { choices: [{ message: { content: "OPENAI-STYLE" } }] } }) });
+    ok((await mt.llmText("p")) === "OPENAI-STYLE", "openai-style reply read");
+    process.env.MT_MODE = "mt"; ok(!mt.llmEnabled(), "MT_MODE=mt turns the chat model off"); delete process.env.MT_MODE;
+
     console.log(pass + " passed, " + fail + " failed");
     process.exit(fail ? 1 : 0);
 })();

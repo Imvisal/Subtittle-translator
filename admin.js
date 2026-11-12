@@ -373,36 +373,45 @@
     try { var savedTab = localStorage.getItem("sinsubz-admin-tab"); if (savedTab) { openTab(savedTab); } } catch (e) { /* ignore */ }
 
 
-    // ---- backup translator test ----
+    // ---- backup translator test: sends sample lines (or the first 30 cues of an .srt) through the REAL /api/translate
+    //      with "x-force-mt", so Gemini is skipped and the backup translator + all the rules/clean-up run exactly like for visitors ----
     (function () {
         var btn = $("mtTest"); if (!btn) { return; }
-        function run(srtText) {
+        var SAMPLE = ["Where were you last night?", "I told you not to come here!", "Don't lie to me. I know everything.", "Come on, we have to go. Now!",
+            "You're out of your mind if you think I'll help you.", "Hey, buddy. Long time no see.", "I can't believe you did this to me.", "Mom, I'm home. What's for dinner?"];
+        function cuesFrom(srt) {
+            return String(srt || "").replace(/\r/g, "").replace(/^\uFEFF/, "").split(/\n{2,}/).map(function (block) {
+                var ls = block.split("\n").filter(Boolean); var k = -1;
+                for (var i = 0; i < ls.length; i++) { if (ls[i].indexOf("-->") >= 0) { k = i; break; } }
+                return k < 0 ? "" : ls.slice(k + 1).join("\n").replace(/<[^>]+>/g, "").trim();
+            }).filter(Boolean).slice(0, 30);
+        }
+        function run(lines) {
             var out = $("mtOut"); out.textContent = "Testing..."; btn.disabled = true;
-            fetch("/api/stats?mttest=1", { method: "POST", headers: { "x-admin-key": KEY, "Content-Type": "application/json" }, body: JSON.stringify(srtText ? { srt: srtText } : {}) })
-                .then(function (r) { return r.json(); })
-                .then(function (d) {
+            var subs = lines.map(function (t, i) { return { number: i + 1, text: t }; });
+            var t0 = Date.now();
+            fetch("/api/translate", { method: "POST", headers: { "x-admin-key": KEY, "x-force-mt": "1", "Content-Type": "application/json" },
+                body: JSON.stringify({ subtitles: subs, language: "si", style: "natural", job: "backup-test" }) })
+                .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+                .then(function (x) {
                     btn.disabled = false; out.textContent = "";
-                    $("mtProv").textContent = d.provider || "";
-                    if (d.error) { out.appendChild(el("div", "bad", "Failed: " + d.error)); }
-                    else { out.appendChild(el("div", "muted", "Works (" + d.provider + ", " + d.ms + " ms)")); }
-                    (d.lines || []).forEach(function (l) {
-                        var row = el("div", "", "");
-                        row.style.cssText = "padding:6px 0;border-top:1px solid var(--line)";
-                        row.appendChild(el("div", "muted", l.en));
-                        row.appendChild(el("div", "", l.si));
-                        out.appendChild(row);
+                    if (!x.ok) { out.appendChild(el("div", "bad", "Failed: " + (x.d.error || "unknown error"))); return; }
+                    out.appendChild(el("div", "muted", "Works (" + (x.d.engine === "mt" ? "backup translator" : "?") + ", " + (Date.now() - t0) + " ms). Admin > Logs shows which one answered."));
+                    var bySi = {}; (x.d.subtitles || []).forEach(function (s) { bySi[s.number] = s.text; });
+                    lines.forEach(function (en, i) {
+                        var row = el("div", "", ""); row.style.cssText = "padding:6px 0;border-top:1px solid var(--line)";
+                        row.appendChild(el("div", "muted", en)); row.appendChild(el("div", "", bySi[i + 1] || "")); out.appendChild(row);
                     });
                 })
                 .catch(function (e) { btn.disabled = false; out.textContent = "Error: " + e.message; });
         }
-        btn.addEventListener("click", function () { $("mtFileName").textContent = ""; run(""); });
+        btn.addEventListener("click", function () { $("mtFileName").textContent = ""; run(SAMPLE); });
         var f = $("mtFile");
         if (f) {
             f.addEventListener("change", function () {
                 var file = f.files && f.files[0]; if (!file) { return; }
-                $("mtFileName").textContent = file.name + " (first 30 lines)";
                 var rd = new FileReader();
-                rd.onload = function () { run(String(rd.result || "")); f.value = ""; };
+                rd.onload = function () { var c = cuesFrom(rd.result); $("mtFileName").textContent = file.name + " (first " + c.length + " lines)"; f.value = ""; if (c.length) { run(c); } };
                 rd.readAsText(file);
             });
         }

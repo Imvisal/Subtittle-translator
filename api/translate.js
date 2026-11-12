@@ -144,13 +144,24 @@ function getKeys() {
     )];
 }
 
+// Gemma / other chat models may wrap the JSON in ```json fences or add a sentence around it
+function extractJson(text) {
+    const t = String(text || "").trim();
+    if (t[0] === "{") { return t; }
+    const a = t.indexOf("{"), b = t.lastIndexOf("}");
+    return a >= 0 && b > a ? t.slice(a, b + 1) : t;
+}
+
 function getModels() {
     const fromEnv = (process.env.GEMINI_MODELS || "")
         .split(",")
         .map(m => m.trim())
         .filter(Boolean);
 
-    return fromEnv.length ? fromEnv : DEFAULT_MODELS;
+    const base = fromEnv.length ? fromEnv : DEFAULT_MODELS;
+    // GEMINI_EXTRA_MODELS="gemma-3-27b-it": tried only after the models above (Gemma has its own, separate quota)
+    const extra = (process.env.GEMINI_EXTRA_MODELS || "").split(",").map(m => m.trim()).filter(m => m && base.indexOf(m) < 0);
+    return base.concat(extra);
 }
 
 // key|model -> time (ms) until which we skip that combo.
@@ -331,7 +342,9 @@ async function generateInner(prompt, trail) {
                     },
                     body: JSON.stringify({
                         contents: [{ parts: [{ text: prompt }] }],
-                        generationConfig: {
+                        generationConfig: /^gemma/i.test(model)
+                            ? { temperature: 0.3, maxOutputTokens: 8192 }          // Gemma: no JSON mode, the prompt asks for JSON
+                            : {
                             responseMimeType: "application/json",
                             temperature: 0.3,
                             maxOutputTokens: 16384
@@ -818,25 +831,36 @@ ${JSON.stringify(inputItems)}
         // retries = only the lines that came back with stray characters.
         let pending = input;
         let usedKey = 0, usedModel = "", usedTries = 0, usedMt = false;
+        // admin only (the "Test backup translator" button): skip Gemini and use the backup translator right away
+        const forceMt = isRunner && String(req.headers["x-force-mt"] || "") === "1";
 
         for (let attempt = 1; attempt <= MAX_TRIES; attempt++) {
 
-            let generated =
-                await generateWithFallback(buildPrompt(pending));
+            let generated = forceMt
+                ? { error: "forced", status: 429, code: "QUOTA_EXHAUSTED" }
+                : await generateWithFallback(buildPrompt(pending));
 
-            // every Gemini key is out of its DAILY quota: use the machine-translation fallback (if it is set up)
-            // instead of telling the person "limit reached". It is dressed up as a Gemini reply so the checks below still run.
-            if (generated.error && attempt === 1 && generated.code === "QUOTA_EXHAUSTED" && !isRunner && mt.enabled()) {
+            // every Gemini key is out of its DAILY quota (or the owner forces the fallback to test it): use the backup
+            // translator instead of telling the person "limit reached". It is dressed up as a Gemini reply so the checks below still run.
+            if (attempt === 1 && mt.enabled() && ((generated.error && generated.code === "QUOTA_EXHAUSTED" && !isRunner) || forceMt)) {
                 try {
-                    const mtItems = await mt.translateLines(pending, language);
-                    generated = {
-                        data: { candidates: [{ content: { parts: [{ text: JSON.stringify({ translations: mtItems }) }] } }] },
-                        key: 0, model: "azure-mt"
-                    };
+                    let text = "", via = "";
+                    if (mt.llmEnabled()) {
+                        try { text = await mt.llmText(buildPrompt(pending)); via = "cloudflare-llm"; }
+                        catch (e) {
+                            await require("./_admin.js").logEvent({ type: "gemini", lvl: "warn", u: logCtx.u, job: logCtx.job, msg: "Backup AI failed (" + String(e && e.message || e).slice(0, 100) + "), trying plain machine translation" });
+                        }
+                    }
+                    if (!text) {
+                        text = JSON.stringify({ translations: await mt.translateLines(pending, language) });
+                        via = "machine-translation";
+                    }
+                    generated = { data: { candidates: [{ content: { parts: [{ text }] } }] }, key: 0, model: via };
                     usedMt = true;
-                    await require("./_admin.js").logEvent({ type: "gemini", lvl: "warn", u: logCtx.u, job: logCtx.job, msg: "Gemini quota gone -> used Microsoft Translator for " + pending.length + " lines" });
+                    await require("./_admin.js").logEvent({ type: "gemini", lvl: "warn", u: logCtx.u, job: logCtx.job, msg: (forceMt ? "TEST: " : "Gemini quota gone -> ") + "used " + via + " for " + pending.length + " lines" });
                 } catch (e) {
                     await require("./_admin.js").logEvent({ type: "gemini", lvl: "error", u: logCtx.u, job: logCtx.job, msg: "MT fallback failed: " + String(e && e.message || e).slice(0, 120) });
+                    if (forceMt) { return res.status(502).json({ error: "Backup translator failed: " + String(e && e.message || e).slice(0, 160), code: "MT_FAILED" }); }
                 }
             }
 
@@ -866,7 +890,7 @@ ${JSON.stringify(inputItems)}
             let result = null;
 
             try {
-                result = modelText ? JSON.parse(modelText) : null;
+                result = modelText ? JSON.parse(extractJson(modelText)) : null;
             } catch (error) {
                 await track(today(), { json: 1 });
                 console.error(
