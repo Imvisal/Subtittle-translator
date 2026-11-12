@@ -72,6 +72,17 @@ const ok = (c, m) => { if (c) { pass++; } else { fail++; console.log("FAIL:", m)
     const none = await call("adm");
     ok(none.body.provider === "none" && /No machine-translation/.test(none.body.error), "test endpoint says what is missing");
 
+    // ---- spoken Sinhala clean-up + srt upload in the test endpoint ----
+    ok(mt.spokenSinhala("ඔබට කුමක් අවශ්‍යයි? ඔබ කෙසේද? ඔහු මෙය කළා.") === "ඔයාට මොකක් ඕනේ? ඔයා කොහොමද? එයා මේක කළා.", "bookish -> spoken: " + mt.spokenSinhala("ඔබට කුමක් අවශ්‍යයි? ඔබ කෙසේද? ඔහු මෙය කළා."));
+    ok(mt.spokenSinhala("ඔබමයි") === "ඔබමයි", "no change inside a longer word");
+    process.env.CLOUDFLARE_ACCOUNT_ID = "acc1";
+    global.fetch = async (url, opt) => ({ ok: true, json: async () => ({ result: { translated_text: "ඔබ " + JSON.parse(opt.body).text } }) });
+    const srt = "1\n00:00:01,000 --> 00:00:02,000\nHello there\n\n2\n00:00:03,000 --> 00:00:04,000\n<i>Bye</i>\nfriend\n\n";
+    let st2 = 0, body2 = null; const res2 = { status(s) { st2 = s; return this; }, json(b) { body2 = b; return this; } };
+    await mt.testHandler({ method: "POST", headers: { "x-admin-key": "adm" }, body: { srt }, url: "/api/stats?mttest=1" }, res2);
+    ok(body2.lines.length === 2 && body2.total === 2 && body2.lines[0].en === "Hello there" && body2.lines[1].en === "<i>Bye</i>\nfriend", "srt cues read: " + JSON.stringify(body2.lines));
+    ok(body2.lines[0].si === "ඔයා Hello there", "spoken fix applied to MT output: " + body2.lines[0].si);
+
     console.log(pass + " passed, " + fail + " failed");
     process.exit(fail ? 1 : 0);
 })();

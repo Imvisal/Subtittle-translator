@@ -376,9 +376,9 @@
     // ---- backup translator test ----
     (function () {
         var btn = $("mtTest"); if (!btn) { return; }
-        btn.addEventListener("click", function () {
+        function run(srtText) {
             var out = $("mtOut"); out.textContent = "Testing..."; btn.disabled = true;
-            fetch("/api/stats?mttest=1", { method: "POST", headers: { "x-admin-key": KEY, "Content-Type": "application/json" }, body: "{}" })
+            fetch("/api/stats?mttest=1", { method: "POST", headers: { "x-admin-key": KEY, "Content-Type": "application/json" }, body: JSON.stringify(srtText ? { srt: srtText } : {}) })
                 .then(function (r) { return r.json(); })
                 .then(function (d) {
                     btn.disabled = false; out.textContent = "";
@@ -394,7 +394,18 @@
                     });
                 })
                 .catch(function (e) { btn.disabled = false; out.textContent = "Error: " + e.message; });
-        });
+        }
+        btn.addEventListener("click", function () { $("mtFileName").textContent = ""; run(""); });
+        var f = $("mtFile");
+        if (f) {
+            f.addEventListener("change", function () {
+                var file = f.files && f.files[0]; if (!file) { return; }
+                $("mtFileName").textContent = file.name + " (first 30 lines)";
+                var rd = new FileReader();
+                rd.onload = function () { run(String(rd.result || "")); f.value = ""; };
+                rd.readAsText(file);
+            });
+        }
     })();
 
     // ---- live log tab: refreshes every 10 s while it is open ----

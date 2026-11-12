@@ -15,6 +15,27 @@
 
 const ENDPOINT = () => (process.env.AZURE_TRANSLATOR_ENDPOINT || "https://api.cognitive.microsofttranslator.com").replace(/\/+$/, "");
 
+/* Machine translation writes bookish Sinhala. This swaps the most common written forms for the way people talk
+   (the same rules the Gemini prompt asks for: ඔයා not ඔබ, මේක not මෙය, මොකද්ද not කුමක්ද ...). Only for Sinhala MT output. */
+const SPOKEN = [
+    ["ඔබගේ", "ඔයාගේ"], ["ඔබේ", "ඔයාගේ"], ["ඔබෙන්", "ඔයාගෙන්"], ["ඔබව", "ඔයාව"], ["ඔබට", "ඔයාට"], ["ඔබ", "ඔයා"],
+    ["මෙයට", "මේකට"], ["එයට", "ඒකට"], ["මෙය", "මේක"], ["එය", "ඒක"],
+    ["මෙම", "මේ"], ["එම", "ඒ"],
+    ["කුමක්ද", "මොකද්ද"], ["කුමක්", "මොකක්"], ["කුමක", "මොකක"],
+    ["කෙසේද", "කොහොමද"], ["කෙසේ", "කොහොමද"],
+    ["ඔහුට", "එයාට"], ["ඇයට", "එයාට"], ["ඔහුගේ", "එයාගේ"], ["ඇයගේ", "එයාගේ"], ["ඔහු", "එයා"], ["ඇය", "එයා"],
+    ["අවශ්‍යයි", "ඕනේ"], ["අවශ්‍ය නැත", "ඕනේ නෑ"], ["වහාම", "දැන්ම"],
+    ["නොහැකි", "බැරි"], ["කරුණාකර", "අනේ"]
+];
+const SIN = "඀-෿";
+function spokenSinhala(text) {
+    let t = String(text == null ? "" : text);
+    for (const [from, to] of SPOKEN) {
+        t = t.replace(new RegExp("(?<![" + SIN + "])" + from + "(?![" + SIN + "])", "g"), to);
+    }
+    return t;
+}
+
 const hasCloudflare = () => !!(process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN);
 const hasAzure = () => !!process.env.AZURE_TRANSLATOR_KEY;
 
@@ -65,6 +86,11 @@ async function cloudflareLines(items, to) {
 
 // items: [{ index, text }]  ->  [{ index, text }]   (same indexes, same order). Throws on failure.
 async function translateLines(items, language) {
+    const out = await translateLinesRaw(items, language);
+    return language === "ta" ? out : out.map(o => ({ index: o.index, text: spokenSinhala(o.text) }));
+}
+
+async function translateLinesRaw(items, language) {
     const to = language === "ta" ? "ta" : "si";
     if (hasCloudflare()) { return cloudflareLines(items, to); }
     const clean = t => String(t == null ? "" : t).replace(/<[^>]+>/g, "").replace(/\{\\[^}]*\}/g, "");
@@ -115,11 +141,23 @@ async function testHandler(req, res) {
     if (!require("./_admin.js").isAdmin(req)) { return res.status(401).json({ error: "Unauthorized" }); }
     const info = { provider: provider(), lines: [] };
     if (!enabled()) { info.error = "No machine-translation settings found (set CLOUDFLARE_ACCOUNT_ID + CLOUDFLARE_API_TOKEN in Vercel and redeploy)."; return res.status(200).json(info); }
+    const b = req.body && typeof req.body === "object" ? req.body : {};
+    let lines = SAMPLE;
+    if (typeof b.srt === "string" && b.srt.length > 20) {
+        // the first 30 cues of an uploaded .srt
+        const cues = b.srt.slice(0, 300000).replace(/\r/g, "").replace(/^\uFEFF/, "").split(/\n{2,}/).map(block => {
+            const ls = block.split("\n").filter(Boolean);
+            const k = ls.findIndex(l => /-->/.test(l));
+            return k < 0 ? "" : ls.slice(k + 1).join("\n").trim();
+        }).filter(Boolean);
+        if (cues.length) { lines = cues.slice(0, 30); }
+        info.total = cues.length;
+    }
     const t0 = Date.now();
     try {
-        const out = await translateLines(SAMPLE.map((text, index) => ({ index, text })), "si");
+        const out = await translateLines(lines.map((text, index) => ({ index, text })), "si");
         info.ms = Date.now() - t0;
-        info.lines = out.map(o => ({ en: SAMPLE[o.index], si: o.text }));
+        info.lines = out.map(o => ({ en: lines[o.index], si: o.text }));
     } catch (e) {
         info.ms = Date.now() - t0;
         info.error = String((e && e.message) || e).slice(0, 200);
@@ -127,4 +165,4 @@ async function testHandler(req, res) {
     return res.status(200).json(info);
 }
 
-module.exports = { enabled, translateLines, provider, testHandler };
+module.exports = { enabled, translateLines, provider, testHandler, spokenSinhala };
