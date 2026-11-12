@@ -260,6 +260,11 @@ async function refillIfDue(weekly, meta, emptyList) {
         } catch (e) {
             const msg = String(e && e.message || e);
             log("  failed: " + msg.replace(/api_key=[^&\s]+/g, "api_key=***"));
+            if (/SUBDL_RETRY.*429|429.*SubDL/i.test(msg)) {
+                // SubDL's free plan allows 50 file downloads per day (resets 05:30 Sri Lanka time): nothing to wait for
+                log("SubDL daily download limit reached (free plan: 50 downloads a day, resets 05:30 SL). Stopping: nothing is marked, the next run continues.");
+                break stop;
+            }
             if (/SUBDL_RETRY|subtitle search|service_busy|SubDL/i.test(msg)) {
                 // SubDL throttles fast callers: wait and try this episode again (not marked, not a Gemini problem)
                 subdlWaits[id + job.season + "x" + job.episode] = (subdlWaits[id + job.season + "x" + job.episode] || 0) + 1;
