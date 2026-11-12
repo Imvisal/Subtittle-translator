@@ -3463,9 +3463,11 @@ async function translateWithLibrary(subtitles, item, season, episode, meta) {
         }
     }
 
+    window.__sinsubzMtUsed = false;
     const translated = await translateSubtitleChunks(subtitles, meta);
 
-    if (key) {
+    // lines from the machine-translation fallback are not good enough to be reused for other people
+    if (key && !window.__sinsubzMtUsed) {
         try {
             lib.save(key, hash, lib.buildPairs(english, translated), english.length);
         } catch (e) { /* saving is optional */ }
@@ -3768,6 +3770,7 @@ async function translateSubtitleChunksImpl(
                 }
 
                 quotaWaitSince = 0;
+                if (data.engine === "mt") { window.__sinsubzMtUsed = true; }   // machine-translation fallback was used for this part
                 return validateTranslatedChunk(chunk, data.subtitles);
 
             } catch (error) {

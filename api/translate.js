@@ -11,6 +11,8 @@
 // they are created in different projects.
 // ------------------------------------------------------------------
 
+const mt = require("./_mt.js");   // Microsoft Translator fallback (off until AZURE_TRANSLATOR_KEY is set)
+
 // ------------------------------------------------------------------
 // Request limits + simple per-IP rate limit
 // ------------------------------------------------------------------
@@ -815,12 +817,28 @@ ${JSON.stringify(inputItems)}
         // lines still to be translated. First pass = every line,
         // retries = only the lines that came back with stray characters.
         let pending = input;
-        let usedKey = 0, usedModel = "", usedTries = 0;
+        let usedKey = 0, usedModel = "", usedTries = 0, usedMt = false;
 
         for (let attempt = 1; attempt <= MAX_TRIES; attempt++) {
 
-            const generated =
+            let generated =
                 await generateWithFallback(buildPrompt(pending));
+
+            // every Gemini key is out of its DAILY quota: use the machine-translation fallback (if it is set up)
+            // instead of telling the person "limit reached". It is dressed up as a Gemini reply so the checks below still run.
+            if (generated.error && attempt === 1 && generated.code === "QUOTA_EXHAUSTED" && !isRunner && mt.enabled()) {
+                try {
+                    const mtItems = await mt.translateLines(pending, language);
+                    generated = {
+                        data: { candidates: [{ content: { parts: [{ text: JSON.stringify({ translations: mtItems }) }] } }] },
+                        key: 0, model: "azure-mt"
+                    };
+                    usedMt = true;
+                    await require("./_admin.js").logEvent({ type: "gemini", lvl: "warn", u: logCtx.u, job: logCtx.job, msg: "Gemini quota gone -> used Microsoft Translator for " + pending.length + " lines" });
+                } catch (e) {
+                    await require("./_admin.js").logEvent({ type: "gemini", lvl: "error", u: logCtx.u, job: logCtx.job, msg: "MT fallback failed: " + String(e && e.message || e).slice(0, 120) });
+                }
+            }
 
             if (!generated.error) { usedKey = generated.key; usedModel = generated.model; usedTries = attempt; }
 
@@ -1013,9 +1031,7 @@ ${JSON.stringify(inputItems)}
         if (limitDone) { await limitDone(); }     // this chunk is translated: counts toward the film / episode
         await require("./_admin.js").logEvent({ type: "ok", lvl: "info", u: logCtx.u, job: logCtx.job, msg: "Translated " + subtitles.length + " lines | key #" + (usedKey || "?") + " " + String(usedModel || "").replace(/^gemini-/, "") + (usedTries > 1 ? " (try " + usedTries + ")" : "") });
 
-        return res.status(200).json({
-            subtitles: output
-        });
+        return res.status(200).json(usedMt ? { subtitles: output, engine: "mt" } : { subtitles: output });
 
 
     } catch (error) {
