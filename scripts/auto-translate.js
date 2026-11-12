@@ -77,7 +77,7 @@ async function translateInPage(job) {
     }
     if (!list.length) { return { skip: "no English subtitle on SubDL" }; }
 
-    let subs = null, release = "", dlFailed = 0, tried = 0;
+    let subs = null, release = "", dlFailed = 0, tried = 0, why = "";
     for (const cand of list.slice(0, 4)) {
         try {
             const url = cand.downloadUrl || cand.url || cand.download_url;
@@ -85,17 +85,17 @@ async function translateInPage(job) {
             const dr = await fetch("/api/subtitle-download?url=" + encodeURIComponent(url.startsWith("/") ? "https://dl.subdl.com" + url : url));
             tried++;
             const dd = await dr.json().catch(() => ({}));
-            if (!dr.ok || !dd.data) { dlFailed++; continue; }
+            if (!dr.ok || !dd.data) { dlFailed++; why = dr.status + " " + String(dd.error || "no data").slice(0, 80) + " | " + url.slice(0, 90); continue; }
             const bin = atob(dd.data);
             const bytes = new Uint8Array(bin.length);
             for (let i = 0; i < bin.length; i++) { bytes[i] = bin.charCodeAt(i); }
             if (isZipFile(bytes)) { continue; }
             const parsed = parseSRT(decodeSubtitleBytes(bytes));
             if (parsed.length >= (isTv ? 150 : 400)) { subs = parsed; release = String(cand.release || cand.fileName || ""); break; }
-        } catch (e) { dlFailed++; /* try the next file */ }
+        } catch (e) { dlFailed++; why = String(e && e.message || e).slice(0, 80); /* try the next file */ }
     }
     // every download failed (SubDL busy / throttling us): that says nothing about the episode, try again later
-    if (!subs && tried && dlFailed >= tried) { return { retry: "subtitle download failed (SubDL busy)" }; }
+    if (!subs && tried && dlFailed >= tried) { return { retry: "subtitle download failed: " + why }; }
     if (!subs) { return { skip: "no usable English file (too short / bad)" }; }
 
     const translated = await translateWithLibrary(subs, item, job.season || null, job.episode || null,
