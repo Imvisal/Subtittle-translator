@@ -78,7 +78,12 @@ async function translateInPage(job) {
     if (!list.length) { return { skip: "no English subtitle on SubDL" }; }
 
     let subs = null, release = "", dlFailed = 0, tried = 0, why = "";
-    for (const cand of list.slice(0, 4)) {
+    const seenUrl = new Set();
+    for (const cand of list.slice(0, 20)) {          // not only the first few: go on down the results until one file is usable
+        const u0 = cand.downloadUrl || cand.url || cand.download_url;
+        if (u0 && seenUrl.has(u0)) { continue; }
+        if (u0) { seenUrl.add(u0); }
+        if (tried) { await new Promise(r => setTimeout(r, 1200)); }
         try {
             const url = cand.downloadUrl || cand.url || cand.download_url;
             if (!url) { continue; }
