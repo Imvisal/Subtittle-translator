@@ -46,7 +46,15 @@ async function tmdbInfo(m) {
     const seasons = [...new Set(Object.values(m.eps || {}).map(x => x.s).filter(Boolean))].sort((a, b) => a - b);
     const ck = "rdy:tmdb:" + m.id;
     const cached = parse((await redis([["GET", ck]]))[0]);
-    if (cached && cached.cast !== undefined && cached.si !== undefined && seasons.every(n => cached.seasons && cached.seasons[n])) { return cached; }
+    if (cached && cached.cast !== undefined && seasons.every(n => cached.seasons && cached.seasons[n])) {
+        // only the Sinhala intro is missing (new feature, or Gemini failed earlier): make just that, retry at most once an hour
+        if (cached.overview && !cached.si && Date.now() - (cached.siTry || 0) > 3600 * 1000) {
+            cached.siTry = Date.now();
+            cached.si = await sinhalaSummary(m.t, m.y, m.type, cached.overview);
+            await redis([["SET", ck, JSON.stringify(cached), "EX", 7 * 86400]]);
+        }
+        return cached;
+    }
     const isToken = key.length > 40;
     const get = async p => {
         const url = "https://api.themoviedb.org/3" + p + (p.includes("?") ? "&" : "?") + "language=en-US" + (isToken ? "" : "&api_key=" + encodeURIComponent(key));
@@ -98,8 +106,13 @@ async function tmdbInfo(m) {
                 } catch (err) { info.seasons[n] = []; }
             }
         }
-        info.si = (cached && cached.si) || await sinhalaSummary(m.t, m.y, m.type, info.overview);
-        await redis([["SET", ck, JSON.stringify(info), "EX", omdbOk && (info.si || !info.overview) ? 7 * 86400 : 6 * 3600]]);
+        info.si = (cached && cached.si) || "";
+        info.siTry = Date.now();
+        await redis([["SET", ck, JSON.stringify(info), "EX", omdbOk ? 7 * 86400 : 6 * 3600]]);
+        if (!info.si && info.overview) {
+            info.si = await sinhalaSummary(m.t, m.y, m.type, info.overview);
+            if (info.si) { await redis([["SET", ck, JSON.stringify(info), "EX", omdbOk ? 7 * 86400 : 6 * 3600]]); }
+        }
         return info;
     } catch (err) {
         return cached || null;
@@ -123,9 +136,9 @@ async function sinhalaSummary(title, year, type, overview) {
             const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent", {
                 method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key },
                 body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.4, maxOutputTokens: 400 } }),
-                signal: AbortSignal.timeout(9000)
+                signal: AbortSignal.timeout(6000)
             });
-            if (!r.ok) { return ""; }
+            if (!r.ok) { console.error("Gemini summary", r.status); return ""; }
             const j = await r.json();
             const t = String((((j.candidates || [])[0] || {}).content || {}).parts ? j.candidates[0].content.parts.map(x => x.text || "").join("") : "").replace(/[*_`#>"]+/g, "").replace(/\s+/g, " ").trim();
             if (t.length > 30 && /[\u0D80-\u0DFF]/.test(t)) { return t.slice(0, 600); }
