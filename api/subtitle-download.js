@@ -3,6 +3,13 @@ const AdmZip = require("adm-zip");
 const MAX_DOWNLOAD_BYTES = 8 * 1024 * 1024;   // zip / srt download
 const MAX_UNZIPPED_BYTES = 8 * 1024 * 1024;   // one extracted .srt
 
+const spent = new Map();      // key -> time until which it is considered used up
+function subdlKeys() {
+    const out = [];
+    [process.env.SUBDL_API_KEY].concat(Array.from({ length: 9 }, (_, i) => process.env["SUBDL_API_KEY_" + (i + 2)])).forEach(k => { if (k && !out.includes(k)) { out.push(k); } });
+    return out;
+}
+
 module.exports = async function handler(req, res) {
 
     try {
@@ -126,48 +133,58 @@ module.exports = async function handler(req, res) {
 
 
         // follow redirects by hand so they can never leave dl.subdl.com
+        // SubDL's free plan: 50 downloads a day per key. SUBDL_API_KEY, SUBDL_API_KEY_2 ... : the next key is used when one is spent.
+        const keys = subdlKeys();
         let response;
         let hopUrl = finalUrl;
+        for (const key of (keys.length ? keys : [null])) {
+            if (key && (spent.get(key) || 0) > Date.now() && keys.some(k => (spent.get(k) || 0) <= Date.now())) { continue; }
+            if (key) { const ku = new URL(finalUrl); ku.searchParams.set("api_key", key); hopUrl = ku.toString(); } else { hopUrl = finalUrl; }
 
-        for (let hop = 0; hop < 4; hop++) {
+            for (let hop = 0; hop < 4; hop++) {
 
-            response = await fetch(
-                hopUrl,
-                {
-                    method: "GET",
-                    redirect: "manual",
-                    headers: {
-                        "User-Agent": "Mozilla/5.0 SinSubz"
+                response = await fetch(
+                    hopUrl,
+                    {
+                        method: "GET",
+                        redirect: "manual",
+                        headers: {
+                            "User-Agent": "Mozilla/5.0 SinSubz"
+                        }
                     }
+                );
+
+                if (response.status >= 300 && response.status < 400) {
+
+                    const location = response.headers.get("location");
+                    let next;
+
+                    try {
+                        next = new URL(location || "", hopUrl);
+                    } catch {
+                        next = null;
+                    }
+
+                    if (
+                        !next ||
+                        next.protocol !== "https:" ||
+                        next.hostname !== "dl.subdl.com"
+                    ) {
+                        return res.status(403).json({
+                            error: "Blocked redirect to a non-SubDL address"
+                        });
+                    }
+
+                    hopUrl = next.toString();
+                    continue;
                 }
-            );
 
-            if (response.status >= 300 && response.status < 400) {
-
-                const location = response.headers.get("location");
-                let next;
-
-                try {
-                    next = new URL(location || "", hopUrl);
-                } catch {
-                    next = null;
-                }
-
-                if (
-                    !next ||
-                    next.protocol !== "https:" ||
-                    next.hostname !== "dl.subdl.com"
-                ) {
-                    return res.status(403).json({
-                        error: "Blocked redirect to a non-SubDL address"
-                    });
-                }
-
-                hopUrl = next.toString();
-                continue;
+                break;
             }
 
-            break;
+
+            if (response.status !== 429 || !key) { break; }
+            spent.set(key, Date.now() + 30 * 60 * 1000);     // this key is used up: rest it for 30 minutes
         }
 
         if (response.status >= 300 && response.status < 400) {
