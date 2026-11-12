@@ -42,10 +42,7 @@
         if (runtimeText(D.runtime)) { facts.push(runtimeText(D.runtime) + (isTv ? " / episode" : "")); }
         if (D.rated) { facts.push('<span class="tp-rated">' + esc(D.rated) + '</span>'); }
         var n = readyCount();
-        var actions = isTv
-            ? '<a class="tp-cta tp-cta-dl" href="#tpEps">\u2B07 Download episodes <em>' + n + ' ready</em></a>'
-            : '<button type="button" class="tp-cta tp-cta-dl tp-dl" data-s="0" data-e="0">\u2B07 Download Sinhala subtitle</button>' +
-              '<a class="tp-cta tp-cta-match" href="' + matchUrl(0, 0) + '">\uD83C\uDFAF Match my video</a>';
+        var actions = "";
         if (D.trailer && /^[\w-]{6,20}$/.test(D.trailer)) { actions += '<button type="button" class="tp-cta tp-cta-tr" data-act="trailer">\u25B6 Watch trailer</button>'; }
         return '<section class="tp-hero" id="tpHero">' +
             '<div class="tp-bd">' + (D.backdrop ? '<img src="' + esc(D.backdrop) + '" alt="" referrerpolicy="no-referrer">' : "") + '</div>' +
@@ -77,12 +74,9 @@
     function episodes() {
         if (!isTv) {
             var f0 = (D.seasons[0] && D.seasons[0][0]) || {};
-            return '<section class="tp-card" id="tpEps"><h2>Download Sinhala subtitle</h2><div class="tp-dgrid">' +
-                '<a class="tp-dtile tp-dt-a" href="' + fileUrl(0, 0) + '" download><span class="tp-di">\u2B07</span><b>Download now</b>' +
-                '<span>Ready .srt file' + (f0.n ? " \u00B7 " + f0.n + " lines" : "") + '. Works with most versions' + (f0.r ? " (made from " + esc(f0.r) + ")" : "") + '.</span></a>' +
-                '<a class="tp-dtile tp-dt-b" href="' + matchUrl(0, 0) + '"><span class="tp-di">\uD83C\uDFAF</span><b>Match my video</b>' +
-                '<span>Pick your release (WEB-DL, BluRay, WEBRip...) and we sync the Sinhala subtitle to it. No waiting, no AI.</span></a>' +
-                '</div></section>';
+            return '<section class="tp-card tp-dcard" id="tpEps"><h2>Download Sinhala subtitle</h2>' +
+                '<button type="button" class="tp-bigdl tp-dl" data-s="0" data-e="0"><span class="tp-di">\u2B07</span><span class="tp-bt"><b>Download Sinhala subtitle</b>' +
+                '<small>' + (f0.n ? f0.n + ' lines \u00B7 ' : '') + 'free .srt \u00B7 pick your video version</small></span></button></section>';
         }
         var tabs = seasonKeys.length > 1 ? '<div class="tp-tabs" role="tablist">' + seasonKeys.map(function (k) {
             return '<button type="button" role="tab" class="tp-tab' + (k === cur ? " on" : "") + '" data-season="' + k + '">Season ' + k + '</button>';
@@ -133,13 +127,33 @@
         var rel = ep && ep.r ? ep.r : "";
         var ov = document.createElement("div");
         ov.className = "tp-ov";
-        ov.innerHTML = '<div class="tp-modal" role="dialog" aria-modal="true" aria-label="Choose your video version">' +
-            '<button type="button" class="tp-x" aria-label="Close">✕</button>' +
-            '<div class="tp-mt">Which video version do you have?</div><div class="tp-ms">' + esc(label) + '</div>' +
-            '<p class="tp-mp">Subtitles must fit your video file (WEB-DL, BluRay, WEBRip, HDTV, 1080p, 720p...). Pick one:</p>' +
-            '<a class="tp-opt tp-opt-a" href="' + fileUrl(isTv ? s : 0, isTv ? e : 0) + '" download><b>⬇ Download now</b><span>Not sure, or just want it fast.' + (rel ? " Made from: <em>" + esc(rel) + "</em>." : "") + ' It can be a few seconds off on other versions.</span></a>' +
-            '<a class="tp-opt tp-opt-b" href="' + matchUrl(s, e) + '"><b>🎯 Match my video (synced)</b><span>Choose your video version and we sync the Sinhala subtitle to it. No waiting, no AI.</span></a>' +
+        var si = isTv ? s : 0, ei = isTv ? e : 0;
+        ov.innerHTML = '<div class="tp-modal" role="dialog" aria-modal="true" aria-label="Download Sinhala subtitle">' +
+            '<button type="button" class="tp-x" aria-label="Close">\u2715</button>' +
+            '<div class="tp-mt">Download Sinhala subtitle</div><div class="tp-ms">' + esc(label) + '</div>' +
+            '<div class="tp-sec">Original subtitle</div>' +
+            '<a class="tp-opt tp-opt-a" href="' + fileUrl(si, ei) + '" download><span class="tp-ot"><b>' + (rel ? esc(rel) : "Ready subtitle") + '</b><span>Works with most versions. Ready now.</span></span><span class="tp-obtn">\u2B07 Download</span></a>' +
+            '<div class="tp-sec">Other video versions <small>synced to your file</small></div>' +
+            '<div class="tp-rels" id="tpRels"><p class="tp-mp">Loading versions\u2026</p></div>' +
             '</div>';
+        (function loadRels() {
+            var box = null;
+            var q = "/api/subtitles?imdb_id=" + encodeURIComponent(D.id) + (isTv ? "&type=tv&season=" + s + "&episode=" + e : "&type=movie");
+            fetch(q).then(function (r) { return r.json(); }).then(function (j) {
+                box = ov.querySelector("#tpRels"); if (!box) { return; }
+                var seen = {}, out = [];
+                (j.results || []).forEach(function (x) {
+                    var r = String(x.release || x.fileName || ""); if (!r || seen[r]) { return; }
+                    var lab = r.replace(/\.(srt|zip)$/i, "");
+                    if (rel && lab.toLowerCase() === rel.toLowerCase()) { return; }
+                    seen[r] = 1; out.push({ r: r, lab: lab });
+                });
+                if (!out.length) { box.innerHTML = '<p class="tp-mp">No other versions found. Use the original above.</p>'; return; }
+                box.innerHTML = out.slice(0, 12).map(function (o) {
+                    return '<a class="tp-opt tp-opt-r" href="' + matchUrl(s, e) + '&rel=' + encodeURIComponent(o.r) + '"><span class="tp-ot"><b>' + esc(o.lab) + '</b></span><span class="tp-obtn">\u2B07 Download</span></a>';
+                }).join("");
+            }).catch(function () { box = ov.querySelector("#tpRels"); if (box) { box.innerHTML = '<p class="tp-mp">Could not load other versions. Use the original above.</p>'; } });
+        })();
         function close() { if (ov.parentNode) { ov.parentNode.removeChild(ov); } document.removeEventListener("keydown", onKey); }
         function onKey(k) { if (k.key === "Escape") { close(); } }
         ov.addEventListener("click", function (c) { if (c.target === ov || (c.target.closest && c.target.closest(".tp-x"))) { close(); } });

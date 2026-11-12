@@ -153,3 +153,20 @@
 }
 
 .tp-h1s { display: block; margin-top: 6px; font-size: clamp(15px, 2.6vw, 21px); font-weight: 700; letter-spacing: 0; color: var(--accent-2, #9aa6ff); }
+
+/* one big download button + popup with versions */
+.tp-bigdl { display: flex; align-items: center; gap: 16px; width: 100%; padding: 18px 22px; border: 0; border-radius: 18px; cursor: pointer; text-align: left; font: inherit; color: #0b0d1f; background: linear-gradient(180deg, #b4b2ff, #8381f7); box-shadow: 0 18px 40px -14px rgba(131, 129, 247, .85); transition: transform .15s, filter .15s; }
+.tp-bigdl:hover { transform: translateY(-2px); filter: brightness(1.06); }
+.tp-bigdl .tp-di { position: static; transform: none; width: 48px; height: 48px; font-size: 24px; background: rgba(11, 13, 31, .16); color: #0b0d1f; flex: none; }
+.tp-bt b { display: block; font-size: 19px; font-family: var(--font-display); }
+.tp-bt small { display: block; margin-top: 3px; font-size: 13px; opacity: .75; }
+.tp-sec { margin: 18px 0 8px; font-weight: 800; font-size: 14px; }
+.tp-sec small { font-weight: 600; color: var(--muted); margin-left: 6px; }
+.tp-opt { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.tp-ot { min-width: 0; } .tp-ot b { display: block; overflow-wrap: anywhere; font-size: 14.5px; } .tp-ot span { display: block; margin-top: 3px; font-size: 12.5px; color: var(--muted); }
+.tp-obtn { flex: none; padding: 8px 14px; border-radius: 10px; font-weight: 800; font-size: 13px; color: #0b0d1f; background: linear-gradient(180deg, #a9a7ff, #8381f7); }
+.tp-opt-r { margin-top: 8px; }
+.tp-rels { max-height: 42vh; overflow-y: auto; }
+.tp-opt .tp-obtn { display: inline-block; margin: 0; font-size: 13px; color: #0b0d1f; line-height: 1.2; }
+.tp-opt .tp-ot { margin: 0; }
+.tp-opt .tp-ot > span { margin-top: 3px; }

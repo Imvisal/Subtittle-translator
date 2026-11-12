@@ -2901,6 +2901,15 @@ async function displaySubtitleResults(
             }
         );
 
+        // coming from a title page's "Download" popup: pick the release the person chose, once
+        try {
+            const want = window.__sinsubzAutoRel;
+            window.__sinsubzAutoRel = "";
+            if (want) {
+                const at = subtitles.findIndex(function (s) { return String(s.release || s.fileName || "") === want; });
+                if (at >= 0 && buttons[at]) { setTimeout(function () { buttons[at].click(); }, 250); }
+            }
+        } catch (e) { /* ignore */ }
 
         return;
 
@@ -6994,6 +7003,7 @@ window.__sinsubzPremiumInfo = async function (mode) {
             imdbID: id, title: (p.get("t") || "").slice(0, 150), year: (p.get("y") || "").slice(0, 4),
             poster: /^https:\/\//.test(p.get("p") || "") ? p.get("p") : "", type: season ? "series" : "movie"
         };
+        window.__sinsubzAutoRel = (p.get("rel") || "").slice(0, 300);
         window.addEventListener("load", function () {
             setTimeout(function () {
                 try { history.replaceState(null, "", location.pathname); } catch (e) { /* ignore */ }
