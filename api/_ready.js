@@ -210,7 +210,11 @@ function pageHtml(d) {
     ];
     const crumbName = isTv ? "TV series" : "Films";
     const ld = { "@context": "https://schema.org", "@graph": [
-        { "@type": isTv ? "TVSeries" : "Movie", name: d.title, url: d.url, image: d.poster || undefined, description: d.overview || undefined, inLanguage: "si" },
+        { "@type": isTv ? "TVSeries" : "Movie", name: d.title, url: d.url, image: d.poster || undefined, description: d.overview || undefined, inLanguage: "si",
+            genre: d.genres && d.genres.length ? d.genres : undefined, datePublished: d.year || undefined,
+            duration: !isTv && d.runtime ? "PT" + d.runtime + "M" : undefined,
+            trailer: d.trailer && d.year ? { "@type": "VideoObject", name: d.title + " trailer", description: "Official trailer of " + d.title + ".",
+                thumbnailUrl: "https://img.youtube.com/vi/" + d.trailer + "/hqdefault.jpg", embedUrl: "https://www.youtube.com/embed/" + d.trailer, uploadDate: d.year + "-01-01" } : undefined },
         { "@type": "BreadcrumbList", itemListElement: [
             { "@type": "ListItem", position: 1, name: "SinSubz", item: SITE + "/" },
             { "@type": "ListItem", position: 2, name: crumbName + " Sinhala subtitles", item: SITE + "/#readyTitles" },
@@ -223,8 +227,8 @@ function pageHtml(d) {
         "<p>Download " + esc(d.title) + " Sinhala sub for free. SinSubz makes natural spoken Sinhala subtitles (.srt) that fit your video. " +
         esc(d.title) + " සිංහල උපසිරැසි නොමිලේ ඩවුන්ලෝඩ් කරගන්න.</p>" + faqHtml + "</section>";
     const seed = JSON.stringify(d).replace(/</g, "\\u003c");
-    const noscript = Object.keys(d.seasons).map(n => "<h3>Season " + esc(n) + "</h3><ul>" + d.seasons[n].filter(e => e.ready).map(e =>
-        '<li><a href="/api/stats?ready=get&amp;id=' + esc(d.id) + "&amp;s=" + esc(n) + "&amp;e=" + esc(e.e) + '">S' + String(n).padStart(2, "0") + "E" + String(e.e).padStart(2, "0") + (e.name ? " " + esc(e.name) : "") + " Sinhala subtitle (.srt)</a></li>").join("") + "</ul>").join("");
+    const noscript = (d.overview ? "<h1>" + esc(d.title) + " Sinhala Subtitles</h1><p>" + esc(d.overview) + "</p>" : "") + (!isTv ? '<p><a href="/api/stats?ready=get&amp;id=' + esc(d.id) + '&amp;s=0&amp;e=0">Download ' + esc(d.title) + " Sinhala subtitle (.srt)</a></p>" : "") + (!isTv ? "" : Object.keys(d.seasons).map(n => "<h3>Season " + esc(n) + "</h3><ul>" + d.seasons[n].filter(e => e.ready).map(e =>
+        '<li><a href="/api/stats?ready=get&amp;id=' + esc(d.id) + "&amp;s=" + esc(n) + "&amp;e=" + esc(e.e) + '">S' + String(n).padStart(2, "0") + "E" + String(e.e).padStart(2, "0") + (e.name ? " " + esc(e.name) : "") + " Sinhala subtitle (.srt)</a></li>").join("") + "</ul>").join(""));
     return '<!DOCTYPE html>\n<html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">' +
         "<title>" + esc(ttl) + '</title><meta name="description" content="' + esc(desc) + '"><meta name="theme-color" content="#07080d">' +
         '<link rel="canonical" href="' + esc(d.url) + '"><meta property="og:type" content="website"><meta property="og:site_name" content="SinSubz">' +
