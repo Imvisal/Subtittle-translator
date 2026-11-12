@@ -7,6 +7,7 @@
    GET  /api/stats?ready=title&slug=<slug>         -> the same data as JSON
    GET  /sitemap-titles.xml                        (rewrite to ?ready=sitemap)
    GET  /api/stats?ready=get&id=tt123&s=1&e=2      -> the .srt file (download)   (movies: s and e left out)
+   POST /api/stats?ready=intros   x-admin-key {offset,redo} -> makes the Sinhala story intro of 2 titles per call (redo: also replaces existing ones)
    POST /api/stats?ready=backfill x-admin-key     -> { cursor } makes /film pages from the saved translations (library), a few films per call
    POST /api/stats?ready=put   x-admin-key         -> { imdb, title, year, poster, type, season, episode, filename, srt }
    POST /api/stats?ready=del   x-admin-key         -> { imdb, season, episode }   (no season/episode = the whole title)
@@ -233,6 +234,30 @@ async function backfill(req, res) {
     return res.status(200).json(Object.assign({ cursor: next, done: next === "0", scanned: ids.length }, stats));
 }
 
+// Sinhala story intros for the titles that are already in the list (2 per call; the admin page keeps calling until done)
+async function intros(req, res) {
+    res.setHeader("Cache-Control", "no-store");
+    if (!isAdmin(req)) { return res.status(401).json({ error: "Unauthorized" }); }
+    const b = req.body && typeof req.body === "object" ? req.body : {};
+    const offset = Math.max(0, parseInt(b.offset, 10) || 0), redo = !!b.redo;
+    const list = (await allTitles()).sort((x, y) => (x.id < y.id ? -1 : 1));
+    const part = list.slice(offset, offset + 2);
+    const r = { made: 0, had: 0, failed: 0 };
+    for (const m of part) {
+        try {
+            const ck = "rdy:tmdb:" + m.id;
+            let c = parse((await redis([["GET", ck]]))[0]);
+            if (!c) { c = await tmdbInfo(m); }                 // fills the cache (and makes the intro on the way)
+            if (!c || !c.overview) { r.failed++; continue; }
+            if (c.si && !redo) { r.had++; continue; }
+            const si = await sinhalaSummary(m.t, m.y, m.type, c.overview);
+            if (si) { c.si = si; c.siTry = Date.now(); await redis([["SET", ck, JSON.stringify(c), "EX", 7 * 86400]]); r.made++; } else { r.failed++; }
+        } catch (e) { r.failed++; }
+    }
+    const next = offset + part.length;
+    return res.status(200).json(Object.assign({ next: next, total: list.length, done: next >= list.length }, r));
+}
+
 async function titleData(slug) {
     const list = await allTitles();
     const m = list.find(x => x.slug === slug) || list.find(x => x.id === slug);
@@ -398,6 +423,7 @@ module.exports = async function ready(req, res) {
         }
 
         if (act === "backfill" && req.method === "POST") { return backfill(req, res); }
+        if (act === "intros" && req.method === "POST") { return intros(req, res); }
 
         if ((act === "put" || act === "del") && req.method === "POST") {
             if (!isAdmin(req)) { return res.status(401).json({ error: "Unauthorized" }); }

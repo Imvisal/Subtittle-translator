@@ -639,6 +639,33 @@
 
     if (KEY) { load(); }
 
+    // ---- Sinhala story intros for every title (2 per call) ----
+    (function () {
+        var go = document.getElementById("siGo"), out = document.getElementById("siOut"), redo = document.getElementById("siRedo");
+        if (!go) { return; }
+        var running = false;
+        go.addEventListener("click", function () {
+            if (running) { return; }
+            running = true; go.disabled = true;
+            var tot = { made: 0, had: 0, failed: 0 };
+            function step(offset) {
+                fetch("/api/stats?ready=intros", { method: "POST", headers: { "x-admin-key": KEY, "Content-Type": "application/json" }, body: JSON.stringify({ offset: offset, redo: !!(redo && redo.checked) }) })
+                    .then(function (r) { return r.json(); })
+                    .then(function (d) {
+                        if (!d || d.error) { throw new Error((d && d.error) || "failed"); }
+                        ["made", "had", "failed"].forEach(function (k) { tot[k] += d[k] || 0; });
+                        var txt = tot.made + " made, " + tot.had + " already had one" + (tot.failed ? ", " + tot.failed + " failed (press again later)" : "");
+                        out.textContent = (d.done ? "Done. " : "Working... " + d.next + "/" + d.total + ". ") + txt + (d.done ? "." : "");
+                        if (d.done) { running = false; go.disabled = false; return; }
+                        step(d.next);
+                    })
+                    .catch(function (e) { out.textContent = "Stopped: " + e.message + ". Press again to continue."; running = false; go.disabled = false; });
+            }
+            out.textContent = "Starting...";
+            step(0);
+        });
+    })();
+
     // ---- film pages from the library (backfill, a few films per call) ----
     (function () {
         var go = document.getElementById("fpGo"), out = document.getElementById("fpOut");
