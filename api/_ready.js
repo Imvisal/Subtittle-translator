@@ -110,26 +110,26 @@ async function tmdbInfo(m) {
 async function sinhalaSummary(title, year, type, overview) {
     if (!overview) { return ""; }
     const keys = [...new Set([].concat((process.env.GEMINI_API_KEYS || "").split(","), process.env.GEMINI_API_KEY, Array.from({ length: 29 }, (_, i) => process.env["GEMINI_API_KEY_" + (i + 2)])).map(k => (k || "").trim()).filter(Boolean))];
-    if (!keys.length) { return ""; }
+    if (!keys.length && !process.env.GEMINI_SUMMARY_KEY) { return ""; }
     const prompt = "Write a short Sinhala story intro for the " + (type === "tv" ? "TV series" : "film") + " \"" + title + "\" (" + year + ").\n" +
         "Source (English overview): " + overview + "\n\n" +
         "Rules: 2 or 3 sentences, 40-70 words. Natural, friendly spoken Sinhala (ඔයා, මේක, ඒක; not bookish). Tell ONLY the set-up / the first part of the story that the overview gives. " +
         "NO spoilers, no twists, no ending, nothing the overview does not say. Do not invent plot. Keep character and place names in English letters. " +
         "Output only the Sinhala text, no quotes, no title, no markdown.";
-    const start = Math.floor(Math.random() * keys.length);
-    for (let i = 0; i < Math.min(3, keys.length); i++) {
-        const key = keys[(start + i) % keys.length];
+    // ONE key only: GEMINI_SUMMARY_KEY if set, otherwise the last Gemini key (so the translation keys stay free)
+    const key = (process.env.GEMINI_SUMMARY_KEY || "").trim() || keys[keys.length - 1];
+    for (let i = 0; i < 1; i++) {
         try {
             const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent", {
                 method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key },
                 body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.4, maxOutputTokens: 400 } }),
                 signal: AbortSignal.timeout(9000)
             });
-            if (!r.ok) { continue; }
+            if (!r.ok) { return ""; }
             const j = await r.json();
             const t = String((((j.candidates || [])[0] || {}).content || {}).parts ? j.candidates[0].content.parts.map(x => x.text || "").join("") : "").replace(/[*_`#>"]+/g, "").replace(/\s+/g, " ").trim();
             if (t.length > 30 && /[\u0D80-\u0DFF]/.test(t)) { return t.slice(0, 600); }
-        } catch (e) { /* next key */ }
+        } catch (e) { /* retried in 6 hours */ }
     }
     return "";
 }
