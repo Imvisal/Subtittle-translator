@@ -245,6 +245,14 @@
             <button type="button" class="btn" id="fpGo">Make film pages</button> <span class="muted" id="fpOut"></span>
         </div>
         <div class="card">
+            <h2>Browser notifications <span id="pnCount" class="tag"></span></h2>
+            <p class="muted" style="margin:0 0 10px">Visitors who pressed "Turn on" get these even when the site is closed. A message is also sent automatically (at most once every 6 hours) when a NEW title reaches the Ready list. Needs VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY in Vercel.</p>
+            <input id="pnTitle" type="text" maxlength="80" placeholder="Title (e.g. New Sinhala subtitles)" style="width:100%;margin-bottom:8px">
+            <input id="pnBody" type="text" maxlength="160" placeholder="Message" style="width:100%;margin-bottom:8px">
+            <input id="pnUrl" type="text" maxlength="200" placeholder="Page to open, e.g. /ready.html (optional)" style="width:100%;margin-bottom:10px">
+            <button type="button" class="btn" id="pnSend">Send to everybody</button> <span class="muted" id="pnOut"></span>
+        </div>
+        <div class="card">
             <h2>Sinhala story intros</h2>
             <p class="muted" style="margin:0 0 10px">The short spoiler-free Sinhala story intro on every title page. They are made when a page is opened; this makes them for ALL titles now (2 titles at a time, uses the one summary key). Tick the box to replace the ones that already exist (for example after the spoiler rules changed).</p>
             <label class="muted" style="display:block;margin-bottom:10px"><input type="checkbox" id="siRedo"> Replace existing intros too</label>

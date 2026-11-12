@@ -639,6 +639,29 @@
 
     if (KEY) { load(); }
 
+    // ---- browser (web push) notifications ----
+    (function () {
+        var send = document.getElementById("pnSend"), out = document.getElementById("pnOut"), cnt = document.getElementById("pnCount");
+        if (!send) { return; }
+        function count() {
+            if (!KEY) { return; }
+            fetch("/api/stats?push=count", { headers: { "x-admin-key": KEY }, cache: "no-store" }).then(function (r) { return r.json(); })
+                .then(function (d) { cnt.textContent = d && d.error ? "" : (d.n + " subscribers" + (d.ready ? "" : " - keys not set")); }).catch(function () { /* ignore */ });
+        }
+        count();
+        send.addEventListener("click", function () {
+            var t = document.getElementById("pnTitle").value.trim(), b = document.getElementById("pnBody").value.trim(), u = document.getElementById("pnUrl").value.trim();
+            if (!t) { out.textContent = "Write a title first."; return; }
+            if (!window.confirm("Send this notification to every subscriber?")) { return; }
+            send.disabled = true; out.textContent = "Sending...";
+            fetch("/api/stats?push=send", { method: "POST", headers: { "x-admin-key": KEY, "Content-Type": "application/json" }, body: JSON.stringify({ title: t, body: b, url: u }) })
+                .then(function (r) { return r.json(); })
+                .then(function (d) { out.textContent = d.error ? d.error : "Sent to " + d.sent + (d.removed ? ", " + d.removed + " old removed" : "") + (d.failed ? ", " + d.failed + " failed" : "") + "."; count(); })
+                .catch(function () { out.textContent = "Could not send."; })
+                .then(function () { send.disabled = false; });
+        });
+    })();
+
     // ---- Sinhala story intros for every title (2 per call) ----
     (function () {
         var go = document.getElementById("siGo"), out = document.getElementById("siOut"), redo = document.getElementById("siRedo");

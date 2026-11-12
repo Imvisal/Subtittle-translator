@@ -335,7 +335,7 @@ function pageHtml(d) {
         '<script type="application/ld+json">' + JSON.stringify(ld).replace(/</g, "\\u003c") + "</script></head>" +
         '<body class="tp-page"><div class="tp-wrap"><nav class="tp-crumb" aria-label="Breadcrumb"><a href="/">SinSubz</a> › <a href="/#readyTitles">' + crumbName + '</a> › <span>' + esc(d.title) + '</span></nav><div id="tp"><noscript>' + noscript + "</noscript></div>" + seoBlock +
         '<p class="tp-foot">Subtitles made by SinSubz. Only the subtitle is provided, not the video.</p></div>' +
-        '<script type="application/json" id="tp-data">' + seed + '</script><script src="/title.js"></script><script src="/aads.js" defer></script></body></html>';
+        '<script type="application/json" id="tp-data">' + seed + '</script><script src="/title.js"></script><script src="/aads.js" defer></script><script src="/push.js" defer></script></body></html>';
 }
 
 function isAdmin(req) { return require("./_admin.js").isAdmin(req); }
@@ -456,6 +456,7 @@ module.exports = async function ready(req, res) {
             const type = b.type === "tv" ? "tv" : "movie";
             if (type === "tv" && !(s && e)) { return res.status(400).json({ error: "Missing season / episode" }); }
             const [raw] = await redis([["HGET", "rdy:idx", b.imdb]]);
+            const isNew = !parse(raw);
             const m = parse(raw) || { id: b.imdb, eps: {} };
             m.t = clean(b.title, 100); m.y = clean(b.year, 8); m.type = type;
             if (!m.slug) {
@@ -474,6 +475,7 @@ module.exports = async function ready(req, res) {
             };
             const packed = zlib.gzipSync(Buffer.from(srt, "utf8")).toString("base64");
             await redis([["SET", srtKey(b.imdb, s, e), packed], ["HSET", "rdy:idx", b.imdb, JSON.stringify(m)]]);
+            if (isNew) { await require("./_push.js").notifyNewTitle(m); }          // browser notification (at most one per 6 hours)
             return res.status(200).json({ ok: true });
         }
 

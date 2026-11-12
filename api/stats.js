@@ -98,6 +98,9 @@ module.exports = async function handler(req, res) {
     if (/(?:^|[?&])announcement(?:=|&|$)/.test(String(req.url || "")) && req.method === "GET") {
         return require("./_admin.js").publicAnnouncement(req, res);
     }
+    if (/(?:^|[?&])push=[a-z]+/.test(String(req.url || ""))) {
+        return require("./_push.js")(req, res);
+    }
     if (/(?:^|[?&])cron=runner(?:&|$)/.test(String(req.url || ""))) {
         return require("./_runner-cron.js")(req, res);
     }
