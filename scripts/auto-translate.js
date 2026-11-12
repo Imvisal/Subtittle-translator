@@ -29,7 +29,7 @@ const path = require("path");
 const SITE = (process.env.SITE_URL || "https://sinsubs.site").replace(/\/$/, "");
 const KEY = process.env.ADMIN_KEY || "";
 const MAX_MS = (Number(process.env.MAX_MINUTES) || 70) * 60 * 1000;
-const started = Date.now();
+let started = Date.now();
 
 function log() { console.log.apply(console, ["[" + new Date().toISOString().slice(11, 19) + "]"].concat([].slice.call(arguments))); }
 
@@ -115,8 +115,8 @@ async function hasSinhala(c) {
 }
 
 // Sunday (or the very first run): add up to <weekly> new series without a Sinhala subtitle to the list
-async function refillIfDue(weekly, meta) {
-    const due = process.env.REFILL === "1" || !meta.lastRefill || (sriLankaWeekday() === "Sun" && Date.now() - meta.lastRefill > 5 * 86400000);
+async function refillIfDue(weekly, meta, emptyList) {
+    const due = process.env.REFILL === "1" || emptyList || !meta.lastRefill || (sriLankaWeekday() === "Sun" && Date.now() - meta.lastRefill > 5 * 86400000);
     if (!due) { log("Weekly refill: not due (next Sunday)."); return false; }
     log("Weekly refill: looking for up to " + weekly + " series without a Sinhala subtitle ...");
     const cand = await api("/api/stats?autoq=candidates", { headers: AK() });
@@ -144,6 +144,12 @@ async function refillIfDue(weekly, meta) {
     if (!KEY) { console.error("ADMIN_KEY is not set"); process.exit(1); }
 
     const manual = (process.env.GITHUB_EVENT_NAME === "workflow_dispatch" && process.env.FROM_CRON !== "1") || process.env.FORCE === "1";
+    // Vercel's free cron can fire up to an hour early/late: if it came early (Pacific hour 22) just wait for hour 23.
+    if (!manual && pacificHour() === 22) {
+        log("Started early (Pacific hour 22): waiting for the last hour before the reset (23) ...");
+        for (let w = 0; w < 130 && pacificHour() === 22; w++) { await new Promise(r => setTimeout(r, 30000)); }
+        started = Date.now();
+    }
     if (!manual && pacificHour() !== 23) {
         log("Pacific hour is " + pacificHour() + ", not the last hour before the reset (23): nothing to do (the other cron entry covers it).");
         return;
@@ -155,7 +161,12 @@ async function refillIfDue(weekly, meta) {
 
     let aq = await api("/api/stats?autoq=get", { headers: AK() });
     if (!aq.ok) { console.error("Could not read the series list: " + aq.status + " " + aq.text.slice(0, 120)); process.exit(1); }
-    try { if (await refillIfDue(weekly, (aq.json && aq.json.meta) || {})) { aq = await api("/api/stats?autoq=get", { headers: AK() }); } } catch (e) { log("refill failed: " + e.message); }
+    const remaining = () => ((aq.json && aq.json.list) || []).reduce((a, sr) => a + ((sr.todo || []).length), 0);
+    log("Series list: " + (((aq.json && aq.json.list) || []).length) + " series, " + remaining() + " episodes still to do" +
+        (((aq.json && aq.json.list) || []).length ? " (" + ((aq.json.list)).map(sr => sr.title + ": " + (sr.todo || []).length + " left, " + (sr.skipped || 0) + " skipped").join("; ") + ")" : "") + ".");
+    // nothing left in the list (finished, or all skipped/cleared): fill it again now instead of waiting for Sunday
+    const emptyList = remaining() === 0 && wanted(queue).length === 0;
+    try { if (await refillIfDue(weekly, (aq.json && aq.json.meta) || {}, emptyList)) { aq = await api("/api/stats?autoq=get", { headers: AK() }); } } catch (e) { log("refill failed: " + e.message); }
 
     const list = await api("/api/stats?ready=list");
     const have = new Set();
