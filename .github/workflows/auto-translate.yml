@@ -6,13 +6,8 @@
 name: Auto translate
 
 on:
-  schedule:
-    - cron: "10 6 * * *"   # 23:10 Pacific in summer time (the script exits when it is not Pacific hour 23)
-    - cron: "10 7 * * *"   # 23:10 Pacific in winter time = 12:40 in Sri Lanka
-    # GitHub can start scheduled runs 10-60 minutes late (or skip one), so there are backup runs 30 minutes later.
-    # They only do something when the first run did not (finished episodes are skipped; the script stops at the reset).
-    - cron: "40 6 * * *"
-    - cron: "40 7 * * *"
+  # No `schedule:` here on purpose: GitHub started scheduled runs hours late (and they failed when apt had a network
+  # hiccup). The Vercel cron (vercel.json -> /api/stats?cron=runner) starts this workflow with workflow_dispatch instead.
   workflow_dispatch:
     inputs:
       source:
@@ -35,7 +30,9 @@ jobs:
       - name: Install headless Chromium
         run: |
           npm install --no-save --no-audit --no-fund playwright@1.49.1
-          npx playwright install --with-deps chromium
+          # apt/CDN hiccups happen: try up to 4 times
+          for i in 1 2 3 4; do npx playwright install --with-deps chromium && break; echo "install failed, retry $i"; sleep 20; done
+          npx playwright install chromium
       - name: Translate the queue
         env:
           ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
