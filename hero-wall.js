@@ -35,8 +35,8 @@
 
     function build(pool) {
         var wide = window.innerWidth >= 961;
-        var COLS = wide ? 6 : 4;
-        var ROWS = 5;                                    // more than fits, columns drift up and down
+        var COLS = wide ? 11 : 4;                        // wide screens: posters across the whole width
+        var ROWS = wide ? 4 : 5;                                    // more than fits, columns drift up and down
 
         var wall = document.createElement("div");
         wall.className = "hero-wall";

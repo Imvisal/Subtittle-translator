@@ -258,9 +258,9 @@ html[data-theme="light"] .wa-menu { background: #fff; color: #1c1b33; border-col
 
 /* ---- animated poster wall behind the home title (website only) ---- */
 .hero-banner .hero-wall {
-    position: absolute; z-index: 1; top: -14%; bottom: -14%; right: -6%; width: 68%;
+    position: absolute; z-index: 1; top: -14%; bottom: -14%; left: -6%; right: -6%;   /* the whole width, not only the right side */
     display: flex; gap: clamp(6px, 0.9vw, 12px); justify-content: center;
-    transform: rotate(-9deg) skewY(2deg); transform-origin: 70% 50%;
+    transform: rotate(-9deg) skewY(2deg); transform-origin: 50% 50%;
     pointer-events: none; opacity: 0; transition: opacity 1.2s ease;
 }
 .hero-banner.wall-on .hero-wall { opacity: 1; }
