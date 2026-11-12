@@ -223,6 +223,13 @@
             <div id="mtOut" style="margin-top:10px"></div>
         </div>
         <div class="card">
+            <h2>Run the auto translator <span id="arState" class="tag"></span></h2>
+            <p class="muted" style="margin:0 0 10px">It starts by itself every day in the last hour before the Gemini reset. Use these to run it right now (it uses the quota that is available now) or to stop a run. A run always stops after 60 minutes.</p>
+            <button class="btn" id="arStart" type="button">Run now</button>
+            <button class="btn ghost" id="arStop" type="button" style="margin-left:8px">Stop</button>
+            <div class="muted" id="arMsg" style="margin-top:8px"></div>
+        </div>
+        <div class="card">
             <h2>Series list <span id="aqCount" class="tag"></span></h2>
             <p class="muted" style="margin:0 0 10px">The runner works this list from the top: the first series until all its episodes are translated (it continues the next day from where it stopped), then the next one. Every Sunday up to 10 new series without a Sinhala subtitle are added at the bottom (what visitors translated / searched first, then new releases, then random good series). <span id="aqLast"></span></p>
             <div id="aqList"></div>

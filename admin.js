@@ -365,7 +365,7 @@
         try { localStorage.setItem("sinsubz-admin-tab", name); } catch (e) { /* ignore */ }
         window.scrollTo(0, 0);
         if (name === "logs") { loadLogs(); }
-        if (name === "auto") { loadQueue(); loadReady(); }
+        if (name === "auto") { loadQueue(); loadReady(); runnerStatus(); }
     }
     Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (b) {
         b.addEventListener("click", function () { openTab(b.getAttribute("data-go")); });
@@ -419,6 +419,37 @@
 
     // ---- live log tab: refreshes every 10 s while it is open ----
     var logFilter = "all", logTimer = null;
+    // ---- run now / stop the auto translator ----
+    function runnerCall(act) {
+        return fetch("/api/stats?cron=runner&act=" + act, { method: act === "status" ? "GET" : "POST", headers: { "x-admin-key": KEY }, cache: "no-store" }).then(function (r) { return r.json().catch(function () { return {}; }); });
+    }
+    function runnerStatus() {
+        if (!KEY || !$("arState")) { return; }
+        runnerCall("status").then(function (d) {
+            $("arState").textContent = d.error ? "unknown" : (d.running ? "running" : "idle");
+            if (d.error) { $("arMsg").textContent = d.error; }
+        }).catch(function () { $("arState").textContent = "unknown"; });
+    }
+    (function () {
+        var a = $("arStart"), b = $("arStop");
+        if (!a || !b) { return; }
+        a.addEventListener("click", function () {
+            a.disabled = true; $("arMsg").textContent = "Starting...";
+            runnerCall("start").then(function (d) {
+                $("arMsg").textContent = d.started ? "Started. It takes about a minute to begin; watch the Logs tab. It stops by itself after 60 minutes." : (d.error || "Could not start.");
+                setTimeout(runnerStatus, 4000);
+            }).catch(function () { $("arMsg").textContent = "Could not start."; }).then(function () { a.disabled = false; });
+        });
+        b.addEventListener("click", function () {
+            if (!window.confirm("Stop the auto translator?")) { return; }
+            b.disabled = true; $("arMsg").textContent = "Stopping...";
+            runnerCall("stop").then(function (d) {
+                $("arMsg").textContent = d.ok ? (d.stopped ? "Stopped " + d.stopped + " run(s). Finished episodes are kept." : "Nothing was running. It will not start again until you press Run now.") : (d.error || "Could not stop.");
+                setTimeout(runnerStatus, 3000);
+            }).catch(function () { $("arMsg").textContent = "Could not stop."; }).then(function () { b.disabled = false; });
+        });
+    })();
+
     function loadQueue() {
         if (!KEY) { return; }
         fetch("/api/stats?autoq=get", { headers: { "x-admin-key": KEY }, cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {

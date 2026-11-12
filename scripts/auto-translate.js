@@ -28,7 +28,7 @@ const path = require("path");
 
 const SITE = (process.env.SITE_URL || "https://sinsubs.site").replace(/\/$/, "");
 const KEY = process.env.ADMIN_KEY || "";
-const MAX_MS = (Number(process.env.MAX_MINUTES) || 70) * 60 * 1000;
+const MAX_MS = (Number(process.env.MAX_MINUTES) || 60) * 60 * 1000;
 let started = Date.now();
 
 function log() { console.log.apply(console, ["[" + new Date().toISOString().slice(11, 19) + "]"].concat([].slice.call(arguments))); }
@@ -102,6 +102,11 @@ async function translateInPage(job) {
     return { srt, count: translated.length, filename: base + ".Sinhala.SinSubz.srt", release };
 }
 
+// "Stop" button in the admin panel sets a flag in Redis; checked between episodes and while waiting
+async function stopRequested() {
+    try { const r = await api("/api/stats?cron=runner&act=flag", { headers: AK() }); return !!(r.json && r.json.stop); } catch (e) { return false; }
+}
+
 const AK = () => ({ "x-admin-key": KEY });
 const post = (p, body) => api(p, { method: "POST", headers: Object.assign({ "Content-Type": "application/json" }, AK()), body: JSON.stringify(body) });
 
@@ -159,6 +164,7 @@ async function refillIfDue(weekly, meta, emptyList) {
         return;
     }
 
+    if (await stopRequested()) { log("Stop flag is set (admin panel): not starting."); return; }
     const queue = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "auto-queue.json"), "utf8"));
     const maxRun = Number(process.env.MAX_PER_RUN) || Number(queue.max_per_run) || 200;
     const weekly = Number(process.env.WEEKLY_SERIES) || Number(queue.weekly_series) || 10;
@@ -207,7 +213,8 @@ async function refillIfDue(weekly, meta, emptyList) {
         const id = job.t.imdb;
         if (closed.has(id)) { continue; }
         if (done >= maxRun) { log("Reached the per-run limit."); break; }
-        if (Date.now() - started > MAX_MS) { log("Time budget used."); break; }
+        if (Date.now() - started > MAX_MS) { log("Time limit reached (" + Math.round(MAX_MS / 60000) + " minutes): stopping."); break; }
+        if (await stopRequested()) { log("Stopped from the admin panel."); break; }
         if (!manual && pacificHour() !== 23) { log("Quota reset reached: the fresh quota is for visitors, stopping."); break; }
         const label = job.t.title + (job.t.type === "tv" ? " S" + String(job.season).padStart(2, "0") + "E" + String(job.episode).padStart(2, "0") : "");
         log("Translating " + label + " ...");
@@ -249,6 +256,7 @@ async function refillIfDue(weekly, meta, emptyList) {
                 for (let w = 0; w < 8; w++) {                      // 8 x 15 s, watching the clock
                     await new Promise(r => setTimeout(r, 15000));
                     if (pacificHour() !== 23 && !manual) { break; }
+                    if (Date.now() - started > MAX_MS || (w === 3 && await stopRequested())) { break; }
                 }
                 i--;                                               // same episode again
                 continue;

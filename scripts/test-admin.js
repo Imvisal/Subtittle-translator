@@ -404,6 +404,7 @@ function call(method, url, { headers = {}, body } = {}) {
         // ---- vercel cron -> GitHub workflow ----
         {
             ok((await call("GET", "/api/stats?cron=runner")).code === 401, "runner cron refuses callers without the secret");
+            ok((await call("POST", "/api/stats?cron=runner&act=start")).code === 401, "runner start/stop need the admin key");
             process.env.CRON_SECRET = "cron-secret-123";
             ok((await call("GET", "/api/stats?cron=runner", { headers: { authorization: "Bearer cron-secret-123" } })).code === 503, "runner cron: no GitHub token yet -> 503");
             delete process.env.CRON_SECRET;
