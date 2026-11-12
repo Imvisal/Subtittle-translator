@@ -3667,6 +3667,10 @@ async function translateSubtitleChunksImpl(
     // adaptive: a "many people are translating" answer lowers the number of chunks sent at once (never below 2),
     // and it creeps back up after 90 quiet seconds
     let conc = CONCURRENCY, lastRateLimitAt = 0, activeRuns = 0;
+    // The AI said "today's quota is gone" in the middle of a job: don't fail at once, wait (up to 2 minutes in total,
+    // shared by all chunks) and try again, because it is often only a short block. Reset as soon as a chunk succeeds.
+    const QUOTA_PATIENCE_MS = 120000;
+    let quotaWaitSince = 0;
 
     const totalChunks =
         Math.ceil(subtitles.length / CHUNK_SIZE);
@@ -3744,7 +3748,9 @@ async function translateSubtitleChunksImpl(
                     );
 
                     // daily limit reached on every key/model: retrying will not help
-                    if (data.code === "QUOTA_EXHAUSTED" || data.code === "DAILY_LIMIT" || data.code === "PREMIUM_PRIORITY" || data.code === "LOGIN_REQUIRED" || data.code === "RUNNER_RESERVE") {
+                    if (data.code === "QUOTA_EXHAUSTED") {
+                        apiError.geminiQuota = true;     // wait a little first, see below
+                    } else if (data.code === "DAILY_LIMIT" || data.code === "PREMIUM_PRIORITY" || data.code === "LOGIN_REQUIRED" || data.code === "RUNNER_RESERVE") {
                         apiError.quotaExhausted = true;
                     }
                     if (data.code === "RATE_LIMITED") apiError.rateLimited = true;
@@ -3761,11 +3767,27 @@ async function translateSubtitleChunksImpl(
                     );
                 }
 
+                quotaWaitSince = 0;
                 return validateTranslatedChunk(chunk, data.subtitles);
 
             } catch (error) {
 
                 lastError = error;
+
+                if (error && error.geminiQuota && !failure) {
+                    if (!quotaWaitSince) { quotaWaitSince = Date.now(); }
+                    const left = QUOTA_PATIENCE_MS - (Date.now() - quotaWaitSince);
+                    if (left > 0) {
+                        const sec = Math.ceil(left / 1000);
+                        updateTranslationStatus(
+                            "The AI is very busy. Waiting and trying again (" + Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0") + " left)..."
+                        );
+                        await sleep(Math.min(20000, left));
+                        attempt--;          // this wait does not use up one of the 3 normal tries
+                        continue;
+                    }
+                    error.quotaExhausted = true;   // waited long enough: stop (finished parts are kept for "resume")
+                }
 
                 console.warn(
                     `Chunk ${chunkNumber} attempt ${attempt} failed:`,
