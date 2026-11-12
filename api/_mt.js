@@ -95,4 +95,36 @@ async function translateLines(items, language) {
     return items.map((it, k) => ({ index: it.index, text: out[k] || String(it.text || "") }));
 }
 
-module.exports = { enabled, translateLines };
+function provider() {
+    if (String(process.env.MT_FALLBACK || "").toLowerCase() === "off") { return "off"; }
+    return hasCloudflare() ? "cloudflare" : (hasAzure() ? "azure" : "none");
+}
+
+const SAMPLE = [
+    "Where were you last night?",
+    "I told you not to come here!",
+    "Don't lie to me. I know everything.",
+    "Come on, we have to go. Now!",
+    "You're out of your mind if you think I'll help you.",
+    "Hey, buddy. Long time no see.",
+    "I can't believe you did this to me."
+];
+
+// admin only: POST /api/stats?mttest=1  -> translates 7 sample lines with the fallback and shows what came back
+async function testHandler(req, res) {
+    if (!require("./_admin.js").isAdmin(req)) { return res.status(401).json({ error: "Unauthorized" }); }
+    const info = { provider: provider(), lines: [] };
+    if (!enabled()) { info.error = "No machine-translation settings found (set CLOUDFLARE_ACCOUNT_ID + CLOUDFLARE_API_TOKEN in Vercel and redeploy)."; return res.status(200).json(info); }
+    const t0 = Date.now();
+    try {
+        const out = await translateLines(SAMPLE.map((text, index) => ({ index, text })), "si");
+        info.ms = Date.now() - t0;
+        info.lines = out.map(o => ({ en: SAMPLE[o.index], si: o.text }));
+    } catch (e) {
+        info.ms = Date.now() - t0;
+        info.error = String((e && e.message) || e).slice(0, 200);
+    }
+    return res.status(200).json(info);
+}
+
+module.exports = { enabled, translateLines, provider, testHandler };

@@ -373,6 +373,30 @@
     try { var savedTab = localStorage.getItem("sinsubz-admin-tab"); if (savedTab) { openTab(savedTab); } } catch (e) { /* ignore */ }
 
 
+    // ---- backup translator test ----
+    (function () {
+        var btn = $("mtTest"); if (!btn) { return; }
+        btn.addEventListener("click", function () {
+            var out = $("mtOut"); out.textContent = "Testing..."; btn.disabled = true;
+            fetch("/api/stats?mttest=1", { method: "POST", headers: { "x-admin-key": KEY, "Content-Type": "application/json" }, body: "{}" })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    btn.disabled = false; out.textContent = "";
+                    $("mtProv").textContent = d.provider || "";
+                    if (d.error) { out.appendChild(el("div", "bad", "Failed: " + d.error)); }
+                    else { out.appendChild(el("div", "muted", "Works (" + d.provider + ", " + d.ms + " ms)")); }
+                    (d.lines || []).forEach(function (l) {
+                        var row = el("div", "", "");
+                        row.style.cssText = "padding:6px 0;border-top:1px solid var(--line)";
+                        row.appendChild(el("div", "muted", l.en));
+                        row.appendChild(el("div", "", l.si));
+                        out.appendChild(row);
+                    });
+                })
+                .catch(function (e) { btn.disabled = false; out.textContent = "Error: " + e.message; });
+        });
+    })();
+
     // ---- live log tab: refreshes every 10 s while it is open ----
     var logFilter = "all", logTimer = null;
     function loadQueue() {

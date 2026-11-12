@@ -60,6 +60,18 @@ const ok = (c, m) => { if (c) { pass++; } else { fail++; console.log("FAIL:", m)
     threw = false; try { await mt.translateLines([{ index: 0, text: "x" }], "si"); } catch (e) { threw = /429/.test(e.message); }
     ok(threw, "Cloudflare error throws");
 
+    // ---- admin test endpoint ----
+    process.env.ADMIN_KEY = "adm";
+    global.fetch = async (url, opt) => ({ ok: true, json: async () => ({ result: { translated_text: "සිං " + JSON.parse(opt.body).text } }) });
+    const call = async (key) => { let st = 0, body = null; const res = { status(s) { st = s; return this; }, json(b) { body = b; return this; } };
+        await mt.testHandler({ method: "POST", headers: key ? { "x-admin-key": key } : {}, url: "/api/stats?mttest=1" }, res); return { st, body }; };
+    ok((await call("")).st === 401, "test endpoint needs the admin key");
+    const good = await call("adm");
+    ok(good.st === 200 && good.body.provider === "cloudflare" && good.body.lines.length === 7 && /^සිං /.test(good.body.lines[0].si), "test endpoint translates the samples");
+    delete process.env.CLOUDFLARE_ACCOUNT_ID;
+    const none = await call("adm");
+    ok(none.body.provider === "none" && /No machine-translation/.test(none.body.error), "test endpoint says what is missing");
+
     console.log(pass + " passed, " + fail + " failed");
     process.exit(fail ? 1 : 0);
 })();
