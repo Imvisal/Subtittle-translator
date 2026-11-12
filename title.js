@@ -133,7 +133,7 @@
             '<div class="tp-mt">Download Sinhala subtitle</div><div class="tp-ms">' + esc(label) + '</div>' +
             '<div class="tp-sec">Original subtitle</div>' +
             '<a class="tp-opt tp-opt-a" href="' + fileUrl(si, ei) + '" download><span class="tp-ot"><b>' + (rel ? esc(rel) : "Ready subtitle") + '</b><span>Works with most versions. Ready now.</span></span><span class="tp-obtn">\u2B07 Download</span></a>' +
-            '<div class="tp-sec">Other video versions <small>synced to your file</small></div>' +
+            '<div class="tp-sec">Other Sinhala subtitle video versions <small>synced to your file</small></div>' +
             '<div class="tp-rels" id="tpRels"><p class="tp-mp">Loading versions\u2026</p></div>' +
             '</div>';
         (function loadRels() {
