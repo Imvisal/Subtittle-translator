@@ -119,6 +119,9 @@ module.exports = async function handler(req, res) {
     if (/(?:^|[?&])logs(?:=|&|$)/.test(String(req.url || "")) && req.method === "GET") {
         return require("./_admin.js").logs(req, res);
     }
+    if (/(?:^|[?&])alerts(?:=|&|$)/.test(String(req.url || ""))) {
+        return require("./_admin.js").alerts(req, res);
+    }
     if (/(?:^|[?&])notif(?:=|&|$)/.test(String(req.url || ""))) {
         return require("./_admin.js").notifications(req, res);
     }
@@ -213,6 +216,10 @@ module.exports = async function handler(req, res) {
         }
 
         await redis(cmds);
+        {
+            const nm = String(body.name || "").replace(/\.(Sinhala\.SinSubz|synced)$/i, "").replace(/[._]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 80);
+            await require("./_admin.js").logActivity(type === "translated" ? "translate" : type === "synced" ? "sync" : "merge", nm || "(no name)");
+        }
         return res.status(204).end();
 
     } catch (e) {

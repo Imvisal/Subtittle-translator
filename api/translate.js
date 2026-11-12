@@ -1055,6 +1055,15 @@ ${JSON.stringify(inputItems)}
         if (limitDone) { await limitDone(); }     // this chunk is translated: counts toward the film / episode
         await require("./_admin.js").logEvent({ type: "ok", lvl: "info", u: logCtx.u, job: logCtx.job, msg: "Translated " + subtitles.length + " lines | key #" + (usedKey || "?") + " " + String(usedModel || "").replace(/^gemini-/, "") + (usedTries > 1 ? " (try " + usedTries + ")" : "") });
 
+        if (isRunner) {
+            // one entry per title (the runner sends many chunks): first chunk only, remembered for 2 hours
+            try {
+                const adm2 = require("./_admin.js"), g = require("./_google");
+                const jobKey = "act:auto:" + String(logCtx.job || "x").slice(0, 60);
+                const first = g.hasRedis() ? (await g.redis([["SET", jobKey, "1", "EX", 7200, "NX"]]))[0] : null;
+                if (first) { await adm2.logActivity("auto", "Auto translating: " + String(logCtx.job || "a title").slice(0, 70)); }
+            } catch (e) { /* ignore */ }
+        }
         return res.status(200).json(usedMt ? { subtitles: output, engine: "mt" } : { subtitles: output });
 
 

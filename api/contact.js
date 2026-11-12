@@ -163,6 +163,7 @@ module.exports = async function handler(req, res) {
             ["LPUSH", "contact:msgs", JSON.stringify(item)],
             ["LTRIM", "contact:msgs", 0, MAX_KEEP - 1]
         ]);
+        await require("./_admin.js").logActivity("message", (name || email || "Someone") + ": " + String(message || "").slice(0, 60));
 
         if (prem) {
             try {

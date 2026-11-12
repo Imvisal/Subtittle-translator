@@ -181,3 +181,35 @@ html .search-section { position: relative; isolation: isolate; padding-bottom: 8
     .home-actions .hero-actions .btn { flex: 1 1 0; min-width: 0; width: auto; padding: 0 6px; font-size: 12.5px; gap: 6px; justify-content: center; }
     .home-actions .hero-actions .btn i, .home-actions .hero-actions .sync-ring { display: none; }
 }
+
+/* ---------- owner-only Admin link + red activity badge (admin-badge.js) ---------- */
+html .top-header .header-nav { position: relative; }
+.nav-admin { position: relative; display: inline-flex; align-items: center; gap: 7px; }
+.nav-admin[hidden], .nav-badge[hidden] { display: none; }
+.nav-badge {
+    min-width: 19px; height: 19px; padding: 0 5px; box-sizing: border-box;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 99px; background: #ff3b4e; color: #fff;
+    font-size: 11px; font-weight: 800; line-height: 1;
+    box-shadow: 0 0 0 3px rgba(255, 59, 78, .22);
+    animation: navPulse 2.4s ease-in-out infinite;
+}
+@keyframes navPulse { 50% { box-shadow: 0 0 0 6px rgba(255, 59, 78, 0); } }
+@media (prefers-reduced-motion: reduce) { .nav-badge { animation: none; } }
+.nav-admin-panel {
+    position: absolute; top: calc(100% + 14px); right: 0; z-index: 80;
+    width: min(380px, 92vw); max-height: 70vh; overflow: auto;
+    padding: 8px; border-radius: 16px;
+    background: var(--surface-solid); border: 1px solid var(--line-strong);
+    box-shadow: 0 24px 60px -12px rgba(0, 0, 0, .6);
+}
+.nav-admin-panel[hidden] { display: none; }
+.na-head { padding: 8px 10px 6px; font-size: 13px; font-weight: 700; color: var(--muted); }
+.na-row { display: grid; grid-template-columns: 76px 1fr auto; gap: 10px; align-items: center; padding: 9px 10px; border-radius: 10px; font-size: 13.5px; color: var(--text-2); }
+.na-row.new { background: rgba(255, 59, 78, .09); }
+.na-k { font-size: 12px; font-weight: 700; color: var(--accent); }
+.na-comment, .na-message, .na-premium { color: #ffb454; }
+.na-auto { color: #5fd39a; }
+.na-m { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.na-t { font-size: 12px; color: var(--muted); }
+.na-go { display: block; margin-top: 6px; padding: 11px; text-align: center; border-radius: 10px; font-weight: 700; font-size: 14px; color: #0b0d1f; background: var(--accent); }

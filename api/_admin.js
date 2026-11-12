@@ -508,6 +508,7 @@ async function planSubmit(req, res) {
         const id = require("crypto").randomBytes(6).toString("hex");
         const rec = { id: id, uk: key, name: clean(who.name, 60), email: clean(who.email, 120), ref: ref, t: Date.now(), status: "pending" };
         await redis([["SET", "prem:slip:" + id, slip, "EX", 90 * 86400], ["HSET", "prem:req", id, JSON.stringify(rec)]]);
+        await logActivity("premium", "Premium request: " + (rec.name || rec.email));
         await notifyOwner(
             "SinSubz: new Premium request from " + (rec.name || rec.email),
             "A new Premium request is waiting.\n\nName: " + rec.name + "\nEmail: " + rec.email + "\nReference: " + rec.ref +
@@ -752,6 +753,37 @@ async function notifications(req, res) {
     }
 }
 
+
+// ---- owner activity feed (the red "Admin" badge on the website): what visitors did, newest first ----
+// types: translate, sync, merge, comment, message, premium, auto
+async function logActivity(type, msg) {
+    try {
+        if (!hasRedis()) { return; }
+        const rec = { t: Date.now(), k: String(type || "").slice(0, 12), m: String(msg || "").replace(/[\u0000-\u001F\u007F]/g, " ").trim().slice(0, 120) };
+        await Promise.race([redis([["LPUSH", "act:ev", JSON.stringify(rec)], ["LTRIM", "act:ev", 0, 99], ["EXPIRE", "act:ev", 30 * 86400]]), new Promise(r => setTimeout(r, 1200))]);
+    } catch (e) { /* never break a request */ }
+}
+// GET  /api/stats?alerts=1                 -> { owner, unread, items, seen }   (Google sign-in of the owner account only)
+// POST /api/stats?alerts=1 {action:"seen"} -> marks everything as seen
+async function alerts(req, res) {
+    res.setHeader("Cache-Control", "no-store");
+    try {
+        const who = await authUser(req);
+        if (!who || !who.owner) { return res.status(200).json({ owner: false }); }
+        if (!hasRedis()) { return res.status(200).json({ owner: true, unread: 0, items: [] }); }
+        if (req.method === "POST") {
+            await redis([["SET", "act:seen", String(Date.now())]]);
+            return res.status(200).json({ ok: true });
+        }
+        const [list, seenRaw] = await redis([["LRANGE", "act:ev", 0, 39], ["GET", "act:seen"]]);
+        const seen = Number(seenRaw) || 0;
+        const items = (list || []).map(parse).filter(Boolean);
+        return res.status(200).json({ owner: true, seen: seen, unread: items.filter(i => i.t > seen).length, items: items });
+    } catch (e) {
+        return res.status(200).json({ owner: false });
+    }
+}
+
 // ---------------------------------------------------------------- admin: actions
 // ---- live event log (admin "Logs" tab): newest first, last 300 events, admin-only ----
 async function logEvent(ev) {
@@ -881,4 +913,4 @@ async function action(req, res) {
     }
 }
 
-module.exports = { isAdmin, logEvent, whoLabel, logs, notifications, pushNotif, quotaLeftPct, resetQuotaCache: function () { quotaLeftCache = { at: 0, day: "", pct: 100 }; }, notifyOwner, planPublic, planSubmit, me, premiumUntil, authUser, loginRequired, checkDailyLimit, pacificDay, ping, overview, health, action, publicAnnouncement, cleanAnnouncement, dayKey, uidKeyOf };
+module.exports = { isAdmin, logEvent, logActivity, alerts, whoLabel, logs, notifications, pushNotif, quotaLeftPct, resetQuotaCache: function () { quotaLeftCache = { at: 0, day: "", pct: 100 }; }, notifyOwner, planPublic, planSubmit, me, premiumUntil, authUser, loginRequired, checkDailyLimit, pacificDay, ping, overview, health, action, publicAnnouncement, cleanAnnouncement, dayKey, uidKeyOf };

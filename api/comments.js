@@ -151,6 +151,7 @@ module.exports = async function handler(req, res) {
                 const n = Number((await redis([["LLEN", "cm:r:" + parent]]))[0]) || 0;
                 if (n >= MAX_REPLIES) return res.status(400).json({ error: "This conversation is full." });
                 await redis([["RPUSH", "cm:r:" + parent, JSON.stringify(item)]]);
+                await require("./_admin.js").logActivity("comment", "Reply: " + String(item.text || item.t || item.body || "").slice(0, 70));
                 return res.status(200).json({ ok: true, comment: publicView(item, who, await premiumSet([item])) });
             }
 
@@ -158,6 +159,7 @@ module.exports = async function handler(req, res) {
                 ["SET", "cm:c:" + item.id, JSON.stringify(item)],
                 ["LPUSH", "cm:ids", item.id]
             ]);
+            await require("./_admin.js").logActivity("comment", "Comment: " + String(item.text || item.t || item.body || "").slice(0, 70));
 
             // keep the newest 100 only; drop the rest with their replies
             const old = (await redis([["LRANGE", "cm:ids", MAX_COMMENTS, MAX_COMMENTS + 20]]))[0] || [];
