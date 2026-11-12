@@ -430,6 +430,17 @@
             $("aqLast").textContent = d.meta && d.meta.lastRefill ? "Last refill: " + new Date(d.meta.lastRefill).toLocaleDateString() + "." : "Not filled yet: the first run fills it.";
             if (!list.length) { host.appendChild(el("div", "muted", "Empty. The next runner start fills it.")); return; }
             var firstPending = pending[0];
+            var skippedAll = list.reduce(function (a, x) { return a + (x.skipped || 0); }, 0);
+            if (skippedAll) {
+                var rb = el("button", "btn", "Retry the " + skippedAll + " skipped episodes now");
+                rb.type = "button";
+                rb.addEventListener("click", function () {
+                    rb.disabled = true;
+                    fetch("/api/stats?autoq=unskip", { method: "POST", headers: { "x-admin-key": KEY, "Content-Type": "application/json" }, body: "{}" })
+                        .then(function () { loadQueue(); }).catch(function () { rb.disabled = false; });
+                });
+                host.appendChild(rb);
+            }
             list.forEach(function (it, i) {
                 var row = el("div", "row", "");
                 row.style.cssText = "justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line);flex-wrap:wrap";

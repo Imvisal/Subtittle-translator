@@ -10,6 +10,7 @@
                                            (series that are NOT in the list / Ready store yet; the runner checks Sinhala subs)
    POST ?autoq=add     { items: [...] } -> appends (no duplicates)
    POST ?autoq=mark    { imdb, eps: [[s,e],...] } -> episodes with no English subtitle: not tried again for 7 days
+   POST ?autoq=unskip  { imdb? }        -> clears the "no English subtitle" marks (all series, or one)
    POST ?autoq=drop    { imdb }         -> remove a series from the list
    POST ?autoq=meta    { lastRefill }   -> remembers when the weekly refill ran
 
@@ -208,6 +209,15 @@ module.exports = async function autoq(req, res) {
             const { list } = await readList();
             await redis([["SET", "aq:list", JSON.stringify(list.filter(l => l.imdb !== b.imdb))]]);
             return res.status(200).json({ ok: true });
+        }
+
+        if (act === "unskip" && req.method === "POST") {
+            // forget the "no English subtitle" marks (all series, or one) so the runner tries those episodes again
+            const { list } = await readList();
+            let n = 0;
+            list.forEach(l => { if (l.skips && (!b.imdb || l.imdb === b.imdb)) { n += Object.keys(l.skips).length; delete l.skips; } });
+            await redis([["SET", "aq:list", JSON.stringify(list)]]);
+            return res.status(200).json({ ok: true, cleared: n });
         }
 
         if (act === "meta" && req.method === "POST") {

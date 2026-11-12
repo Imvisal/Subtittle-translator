@@ -67,10 +67,14 @@ async function translateInPage(job) {
     const isTv = job.type === "tv";
     const q = new URLSearchParams({ imdb_id: job.imdb, type: isTv ? "episode" : "movie" });
     if (isTv) { q.set("season", String(job.season)); q.set("episode", String(job.episode)); }
-    const r = await fetch("/api/subtitles?" + q);
-    const d = await r.json();
-    if (!r.ok) { throw new Error("subtitle search: " + (d.error || r.status)); }
-    const list = (d.results || []).filter(s => !s.hearingImpaired).concat((d.results || []).filter(s => s.hearingImpaired));
+    let r, d, list = [];
+    for (let attempt = 0; attempt < 2 && !list.length; attempt++) {      // an empty answer may be a hiccup: ask once more
+        if (attempt) { await new Promise(res => setTimeout(res, 6000)); }
+        r = await fetch("/api/subtitles?" + q);
+        d = await r.json();
+        if (!r.ok) { throw new Error("subtitle search: " + (d.error || r.status)); }
+        list = (d.results || []).filter(s => !s.hearingImpaired).concat((d.results || []).filter(s => s.hearingImpaired));
+    }
     if (!list.length) { return { skip: "no English subtitle on SubDL" }; }
 
     let subs = null, release = "";
@@ -197,7 +201,7 @@ async function refillIfDue(weekly, meta, emptyList) {
     let done = 0, failsInRow = 0;
     const noSub = {};      // series -> consecutive episodes without an English subtitle (= not aired / not on SubDL yet)
     const closed = new Set();   // series given up for now (7 days)
-    let quotaWaits = 0;
+    let quotaWaits = 0, noSubAll = 0;
     stop: for (let i = 0; i < todo.length; i++) {
         const job = todo[i];
         const id = job.t.imdb;
@@ -211,6 +215,11 @@ async function refillIfDue(weekly, meta, emptyList) {
             const out = await page.evaluate(translateInPage, Object.assign({}, job.t, { season: job.season, episode: job.episode }));
             if (out.skip) {
                 log("  skipped: " + out.skip);
+                if (job.queued && /no English subtitle/.test(out.skip) && ++noSubAll >= 6) {
+                    // many different episodes in a row without an English subtitle: SubDL is most likely failing, not the series
+                    log("6 episodes in a row without an English subtitle: SubDL looks unavailable, stopping WITHOUT marking them.");
+                    break stop;
+                }
                 if (job.queued) {
                     await post("/api/stats?autoq=mark", { imdb: id, eps: [[job.season, job.episode]] }).catch(() => null);
                     if (/no English subtitle/.test(out.skip) && (noSub[id] = (noSub[id] || 0) + 1) >= 3) {
@@ -223,7 +232,7 @@ async function refillIfDue(weekly, meta, emptyList) {
                 }
                 continue;
             }
-            noSub[id] = 0;
+            noSub[id] = 0; noSubAll = 0;
             const put = await post("/api/stats?ready=put", { imdb: id, title: job.t.title, year: job.t.year, poster: job.t.poster, type: job.t.type === "tv" ? "tv" : "movie", season: job.season, episode: job.episode, filename: out.filename, srt: out.srt, count: out.count, release: out.release });
             if (!put.ok) { throw new Error("store failed " + put.status + " " + put.text.slice(0, 120)); }
             log("  done: " + out.count + " lines");
