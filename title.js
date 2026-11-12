@@ -150,7 +150,7 @@
             '</div>';
         (function loadRels() {
             var box = null;
-            var q = "/api/subtitles?imdb_id=" + encodeURIComponent(D.id) + (isTv ? "&type=tv&season=" + s + "&episode=" + e : "&type=movie");
+            var q = "/api/subtitles?imdb_id=" + encodeURIComponent(D.id) + (isTv ? "&type=episode&season=" + s + "&episode=" + e : "&type=movie");
             fetch(q).then(function (r) { return r.json(); }).then(function (j) {
                 box = ov.querySelector("#tpRels"); if (!box) { return; }
                 var seen = {}, out = [];
