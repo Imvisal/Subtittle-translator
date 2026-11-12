@@ -40,6 +40,26 @@ const ok = (c, m) => { if (c) { pass++; } else { fail++; console.log("FAIL:", m)
     threw = false; try { await mt.translateLines(items, "si"); } catch (e) { threw = true; }
     ok(threw, "wrong reply length throws");
 
+    // ---- Cloudflare Workers AI (used first when its two settings exist) ----
+    delete process.env.AZURE_TRANSLATOR_KEY;
+    ok(!mt.enabled(), "off again without any key");
+    process.env.CLOUDFLARE_ACCOUNT_ID = "acc1"; process.env.CLOUDFLARE_API_TOKEN = "tok";
+    ok(mt.enabled(), "on with Cloudflare settings");
+    let cf = [];
+    global.fetch = async (url, opt) => {
+        const b = JSON.parse(opt.body); cf.push({ url, auth: opt.headers.Authorization, b });
+        return { ok: true, json: async () => ({ success: true, result: { translated_text: "SI(" + b.text + ")" } }) };
+    };
+    const o3 = await mt.translateLines([{ index: 5, text: "<i>Hi</i>\nfriend" }, { index: 6, text: "Bye" }, { index: 7, text: "" }], "si");
+    ok(cf.length === 3, "3 non-empty lines -> 3 requests, got " + cf.length);
+    ok(/accounts\/acc1\/ai\/run\/@cf\/meta\/m2m100/.test(cf[0].url) && cf[0].auth === "Bearer tok", "cloudflare url + token");
+    ok(cf[0].b.source_lang === "en" && cf[0].b.target_lang === "si", "languages");
+    ok(o3[0].index === 5 && o3[0].text === "SI(Hi)\nSI(friend)", "line breaks kept: " + JSON.stringify(o3[0].text));
+    ok(o3[1].text === "SI(Bye)" && o3[2].text === "", "other lines");
+    global.fetch = async () => ({ ok: false, status: 429, json: async () => ({}) });
+    threw = false; try { await mt.translateLines([{ index: 0, text: "x" }], "si"); } catch (e) { threw = /429/.test(e.message); }
+    ok(threw, "Cloudflare error throws");
+
     console.log(pass + " passed, " + fail + " failed");
     process.exit(fail ? 1 : 0);
 })();

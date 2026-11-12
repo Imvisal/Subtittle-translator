@@ -1,6 +1,11 @@
-/* SinSubz: machine-translation FALLBACK (Microsoft Translator). Used only when every Gemini key says its daily
-   quota is gone (QUOTA_EXHAUSTED). Quality is lower than Gemini (word-for-word, no scene context), but the person
-   still gets a subtitle instead of "limit reached". Off until AZURE_TRANSLATOR_KEY is set.
+/* SinSubz: machine-translation FALLBACK. Used only when every Gemini key says its daily quota is gone
+   (QUOTA_EXHAUSTED). Quality is lower than Gemini (word-for-word, no scene context), but the person still gets a
+   subtitle instead of "limit reached". Two providers, the first one that is set up is used:
+     1) Cloudflare Workers AI (m2m100, free daily allowance, no card):
+        CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN   (token with "Workers AI" permission)
+     2) Microsoft Translator (needs an Azure account + card):
+        AZURE_TRANSLATOR_KEY, AZURE_TRANSLATOR_REGION
+   MT_FALLBACK=off switches the fallback off without removing the keys.
 
    Env: AZURE_TRANSLATOR_KEY      (Azure portal -> your Translator resource -> Keys and Endpoint)
         AZURE_TRANSLATOR_REGION   (e.g. southeastasia; "global" is not accepted for regional resources)
@@ -10,13 +15,58 @@
 
 const ENDPOINT = () => (process.env.AZURE_TRANSLATOR_ENDPOINT || "https://api.cognitive.microsofttranslator.com").replace(/\/+$/, "");
 
+const hasCloudflare = () => !!(process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN);
+const hasAzure = () => !!process.env.AZURE_TRANSLATOR_KEY;
+
 function enabled() {
-    return !!process.env.AZURE_TRANSLATOR_KEY && String(process.env.MT_FALLBACK || "").toLowerCase() !== "off";
+    return (hasCloudflare() || hasAzure()) && String(process.env.MT_FALLBACK || "").toLowerCase() !== "off";
+}
+
+// Cloudflare Workers AI: one text per request, so a few run at the same time.
+async function cloudflareLines(items, to) {
+    const url = "https://api.cloudflare.com/client/v4/accounts/" + encodeURIComponent(process.env.CLOUDFLARE_ACCOUNT_ID) + "/ai/run/@cf/meta/m2m100-1.2b";
+    const clean = t => String(t == null ? "" : t).replace(/<[^>]+>/g, "").replace(/\{\\[^}]*\}/g, "");
+    const out = new Array(items.length);
+    let next = 0, firstError = null;
+
+    async function worker() {
+        while (!firstError) {
+            const i = next++;
+            if (i >= items.length) { return; }
+            const text = clean(items[i].text);
+            if (!text.trim()) { out[i] = ""; continue; }
+            // keep line breaks: translate each line of the cue on its own, then join again
+            const lines = text.split(/\r?\n/).filter(l => l.trim());
+            const done = [];
+            for (const line of lines) {
+                const ctl = new AbortController();
+                const timer = setTimeout(() => ctl.abort(), 20000);
+                try {
+                    const res = await fetch(url, {
+                        method: "POST", signal: ctl.signal,
+                        headers: { "Content-Type": "application/json", Authorization: "Bearer " + process.env.CLOUDFLARE_API_TOKEN },
+                        body: JSON.stringify({ text: line, source_lang: "en", target_lang: to })
+                    });
+                    if (!res.ok) { throw new Error("Cloudflare AI " + res.status); }
+                    const data = await res.json();
+                    const t = data && data.result && data.result.translated_text;
+                    if (typeof t !== "string") { throw new Error("Cloudflare AI: bad reply"); }
+                    done.push(t.trim());
+                } catch (e) { firstError = firstError || e; return; }
+                finally { clearTimeout(timer); }
+            }
+            out[i] = done.join("\n");
+        }
+    }
+    await Promise.all(Array.from({ length: Math.min(6, items.length) }, worker));
+    if (firstError) { throw firstError; }
+    return items.map((it, k) => ({ index: it.index, text: out[k] || String(it.text || "") }));
 }
 
 // items: [{ index, text }]  ->  [{ index, text }]   (same indexes, same order). Throws on failure.
 async function translateLines(items, language) {
     const to = language === "ta" ? "ta" : "si";
+    if (hasCloudflare()) { return cloudflareLines(items, to); }
     const clean = t => String(t == null ? "" : t).replace(/<[^>]+>/g, "").replace(/\{\\[^}]*\}/g, "");
     const body = items.map(it => ({ Text: clean(it.text) }));
     const headers = {
