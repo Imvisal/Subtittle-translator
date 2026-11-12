@@ -151,3 +151,5 @@
     .tp-cta { flex: 1 1 100%; justify-content: center; }
     .tp-dgrid { grid-template-columns: 1fr; }
 }
+
+.tp-h1s { display: block; margin-top: 6px; font-size: clamp(15px, 2.6vw, 21px); font-weight: 700; letter-spacing: 0; color: var(--accent-2, #9aa6ff); }

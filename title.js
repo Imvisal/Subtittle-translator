@@ -54,7 +54,7 @@
             '<div class="tp-in">' +
             '<div class="tp-poster">' + (D.poster ? '<img src="' + esc(D.poster) + '" alt="' + esc(D.title) + ' poster" referrerpolicy="no-referrer">' : "<i>\uD83C\uDFAC</i>") + '</div>' +
             '<div class="tp-info"><span class="tp-kind">' + (isTv ? "TV series" : "Film") + '</span>' +
-            '<h1>' + esc(D.title) + '</h1>' +
+            '<h1>' + esc(D.title) + ' <span class="tp-h1s">Sinhala Subtitle | සිංහල උපසිරැසි</span></h1>' +
             (facts.length ? '<div class="tp-meta">' + facts.join('<i class="tp-dot"></i>') + '</div>' : "") +
             (scores ? '<div class="tp-scores">' + scores + '</div>' : "") +
             (D.genres && D.genres.length ? '<div class="tp-chips">' + D.genres.map(function (g) { return "<span>" + esc(g) + "</span>"; }).join("") + '</div>' : "") +
@@ -113,7 +113,7 @@
         hero.querySelector(".tp-tclose").hidden = true;
     }
 
-    function render() { root.innerHTML = hero() + episodes() + castCard(); }
+    function render() { root.innerHTML = hero() + castCard() + episodes(); }
     render();
 
     root.addEventListener("click", function (ev) {
