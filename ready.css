@@ -45,3 +45,12 @@
 .rd-more[hidden], .rd-empty[hidden] { display: none; }
 .rd-more button { border: 1px solid var(--line-strong); background: var(--surface); color: var(--text); border-radius: 99px; padding: 8px 20px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
 .rd-empty { text-align: center; color: var(--muted); font-size: 14px; padding: 18px 0; }
+
+.rd-seeall { text-align: center; margin-top: 10px; }
+.rd-seeall[hidden] { display: none; }
+.rd-seeall-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 22px; border-radius: 99px; font-weight: 800; font-size: 14px; text-decoration: none; color: #06241f; background: linear-gradient(135deg, #5df0d8, #36e0c8); }
+.rd-seeall-btn:hover { filter: brightness(1.06); }
+.rd-hits { margin: 0 0 22px; padding: 14px 14px 6px; border-radius: 18px; background: rgba(54, 224, 200, .07); border: 1px solid rgba(54, 224, 200, .35); }
+.rd-hits-h { font-size: 13.5px; font-weight: 800; color: #5df0d8; margin-bottom: 10px; }
+.rd-hits-row { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 10px; }
+.rd-page { margin-top: 10px; }

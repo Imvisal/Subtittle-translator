@@ -1355,6 +1355,8 @@ async function searchMovies() {
 
     hideCategoryResults();
 
+    try { if (window.__sinsubzReadyHits) { window.__sinsubzReadyHits(query); } } catch (e) { /* ignore */ }
+
 
     if (searchBtn) {
 

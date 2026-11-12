@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#080d1b">
+    <title>Ready Sinhala Subtitles: Films and TV Series | SinSubz</title>
+    <meta name="description" content="All the Sinhala subtitles (සිංහල උපසිරැසි) that SinSubz already translated. Search by name, filter by movies or TV series and genre, and download the .srt for free.">
+    <link rel="canonical" href="https://sinsubs.site/ready.html">
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="SinSubz">
+    <meta property="og:title" content="Ready Sinhala Subtitles: Films and TV Series | SinSubz">
+    <meta property="og:description" content="Already translated Sinhala subtitles for films and TV series. Free .srt download.">
+    <meta property="og:url" content="https://sinsubs.site/ready.html">
+    <meta property="og:image" content="https://sinsubs.site/og-image.png">
+    <link rel="icon" href="/favicon.ico?v=1133" sizes="48x48">
+    <link rel="icon" href="/favicon.svg?v=1133" type="image/svg+xml" sizes="any">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png?v=1133">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="ready.css">
+    <script>
+        (function () { try { var t = localStorage.getItem("sinsubz-theme"); if (t === "light" || t === "dark") { document.documentElement.setAttribute("data-theme", t); } } catch (e) {} })();
+    </script>
+</head>
+<body class="legal-page">
+<main class="legal-container" style="max-width:1100px">
+    <header class="legal-header">
+        <a href="index.html" class="back-home">← Back to SinSubz</a>
+        <div class="legal-logo"><img src="logo-128.png?v=1133" alt="SinSubz"></div>
+        <h1>Ready Sinhala subtitles</h1>
+        <p>Already translated. Pick one and download it, no waiting.</p>
+    </header>
+
+    <section class="ready-section rd-page" id="readyTitles" data-page="all" hidden aria-label="Ready Sinhala subtitles">
+        <div class="rd-tools" id="rdTools" hidden>
+            <form class="rd-find" role="search" id="rdFind">
+                <input type="search" id="rdQ" placeholder="Search here" aria-label="Search ready subtitles" autocomplete="off" maxlength="60">
+                <button type="submit" aria-label="Search">&#128269;</button>
+            </form>
+            <div class="rd-seg" id="rdSeg" role="group" aria-label="Type">
+                <button type="button" data-t="" class="on">All</button>
+                <button type="button" data-t="movie">Movies</button>
+                <button type="button" data-t="tv">TV</button>
+            </div>
+            <select id="rdG" class="rd-sel" aria-label="Genre"><option value="">All genres</option></select>
+        </div>
+        <div class="rd-grid"></div>
+        <div class="rd-more" id="rdMore" hidden><button type="button">Show more</button></div>
+        <div class="rd-empty" id="rdEmpty" hidden>Nothing found. Try another word or filter.</div>
+        <div class="rd-panel" hidden></div>
+    </section>
+    <noscript><p style="text-align:center">Turn on JavaScript to browse the list, or go back to the <a href="index.html">home page</a>.</p></noscript>
+</main>
+<script src="ready.js" defer></script>
+</body>
+</html>

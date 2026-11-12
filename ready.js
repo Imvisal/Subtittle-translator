@@ -16,7 +16,9 @@
     var LIMIT = 36, shown = LIMIT;         // when a filter is on, the row becomes a grid of up to 36 (then "Show more")
     var tools = document.getElementById("rdTools"), qBox = document.getElementById("rdQ"), gSel = document.getElementById("rdG"),
         seg = document.getElementById("rdSeg"), moreBox = document.getElementById("rdMore"), emptyBox = document.getElementById("rdEmpty");
-    function filtering() { return !!(F.q || F.t || F.g); }
+    var PAGE = host.getAttribute("data-page") === "all";   // ready.html: everything, with the filter bar. Home: the newest few + "See all".
+    var HOME_N = 6;
+    function filtering() { return PAGE || !!(F.q || F.t || F.g); }
     function visible() {
         var q = F.q.toLowerCase();
         return items.filter(function (it) {
@@ -47,8 +49,8 @@
         var on = filtering();
         grid.classList.toggle("is-filtered", on);
         if (emptyBox) { emptyBox.hidden = !(on && !list.length); }
-        if (moreBox) { moreBox.hidden = !(on && list.length > shown); }
-        if (on) { list = list.slice(0, shown); }
+        if (PAGE) { if (moreBox) { moreBox.hidden = list.length <= shown; } list = list.slice(0, shown); }
+        else { list = list.slice(0, HOME_N); }
         grid.innerHTML = list.map(function (it) {
             var n = it.eps.length;
             var tag = it.type === "tv" ? n + (n === 1 ? " episode" : " episodes") : "Film";
@@ -105,12 +107,50 @@
     }
     if (moreBox) { moreBox.addEventListener("click", function () { shown += LIMIT; render(); }); }
 
+    // The big search box on the home page: when the typed name is already translated, show it first.
+    var hitsP = null;
+    function allItems() {
+        if (items.length) { return Promise.resolve(items); }
+        if (!hitsP) { hitsP = fetch("/api/stats?ready=list").then(function (r) { return r.ok ? r.json() : { items: [] }; }).then(function (d) { return Array.isArray(d.items) ? d.items : []; }).catch(function () { return []; }); }
+        return hitsP;
+    }
+    window.__sinsubzReadyHits = function (query) {
+        var anchor = document.getElementById("searchResults");
+        if (!anchor || PAGE) { return; }
+        var old = document.getElementById("readyHits");
+        if (old && old.parentNode) { old.parentNode.removeChild(old); }
+        var words = String(query || "").toLowerCase().split(/\s+/).filter(function (w) { return w.length > 1; });
+        if (!words.length) { return; }
+        allItems().then(function (list) {
+            var found = list.filter(function (it) {
+                var t = (String(it.t || "") + " " + String(it.y || "")).toLowerCase();
+                return words.every(function (w) { return t.indexOf(w) >= 0; });
+            }).slice(0, 6);
+            var again = document.getElementById("readyHits");
+            if (again && again.parentNode) { again.parentNode.removeChild(again); }
+            if (!found.length) { return; }
+            var box = document.createElement("div");
+            box.id = "readyHits"; box.className = "rd-hits";
+            box.innerHTML = '<div class="rd-hits-h">Already translated. Download now, no waiting</div><div class="rd-hits-row">' + found.map(function (it) {
+                var n = (it.eps || []).length;
+                return '<a class="rd-card" href="' + (it.type === "tv" ? "/tv/" : "/film/") + esc(it.slug || it.id) + '"><span class="rd-poster">' +
+                    (posterOk(it.p) ? '<img src="' + esc(it.p) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '<i>🎬</i>') +
+                    '<span class="rd-tag">' + esc(it.type === "tv" ? n + (n === 1 ? " episode" : " episodes") : "Film") + '</span></span>' +
+                    '<span class="rd-name">' + esc(it.t) + '</span>' + (it.y ? '<span class="rd-year">' + esc(it.y) + '</span>' : '') + '</a>';
+            }).join("") + '</div>';
+            anchor.parentNode.insertBefore(box, anchor);
+        });
+    };
+
     fetch("/api/stats?ready=list").then(function (r) { return r.ok ? r.json() : { items: [] }; }).then(function (d) {
         items = Array.isArray(d.items) ? d.items.filter(function (x) { return x && x.id && x.eps && x.eps.length; }) : [];
         if (!items.length) { return; }
         host.hidden = false;
         if (tools) { tools.hidden = false; }
+        var seeAll = document.getElementById("rdSeeAll"), tot = document.getElementById("rdTotal");
+        if (seeAll && !PAGE) { if (tot) { tot.textContent = String(items.length); } seeAll.hidden = items.length <= HOME_N; }
         fillGenres();
         render();
+        window.__sinsubzReadyItems = items;
     }).catch(function () { /* section stays hidden */ });
 })();

@@ -457,21 +457,8 @@ if(t){var a=q(".hero-actions");if(a){var f=a.querySelector('a[href="#search"]');
                 <h2 id="readyTitle">Ready <span>Sinhala subtitles</span></h2>
                 <p>Already translated by SinSubz. Pick one and download it, no waiting.</p>
             </div>
-            <div class="rd-tools" id="rdTools" hidden>
-                <form class="rd-find" role="search" id="rdFind">
-                    <input type="search" id="rdQ" placeholder="Search here" aria-label="Search ready subtitles" autocomplete="off" maxlength="60">
-                    <button type="submit" aria-label="Search"><i class="fa-solid fa-magnifying-glass"></i></button>
-                </form>
-                <div class="rd-seg" id="rdSeg" role="group" aria-label="Type">
-                    <button type="button" data-t="" class="on">All</button>
-                    <button type="button" data-t="movie">Movies</button>
-                    <button type="button" data-t="tv">TV</button>
-                </div>
-                <select id="rdG" class="rd-sel" aria-label="Genre"><option value="">All genres</option></select>
-            </div>
             <div class="rd-grid"></div>
-            <div class="rd-more" id="rdMore" hidden><button type="button">Show more</button></div>
-            <div class="rd-empty" id="rdEmpty" hidden>Nothing found. Try another word or filter.</div>
+            <div class="rd-seeall" id="rdSeeAll" hidden><a href="ready.html" class="rd-seeall-btn">See all <span id="rdTotal"></span> ready subtitles</a></div>
             <div class="rd-panel" hidden></div>
         </section>
         <!--/WEBONLY-->
