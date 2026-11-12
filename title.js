@@ -119,6 +119,7 @@
         if (b) { ask(Number(b.getAttribute("data-s")), Number(b.getAttribute("data-e"))); }
     });
 
+    var DL = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>Download';
     function find(s, e) { var l = D.seasons[s] || []; for (var i = 0; i < l.length; i++) { if (l[i].e === e) { return l[i]; } } return null; }
 
     function ask(s, e) {
@@ -132,7 +133,7 @@
             '<button type="button" class="tp-x" aria-label="Close">\u2715</button>' +
             '<div class="tp-mt">Download Sinhala subtitle</div><div class="tp-ms">' + esc(label) + '</div>' +
             '<div class="tp-sec">Original subtitle</div>' +
-            '<a class="tp-opt tp-opt-a" href="' + fileUrl(si, ei) + '" download><span class="tp-ot"><b>' + (rel ? esc(rel) : "Ready subtitle") + '</b><span>Works with most versions. Ready now.</span></span><span class="tp-obtn">\u2B07 Download</span></a>' +
+            '<a class="tp-opt tp-opt-a" href="' + fileUrl(si, ei) + '" download><span class="tp-ot"><b>' + (rel ? esc(rel) : "Ready subtitle") + ' <i class="tp-tag-si">Sinhala</i></b><span>Works with most versions. Ready now.</span></span><span class="tp-obtn">'+DL+'</span></a>' +
             '<div class="tp-sec">Other Sinhala subtitle video versions <small>synced to your file</small></div>' +
             '<div class="tp-rels" id="tpRels"><p class="tp-mp">Loading versions\u2026</p></div>' +
             '</div>';
@@ -150,7 +151,7 @@
                 });
                 if (!out.length) { box.innerHTML = '<p class="tp-mp">No other versions found. Use the original above.</p>'; return; }
                 box.innerHTML = out.slice(0, 12).map(function (o) {
-                    return '<a class="tp-opt tp-opt-r" href="' + matchUrl(s, e) + '&rel=' + encodeURIComponent(o.r) + '"><span class="tp-ot"><b>' + esc(o.lab) + '</b></span><span class="tp-obtn">\u2B07 Download</span></a>';
+                    return '<a class="tp-opt tp-opt-r" href="' + matchUrl(s, e) + '&rel=' + encodeURIComponent(o.r) + '"><span class="tp-ot"><b>' + esc(o.lab) + ' <i class="tp-tag-si">Sinhala</i></b></span><span class="tp-obtn">'+DL+'</span></a>';
                 }).join("");
             }).catch(function () { box = ov.querySelector("#tpRels"); if (box) { box.innerHTML = '<p class="tp-mp">Could not load other versions. Use the original above.</p>'; } });
         })();

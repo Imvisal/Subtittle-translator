@@ -170,3 +170,8 @@
 .tp-opt .tp-obtn { display: inline-block; margin: 0; font-size: 13px; color: #0b0d1f; line-height: 1.2; }
 .tp-opt .tp-ot { margin: 0; }
 .tp-opt .tp-ot > span { margin-top: 3px; }
+
+.tp-tag-si { display: inline-block; vertical-align: middle; margin-left: 6px; padding: 1px 7px; border-radius: 99px; font-style: normal; font-size: 10.5px; font-weight: 800; color: #5ff0d8; background: rgba(54, 224, 200, .14); border: 1px solid rgba(54, 224, 200, .4); }
+.tp-opt .tp-obtn { display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 16px; border-radius: 99px; font-size: 13.5px; font-weight: 800; color: #fff; background: linear-gradient(135deg, #7c7af5, #5b59e0); border: 1px solid rgba(255, 255, 255, .22); box-shadow: 0 8px 18px -8px rgba(124, 122, 245, .9); transition: transform .15s, filter .15s; }
+.tp-opt:hover .tp-obtn { filter: brightness(1.12); transform: translateY(-1px); }
+.tp-opt-a .tp-obtn { background: linear-gradient(135deg, #36e0c8, #1fb9a4); color: #04241f; border-color: rgba(255, 255, 255, .3); box-shadow: 0 8px 18px -8px rgba(54, 224, 200, .8); }
