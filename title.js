@@ -76,7 +76,8 @@
             var f0 = (D.seasons[0] && D.seasons[0][0]) || {};
             return '<section class="tp-card tp-dcard" id="tpEps"><h2>Download Sinhala subtitle</h2>' +
                 '<button type="button" class="tp-bigdl tp-dl" data-s="0" data-e="0"><span class="tp-di">\u2B07</span><span class="tp-bt"><b>Download Sinhala subtitle</b>' +
-                '<small>' + (f0.n ? f0.n + ' lines \u00B7 ' : '') + 'free .srt \u00B7 pick your video version</small></span></button></section>';
+                '<small>' + (f0.n ? f0.n + ' lines \u00B7 ' : '') + 'free .srt \u00B7 pick your video version</small></span></button>' +
+                '<p class="tp-dcount" id="tpDlCount" hidden></p></section>';
         }
         var tabs = seasonKeys.length > 1 ? '<div class="tp-tabs" role="tablist">' + seasonKeys.map(function (k) {
             return '<button type="button" role="tab" class="tp-tab' + (k === cur ? " on" : "") + '" data-season="' + k + '">Season ' + k + '</button>';
@@ -109,6 +110,16 @@
 
     function render() { root.innerHTML = hero() + castCard() + episodes(); }
     render();
+    (function dlCount() {
+        var el = document.getElementById("tpDlCount");
+        if (!el) { return; }
+        fetch("/api/stats?ready=count&id=" + encodeURIComponent(D.id)).then(function (r) { return r.json(); }).then(function (j) {
+            var n = Number(j && j.n) || 0;
+            if (n < 1) { return; }
+            el.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg><b>' + n.toLocaleString("en-US") + '</b> downloads';
+            el.hidden = false;
+        }).catch(function () { /* hidden */ });
+    })();
 
     root.addEventListener("click", function (ev) {
         if (ev.target.closest && ev.target.closest('[data-act="trailer"]')) { startTrailer(); return; }

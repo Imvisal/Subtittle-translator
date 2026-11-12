@@ -335,14 +335,23 @@ module.exports = async function ready(req, res) {
             const s = num(p.s), e = num(p.e);
             const [packed, idx] = await redis([["GET", srtKey(p.id, s, e)], ["HGET", "rdy:idx", p.id]]);
             if (!packed) { return res.status(404).json({ error: "Not found" }); }
+            try { await redis([["HINCRBY", "rdy:dl", p.id, 1]]); } catch (x) { /* counting must never block the file */ }
             const meta = parse(idx) || {};
             const ep = (meta.eps || {})[s + "x" + e] || {};
             const name = String(ep.f || (p.id + ".Sinhala.SinSubz.srt")).replace(/[^\w .()\-\[\]]+/g, "_");
             const text = zlib.gunzipSync(Buffer.from(packed, "base64")).toString("utf8");
             res.setHeader("Content-Type", "application/x-subrip; charset=utf-8");
             res.setHeader("Content-Disposition", 'attachment; filename="' + name + '"');
-            res.setHeader("Cache-Control", "public, s-maxage=300");
+            res.setHeader("Cache-Control", "no-store");
             return res.status(200).send("﻿" + text);
+        }
+
+        if (act === "count" && req.method === "GET") {
+            const p = q(req);
+            if (!imdbOk(p.id)) { return res.status(400).json({ error: "Bad id" }); }
+            const [n] = await redis([["HGET", "rdy:dl", p.id]]);
+            res.setHeader("Cache-Control", "public, s-maxage=60");
+            return res.status(200).json({ n: Number(n) || 0 });
         }
 
         if (act === "backfill" && req.method === "POST") { return backfill(req, res); }
