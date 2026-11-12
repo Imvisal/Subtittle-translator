@@ -46,7 +46,7 @@ async function tmdbInfo(m) {
     const seasons = [...new Set(Object.values(m.eps || {}).map(x => x.s).filter(Boolean))].sort((a, b) => a - b);
     const ck = "rdy:tmdb:" + m.id;
     const cached = parse((await redis([["GET", ck]]))[0]);
-    if (cached && cached.trailer !== undefined && seasons.every(n => cached.seasons && cached.seasons[n])) { return cached; }
+    if (cached && cached.cast !== undefined && seasons.every(n => cached.seasons && cached.seasons[n])) { return cached; }
     const isToken = key.length > 40;
     const get = async p => {
         const url = "https://api.themoviedb.org/3" + p + (p.includes("?") ? "&" : "?") + "language=en-US" + (isToken ? "" : "&api_key=" + encodeURIComponent(key));
@@ -58,7 +58,7 @@ async function tmdbInfo(m) {
         const found = await get("/find/" + m.id + "?external_source=imdb_id");
         const pick = m.type === "tv" ? (found.tv_results || [])[0] : (found.movie_results || [])[0];
         if (!pick) { return cached || null; }
-        const d = await get("/" + (m.type === "tv" ? "tv" : "movie") + "/" + pick.id + "?append_to_response=videos");
+        const d = await get("/" + (m.type === "tv" ? "tv" : "movie") + "/" + pick.id + "?append_to_response=videos,credits");
         const vids = ((d.videos && d.videos.results) || []).filter(v => v.site === "YouTube" && /^[\w-]{6,20}$/.test(v.key || ""));
         const tr = vids.find(v => v.type === "Trailer" && v.official) || vids.find(v => v.type === "Trailer") || vids.find(v => v.type === "Teaser");
         const info = {
@@ -68,9 +68,28 @@ async function tmdbInfo(m) {
             rating: d.vote_average ? Math.round(d.vote_average * 10) / 10 : 0,
             runtime: m.type === "tv" ? ((d.episode_run_time || [])[0] || 0) : (d.runtime || 0),
             trailer: tr ? tr.key : "",
+            backdrop: d.backdrop_path ? "https://image.tmdb.org/t/p/w1280" + d.backdrop_path : "",
+            cast: ((d.credits && d.credits.cast) || []).slice(0, 14).map(c => ({ n: String(c.name || "").slice(0, 60), c: String(c.character || "").replace(/\s*\(.*?\)\s*/g, " ").trim().slice(0, 50), p: c.profile_path ? "https://image.tmdb.org/t/p/w185" + c.profile_path : "" })).filter(c => c.n),
+            by: m.type === "tv" ? (d.created_by || []).slice(0, 3).map(x => String(x.name || "").slice(0, 60)).filter(Boolean)
+                : ((d.credits && d.credits.crew) || []).filter(x => x.job === "Director").slice(0, 3).map(x => String(x.name || "").slice(0, 60)),
             totalSeasons: d.number_of_seasons || 0,
             seasons: {}
         };
+        // IMDb / Rotten Tomatoes / Metascore / age rating (OMDb). If OMDb is busy, keep the rest and look again in 6 hours.
+        let omdbOk = !process.env.OMDB_API_KEY;
+        if (process.env.OMDB_API_KEY) {
+            try {
+                const or = await fetch("https://www.omdbapi.com/?apikey=" + encodeURIComponent(process.env.OMDB_API_KEY) + "&i=" + encodeURIComponent(m.id), { signal: AbortSignal.timeout(5000) });
+                const o = await or.json();
+                if (o && o.Response === "True") {
+                    omdbOk = true;
+                    const val = v => (v && v !== "N/A" ? String(v) : "");
+                    info.imdb = val(o.imdbRating); info.votes = val(o.imdbVotes); info.mc = val(o.Metascore); info.rated = val(o.Rated);
+                    const rt = (o.Ratings || []).find(x => x.Source === "Rotten Tomatoes");
+                    info.rt = rt ? val(rt.Value) : "";
+                } else if (o && /Incorrect IMDb ID|not found/i.test(String(o.Error || ""))) { omdbOk = true; }
+            } catch (e) { /* retry later */ }
+        }
         if (m.type === "tv") {
             for (const n of seasons) {
                 try {
@@ -79,7 +98,7 @@ async function tmdbInfo(m) {
                 } catch (err) { info.seasons[n] = []; }
             }
         }
-        await redis([["SET", ck, JSON.stringify(info), "EX", 7 * 86400]]);
+        await redis([["SET", ck, JSON.stringify(info), "EX", omdbOk ? 7 * 86400 : 6 * 3600]]);
         return info;
     } catch (err) {
         return cached || null;
@@ -186,7 +205,7 @@ async function titleData(slug) {
         Object.keys(seasons[n].have).forEach(e => { if (!eps.has(Number(e))) { eps.set(Number(e), { e: Number(e), name: "", air: "" }); } });
         seasons[n] = [...eps.values()].sort((a, b) => a.e - b.e).map(e => Object.assign(e, { ready: !!seasons[n].have[e.e], r: (seasons[n].have[e.e] || {}).r || "", n: (seasons[n].have[e.e] || {}).n || 0 }));
     });
-    return { id: m.id, slug: m.slug, title: m.t, year: m.y, poster: m.p, type: m.type, overview: info.overview, trailer: info.trailer || "", tagline: info.tagline, genres: info.genres, rating: info.rating, runtime: info.runtime, seasons, url: pageUrl(m) };
+    return { id: m.id, slug: m.slug, title: m.t, year: m.y, poster: m.p, type: m.type, overview: info.overview, trailer: info.trailer || "", backdrop: info.backdrop || "", cast: info.cast || [], by: info.by || [], imdb: info.imdb || "", votes: info.votes || "", rt: info.rt || "", mc: info.mc || "", rated: info.rated || "", tagline: info.tagline, genres: info.genres, rating: info.rating, runtime: info.runtime, seasons, url: pageUrl(m) };
 }
 
 function pageHtml(d) {
@@ -216,6 +235,8 @@ function pageHtml(d) {
     const ld = { "@context": "https://schema.org", "@graph": [
         { "@type": isTv ? "TVSeries" : "Movie", name: d.title, url: d.url, image: d.poster || undefined, description: d.overview || undefined, inLanguage: "si",
             genre: d.genres && d.genres.length ? d.genres : undefined, datePublished: d.year || undefined,
+            actor: d.cast && d.cast.length ? d.cast.slice(0, 8).map(c => ({ "@type": "Person", name: c.n })) : undefined,
+            director: !isTv && d.by && d.by.length ? d.by.map(n => ({ "@type": "Person", name: n })) : undefined,
             duration: !isTv && d.runtime ? "PT" + d.runtime + "M" : undefined,
             trailer: d.trailer && d.year ? { "@type": "VideoObject", name: d.title + " trailer", description: "Official trailer of " + d.title + ".",
                 thumbnailUrl: "https://img.youtube.com/vi/" + d.trailer + "/hqdefault.jpg", embedUrl: "https://www.youtube.com/embed/" + d.trailer, uploadDate: d.year + "-01-01" } : undefined },
