@@ -45,7 +45,7 @@ async function tmdbInfo(m) {
     const seasons = [...new Set(Object.values(m.eps || {}).map(x => x.s).filter(Boolean))].sort((a, b) => a - b);
     const ck = "rdy:tmdb:" + m.id;
     const cached = parse((await redis([["GET", ck]]))[0]);
-    if (cached && seasons.every(n => cached.seasons && cached.seasons[n])) { return cached; }
+    if (cached && cached.trailer !== undefined && seasons.every(n => cached.seasons && cached.seasons[n])) { return cached; }
     const isToken = key.length > 40;
     const get = async p => {
         const url = "https://api.themoviedb.org/3" + p + (p.includes("?") ? "&" : "?") + "language=en-US" + (isToken ? "" : "&api_key=" + encodeURIComponent(key));
@@ -57,13 +57,16 @@ async function tmdbInfo(m) {
         const found = await get("/find/" + m.id + "?external_source=imdb_id");
         const pick = m.type === "tv" ? (found.tv_results || [])[0] : (found.movie_results || [])[0];
         if (!pick) { return cached || null; }
-        const d = await get("/" + (m.type === "tv" ? "tv" : "movie") + "/" + pick.id);
+        const d = await get("/" + (m.type === "tv" ? "tv" : "movie") + "/" + pick.id + "?append_to_response=videos");
+        const vids = ((d.videos && d.videos.results) || []).filter(v => v.site === "YouTube" && /^[\w-]{6,20}$/.test(v.key || ""));
+        const tr = vids.find(v => v.type === "Trailer" && v.official) || vids.find(v => v.type === "Trailer") || vids.find(v => v.type === "Teaser");
         const info = {
             overview: String(d.overview || "").replace(/\s+/g, " ").trim().slice(0, 700),
             tagline: String(d.tagline || "").slice(0, 160),
             genres: (d.genres || []).slice(0, 4).map(g => g.name),
             rating: d.vote_average ? Math.round(d.vote_average * 10) / 10 : 0,
             runtime: m.type === "tv" ? ((d.episode_run_time || [])[0] || 0) : (d.runtime || 0),
+            trailer: tr ? tr.key : "",
             totalSeasons: d.number_of_seasons || 0,
             seasons: {}
         };
@@ -86,7 +89,7 @@ async function titleData(slug) {
     const list = await allTitles();
     const m = list.find(x => x.slug === slug) || list.find(x => x.id === slug);
     if (!m) { return null; }
-    const info = (await tmdbInfo(m)) || { overview: "", tagline: "", genres: [], rating: 0, runtime: 0, seasons: {} };
+    const info = (await tmdbInfo(m)) || { overview: "", tagline: "", genres: [], rating: 0, runtime: 0, trailer: "", seasons: {} };
     const seasons = {};
     const have = Object.values(m.eps || {});
     have.forEach(x => { (seasons[x.s] = seasons[x.s] || { have: {} }).have[x.e] = { n: x.n, r: x.r || "", ts: x.ts }; });
@@ -97,7 +100,7 @@ async function titleData(slug) {
         Object.keys(seasons[n].have).forEach(e => { if (!eps.has(Number(e))) { eps.set(Number(e), { e: Number(e), name: "", air: "" }); } });
         seasons[n] = [...eps.values()].sort((a, b) => a.e - b.e).map(e => Object.assign(e, { ready: !!seasons[n].have[e.e], r: (seasons[n].have[e.e] || {}).r || "", n: (seasons[n].have[e.e] || {}).n || 0 }));
     });
-    return { id: m.id, slug: m.slug, title: m.t, year: m.y, poster: m.p, type: m.type, overview: info.overview, tagline: info.tagline, genres: info.genres, rating: info.rating, runtime: info.runtime, seasons, url: pageUrl(m) };
+    return { id: m.id, slug: m.slug, title: m.t, year: m.y, poster: m.p, type: m.type, overview: info.overview, trailer: info.trailer || "", tagline: info.tagline, genres: info.genres, rating: info.rating, runtime: info.runtime, seasons, url: pageUrl(m) };
 }
 
 function pageHtml(d) {

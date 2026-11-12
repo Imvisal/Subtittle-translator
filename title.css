@@ -63,3 +63,4 @@
 .tp-seo summary { cursor: pointer; font-weight: 700; font-size: 14.5px; }
 .tp-seo summary span { display: block; margin-top: 2px; font-weight: 600; font-size: 13px; color: var(--muted); }
 .tp-seo details p { margin: 8px 0 0; color: var(--text-2); font-size: 14px; line-height: 1.6; }
+.tp-trailer .ti-trailer { max-width: 720px; margin: 0 auto; }

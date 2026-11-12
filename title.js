@@ -58,10 +58,25 @@
         return '<section class="tp-card"><h2>Episodes</h2>' + tabs + '<ul class="tp-eps">' + list + '</ul></section>';
     }
 
-    function render() { root.innerHTML = hero() + episodes(); }
+    // trailer: a picture first, the YouTube player (privacy mode) loads only after the click
+    function trailerCard() {
+        if (!D.trailer || !/^[\w-]{6,20}$/.test(D.trailer)) { return ""; }
+        return '<section class="tp-card tp-trailer"><h2>Trailer</h2><div class="ti-trailer" data-yt="' + esc(D.trailer) + '">' +
+            '<button type="button" class="ti-play" aria-label="Play trailer"><img src="https://img.youtube.com/vi/' + esc(D.trailer) + '/hqdefault.jpg" alt="" loading="lazy">' +
+            '<span class="ti-play-icon">\u25B6</span><span class="ti-play-label">Watch trailer</span></button></div></section>';
+    }
+
+    function render() { root.innerHTML = hero() + trailerCard() + episodes(); }
     render();
 
     root.addEventListener("click", function (ev) {
+        var pl = ev.target.closest && ev.target.closest(".ti-play");
+        if (pl) {
+            var box = pl.parentNode;
+            box.innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + encodeURIComponent(box.getAttribute("data-yt")) +
+                '?autoplay=1&rel=0" title="Trailer" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>';
+            return;
+        }
         var t = ev.target.closest && ev.target.closest(".tp-tab");
         if (t) { cur = Number(t.getAttribute("data-season")); try { sessionStorage.setItem("tp-season-" + D.id, String(cur)); } catch (e) { /* ignore */ } render(); return; }
         var b = ev.target.closest && ev.target.closest(".tp-dl");
