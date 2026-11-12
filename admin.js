@@ -676,8 +676,8 @@
                     .then(function (r) { return r.json(); })
                     .then(function (d) {
                         if (!d || d.error) { throw new Error((d && d.error) || "failed"); }
-                        ["made", "had", "failed"].forEach(function (k) { tot[k] += d[k] || 0; });
-                        var txt = tot.made + " made, " + tot.had + " already had one" + (tot.failed ? ", " + tot.failed + " failed (press again later)" : "");
+                        ["made", "had", "failed"].forEach(function (k) { tot[k] += d[k] || 0; }); if (d.why) { tot.why = d.why; }
+                        var txt = tot.made + " made, " + tot.had + " already had one" + (tot.failed ? ", " + tot.failed + " failed (" + (tot.why || "?") + ") - press again later" : "");
                         out.textContent = (d.done ? "Done. " : "Working... " + d.next + "/" + d.total + ". ") + txt + (d.done ? "." : "");
                         if (d.done) { running = false; go.disabled = false; return; }
                         step(d.next);

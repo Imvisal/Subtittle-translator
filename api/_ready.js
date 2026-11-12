@@ -121,30 +121,38 @@ async function tmdbInfo(m) {
 }
 
 // A short spoiler-free Sinhala story intro (Gemini), written from the English TMDB overview. Never blocks the page for long.
-async function sinhalaSummary(title, year, type, overview) {
+let sumErr = "";      // why the last Sinhala intro failed (shown in the admin panel)
+async function sinhalaSummary(title, year, type, overview, bulk) {
+    sumErr = "";
     if (!overview) { return ""; }
     const keys = [...new Set([].concat((process.env.GEMINI_API_KEYS || "").split(","), process.env.GEMINI_API_KEY, Array.from({ length: 29 }, (_, i) => process.env["GEMINI_API_KEY_" + (i + 2)])).map(k => (k || "").trim()).filter(Boolean))];
-    if (!keys.length && !process.env.GEMINI_SUMMARY_KEY) { return ""; }
+    if (!keys.length && !process.env.GEMINI_SUMMARY_KEY) { sumErr = "no Gemini key"; return ""; }
     const prompt = "Write a short Sinhala story intro for the " + (type === "tv" ? "TV series" : "film") + " \"" + title + "\" (" + year + ").\n" +
         "Source (English overview): " + overview + "\n\n" +
         "Rules: 2 or 3 sentences, 40-70 words. Natural, friendly spoken Sinhala (ඔයා, මේක, ඒක; not bookish). Tell ONLY the set-up / the first part of the story that the overview gives. " +
         "NO spoilers: no twists or reveals, no deaths, no betrayals, no who-is-really-who, no ending, nothing that happens after the opening situation. If the overview itself hints at a later event, leave that part out. " +
         "Use ONLY facts that are in the overview, do not invent plot, do not add opinions or praise. Keep character and place names in English letters. " +
         "Output only the Sinhala text, no quotes, no title, no markdown.";
-    // ONE key only: GEMINI_SUMMARY_KEY if set, otherwise the last Gemini key (so the translation keys stay free)
-    const key = (process.env.GEMINI_SUMMARY_KEY || "").trim() || keys[keys.length - 1];
-    for (let i = 0; i < 1; i++) {
-        try {
-            const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent", {
-                method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 400 } }),
-                signal: AbortSignal.timeout(6000)
-            });
-            if (!r.ok) { console.error("Gemini summary", r.status); return ""; }
-            const j = await r.json();
-            const t = String((((j.candidates || [])[0] || {}).content || {}).parts ? j.candidates[0].content.parts.map(x => x.text || "").join("") : "").replace(/[*_`#>"]+/g, "").replace(/\s+/g, " ").trim();
-            if (t.length > 30 && /[\u0D80-\u0DFF]/.test(t)) { return t.slice(0, 600); }
-        } catch (e) { /* retried in 6 hours */ }
+    // page view: ONE key (GEMINI_SUMMARY_KEY, else the last Gemini key) so the translation keys stay free.
+    // admin "make all" (bulk): that key first, then up to 3 other keys, and two models, because quota may be used up
+    const first = (process.env.GEMINI_SUMMARY_KEY || "").trim() || keys[keys.length - 1];
+    const tryKeys = bulk ? [...new Set([first].concat(keys.slice().reverse().slice(0, 4)))].filter(Boolean) : [first];
+    const models = bulk ? ["gemini-2.5-flash-lite", "gemini-flash-lite-latest"] : ["gemini-2.5-flash-lite"];
+    for (const model of models) {
+        for (const key of tryKeys) {
+            try {
+                const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent", {
+                    method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 400 } }),
+                    signal: AbortSignal.timeout(bulk ? 5000 : 6000)
+                });
+                if (!r.ok) { sumErr = "Gemini " + r.status + " (" + model + ")"; if (r.status === 429 || r.status === 503 || r.status === 404) { continue; } return ""; }
+                const j = await r.json();
+                const t = String((((j.candidates || [])[0] || {}).content || {}).parts ? j.candidates[0].content.parts.map(x => x.text || "").join("") : "").replace(/[*_`#>"]+/g, "").replace(/\s+/g, " ").trim();
+                if (t.length > 30 && /[\u0D80-\u0DFF]/.test(t)) { return t.slice(0, 600); }
+                sumErr = "Gemini answered, but not usable Sinhala text";
+            } catch (e) { sumErr = "Gemini timeout / network"; }
+        }
     }
     return "";
 }
@@ -248,11 +256,11 @@ async function intros(req, res) {
             const ck = "rdy:tmdb:" + m.id;
             let c = parse((await redis([["GET", ck]]))[0]);
             if (!c) { c = await tmdbInfo(m); }                 // fills the cache (and makes the intro on the way)
-            if (!c || !c.overview) { r.failed++; continue; }
+            if (!c || !c.overview) { r.failed++; r.why = c ? "TMDB has no overview" : "TMDB lookup failed (TMDB_API_KEY?)"; continue; }
             if (c.si && !redo) { r.had++; continue; }
-            const si = await sinhalaSummary(m.t, m.y, m.type, c.overview);
-            if (si) { c.si = si; c.siTry = Date.now(); await redis([["SET", ck, JSON.stringify(c), "EX", 7 * 86400]]); r.made++; } else { r.failed++; }
-        } catch (e) { r.failed++; }
+            const si = await sinhalaSummary(m.t, m.y, m.type, c.overview, true);
+            if (si) { c.si = si; c.siTry = Date.now(); await redis([["SET", ck, JSON.stringify(c), "EX", 7 * 86400]]); r.made++; } else { r.failed++; r.why = sumErr || "no overview"; }
+        } catch (e) { r.failed++; r.why = "error: " + String(e && e.message || e).slice(0, 60); }
     }
     const next = offset + part.length;
     return res.status(200).json(Object.assign({ next: next, total: list.length, done: next >= list.length }, r));
