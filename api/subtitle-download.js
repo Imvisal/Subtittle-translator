@@ -109,13 +109,19 @@ module.exports = async function handler(req, res) {
         }
 
 
+        // the search endpoint strips the API key from the links it hands out: add it again here, on the server
+        if (process.env.SUBDL_API_KEY && !checkUrl.searchParams.has("api_key")) {
+            checkUrl.searchParams.set("api_key", process.env.SUBDL_API_KEY);
+            finalUrl = checkUrl.toString();
+        }
+
         // ==================================================
         // DOWNLOAD FROM SUBDL
         // ==================================================
 
         console.log(
             "Downloading subtitle:",
-            finalUrl
+            finalUrl.replace(/api_key=[^&]+/, "api_key=***")
         );
 
 

@@ -77,20 +77,21 @@ async function translateInPage(job) {
     }
     if (!list.length) { return { skip: "no English subtitle on SubDL" }; }
 
-    let subs = null, release = "", dlFailed = 0, tried = 0, why = "";
+    let subs = null, release = "", dlFailed = 0, tried = 0, why = "", rate429 = false;
     const seenUrl = new Set();
     for (const cand of list.slice(0, 20)) {          // not only the first few: go on down the results until one file is usable
         const u0 = cand.downloadUrl || cand.url || cand.download_url;
         if (u0 && seenUrl.has(u0)) { continue; }
         if (u0) { seenUrl.add(u0); }
-        if (tried) { await new Promise(r => setTimeout(r, 1200)); }
+        if (tried) { await new Promise(r => setTimeout(r, 4000)); }
         try {
             const url = cand.downloadUrl || cand.url || cand.download_url;
             if (!url) { continue; }
             const dr = await fetch("/api/subtitle-download?url=" + encodeURIComponent(url.startsWith("/") ? "https://dl.subdl.com" + url : url));
             tried++;
             const dd = await dr.json().catch(() => ({}));
-            if (!dr.ok || !dd.data) { dlFailed++; why = dr.status + " " + String(dd.error || "no data").slice(0, 80) + " | " + url.slice(0, 90); continue; }
+            if (dr.status === 429) { rate429 = true; why = "429 SubDL download rate limit"; break; }   // do not hammer it with the other results
+            if (!dr.ok || !dd.data) { dlFailed++; why = dr.status + " " + String(dd.error || "no data").replace(/api_key=[^&\s]+/g, "api_key=***").slice(0, 80); continue; }
             const bin = atob(dd.data);
             const bytes = new Uint8Array(bin.length);
             for (let i = 0; i < bin.length; i++) { bytes[i] = bin.charCodeAt(i); }
@@ -100,6 +101,7 @@ async function translateInPage(job) {
         } catch (e) { dlFailed++; why = String(e && e.message || e).slice(0, 80); /* try the next file */ }
     }
     // every download failed (SubDL busy / throttling us): that says nothing about the episode, try again later
+    if (!subs && rate429) { return { retry: "subtitle download failed: " + why }; }
     if (!subs && tried && dlFailed >= tried) { return { retry: "subtitle download failed: " + why }; }
     if (!subs) { return { skip: "no usable English file (too short / bad)" }; }
 
@@ -225,7 +227,7 @@ async function refillIfDue(weekly, meta, emptyList) {
         if (Date.now() - started > MAX_MS) { log("Time limit reached (" + Math.round(MAX_MS / 60000) + " minutes): stopping."); break; }
         if (await stopRequested()) { log("Stopped from the admin panel."); break; }
         if (!manual && pacificHour() !== 23) { log("Quota reset reached: the fresh quota is for visitors, stopping."); break; }
-        if (i > 0) { await new Promise(r => setTimeout(r, 3000)); }   // be gentle with SubDL
+        if (i > 0) { await new Promise(r => setTimeout(r, 6000)); }   // be gentle with SubDL
         const label = job.t.title + (job.t.type === "tv" ? " S" + String(job.season).padStart(2, "0") + "E" + String(job.episode).padStart(2, "0") : "");
         log("Translating " + label + " ...");
         try {
@@ -257,13 +259,14 @@ async function refillIfDue(weekly, meta, emptyList) {
             done++; failsInRow = 0;
         } catch (e) {
             const msg = String(e && e.message || e);
-            log("  failed: " + msg);
+            log("  failed: " + msg.replace(/api_key=[^&\s]+/g, "api_key=***"));
             if (/SUBDL_RETRY|subtitle search|service_busy|SubDL/i.test(msg)) {
                 // SubDL throttles fast callers: wait and try this episode again (not marked, not a Gemini problem)
                 subdlWaits[id + job.season + "x" + job.episode] = (subdlWaits[id + job.season + "x" + job.episode] || 0) + 1;
                 if (subdlWaits[id + job.season + "x" + job.episode] <= 4) {
-                    log("SubDL is busy: waiting 60 seconds, then trying " + label + " again (" + subdlWaits[id + job.season + "x" + job.episode] + "/4).");
-                    await new Promise(r => setTimeout(r, 60000));
+                    const waitS = 60 * subdlWaits[id + job.season + "x" + job.episode];     // 60, 120, 180, 240 s: SubDL's limit needs time
+                    log("SubDL download is limited: waiting " + waitS + " seconds, then trying " + label + " again (" + subdlWaits[id + job.season + "x" + job.episode] + "/4).");
+                    await new Promise(r => setTimeout(r, waitS * 1000));
                     i--; continue;
                 }
                 log("Download still failing for " + label + ": leaving it for the next run.");

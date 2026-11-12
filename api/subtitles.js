@@ -412,6 +412,13 @@ module.exports = async function handler(req, res) {
                         }
 
 
+                        // the API key must never reach the browser (SubDL puts it into the file links):
+                        // /api/subtitle-download adds it again on the server
+                        try {
+                            const cu = new URL(downloadUrl);
+                            if (cu.searchParams.has("api_key")) { cu.searchParams.delete("api_key"); downloadUrl = cu.toString(); }
+                        } catch (e) { /* relative or odd: leave as it is */ }
+
                         if (
                             !downloadUrl
                         ) {
