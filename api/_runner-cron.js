@@ -9,7 +9,7 @@
 
    Env (Vercel):  CRON_SECRET             any long random text; Vercel sends it as "Authorization: Bearer <CRON_SECRET>"
                   GITHUB_DISPATCH_TOKEN   fine-grained GitHub token for the repo with "Actions: Read and write"
-                  GITHUB_REPO             optional, default Imvisal/Subtittle-translator */
+                  GITHUB_REPO             optional, default visalhmg123-cell/sinsubz-runner1 */
 "use strict";
 
 const crypto = require("crypto");
@@ -34,7 +34,7 @@ module.exports = async function runnerCron(req, res) {
     }
 
     if (!token) { return res.status(503).json({ error: "GITHUB_DISPATCH_TOKEN is not set" }); }
-    const repo = /^[\w.-]+\/[\w.-]+$/.test(process.env.GITHUB_REPO || "") ? process.env.GITHUB_REPO : "Imvisal/Subtittle-translator";
+    const repo = /^[\w.-]+\/[\w.-]+$/.test(process.env.GITHUB_REPO || "") ? process.env.GITHUB_REPO : "visalhmg123-cell/sinsubz-runner1";
     const gh = (path, opt) => fetch("https://api.github.com/repos/" + repo + path, Object.assign({
         headers: { Authorization: "Bearer " + token, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", "User-Agent": "sinsubz-cron", "Content-Type": "application/json" },
         signal: AbortSignal.timeout(8000)
