@@ -211,7 +211,7 @@ async function refillIfDue(weekly, meta, emptyList) {
     const noSub = {};      // series -> consecutive episodes without an English subtitle (= not aired / not on SubDL yet)
     const closed = new Set();   // series given up for now (7 days)
     let quotaWaits = 0, noSubAll = 0;
-    const subdlWaits = {};
+    const subdlWaits = {}, dlGiveUp = {};
     stop: for (let i = 0; i < todo.length; i++) {
         const job = todo[i];
         const id = job.t.imdb;
@@ -261,7 +261,8 @@ async function refillIfDue(weekly, meta, emptyList) {
                     await new Promise(r => setTimeout(r, 60000));
                     i--; continue;
                 }
-                log("SubDL still busy for " + label + ": leaving it for the next run.");
+                log("Download still failing for " + label + ": leaving it for the next run.");
+                if ((dlGiveUp[id] = (dlGiveUp[id] || 0) + 1) >= 2) { closed.add(id); log("  2 episodes of " + job.t.title + " could not be downloaded: skipping this series for this run (not marked), next series."); }
                 if (++failsInRow >= 3) { log("3 failures in a row: stopping."); break stop; }
                 continue;
             }
