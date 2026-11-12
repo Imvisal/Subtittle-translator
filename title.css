@@ -184,3 +184,6 @@
 .tp-dcount { display: flex; align-items: center; justify-content: center; gap: 7px; margin: 12px 0 0; font-size: 14px; color: var(--text-2); }
 .tp-dcount[hidden] { display: none; }
 .tp-dcount b { color: #5ff0d8; font-size: 15px; }
+
+.tp-si { max-width: 62ch; margin: 12px 0 0; padding: 2px 0 2px 14px; border-left: 3px solid #36e0c8; font-size: 15px; line-height: 1.75; color: var(--text); }
+@media (max-width: 720px) { .tp-si { text-align: left; margin-left: auto; margin-right: auto; } }

@@ -46,7 +46,7 @@ async function tmdbInfo(m) {
     const seasons = [...new Set(Object.values(m.eps || {}).map(x => x.s).filter(Boolean))].sort((a, b) => a - b);
     const ck = "rdy:tmdb:" + m.id;
     const cached = parse((await redis([["GET", ck]]))[0]);
-    if (cached && cached.cast !== undefined && seasons.every(n => cached.seasons && cached.seasons[n])) { return cached; }
+    if (cached && cached.cast !== undefined && cached.si !== undefined && seasons.every(n => cached.seasons && cached.seasons[n])) { return cached; }
     const isToken = key.length > 40;
     const get = async p => {
         const url = "https://api.themoviedb.org/3" + p + (p.includes("?") ? "&" : "?") + "language=en-US" + (isToken ? "" : "&api_key=" + encodeURIComponent(key));
@@ -98,11 +98,40 @@ async function tmdbInfo(m) {
                 } catch (err) { info.seasons[n] = []; }
             }
         }
-        await redis([["SET", ck, JSON.stringify(info), "EX", omdbOk ? 7 * 86400 : 6 * 3600]]);
+        info.si = (cached && cached.si) || await sinhalaSummary(m.t, m.y, m.type, info.overview);
+        await redis([["SET", ck, JSON.stringify(info), "EX", omdbOk && (info.si || !info.overview) ? 7 * 86400 : 6 * 3600]]);
         return info;
     } catch (err) {
         return cached || null;
     }
+}
+
+// A short spoiler-free Sinhala story intro (Gemini), written from the English TMDB overview. Never blocks the page for long.
+async function sinhalaSummary(title, year, type, overview) {
+    if (!overview) { return ""; }
+    const keys = [...new Set([].concat((process.env.GEMINI_API_KEYS || "").split(","), process.env.GEMINI_API_KEY, Array.from({ length: 29 }, (_, i) => process.env["GEMINI_API_KEY_" + (i + 2)])).map(k => (k || "").trim()).filter(Boolean))];
+    if (!keys.length) { return ""; }
+    const prompt = "Write a short Sinhala story intro for the " + (type === "tv" ? "TV series" : "film") + " \"" + title + "\" (" + year + ").\n" +
+        "Source (English overview): " + overview + "\n\n" +
+        "Rules: 2 or 3 sentences, 40-70 words. Natural, friendly spoken Sinhala (ඔයා, මේක, ඒක; not bookish). Tell ONLY the set-up / the first part of the story that the overview gives. " +
+        "NO spoilers, no twists, no ending, nothing the overview does not say. Do not invent plot. Keep character and place names in English letters. " +
+        "Output only the Sinhala text, no quotes, no title, no markdown.";
+    const start = Math.floor(Math.random() * keys.length);
+    for (let i = 0; i < Math.min(3, keys.length); i++) {
+        const key = keys[(start + i) % keys.length];
+        try {
+            const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent", {
+                method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.4, maxOutputTokens: 400 } }),
+                signal: AbortSignal.timeout(9000)
+            });
+            if (!r.ok) { continue; }
+            const j = await r.json();
+            const t = String((((j.candidates || [])[0] || {}).content || {}).parts ? j.candidates[0].content.parts.map(x => x.text || "").join("") : "").replace(/[*_`#>"]+/g, "").replace(/\s+/g, " ").trim();
+            if (t.length > 30 && /[\u0D80-\u0DFF]/.test(t)) { return t.slice(0, 600); }
+        } catch (e) { /* next key */ }
+    }
+    return "";
 }
 
 
@@ -205,7 +234,7 @@ async function titleData(slug) {
         Object.keys(seasons[n].have).forEach(e => { if (!eps.has(Number(e))) { eps.set(Number(e), { e: Number(e), name: "", air: "" }); } });
         seasons[n] = [...eps.values()].sort((a, b) => a.e - b.e).map(e => Object.assign(e, { ready: !!seasons[n].have[e.e], r: (seasons[n].have[e.e] || {}).r || "", n: (seasons[n].have[e.e] || {}).n || 0 }));
     });
-    return { id: m.id, slug: m.slug, title: m.t, year: m.y, poster: m.p, type: m.type, overview: info.overview, trailer: info.trailer || "", backdrop: info.backdrop || "", cast: info.cast || [], by: info.by || [], imdb: info.imdb || "", votes: info.votes || "", rt: info.rt || "", mc: info.mc || "", rated: info.rated || "", tagline: info.tagline, genres: info.genres, rating: info.rating, runtime: info.runtime, seasons, url: pageUrl(m) };
+    return { id: m.id, slug: m.slug, title: m.t, year: m.y, poster: m.p, type: m.type, overview: info.overview, trailer: info.trailer || "", backdrop: info.backdrop || "", cast: info.cast || [], by: info.by || [], imdb: info.imdb || "", votes: info.votes || "", rt: info.rt || "", mc: info.mc || "", rated: info.rated || "", si: info.si || "", tagline: info.tagline, genres: info.genres, rating: info.rating, runtime: info.runtime, seasons, url: pageUrl(m) };
 }
 
 function pageHtml(d) {
@@ -252,7 +281,7 @@ function pageHtml(d) {
         "<p>Download " + esc(d.title) + " Sinhala sub for free. SinSubz makes natural spoken Sinhala subtitles (.srt) that fit your video. " +
         esc(d.title) + " සිංහල උපසිරැසි නොමිලේ ඩවුන්ලෝඩ් කරගන්න.</p>" + faqHtml + "</section>";
     const seed = JSON.stringify(d).replace(/</g, "\\u003c");
-    const noscript = (d.overview ? "<h1>" + esc(d.title) + " Sinhala Subtitles</h1><p>" + esc(d.overview) + "</p>" : "") + (!isTv ? '<p><a href="/api/stats?ready=get&amp;id=' + esc(d.id) + '&amp;s=0&amp;e=0">Download ' + esc(d.title) + " Sinhala subtitle (.srt)</a></p>" : "") + (!isTv ? "" : Object.keys(d.seasons).map(n => "<h3>Season " + esc(n) + "</h3><ul>" + d.seasons[n].filter(e => e.ready).map(e =>
+    const noscript = (d.overview ? "<h1>" + esc(d.title) + " Sinhala Subtitles</h1><p>" + esc(d.overview) + "</p>" + (d.si ? "<p>" + esc(d.si) + "</p>" : "") : "") + (!isTv ? '<p><a href="/api/stats?ready=get&amp;id=' + esc(d.id) + '&amp;s=0&amp;e=0">Download ' + esc(d.title) + " Sinhala subtitle (.srt)</a></p>" : "") + (!isTv ? "" : Object.keys(d.seasons).map(n => "<h3>Season " + esc(n) + "</h3><ul>" + d.seasons[n].filter(e => e.ready).map(e =>
         '<li><a href="/api/stats?ready=get&amp;id=' + esc(d.id) + "&amp;s=" + esc(n) + "&amp;e=" + esc(e.e) + '">S' + String(n).padStart(2, "0") + "E" + String(e.e).padStart(2, "0") + (e.name ? " " + esc(e.name) : "") + " Sinhala subtitle (.srt)</a></li>").join("") + "</ul>").join(""));
     return '<!DOCTYPE html>\n<html lang="en" data-theme="dark"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">' +
         "<title>" + esc(ttl) + '</title><meta name="description" content="' + esc(desc) + '"><meta name="theme-color" content="#07080d">' +
