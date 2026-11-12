@@ -2,26 +2,7 @@
    Target: a calm, dark page - plain header, one big "Find any movie or series" heading, a wide search bar,
    pill filters and a row of poster cards with the title ON the poster and the year under it. */
 
-:root { --header-h: 66px; }
-
-/* ---------- header: logo word + links, one hairline underneath ---------- */
-html .top-header,
-html .top-header.scrolled {
-    height: 66px;
-    padding: 0 48px;
-    background: var(--bg);
-    border-bottom: 1px solid var(--line);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-}
-html .top-header .brand-logo,
-html .top-header .brand-subtitle { display: none; }
-html .top-header .brand-title { font-size: 22px; font-weight: 800; letter-spacing: -0.01em; color: var(--text); }
-html .top-header .brand-title span { color: var(--accent); }
-html .top-header .header-nav { gap: 26px; margin-left: auto; margin-right: 22px; }
-html .top-header .header-nav a { font-size: 14px; font-weight: 500; color: var(--muted); background: none; padding: 6px 0; border-radius: 0; }
-html .top-header .header-nav a:hover { color: var(--text); background: none; }
-html .top-header .header-nav a[href="#plans"] { color: var(--accent); }
+/* header stays as before: logo + liquid-glass bar (style.css) */
 
 /* ---------- the find block ---------- */
 .home-find {
@@ -115,8 +96,6 @@ html .category-select-btn { display: none; }   /* the whole card is the button n
 }
 @media (max-width: 1100px) { html .category-results-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 @media (max-width: 760px) {
-    html .top-header, html .top-header.scrolled { padding: 0 16px; }
-    html .top-header .header-nav { display: none; }
     html .category-results-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
     html .category-card-info h3 { left: 9px; right: 9px; bottom: 32px; font-size: 12.5px; }
     html .search-row { grid-template-columns: 1fr auto; gap: 10px; }
@@ -183,7 +162,6 @@ html .search-section { position: relative; isolation: isolate; padding-bottom: 8
 }
 
 /* ---------- owner-only Admin link + red activity badge (admin-badge.js) ---------- */
-html .top-header .header-nav { position: relative; }
 .nav-admin { position: relative; display: inline-flex; align-items: center; gap: 7px; }
 .nav-admin[hidden], .nav-badge[hidden] { display: none; }
 .nav-badge {
