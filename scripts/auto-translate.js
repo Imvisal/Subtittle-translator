@@ -209,7 +209,7 @@ async function refillIfDue(weekly, meta, emptyList) {
     await ctx.addInitScript(() => {
         try { Object.defineProperty(window, "__sinsubzIdToken", { value: async () => "runner", configurable: false, writable: false }); } catch (e) { /* ignore */ }
     });
-    await ctx.route(/\/api\/translate/, route => route.continue({ headers: Object.assign({}, route.request().headers(), { "x-admin-key": KEY }) }));
+    await ctx.route(/\/api\/(translate|subtitle-download)/, route => route.continue({ headers: Object.assign({}, route.request().headers(), { "x-admin-key": KEY }) }));
     const page = await ctx.newPage();
     await page.goto(SITE + "/", { waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => typeof translateWithLibrary === "function" && typeof buildSRT === "function", null, { timeout: 60000 });

@@ -134,7 +134,13 @@ module.exports = async function handler(req, res) {
 
         // follow redirects by hand so they can never leave dl.subdl.com
         // SubDL's free plan: 50 downloads a day per key. SUBDL_API_KEY, SUBDL_API_KEY_2 ... : the next key is used when one is spent.
-        const keys = subdlKeys();
+        // the first SUBDL_USER_KEYS keys (default 2) are for visitors, the rest for the auto runner (it sends the admin key);
+        // with too few keys everybody shares what there is
+        const allKeys = subdlKeys();
+        const nUser = Math.max(1, parseInt(process.env.SUBDL_USER_KEYS, 10) || 2);
+        const isRunner = require("./_admin.js").isAdmin(req);
+        let keys = isRunner ? allKeys.slice(nUser) : allKeys.slice(0, nUser);
+        if (!keys.length) { keys = allKeys; }
         let response;
         let hopUrl = finalUrl;
         for (const key of (keys.length ? keys : [null])) {
