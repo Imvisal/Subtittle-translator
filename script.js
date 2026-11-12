@@ -6357,6 +6357,18 @@ function renderCategoryResults(
                 );
             }
 
+            // the whole card can be pressed (the website hides the Select button and uses the card instead)
+            card.tabIndex = 0;
+            card.setAttribute("role", "button");
+            card.setAttribute("aria-label", "Select " + (item.title || ""));
+            card.addEventListener("click", function (e) {
+                if (selectButton && selectButton.contains(e.target)) { return; }   // the button has its own handler
+                selectSearchResult(item);
+            });
+            card.addEventListener("keydown", function (e) {
+                if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectSearchResult(item); }
+            });
+
             grid.appendChild(card);
 
         });
