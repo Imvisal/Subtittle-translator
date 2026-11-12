@@ -188,8 +188,12 @@
 
         <section class="search-section" id="search">
 
-            <!--WEBONLY--><div class="home-bg" aria-hidden="true"><picture><source srcset="hero-banner.webp" type="image/webp"><img src="hero-banner.png" alt="" width="1400" height="787" decoding="async"></picture></div>
-            <p class="home-find" role="heading" aria-level="2">Find any movie's Sinhala subtitles</p><!--/WEBONLY-->
+            <!--WEBONLY--><div class="home-bg" id="homeBg" aria-hidden="true"></div>
+            <p class="home-find" role="heading" aria-level="2" aria-label="Find Any Movie/TV Series Sinhala Subtitles">
+                <span class="hf-line"><span class="hf-w" style="--i:0">Find</span> <span class="hf-w" style="--i:1">Any</span> <span class="hf-w" style="--i:2">Movie/TV</span> <span class="hf-w" style="--i:3">Series</span></span>
+                <span class="hf-line hf-grad"><span class="hf-w" style="--i:4">Sinhala</span> <span class="hf-w" style="--i:5">Subtitles</span></span>
+            </p>
+            <div class="home-actions" id="homeActions"></div><!--/WEBONLY-->
 
             <div class="search-card">
 
@@ -271,7 +275,6 @@
 
                 </div>
 
-                <!--WEBONLY--><div class="home-actions" id="homeActions"></div><!--/WEBONLY-->
 
 
                 <!-- Search Status -->
@@ -379,10 +382,13 @@
 
                     </div>
 
-                    <!--WEBONLY--><script>(function(){var a=document.querySelector(".hero-actions"),t=document.getElementById("homeActions");if(a&&t){t.appendChild(a);}})();</script><!--/WEBONLY-->
+                    
                     <!--WEBONLY-->
                     <div class="hero-stats" id="siteStats" aria-label="SinSubz in numbers" hidden></div>
                     <!--/WEBONLY-->
+                    <!--WEBONLY--><script>(function(){var q=function(s){return document.querySelector(s)},bg=q("#homeBg"),t=q("#homeActions");
+if(bg){["hero-banner","hero-overlay"].forEach(function(c){var e=q("."+c);if(e){bg.appendChild(e);}});}
+if(t){var a=q(".hero-actions");if(a){var f=a.querySelector('a[href="#search"]');if(f){f.remove();}t.appendChild(a);}var s=q("#siteStats");if(s){t.appendChild(s);}}})();</script><!--/WEBONLY-->
 
                 </div>
 

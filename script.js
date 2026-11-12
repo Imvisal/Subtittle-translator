@@ -6046,9 +6046,7 @@ function createCategoryResultsContainer() {
         "category-results";
 
 
-    // website: the four action buttons sit right under the pills, the poster row comes after them
     const categorySection =
-        document.getElementById("homeActions") ||
         document.querySelector(
             ".category-chips"
         );
