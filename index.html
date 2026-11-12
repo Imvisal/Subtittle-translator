@@ -183,101 +183,6 @@
 
 
         <!-- =====================================
-             HERO
-        ====================================== -->
-
-        <section class="hero">
-
-            <!--WEBONLY--><script>document.documentElement.classList.add("wall-try")</script><!--/WEBONLY-->
-            <div class="hero-banner">
-                <picture>
-                <source srcset="hero-banner.webp" type="image/webp">
-                <img
-                    src="hero-banner.png"
-                    alt="Collage of movie and TV series posters, English to Sinhala subtitles with SinSubz"
-                    width="1400"
-                    height="787"
-                    fetchpriority="high"
-                    decoding="async"
-                >
-                </picture>
-            </div>
-
-            <div class="hero-overlay"></div>
-
-            <div class="hero-content">
-
-                <div class="hero-copy">
-
-                    <div class="hero-star">
-                        Natural Spoken Sinhala
-                    </div>
-
-                    <h1>
-                        English to
-                        <span class="hero-type">Sinhala</span>
-                        <br>
-                        Subtitle Translator
-                    </h1>
-                    <script>
-                    /* "Sinhala" types itself in once per page load (a reload types it again). Runs before first paint. */
-                    (function () {
-                        var e = document.querySelector(".hero-type");
-                        if (!e || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) { return; }
-                        var t = e.textContent;
-                        e.setAttribute("aria-label", t);
-                        e.textContent = "";
-                        for (var i = 0; i < t.length; i++) {
-                            var c = document.createElement("span");
-                            c.className = "tc";
-                            c.setAttribute("aria-hidden", "true");
-                            c.style.setProperty("--i", i);
-                            c.textContent = t.charAt(i);
-                            e.appendChild(c);
-                        }
-                    })();
-                    </script>
-
-                    <p>
-                        Translate English movie and TV subtitles
-                        into natural Sinhala with AI.
-                    </p>
-
-                    <div class="hero-actions">
-
-                        <a class="btn btn-primary" href="#search">
-                            <i class="fa-solid fa-magnifying-glass"></i>
-                            Find Subtitles
-                        </a>
-
-                        <a class="btn btn-ghost" href="#upload">
-                            <i class="fa-solid fa-cloud-arrow-up"></i>
-                            Upload SRT
-                        </a>
-
-                        <a class="btn btn-sync" href="#sync" id="syncHeroBtn">
-                            <span class="sync-ring" aria-hidden="true"></span>
-                            <i class="fa-solid fa-arrows-rotate"></i>
-                            Sync Subtitles
-                        </a>
-
-                        <!--WEBONLY--><a class="btn btn-ghost" href="download.html">
-                            <i class="fa-solid fa-download"></i>
-                            Get the App
-                        </a><!--/WEBONLY-->
-
-                    </div>
-
-                    <!--WEBONLY-->
-                    <div class="hero-stats" id="siteStats" aria-label="SinSubz in numbers" hidden></div>
-                    <!--/WEBONLY-->
-
-                </div>
-
-            </div>
-
-        </section>
-        <!-- =====================================
              SEARCH
         ====================================== -->
 
@@ -383,6 +288,101 @@
 
 
 
+        <!-- =====================================
+             HERO
+        ====================================== -->
+
+        <section class="hero">
+
+            <!--WEBONLY--><script>document.documentElement.classList.add("wall-try")</script><!--/WEBONLY-->
+            <div class="hero-banner">
+                <picture>
+                <source srcset="hero-banner.webp" type="image/webp">
+                <img
+                    src="hero-banner.png"
+                    alt="Collage of movie and TV series posters, English to Sinhala subtitles with SinSubz"
+                    width="1400"
+                    height="787"
+                    fetchpriority="high"
+                    decoding="async"
+                >
+                </picture>
+            </div>
+
+            <div class="hero-overlay"></div>
+
+            <div class="hero-content">
+
+                <div class="hero-copy">
+
+                    <div class="hero-star">
+                        Natural Spoken Sinhala
+                    </div>
+
+                    <h1>
+                        English to
+                        <span class="hero-type">Sinhala</span>
+                        <br>
+                        Subtitle Translator
+                    </h1>
+                    <script>
+                    /* "Sinhala" types itself in once per page load (a reload types it again). Runs before first paint. */
+                    (function () {
+                        var e = document.querySelector(".hero-type");
+                        if (!e || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) { return; }
+                        var t = e.textContent;
+                        e.setAttribute("aria-label", t);
+                        e.textContent = "";
+                        for (var i = 0; i < t.length; i++) {
+                            var c = document.createElement("span");
+                            c.className = "tc";
+                            c.setAttribute("aria-hidden", "true");
+                            c.style.setProperty("--i", i);
+                            c.textContent = t.charAt(i);
+                            e.appendChild(c);
+                        }
+                    })();
+                    </script>
+
+                    <p>
+                        Translate English movie and TV subtitles
+                        into natural Sinhala with AI.
+                    </p>
+
+                    <div class="hero-actions">
+
+                        <a class="btn btn-primary" href="#search">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            Find Subtitles
+                        </a>
+
+                        <a class="btn btn-ghost" href="#upload">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            Upload SRT
+                        </a>
+
+                        <a class="btn btn-sync" href="#sync" id="syncHeroBtn">
+                            <span class="sync-ring" aria-hidden="true"></span>
+                            <i class="fa-solid fa-arrows-rotate"></i>
+                            Sync Subtitles
+                        </a>
+
+                        <!--WEBONLY--><a class="btn btn-ghost" href="download.html">
+                            <i class="fa-solid fa-download"></i>
+                            Get the App
+                        </a><!--/WEBONLY-->
+
+                    </div>
+
+                    <!--WEBONLY-->
+                    <div class="hero-stats" id="siteStats" aria-label="SinSubz in numbers" hidden></div>
+                    <!--/WEBONLY-->
+
+                </div>
+
+            </div>
+
+        </section>
         <!-- =====================================
              QUICK ACTIONS
         ====================================== -->

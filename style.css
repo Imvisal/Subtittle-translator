@@ -919,7 +919,7 @@ html[data-theme="light"] .top-header:not(.scrolled) {
 .search-section {
     position: relative;
     z-index: 10;
-    margin-top: -64px;
+    margin-top: 28px;   /* search comes first now, the hero banner sits below the posters */
 }
 
 .search-card {
@@ -2938,7 +2938,7 @@ footer p + p {
     }
 
     .search-section {
-        margin-top: -80px;
+        margin-top: 16px;
     }
 
     .search-card {
