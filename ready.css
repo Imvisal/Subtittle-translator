@@ -27,3 +27,21 @@
 .rd-ep span { color: #5df0d8; font-weight: 700; }
 .rd-ep:hover, .rd-dl:hover { transform: translateY(-2px); border-color: rgba(93,240,216,.7); }
 .rd-dl-big { justify-content: center; font-weight: 800; font-size: 15px; color: #0b0d1f; background: var(--btn-bg, linear-gradient(180deg,#9a98ff,#8381f7)); border: 0; padding: 13px; }
+
+/* small filter bar: search, Movies / TV, genre (only used when somebody wants it) */
+.rd-tools { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; margin: 0 0 12px; }
+.rd-tools[hidden] { display: none; }
+.rd-find { display: flex; align-items: center; height: 34px; border-radius: 99px; background: var(--surface); border: 1px solid var(--line-strong); overflow: hidden; }
+.rd-find input { width: 150px; height: 100%; padding: 0 4px 0 14px; border: 0; outline: 0; background: transparent; color: var(--text); font: inherit; font-size: 13px; }
+.rd-find button { width: 34px; height: 100%; border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 13px; }
+.rd-find button:hover { color: var(--text); }
+.rd-find:focus-within { border-color: rgba(93, 240, 216, .7); }
+.rd-seg { display: inline-flex; height: 34px; border-radius: 99px; background: var(--surface); border: 1px solid var(--line-strong); padding: 3px; gap: 2px; }
+.rd-seg button { border: 0; border-radius: 99px; padding: 0 13px; background: transparent; color: var(--text-2, var(--muted)); font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.rd-seg button.on { background: #5df0d8; color: #06241f; }
+.rd-sel { height: 34px; border-radius: 99px; padding: 0 12px; background: var(--surface); color: var(--text); border: 1px solid var(--line-strong); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.rd-grid.is-filtered { flex-wrap: wrap; overflow: visible; justify-content: center; row-gap: 18px; }
+.rd-more { text-align: center; margin-top: 8px; }
+.rd-more[hidden], .rd-empty[hidden] { display: none; }
+.rd-more button { border: 1px solid var(--line-strong); background: var(--surface); color: var(--text); border-radius: 99px; padding: 8px 20px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.rd-empty { text-align: center; color: var(--muted); font-size: 14px; padding: 18px 0; }

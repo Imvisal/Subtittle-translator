@@ -12,6 +12,30 @@
 
     var items = [];
     var openId = "";
+    var F = { q: "", t: "", g: "" };       // the small filter bar: words, Movies / TV, genre
+    var LIMIT = 36, shown = LIMIT;         // when a filter is on, the row becomes a grid of up to 36 (then "Show more")
+    var tools = document.getElementById("rdTools"), qBox = document.getElementById("rdQ"), gSel = document.getElementById("rdG"),
+        seg = document.getElementById("rdSeg"), moreBox = document.getElementById("rdMore"), emptyBox = document.getElementById("rdEmpty");
+    function filtering() { return !!(F.q || F.t || F.g); }
+    function visible() {
+        var q = F.q.toLowerCase();
+        return items.filter(function (it) {
+            if (F.t && it.type !== F.t) { return false; }
+            if (F.g && (it.g || []).indexOf(F.g) < 0) { return false; }
+            if (q && (String(it.t || "") + " " + String(it.y || "")).toLowerCase().indexOf(q) < 0) { return false; }
+            return true;
+        });
+    }
+    function fillGenres() {
+        if (!gSel) { return; }
+        var count = {};
+        items.forEach(function (it) { (it.g || []).forEach(function (g) { count[g] = (count[g] || 0) + 1; }); });
+        var names = Object.keys(count).sort(function (a, b) { return count[b] - count[a] || (a < b ? -1 : 1); });
+        var keep = gSel.value;
+        gSel.innerHTML = '<option value="">All genres</option>' + names.map(function (g) { return '<option value="' + esc(g) + '">' + esc(g) + '</option>'; }).join("");
+        gSel.value = names.indexOf(keep) >= 0 ? keep : "";
+        F.g = gSel.value;
+    }
 
     function dl(it, ep) {
         return "/api/stats?ready=get&id=" + encodeURIComponent(it.id) + "&s=" + (ep ? ep.s : 0) + "&e=" + (ep ? ep.e : 0);
@@ -19,7 +43,13 @@
 
     function render() {
         var grid = host.querySelector(".rd-grid");
-        grid.innerHTML = items.map(function (it) {
+        var list = visible();
+        var on = filtering();
+        grid.classList.toggle("is-filtered", on);
+        if (emptyBox) { emptyBox.hidden = !(on && !list.length); }
+        if (moreBox) { moreBox.hidden = !(on && list.length > shown); }
+        if (on) { list = list.slice(0, shown); }
+        grid.innerHTML = list.map(function (it) {
             var n = it.eps.length;
             var tag = it.type === "tv" ? n + (n === 1 ? " episode" : " episodes") : "Film";
             return '<a class="rd-card" href="' + (it.type === "tv" ? "/tv/" : "/film/") + esc(it.slug || it.id) + '">' +
@@ -60,10 +90,27 @@
         if (openId) { var p = host.querySelector(".rd-panel"); if (p && p.scrollIntoView) { p.scrollIntoView({ block: "nearest", behavior: "smooth" }); } }
     });
 
+    if (qBox) { qBox.addEventListener("input", function () { F.q = qBox.value.trim(); shown = LIMIT; render(); }); }
+    var findForm = document.getElementById("rdFind");
+    if (findForm) { findForm.addEventListener("submit", function (e) { e.preventDefault(); F.q = qBox.value.trim(); shown = LIMIT; render(); }); }
+    if (gSel) { gSel.addEventListener("change", function () { F.g = gSel.value; shown = LIMIT; render(); }); }
+    if (seg) {
+        seg.addEventListener("click", function (e) {
+            var b = e.target.closest && e.target.closest("button[data-t]");
+            if (!b) { return; }
+            F.t = b.getAttribute("data-t");
+            Array.prototype.forEach.call(seg.querySelectorAll("button"), function (x) { x.classList.toggle("on", x === b); });
+            shown = LIMIT; render();
+        });
+    }
+    if (moreBox) { moreBox.addEventListener("click", function () { shown += LIMIT; render(); }); }
+
     fetch("/api/stats?ready=list").then(function (r) { return r.ok ? r.json() : { items: [] }; }).then(function (d) {
         items = Array.isArray(d.items) ? d.items.filter(function (x) { return x && x.id && x.eps && x.eps.length; }) : [];
         if (!items.length) { return; }
         host.hidden = false;
+        if (tools) { tools.hidden = false; }
+        fillGenres();
         render();
     }).catch(function () { /* section stays hidden */ });
 })();

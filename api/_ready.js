@@ -92,6 +92,10 @@ async function tmdbInfo(m) {
 // page and a ready file built from the saved Sinhala lines. Runs when a translation is saved and, for the old
 // ones, from the admin panel (ready=backfill). TV episodes are not touched here: the auto runner makes those pages.
 // ---------------------------------------------------------------------------------------------
+
+// TMDB genre ids -> short names for the home page filter (a few TV-only ids are split into the usual two)
+const GENRE = { 28: "Action", 12: "Adventure", 16: "Animation", 35: "Comedy", 80: "Crime", 99: "Documentary", 18: "Drama", 10751: "Family", 14: "Fantasy", 36: "History", 27: "Horror", 10402: "Music", 9648: "Mystery", 10749: "Romance", 878: "Sci-Fi", 53: "Thriller", 10752: "War", 37: "Western", 10759: ["Action", "Adventure"], 10765: ["Sci-Fi", "Fantasy"], 10768: ["War"], 10762: ["Family"] };
+const genreNames = ids => [...new Set([].concat(...(ids || []).map(i => GENRE[i] || [])))].slice(0, 4);
 const tsrt = ms => { const t = Math.max(0, Math.round(ms)); const p = (n, l) => String(n).padStart(l, "0"); return p(Math.floor(t / 3600000), 2) + ":" + p(Math.floor(t / 60000) % 60, 2) + ":" + p(Math.floor(t / 1000) % 60, 2) + "," + p(t % 1000, 3); };
 function pairsToSrt(pairs) {
     let n = 0, out = "";
@@ -137,7 +141,7 @@ async function registerFilm(imdb, opts) {
         const title = clean(mv.title || mv.original_title, 100);
         if (!title) { return "notfilm"; }
         const year = String(mv.release_date || "").slice(0, 4);
-        const m = { id: imdb, t: title, y: year, type: "movie", p: mv.poster_path ? "https://image.tmdb.org/t/p/w342" + mv.poster_path : "", eps: {} };
+        const m = { id: imdb, t: title, y: year, type: "movie", p: mv.poster_path ? "https://image.tmdb.org/t/p/w342" + mv.poster_path : "", g: genreNames(mv.genre_ids), gt: 1, eps: {} };
         const taken = new Set((await allTitles()).filter(x => x.id !== imdb).map(x => x.slug));
         let sl = slugify(m.t);
         if (taken.has(sl) && m.y) { sl = slugify(m.t + " " + m.y); }
@@ -256,12 +260,27 @@ module.exports = async function ready(req, res) {
             res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
             const [flat] = await redis([["HGETALL", "rdy:idx"]]);
             const items = [];
+            const need = [];
             for (let i = 0; flat && i < flat.length; i += 2) {
                 const m = parse(flat[i + 1]);
                 if (!m) { continue; }
+                if (!m.gt && need.length < 6) { need.push(m); }
                 const eps = Object.values(m.eps || {}).map(x => ({ s: x.s, e: x.e, n: x.n, ts: x.ts }))
                     .sort((a, b) => a.s - b.s || a.e - b.e);
-                items.push({ id: m.id, slug: m.slug || slugify(m.t), t: m.t, y: m.y, p: m.p, type: m.type, eps, ts: Math.max(0, ...eps.map(x => x.ts || 0)) });
+                items.push({ id: m.id, slug: m.slug || slugify(m.t), t: m.t, y: m.y, p: m.p, g: m.g || [], type: m.type, eps, ts: Math.max(0, ...eps.map(x => x.ts || 0)) });
+            }
+            // titles saved before genres existed: look up a few per request (TMDB), remember them, so the filter fills itself
+            if (need.length && process.env.TMDB_API_KEY) {
+                await Promise.all(need.map(async m => {
+                    try {
+                        const f = await tmdbRaw("/find/" + m.id + "?external_source=imdb_id");
+                        const hit = (m.type === "tv" ? (f.tv_results || [])[0] : (f.movie_results || [])[0]);
+                        const g = hit ? genreNames(hit.genre_ids) : [];
+                        m.g = g; m.gt = 1;
+                        await redis([["HSET", "rdy:idx", m.id, JSON.stringify(m)]]);
+                        const it = items.find(x => x.id === m.id); if (it) { it.g = g; }
+                    } catch (e) { /* try again next time */ }
+                }));
             }
             items.sort((a, b) => b.ts - a.ts);
             return res.status(200).json({ items });
