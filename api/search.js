@@ -12,6 +12,37 @@ async function logSearch(req) {
     } catch (e) { /* logging must never break the search */ }
 }
 
+
+// OMDb's free key allows ~1000 calls a day. When it says "Request limit reached" (or the flag below is set), search through TMDB instead,
+// so visitors never see that message. The flag is shared with the title pages (api/_ready.js) and lasts 30 minutes.
+async function omdbBlocked() {
+    try { const g = require("./_google"); if (!g.hasRedis()) { return false; } return !!(await g.redis([["GET", "omdb:limit"]]))[0]; } catch (e) { return false; }
+}
+async function omdbMarkLimit() {
+    try { const g = require("./_google"); if (g.hasRedis()) { await g.redis([["SET", "omdb:limit", "1", "EX", 1800]]); } } catch (e) { /* ignore */ }
+}
+async function tmdbSearch(query) {
+    const key = process.env.TMDB_API_KEY;
+    if (!key) { return null; }
+    const isToken = key.length > 40;
+    const get = async p => {
+        const r = await fetch("https://api.themoviedb.org/3" + p + (p.includes("?") ? "&" : "?") + "language=en-US" + (isToken ? "" : "&api_key=" + encodeURIComponent(key)), { headers: isToken ? { Authorization: "Bearer " + key } : {}, signal: AbortSignal.timeout(6000) });
+        if (!r.ok) { throw new Error("TMDB " + r.status); }
+        return r.json();
+    };
+    const s = await get("/search/multi?include_adult=false&query=" + encodeURIComponent(query));
+    const hits = (s.results || []).filter(x => x.media_type === "movie" || x.media_type === "tv").slice(0, 12);
+    const out = await Promise.all(hits.map(async x => {
+        try {
+            const ids = await get("/" + x.media_type + "/" + x.id + "/external_ids");
+            if (!ids || !/^tt\d{5,10}$/.test(ids.imdb_id || "")) { return null; }
+            const date = String(x.release_date || x.first_air_date || "");
+            return { imdbID: ids.imdb_id, type: x.media_type === "tv" ? "series" : "movie", title: x.title || x.name || "", year: date.slice(0, 4), poster: x.poster_path ? "https://image.tmdb.org/t/p/w342" + x.poster_path : null };
+        } catch (e) { return null; }
+    }));
+    return out.filter(Boolean);
+}
+
 async function searchHandler(req, res) {
 
     try {
@@ -38,6 +69,11 @@ async function searchHandler(req, res) {
             return res.status(500).json({
                 error: "OMDB_API_KEY is missing"
             });
+        }
+
+        if (await omdbBlocked()) {
+            const alt = await tmdbSearch(query).catch(() => null);
+            if (alt && alt.length) { logSearch(req); return res.status(200).json({ results: alt }); }
         }
 
         const url =
@@ -120,6 +156,12 @@ async function searchHandler(req, res) {
             movieData.Response === "False" &&
             tvData.Response === "False"
         ) {
+
+            if (/limit/i.test(String(movieData.Error || tvData.Error || ""))) {
+                omdbMarkLimit();
+                const alt = await tmdbSearch(query).catch(() => null);
+                if (alt && alt.length) { return res.status(200).json({ results: alt }); }
+            }
 
             return res.status(404).json({
 

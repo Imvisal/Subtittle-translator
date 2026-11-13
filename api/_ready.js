@@ -86,7 +86,9 @@ async function tmdbInfo(m, opts) {
         };
         // IMDb / Rotten Tomatoes / Metascore / age rating (OMDb). If OMDb is busy, keep the rest and look again in 6 hours.
         let omdbOk = !process.env.OMDB_API_KEY;
-        if (process.env.OMDB_API_KEY) {
+        let omdbBlocked = false;
+        try { omdbBlocked = !!(await redis([["GET", "omdb:limit"]]))[0]; } catch (e) { /* ignore */ }
+        if (process.env.OMDB_API_KEY && !omdbBlocked) {
             try {
                 const or = await fetch("https://www.omdbapi.com/?apikey=" + encodeURIComponent(process.env.OMDB_API_KEY) + "&i=" + encodeURIComponent(m.id), { signal: AbortSignal.timeout(5000) });
                 const o = await or.json();
@@ -97,6 +99,7 @@ async function tmdbInfo(m, opts) {
                     const rt = (o.Ratings || []).find(x => x.Source === "Rotten Tomatoes");
                     info.rt = rt ? val(rt.Value) : "";
                 } else if (o && /Incorrect IMDb ID|not found/i.test(String(o.Error || ""))) { omdbOk = true; }
+                else if (o && /limit/i.test(String(o.Error || ""))) { await redis([["SET", "omdb:limit", "1", "EX", 1800]]); }
             } catch (e) { /* retry later */ }
         }
         if (m.type === "tv") {
