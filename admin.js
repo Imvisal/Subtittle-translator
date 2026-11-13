@@ -507,9 +507,11 @@
                 fetch("/api/stats?ready=del", { method: "POST", headers: { "x-admin-key": KEY, "Content-Type": "application/json" }, body: JSON.stringify(body) })
                     .then(function (r) { if (!r.ok) { throw new Error("Failed"); } loadReady(); }).catch(function (e) { btn.disabled = false; window.alert(e.message); });
             }
-            items.forEach(function (it) {
+            var SHOW = 5, more = [];
+            items.forEach(function (it, ix) {
                 var row = el("div", "row", "");
                 row.style.cssText = "justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line);flex-wrap:wrap";
+                if (ix >= SHOW) { row.style.display = "none"; more.push(row); }
                 var eps = it.type === "tv" ? it.eps.map(function (e) { return "S" + e.s + "E" + e.e; }).join(", ") : "Film";
                 var txt = el("div", "", "");
                 txt.appendChild(el("b", "", it.t + (it.y ? " (" + it.y + ")" : "")));
@@ -521,6 +523,17 @@
                 row.appendChild(b);
                 host.appendChild(row);
             });
+            if (more.length) {
+                var mb = el("button", "ghost", "See more (" + more.length + ")");
+                mb.type = "button"; mb.style.marginTop = "10px";
+                var open = false;
+                mb.addEventListener("click", function () {
+                    open = !open;
+                    more.forEach(function (r) { r.style.display = open ? "" : "none"; });
+                    mb.textContent = open ? "Show less" : "See more (" + more.length + ")";
+                });
+                host.appendChild(mb);
+            }
         }).catch(function () { /* ignore */ });
     }
 
