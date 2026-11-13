@@ -120,6 +120,11 @@ async function tmdbInfo(m, opts) {
     }
 }
 
+// A brand-new title: build its TMDB info + Sinhala story intro right away (not on the first visit). Never fails the caller.
+async function warmTitle(m, ms) {
+    try { await Promise.race([tmdbInfo(m, { force: true }), new Promise(r => setTimeout(r, ms || 7000))]); } catch (e) { /* the page makes it later */ }
+}
+
 // A short spoiler-free Sinhala story intro (Gemini), written from the English TMDB overview. Never blocks the page for long.
 let sumErr = "";      // why the last Sinhala intro failed (shown in the admin panel)
 async function sinhalaSummary(title, year, type, overview, bulk) {
@@ -223,6 +228,7 @@ async function registerFilm(imdb, opts) {
         m.eps["0x0"] = { s: 0, e: 0, f: (title + (year ? " " + year : "") + ".Sinhala.SinSubz.srt").replace(/[\\/:*?"<>|]+/g, "_"), r: "", n: made.count, ts: o.ts || Date.now() };
         const packed = zlib.gzipSync(Buffer.from(made.srt, "utf8")).toString("base64");
         await redis([["SET", srtKey(imdb, 0, 0), packed], ["HSETNX", "rdy:idx", imdb, JSON.stringify(m)]]);
+        if (!o.ts) { await warmTitle(m, 5000); }          // the backfill (o.ts set) is warmed by its own admin button
         return "created";
     } catch (e) { return "error"; }
 }
@@ -508,7 +514,7 @@ module.exports = async function ready(req, res) {
             };
             const packed = zlib.gzipSync(Buffer.from(srt, "utf8")).toString("base64");
             await redis([["SET", srtKey(b.imdb, s, e), packed], ["HSET", "rdy:idx", b.imdb, JSON.stringify(m)]]);
-            if (isNew) { await require("./_push.js").notifyNewTitle(m); }          // browser notification (at most one per 6 hours)
+            if (isNew) { await warmTitle(m, 6000); await require("./_push.js").notifyNewTitle(m); }          // browser notification (at most one per 6 hours)
             return res.status(200).json({ ok: true });
         }
 
