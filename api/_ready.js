@@ -49,7 +49,7 @@ async function tmdbInfo(m, opts) {
     const cached = parse((await redis([["GET", ck]]))[0]);
     if (cached && cached.cast !== undefined && seasons.every(n => cached.seasons && cached.seasons[n])) {
         // only the Sinhala intro is missing (new feature, or Gemini failed earlier): make just that, retry at most once an hour
-        if (cached.overview && !cached.si && ((opts && opts.force) || Date.now() - (cached.siTry || 0) > 3600 * 1000)) {
+        if (cached.overview && !cached.si && ((opts && opts.force) || Date.now() - (cached.siTry || 0) > 600 * 1000)) {
             cached.siTry = Date.now();
             cached.si = await sinhalaSummary(m.t, m.y, m.type, cached.overview);
             await redis([["SET", ck, JSON.stringify(cached), "EX", 7 * 86400]]);

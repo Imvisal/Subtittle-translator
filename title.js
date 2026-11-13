@@ -111,6 +111,18 @@
 
     function render() { root.innerHTML = hero() + castCard() + episodes(); }
     render();
+    // the page HTML can be a few minutes old (cached) and the Sinhala intro is made on demand: ask once for it and show it when it arrives
+    (function lateIntro() {
+        if (D.si || !D.overview || !D.slug) { return; }
+        fetch("/api/stats?ready=title&slug=" + encodeURIComponent(D.slug) + "&_=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+            if (!j || !j.si || document.querySelector(".tp-si")) { return; }
+            D.si = j.si;
+            var over = document.querySelector(".tp-over");
+            if (!over) { return; }
+            var p = document.createElement("p"); p.className = "tp-si"; p.lang = "si"; p.textContent = j.si;
+            over.insertAdjacentElement("afterend", p);
+        }).catch(function () { /* stays without */ });
+    })();
     (function dlCount() {
         var el = document.getElementById("tpDlCount");
         if (!el) { return; }
