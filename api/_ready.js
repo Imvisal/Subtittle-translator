@@ -162,6 +162,16 @@ async function sinhalaSummary(title, year, type, overview, bulk) {
             } catch (e) { sumErr = "Gemini timeout / network"; }
         }
     }
+    // Gemini is out of quota / failed: the Cloudflare chat model (the same one the backup translator uses) writes the intro instead
+    try {
+        const mt = require("./_mt.js");
+        if (mt.llmEnabled()) {
+            const t = String(await Promise.race([mt.llmText(prompt), new Promise((_, no) => setTimeout(() => no(new Error("Cloudflare timeout")), bulk ? 9000 : 6500))]))
+                .replace(/[*_`#>"]+/g, "").replace(/\s+/g, " ").trim();
+            if (t.length > 30 && /[\u0D80-\u0DFF]/.test(t)) { return t.slice(0, 600); }
+            sumErr += " | Cloudflare gave no usable Sinhala";
+        } else { sumErr += " | no Cloudflare fallback"; }
+    } catch (e) { sumErr += " | Cloudflare: " + String(e && e.message || e).slice(0, 50); }
     return "";
 }
 
