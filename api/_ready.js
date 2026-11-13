@@ -51,7 +51,7 @@ async function tmdbInfo(m, opts) {
         // only the Sinhala intro is missing (new feature, or Gemini failed earlier): make just that, retry at most once an hour
         if (cached.overview && !cached.si && ((opts && opts.force) || Date.now() - (cached.siTry || 0) > 600 * 1000)) {
             cached.siTry = Date.now();
-            cached.si = await sinhalaSummary(m.t, m.y, m.type, cached.overview);
+            cached.si = await sinhalaSummary(m.t, m.y, m.type, cached.overview, !!(opts && opts.force));
             await redis([["SET", ck, JSON.stringify(cached), "EX", 7 * 86400]]);
         }
         return cached;
@@ -114,7 +114,7 @@ async function tmdbInfo(m, opts) {
         info.siTry = Date.now();
         await redis([["SET", ck, JSON.stringify(info), "EX", omdbOk ? 7 * 86400 : 6 * 3600]]);
         if (!info.si && info.overview) {
-            info.si = await sinhalaSummary(m.t, m.y, m.type, info.overview);
+            info.si = await sinhalaSummary(m.t, m.y, m.type, info.overview, !!(opts && opts.force));
             if (info.si) { await redis([["SET", ck, JSON.stringify(info), "EX", omdbOk ? 7 * 86400 : 6 * 3600]]); }
         }
         return info;
@@ -522,7 +522,7 @@ module.exports = async function ready(req, res) {
             };
             const packed = zlib.gzipSync(Buffer.from(srt, "utf8")).toString("base64");
             await redis([["SET", srtKey(b.imdb, s, e), packed], ["HSET", "rdy:idx", b.imdb, JSON.stringify(m)]]);
-            if (isNew) { await warmTitle(m, 6000); await require("./_push.js").notifyNewTitle(m); }          // browser notification (at most one per 6 hours)
+            if (isNew) { await warmTitle(m, 14000); await require("./_push.js").notifyNewTitle(m); }          // browser notification (at most one per 6 hours)
             return res.status(200).json({ ok: true });
         }
 
