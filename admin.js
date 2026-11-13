@@ -386,24 +386,38 @@
                 return k < 0 ? "" : ls.slice(k + 1).join("\n").replace(/<[^>]+>/g, "").trim();
             }).filter(Boolean).slice(0, 30);
         }
-        function run(lines) {
-            var out = $("mtOut"); out.textContent = "Testing..."; btn.disabled = true;
+        function call(lines, engine) {
             var subs = lines.map(function (t, i) { return { number: i + 1, text: t }; });
             var t0 = Date.now();
-            fetch("/api/translate", { method: "POST", headers: { "x-admin-key": KEY, "x-force-mt": "1", "Content-Type": "application/json" },
-                body: JSON.stringify({ subtitles: subs, language: "si", style: "natural", job: "backup-test" }) })
-                .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
-                .then(function (x) {
-                    btn.disabled = false; out.textContent = "";
-                    if (!x.ok) { out.appendChild(el("div", "bad", "Failed: " + (x.d.error || "unknown error"))); return; }
-                    out.appendChild(el("div", "muted", "Works (" + (x.d.engine === "mt" ? "backup translator" : "?") + ", " + (Date.now() - t0) + " ms). Admin > Logs shows which one answered."));
-                    var bySi = {}; (x.d.subtitles || []).forEach(function (s) { bySi[s.number] = s.text; });
-                    lines.forEach(function (en, i) {
-                        var row = el("div", "", ""); row.style.cssText = "padding:6px 0;border-top:1px solid var(--line)";
-                        row.appendChild(el("div", "muted", en)); row.appendChild(el("div", "", bySi[i + 1] || "")); out.appendChild(row);
+            var h = { "x-admin-key": KEY, "Content-Type": "application/json" };
+            if (engine === "mt") { h["x-force-mt"] = "1"; }
+            return fetch("/api/translate", { method: "POST", headers: h, body: JSON.stringify({ subtitles: subs, language: "si", style: "natural", job: "backup-test" }) })
+                .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d, ms: Date.now() - t0 }; }); })
+                .catch(function (e) { return { ok: false, d: { error: e.message }, ms: Date.now() - t0 }; });
+        }
+        function run(lines) {
+            var out = $("mtOut"), sel = $("mtEngine"), mode = sel ? sel.value : "mt";
+            out.textContent = "Testing..."; btn.disabled = true;
+            var engines = mode === "both" ? ["gemini", "mt"] : [mode];
+            Promise.all(engines.map(function (e) { return call(lines, e); })).then(function (rs) {
+                btn.disabled = false; out.textContent = "";
+                var maps = rs.map(function (x) { var m = {}; ((x.d && x.d.subtitles) || []).forEach(function (s) { m[s.number] = s.text; }); return m; });
+                rs.forEach(function (x, k) {
+                    var name = engines[k] === "mt" ? "Backup translator" : "Gemini";
+                    if (!x.ok) { out.appendChild(el("div", "bad", name + " failed: " + ((x.d && x.d.error) || "unknown error"))); return; }
+                    var who = x.d.engine === "mt" ? "backup translator" : "Gemini";
+                    out.appendChild(el("div", "muted", name + ": works (answered by " + who + ", " + x.ms + " ms)." + (engines[k] === "gemini" && x.d.engine === "mt" ? " Gemini quota is out, the backup answered instead." : "")));
+                });
+                lines.forEach(function (en, i) {
+                    var row = el("div", "", ""); row.style.cssText = "padding:6px 0;border-top:1px solid var(--line)";
+                    row.appendChild(el("div", "muted", en));
+                    maps.forEach(function (m, k) {
+                        var t = m[i + 1] || ""; if (!t && !rs[k].ok) { return; }
+                        row.appendChild(el("div", "", (engines.length > 1 ? (engines[k] === "mt" ? "Backup: " : "Gemini: ") : "") + t));
                     });
-                })
-                .catch(function (e) { btn.disabled = false; out.textContent = "Error: " + e.message; });
+                    out.appendChild(row);
+                });
+            });
         }
         btn.addEventListener("click", function () { $("mtFileName").textContent = ""; run(SAMPLE); });
         var f = $("mtFile");
