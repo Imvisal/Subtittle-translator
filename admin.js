@@ -472,9 +472,11 @@
                 });
                 host.appendChild(rb);
             }
+            var AQ_SHOW = 5, aqMore = [];
             list.forEach(function (it, i) {
                 var row = el("div", "row", "");
                 row.style.cssText = "justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line);flex-wrap:wrap";
+                if (i >= AQ_SHOW) { row.style.display = "none"; aqMore.push(row); }
                 var state = it === firstPending ? "NOW" : (it.todo && it.todo.length ? "waiting" : "done");
                 var txt = el("div", "", "");
                 txt.appendChild(el("b", "", (i + 1) + ". " + it.title + (it.year ? " (" + it.year + ")" : "") + " "));
@@ -492,6 +494,17 @@
                 row.appendChild(b);
                 host.appendChild(row);
             });
+            if (aqMore.length) {
+                var amb = el("button", "ghost", "See more (" + aqMore.length + ")");
+                amb.type = "button"; amb.style.marginTop = "10px";
+                var aqOpen = false;
+                amb.addEventListener("click", function () {
+                    aqOpen = !aqOpen;
+                    aqMore.forEach(function (r) { r.style.display = aqOpen ? "" : "none"; });
+                    amb.textContent = aqOpen ? "Show less" : "See more (" + aqMore.length + ")";
+                });
+                host.appendChild(amb);
+            }
         }).catch(function () { var h = $("aqList"); if (h) { h.textContent = "Could not load."; } });
     }
     function loadReady() {
