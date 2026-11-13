@@ -85,13 +85,13 @@ function seasonsOf(d) {
         .map(s => ({ s: s.season_number, n: s.episode_count, air: s.air_date || "" }));
 }
 
-async function detailOf(tmdbId, src, base) {
+async function detailOf(tmdbId, src, base, big) {
     const d = await tmdb("/tv/" + tmdbId + "?append_to_response=external_ids");
     const imdb = (d.external_ids && d.external_ids.imdb_id) || "";
     if (!imdbOk(imdb)) { return null; }
     const seasons = seasonsOf(d);
     const total = seasons.reduce((a, s) => a + s.n, 0);
-    if (!total || total > MAX_EPISODES) { return null; }
+    if (!total || (total > MAX_EPISODES && !big)) { return null; }   // long series only when added by hand
     return {
         imdb, tmdb: tmdbId, title: clean(d.name || base.name || "", 100), year: String(d.first_air_date || base.first_air_date || "").slice(0, 4),
         poster: d.poster_path ? "https://image.tmdb.org/t/p/w342" + d.poster_path : "", src, seasons, total
@@ -184,7 +184,7 @@ module.exports = async function autoq(req, res) {
                 const r = await tmdb("/search/tv?query=" + encodeURIComponent(text) + "&page=1");
                 ids = (r.results || []).slice(0, 8).map(x => ({ id: x.id, base: x }));
             }
-            const det = await Promise.all(ids.map(p => detailOf(p.id, "manual", p.base).catch(() => null)));
+            const det = await Promise.all(ids.map(p => detailOf(p.id, "manual", p.base, true).catch(() => null)));
             const items = det.filter(Boolean).map(d => Object.assign(d, { inList: list.some(l => l.imdb === d.imdb) }));
             return res.status(200).json({ items, hidden: ids.length - items.length });
         }

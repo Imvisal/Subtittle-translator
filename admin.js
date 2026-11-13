@@ -485,7 +485,7 @@
                     out.textContent = "";
                     if (d.error) { out.textContent = d.error; return; }
                     var items = d.items || [];
-                    if (!items.length) { out.appendChild(el("div", "muted", "No series found" + (d.hidden ? " (" + d.hidden + " result(s) had no IMDb id or more than 200 episodes)." : "."))); return; }
+                    if (!items.length) { out.appendChild(el("div", "muted", "No series found" + (d.hidden ? " (" + d.hidden + " result(s) had no IMDb id)." : "."))); return; }
                     items.forEach(function (it) {
                         var row = el("div", "row", "");
                         row.style.cssText = "justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);flex-wrap:wrap";
