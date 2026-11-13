@@ -275,6 +275,25 @@ async function intros(req, res) {
     return res.status(200).json(Object.assign({ next: next, total: list.length, done: next >= list.length }, r));
 }
 
+// Called by the twice-a-day cron: fill the Sinhala intro of a few titles that still have none (budget-limited), so nothing depends on a visit.
+async function fillMissingIntros(maxTitles, ms) {
+    const until = Date.now() + (ms || 15000);
+    let made = 0;
+    try {
+        const list = (await allTitles()).sort((x, y) => (y.ts || 0) - (x.ts || 0));
+        for (const m of list) {
+            if (made >= (maxTitles || 6) || Date.now() > until) { break; }
+            const ck = "rdy:tmdb:" + m.id;
+            let c = parse((await redis([["GET", ck]]))[0]);
+            if (!c) { c = await tmdbInfo(m, { force: true }); if (c && c.si) { made++; } continue; }
+            if (c.si || !c.overview) { continue; }
+            const si = await sinhalaSummary(m.t, m.y, m.type, c.overview, true);
+            if (si) { c.si = si; c.siTry = Date.now(); await redis([["SET", ck, JSON.stringify(c), "EX", 7 * 86400]]); made++; } else if (sumErr && /429|quota/i.test(sumErr)) { break; }
+        }
+    } catch (e) { /* the next run continues */ }
+    return made;
+}
+
 async function titleData(slug) {
     const list = await allTitles();
     const m = list.find(x => x.slug === slug) || list.find(x => x.id === slug);
@@ -503,3 +522,4 @@ module.exports = async function ready(req, res) {
 };
 module.exports.pageHtml = pageHtml;
 module.exports.registerFilm = registerFilm;
+module.exports.fillMissingIntros = fillMissingIntros;

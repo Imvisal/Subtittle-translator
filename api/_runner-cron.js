@@ -33,6 +33,9 @@ module.exports = async function runnerCron(req, res) {
         try { const [v] = await g.redis([["GET", "aq:stop"]]); return res.status(200).json({ stop: !!v }); } catch (e) { return res.status(200).json({ stop: false }); }
     }
 
+    // the scheduled call (no act): also fill a few missing Sinhala story intros, so no title needs a visit to get one
+    if (!act) { try { await require("./_ready.js").fillMissingIntros(6, 12000); } catch (e) { /* never blocks the runner */ } }
+
     if (!token) { return res.status(503).json({ error: "GITHUB_DISPATCH_TOKEN is not set" }); }
     const repo = /^[\w.-]+\/[\w.-]+$/.test(process.env.GITHUB_REPO || "") ? process.env.GITHUB_REPO : "visalhmg123-cell/sinsubz-runner1";
     const gh = (path, opt) => fetch("https://api.github.com/repos/" + repo + path, Object.assign({
