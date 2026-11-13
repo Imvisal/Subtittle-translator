@@ -513,8 +513,31 @@
         inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); go(); } });
     })();
 
+    function loadSubdl() {
+        var bars = $("sdBars"); if (!bars || !KEY) { return; }
+        fetch("/api/stats?autoq=subdl", { headers: { "x-admin-key": KEY }, cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
+            bars.textContent = "";
+            var ks = d.keys || [];
+            if (!ks.length) { bars.appendChild(el("div", "muted", "No SubDL key is set.")); return; }
+            var left = 0;
+            ks.forEach(function (k) {
+                left += Math.max(0, d.limit - k.used);
+                var row = el("div", "b");
+                row.appendChild(el("span", "", "Key #" + k.n));
+                var tr = el("div", "track"), f = el("div", "fill");
+                f.style.width = k.left + "%";
+                tr.appendChild(f); row.appendChild(tr);
+                row.appendChild(el("span", "n", k.limited ? "empty" : (k.used + " / " + d.limit)));
+                bars.appendChild(row);
+            });
+            var inMs = Math.max(0, d.resetAt - Date.now());
+            $("sdNote").textContent = "About " + left + " downloads left across " + ks.length + " keys. Resets in " + Math.floor(inMs / 3600e3) + " h " + Math.floor(inMs % 3600e3 / 60e3) + " min (05:30 Sri Lanka). Keys 1-" + Math.min(ks.length, ks.filter(function (k) { return k.role === "visitors"; }).length) + " are for visitors, the others for the auto runner. SubDL does not tell us the real number: this counts the downloads this site made (change the limit with SUBDL_DAILY_LIMIT). \"empty\" = SubDL itself said the limit is reached.";
+        }).catch(function () { bars.textContent = "Could not load."; });
+    }
+
     function loadQueue() {
         if (!KEY) { return; }
+        loadSubdl();
         fetch("/api/stats?autoq=get", { headers: { "x-admin-key": KEY }, cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
             var host = $("aqList"); if (!host) { return; }
             host.textContent = "";

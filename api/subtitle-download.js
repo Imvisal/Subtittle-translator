@@ -3,12 +3,7 @@ const AdmZip = require("adm-zip");
 const MAX_DOWNLOAD_BYTES = 8 * 1024 * 1024;   // zip / srt download
 const MAX_UNZIPPED_BYTES = 8 * 1024 * 1024;   // one extracted .srt
 
-const spent = new Map();      // key -> time until which it is considered used up
-function subdlKeys() {
-    const out = [];
-    [process.env.SUBDL_API_KEY].concat(Array.from({ length: 9 }, (_, i) => process.env["SUBDL_API_KEY_" + (i + 2)])).forEach(k => { if (k && !out.includes(k)) { out.push(k); } });
-    return out;
-}
+const subdl = require("./_subdl.js");
 
 module.exports = async function handler(req, res) {
 
@@ -136,15 +131,19 @@ module.exports = async function handler(req, res) {
         // SubDL's free plan: 50 downloads a day per key. SUBDL_API_KEY, SUBDL_API_KEY_2 ... : the next key is used when one is spent.
         // the first SUBDL_USER_KEYS keys (default 2) are for visitors, the rest for the auto runner (it sends the admin key);
         // with too few keys everybody shares what there is
-        const allKeys = subdlKeys();
-        const nUser = Math.max(1, parseInt(process.env.SUBDL_USER_KEYS, 10) || 2);
+        const allKeys = subdl.keys();
+        const nUser = subdl.nUser();
         const isRunner = require("./_admin.js").isAdmin(req);
         let keys = isRunner ? allKeys.slice(nUser) : allKeys.slice(0, nUser);
         if (!keys.length) { keys = allKeys; }
+        const spentSet = await subdl.spentNow();          // keys that said "limit reached" in the last 30 minutes (shared by all servers)
+        const isSpent = k => spentSet.has(allKeys.indexOf(k) + 1);
         let response;
         let hopUrl = finalUrl;
+        let usedKey = null;
         for (const key of (keys.length ? keys : [null])) {
-            if (key && (spent.get(key) || 0) > Date.now() && keys.some(k => (spent.get(k) || 0) <= Date.now())) { continue; }
+            if (key && isSpent(key) && keys.some(k => !isSpent(k))) { continue; }
+            usedKey = key;
             if (key) { const ku = new URL(finalUrl); ku.searchParams.set("api_key", key); hopUrl = ku.toString(); } else { hopUrl = finalUrl; }
 
             for (let hop = 0; hop < 4; hop++) {
@@ -190,7 +189,8 @@ module.exports = async function handler(req, res) {
 
 
             if (response.status !== 429 || !key) { break; }
-            spent.set(key, Date.now() + 30 * 60 * 1000);     // this key is used up: rest it for 30 minutes
+            spentSet.add(allKeys.indexOf(key) + 1);
+            await subdl.markSpent(allKeys.indexOf(key) + 1);     // this key is used up: rest it for 30 minutes
         }
 
         if (response.status >= 300 && response.status < 400) {
@@ -198,6 +198,8 @@ module.exports = async function handler(req, res) {
                 error: "Too many redirects from SubDL"
             });
         }
+
+        if (response.ok && usedKey) { await subdl.count(allKeys.indexOf(usedKey) + 1); }
 
         const declaredSize = Number(response.headers.get("content-length") || 0);
 

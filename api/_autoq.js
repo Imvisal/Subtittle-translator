@@ -8,6 +8,7 @@
    GET  ?autoq=get                      -> { meta, list: [ { imdb, title, year, poster, src, total, done, skipped, todo: [[s,e],...] } ] }
    GET  ?autoq=candidates               -> { items: [ { imdb, tmdb, title, year, poster, src, seasons: [{ s, n, air }], total } ] }
                                            (series that are NOT in the list / Ready store yet; the runner checks Sinhala subs)
+   GET  ?autoq=subdl                    -> { limit, resetAt, keys: [ { n, role, used, left, limited } ] }  (SubDL downloads made today, per key)
    GET  ?autoq=find&q=name|tt1234567    -> { items: [ same as candidates + inList ] }  (admin search box: pick any series by hand)
    POST ?autoq=add     { items: [...], top? } -> appends (no duplicates); top:true puts them first, so they are worked on next
    POST ?autoq=mark    { imdb, eps: [[s,e],...] } -> episodes with no English subtitle: not tried again for 7 days
@@ -171,6 +172,8 @@ module.exports = async function autoq(req, res) {
             }
             return res.status(200).json({ items });
         }
+
+        if (act === "subdl" && req.method === "GET") { return res.status(200).json(await require("./_subdl.js").usage()); }
 
         if (act === "find" && req.method === "GET") {
             const text = String(q(req).q || "").trim().slice(0, 80);
