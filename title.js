@@ -182,7 +182,7 @@
         function close() { if (ov.parentNode) { ov.parentNode.removeChild(ov); } document.removeEventListener("keydown", onKey); }
         function onKey(k) { if (k.key === "Escape") { close(); } }
         ov.addEventListener("click", function (c) { if (c.target === ov || (c.target.closest && c.target.closest(".tp-x"))) { close(); } });
-        ov.querySelector(".tp-opt-a").addEventListener("click", function () { setTimeout(close, 400); });
+        ov.querySelector(".tp-opt-a").addEventListener("click", function () { setTimeout(close, 400); try { if (window.SinSubzComments) { window.SinSubzComments.afterTranslate(D.title); } } catch (e) { /* ignore */ } });
         document.addEventListener("keydown", onKey);
         document.body.appendChild(ov);
     }

@@ -68,14 +68,16 @@ module.exports = async function handler(req, res) {
                 res.setHeader("Cache-Control", "public, s-maxage=20, stale-while-revalidate=120");
             }
 
-            const total = Number((await redis([["LLEN", "cm:ids"]]))[0]) || 0;
+            const tId = /^tt\d{5,10}$/.test(String(q.t || "")) ? String(q.t) : "";
+            const LIST = tId ? "cm:t:" + tId : "cm:ids";           // one title's own comments, or the home list
+            const total = Number((await redis([["LLEN", LIST]]))[0]) || 0;
             if (!total || offset >= total) return res.status(200).json({ enabled: true, total, comments: [] });
 
             let from, to;
             if (sort === "new") { from = offset; to = offset + limit - 1; }
             else { from = Math.max(0, total - offset - limit); to = total - offset - 1; }
 
-            let ids = (await redis([["LRANGE", "cm:ids", from, to]]))[0] || [];
+            let ids = (await redis([["LRANGE", LIST, from, to]]))[0] || [];
             if (sort === "old") ids = ids.reverse();
             if (!ids.length) return res.status(200).json({ enabled: true, total, comments: [] });
 
@@ -124,6 +126,7 @@ module.exports = async function handler(req, res) {
 
             const parent = clean(body.parent, 40);
             const film = clean(body.film, 80);
+            const imdb = /^tt\d{5,10}$/.test(String(body.imdb || "")) ? String(body.imdb) : "";
 
             const uk = uidKey(who.uid);
             const [count] = await redis([["INCR", "cm:rl:" + uk], ["EXPIRE", "cm:rl:" + uk, 3600]]);
@@ -142,7 +145,8 @@ module.exports = async function handler(req, res) {
                 name: clean(who.name, 60) || "Google user",
                 text,
                 owner: who.owner,
-                film: parent ? "" : film
+                film: parent ? "" : film,
+                imdb: parent ? "" : imdb
             };
 
             if (parent) {
@@ -158,7 +162,7 @@ module.exports = async function handler(req, res) {
             await redis([
                 ["SET", "cm:c:" + item.id, JSON.stringify(item)],
                 ["LPUSH", "cm:ids", item.id]
-            ]);
+            ].concat(imdb ? [["LPUSH", "cm:t:" + imdb, item.id], ["LTRIM", "cm:t:" + imdb, 0, MAX_COMMENTS - 1]] : []));
             await require("./_admin.js").logActivity("comment", "Comment: " + String(item.text || item.t || item.body || "").slice(0, 70));
 
             // keep the newest 100 only; drop the rest with their replies
@@ -192,7 +196,7 @@ module.exports = async function handler(req, res) {
             const c = parse((await redis([["GET", "cm:c:" + id]]))[0]);
             if (!c) return res.status(404).json({ error: "Not found" });
             if (!who.owner && c.uid !== who.uid) return res.status(403).json({ error: "Not allowed" });
-            await redis([["DEL", "cm:c:" + id, "cm:r:" + id], ["LREM", "cm:ids", 1, id]]);
+            await redis([["DEL", "cm:c:" + id, "cm:r:" + id], ["LREM", "cm:ids", 1, id]].concat(c.imdb ? [["LREM", "cm:t:" + c.imdb, 1, id]] : []));
             return res.status(200).json({ ok: true });
         }
 

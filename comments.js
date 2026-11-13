@@ -8,6 +8,9 @@
 
     var root = document.getElementById("commentsRoot");
     if (!root) { return; }
+    // on a film / TV page the section belongs to that one title (data-imdb, data-film); on the home page it is the general list
+    var IMDB = /^tt\d{5,10}$/.test(root.getAttribute("data-imdb") || "") ? root.getAttribute("data-imdb") : "";
+    var FILMNAME = (root.getAttribute("data-film") || "").slice(0, 80);
 
     var CFG = {
         apiKey: "AIzaSyBtVA4AdmAlkwVsBnZ3rqm7vjSGEA2NAO0",
@@ -163,6 +166,7 @@
                 var body = { text: text, website: "" };
                 if (opts.parent) { body.parent = opts.parent; }
                 if (opts.film) { body.film = opts.film; }
+                if (IMDB && !opts.parent) { body.imdb = IMDB; if (!body.film && FILMNAME) { body.film = FILMNAME; } }
                 api("POST", "", body).then(function (r) {
                     if (r.ok) { ta.value = ""; if (opts.done) { opts.done(r.d.comment); } }
                     else { note.textContent = (r.d && r.d.error) || "Could not post. Please try again."; }
@@ -253,7 +257,7 @@
         head.appendChild(sel);
         root.appendChild(head);
 
-        root.appendChild(el("p", "cm-hint", "Tell us what you think about SinSubz. Sign in with Google to write a comment or reply."));
+        root.appendChild(el("p", "cm-hint", (IMDB && FILMNAME ? "Tell us what you think about " + FILMNAME + ". " : "Tell us what you think about SinSubz. ") + "Sign in with Google to write a comment or reply."));
 
         els.compose = el("div", "cm-composewrap");
         els.compose.appendChild(composer({ done: function () { reload(); } }));
@@ -266,14 +270,14 @@
         els.more.hidden = true;
         els.more.addEventListener("click", function () { fetchPage(MORE, true); });
         root.appendChild(els.more);
-        els.empty = el("p", "cm-empty", "No comments yet. Be the first!");
+        els.empty = el("p", "cm-empty", IMDB ? "No comments on this title yet. Be the first!" : "No comments yet. Be the first!");
         els.empty.hidden = true;
         root.appendChild(els.empty);
     }
 
     function fetchPage(limit, append) {
         els.more.disabled = true;
-        return api("GET", "?sort=" + sort + "&offset=" + (append ? loaded : 0) + "&limit=" + limit).then(function (r) {
+        return api("GET", "?sort=" + sort + "&offset=" + (append ? loaded : 0) + "&limit=" + limit + (IMDB ? "&t=" + IMDB : "")).then(function (r) {
             els.more.disabled = false;
             if (!r.ok || r.d.enabled === false) { if (!append) { root.hidden = true; } return; }
             root.hidden = false;

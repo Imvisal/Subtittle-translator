@@ -366,12 +366,13 @@ function pageHtml(d) {
         '<link rel="icon" href="/favicon.ico?v=1133" sizes="48x48"><link rel="icon" href="/favicon.svg?v=1133" type="image/svg+xml" sizes="any"><link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1133">' +
         '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
         '<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">' +
-        '<link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/title.css">' +
+        '<link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/title.css"><link rel="stylesheet" href="/comments.css">' +
         '<script>try{var t=localStorage.getItem("sinsubz-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>' +
         '<script type="application/ld+json">' + JSON.stringify(ld).replace(/</g, "\\u003c") + "</script></head>" +
         '<body class="tp-page"><div class="tp-wrap"><nav class="tp-crumb" aria-label="Breadcrumb"><a href="/">SinSubz</a> › <a href="/#readyTitles">' + crumbName + '</a> › <span>' + esc(d.title) + '</span></nav><div id="tp"><noscript>' + noscript + "</noscript></div>" + seoBlock +
+        '<section class="comments-section tp-comments" id="comments"><div class="cm-wrap" id="commentsRoot" hidden data-imdb="' + esc(d.id) + '" data-film="' + esc(d.title) + '"></div></section>' +
         '<p class="tp-foot">Subtitles made by SinSubz. Only the subtitle is provided, not the video.</p></div>' +
-        '<script type="application/json" id="tp-data">' + seed + '</script><script src="/title.js"></script><script src="/aads.js" defer></script><script src="/push.js" defer></script></body></html>';
+        '<script type="application/json" id="tp-data">' + seed + '</script><script src="/title.js"></script><script src="/comments.js" defer></script><script src="/aads.js" defer></script><script src="/push.js" defer></script></body></html>';
 }
 
 function isAdmin(req) { return require("./_admin.js").isAdmin(req); }
