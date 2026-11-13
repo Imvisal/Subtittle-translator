@@ -1,0 +1,91 @@
+/* SinSubz admin: a nicer skin on top of the small base styles inside admin.html (colors come from the same variables). */
+:root { --glow: rgba(143,134,255,.28); --card2: #181c36; --shadow: 0 14px 40px rgba(2,3,12,.45); }
+@media (prefers-color-scheme: light) { :root { --card2: #f3f2ff; --shadow: 0 10px 30px rgba(60,50,140,.12); --glow: rgba(120,108,255,.22); } }
+
+body {
+    background:
+        radial-gradient(900px 480px at 8% -8%, rgba(120,98,255,.22), transparent 60%),
+        radial-gradient(800px 460px at 100% 0%, rgba(45,212,191,.12), transparent 55%),
+        var(--bg);
+    background-attachment: fixed;
+    -webkit-font-smoothing: antialiased;
+}
+main { max-width: 1160px; padding-top: 30px; }
+
+/* ---------- header ---------- */
+.top { padding: 18px 20px; margin-bottom: 18px; border-radius: 20px; border: 1px solid var(--line); background: linear-gradient(135deg, rgba(143,134,255,.14), rgba(45,212,191,.06)), var(--card); box-shadow: var(--shadow); }
+h1 { font-size: 24px; font-weight: 800; letter-spacing: -.01em; display: flex; align-items: center; gap: 10px; }
+h1::before { content: ""; width: 34px; height: 34px; border-radius: 11px; flex: none; box-shadow: 0 8px 22px rgba(91,61,245,.5);
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 12h4l3-8 4 16 3-8h4'/%3E%3C/svg%3E") center / 20px no-repeat, linear-gradient(135deg, #9a8cff, #5b3df5); }
+.sub { font-size: 13px; }
+
+/* ---------- buttons, inputs ---------- */
+button, .btn { transition: transform .15s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease; }
+button:not(.ghost):not(.tab):not(.danger):not(.lgf), .btn:not(.ghost) { background: linear-gradient(135deg, #9a8cff, #6a4dff); box-shadow: 0 8px 20px rgba(106,77,255,.35); }
+button:not(:disabled):hover, .btn:hover { transform: translateY(-1px); }
+button:not(.ghost):not(.tab):not(.danger):not(.lgf):not(:disabled):hover, .btn:not(.ghost):hover { box-shadow: 0 12px 26px rgba(106,77,255,.5); }
+button:active, .btn:active { transform: translateY(0) scale(.98); }
+button:disabled { opacity: .55; cursor: default; }
+button.ghost, .btn.ghost { border-radius: 12px; background: rgba(255,255,255,.03); }
+button.ghost:hover, .btn.ghost:hover { border-color: var(--acc); color: var(--text); background: rgba(143,134,255,.10); }
+button.danger:hover { background: rgba(255,138,138,.12); }
+input, select, textarea { transition: border-color .2s ease, box-shadow .2s ease; border-radius: 12px; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--acc); box-shadow: 0 0 0 4px var(--glow); }
+select, textarea { border: 1px solid var(--line); background: var(--card); color: inherit; font: inherit; padding: 10px 12px; }
+input[type="checkbox"] { min-width: 0; width: 18px; height: 18px; accent-color: var(--acc); vertical-align: -3px; margin-right: 8px; padding: 0; }
+#login { max-width: 460px; margin: 12vh auto 0; padding: 22px; border-radius: 20px; border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow); }
+#err { text-align: center; }
+
+/* ---------- tabs ---------- */
+.tabbar { padding: 8px; margin: 0 0 18px; border: 1px solid var(--line); border-radius: 18px; background: color-mix(in srgb, var(--card) 88%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: var(--shadow); top: 8px; }
+.tab { border: 0; padding: 10px 18px; font-size: 14px; border-radius: 13px; }
+.tab:hover { color: var(--text); background: rgba(143,134,255,.12); transform: none; }
+.tab.on { background: linear-gradient(135deg, #9a8cff, #6a4dff); color: #fff; box-shadow: 0 8px 20px rgba(106,77,255,.4); }
+
+/* ---------- cards ---------- */
+.card { border-radius: 20px; padding: 20px; background: linear-gradient(180deg, color-mix(in srgb, var(--card) 100%, #fff 3%), var(--card)); box-shadow: var(--shadow); }
+.card h2, .two h2 { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 700; color: var(--text); letter-spacing: 0; margin-bottom: 14px; }
+.card h2::before { content: ""; width: 4px; height: 18px; border-radius: 4px; background: linear-gradient(180deg, #9a8cff, #2dd4bf); flex: none; }
+.card p.muted, .muted { color: var(--muted); font-size: 13.5px; line-height: 1.6; }
+.card .btn + .btn, .card button + button { margin-left: 8px; }
+
+/* ---------- stat tiles ---------- */
+.grid { gap: 14px; }
+.stat { position: relative; overflow: hidden; border-radius: 18px; padding: 18px; box-shadow: var(--shadow); transition: transform .2s ease, border-color .2s ease; }
+.stat::after { content: ""; position: absolute; right: -24px; top: -24px; width: 90px; height: 90px; border-radius: 50%; background: radial-gradient(circle, rgba(143,134,255,.28), transparent 70%); }
+.stat:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--acc) 60%, var(--line)); }
+.stat b { font-size: 30px; font-weight: 800; letter-spacing: -.02em; }
+.stat span { display: block; margin-top: 2px; font-weight: 500; }
+.stat.hi::after { background: radial-gradient(circle, rgba(45,212,191,.32), transparent 70%); }
+
+/* ---------- tables, lists, tags ---------- */
+.tbl { border-radius: 14px; border: 1px solid var(--line); }
+table { font-size: 14px; }
+th { background: color-mix(in srgb, var(--card) 80%, var(--acc) 6%); padding: 10px 12px; text-transform: uppercase; letter-spacing: .06em; font-size: 11px; }
+td { padding: 11px 12px; }
+tbody tr { transition: background .15s ease; }
+tbody tr:hover { background: rgba(143,134,255,.07); }
+tbody tr:last-child td { border-bottom: 0; }
+.tag { padding: 3px 11px; font-weight: 600; background: rgba(143,134,255,.12); color: var(--acc); border-color: rgba(143,134,255,.3); }
+#arState.tag { text-transform: capitalize; }
+.pill { padding: 3px 11px; font-weight: 600; }
+.list li { padding: 10px 0; }
+.chart .bar { background: linear-gradient(180deg, #9a8cff, #5b3df5); border-radius: 6px 6px 0 0; }
+.chart.u .bar { background: linear-gradient(180deg, #5eead4, #0d9488); }
+.bars .fill { background: linear-gradient(90deg, #9a8cff, #6a4dff); }
+.bars .track { height: 12px; }
+.links { gap: 10px; }
+.empty { padding: 14px; text-align: center; border: 1px dashed var(--line); border-radius: 14px; }
+::-webkit-scrollbar { height: 8px; width: 10px; } ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 8px; }
+
+/* ---------- phones ---------- */
+@media (max-width: 560px) {
+    main { padding: 14px 12px 70px; }
+    .top { padding: 14px; border-radius: 16px; }
+    h1 { font-size: 20px; } h1::before { width: 30px; height: 30px; }
+    .card { padding: 16px; border-radius: 16px; }
+    .stat b { font-size: 24px; }
+    .tab { padding: 9px 14px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+.tag:empty { display: none; }
