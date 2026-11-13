@@ -9,7 +9,8 @@
    Env: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY (base64url), VAPID_SUBJECT (mailto:...)  - made once with `node scripts/make-vapid.js` */
 "use strict";
 const crypto = require("crypto");
-const { hasRedis, redis, sha, overLimit } = require("./_google");
+const { hasRedis, redis, sha: shaRaw, overLimit } = require("./_google");
+const sha = x => shaRaw(x).toString("hex").slice(0, 40);      // _google.sha gives a Buffer: Redis needs a plain string
 const { isAdmin } = require("./_admin");
 
 const b64u = buf => Buffer.from(buf).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
