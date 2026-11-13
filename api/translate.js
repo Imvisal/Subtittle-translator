@@ -512,7 +512,9 @@ module.exports = async function handler(req, res) {
             const lastHour = pacHour === 23;
             const reserve = Number(process.env.RUNNER_RESERVE_PCT);
             const reserveLast = Number(process.env.RUNNER_LAST_HOUR_RESERVE_PCT);
-            const keep = lastHour ? (Number.isFinite(reserveLast) ? reserveLast : 8) : (Number.isFinite(reserve) ? reserve : 70);
+            let keep = lastHour ? (Number.isFinite(reserveLast) ? reserveLast : 8) : (Number.isFinite(reserve) ? reserve : 70);
+            // "Run now" in the admin panel: no quota limit at all while that run lasts (flag aq:manual, 65 minutes)
+            try { const gg = require("./_google"); if (gg.hasRedis() && (await gg.redis([["GET", "aq:manual"]]))[0]) { keep = 0; } } catch (e) { /* keep the normal limit */ }
             if (keep > 0 && (await require("./_admin.js").quotaLeftPct()) <= keep) {
                 return res.status(429).json({ error: "Gemini quota is reserved for visitors now (auto-runner stops).", code: "RUNNER_RESERVE" });
             }

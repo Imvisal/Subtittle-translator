@@ -54,19 +54,20 @@ module.exports = async function runnerCron(req, res) {
             return res.status(200).json({ ok: true, running: runs.length > 0, runs });
         }
         if (act === "stop") {
-            try { await g.redis([["SET", "aq:stop", "1", "EX", "7200"]]); } catch (e) { /* the cancel below still works */ }
+            try { await g.redis([["SET", "aq:stop", "1", "EX", "7200"], ["DEL", "aq:manual"]]); } catch (e) { /* the cancel below still works */ }
             const runs = await active();
             for (const r of runs) { await gh("/actions/runs/" + r.id + "/cancel", { method: "POST" }).catch(() => null); }
             return res.status(200).json({ ok: true, stopped: runs.length });
         }
         if (act === "start") {
             if ((await active()).length) { return res.status(200).json({ ok: false, error: "A run is already going" }); }
-            try { await g.redis([["DEL", "aq:stop"]]); } catch (e) { /* ignore */ }
+            try { await g.redis([["DEL", "aq:stop"], ["SET", "aq:manual", "1", "EX", "3900"]]); } catch (e) { /* ignore */ }   // "Run now": no quota limit for ~65 minutes
             const r = await gh("/actions/workflows/auto-translate.yml/dispatches", { method: "POST", body: JSON.stringify({ ref: "main", inputs: { source: "manual" } }) });
             if (r.status !== 204) { return res.status(502).json({ error: "GitHub answered " + r.status }); }
             return res.status(200).json({ ok: true, started: true });
         }
 
+        try { await g.redis([["DEL", "aq:manual"]]); } catch (e) { /* ignore */ }      // a scheduled run keeps the normal limits
         const r = await fetch("https://api.github.com/repos/" + repo + "/actions/workflows/auto-translate.yml/dispatches", {
             method: "POST",
             headers: { Authorization: "Bearer " + token, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", "User-Agent": "sinsubz-cron", "Content-Type": "application/json" },
