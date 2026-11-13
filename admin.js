@@ -755,4 +755,35 @@
         });
     })();
 
+    // ---- Sinhala story intros for every title (a few per call) ----
+    (function () {
+        var go = document.getElementById("siGo"), out = document.getElementById("siOut");
+        if (!go) { return; }
+        var running = false;
+        go.addEventListener("click", function () {
+            if (running) { return; }
+            running = true; go.disabled = true;
+            var tot = { made: 0, had: 0, failed: 0, notitle: 0, scanned: 0 }, bad = 0;
+            function line(done) {
+                return (done ? "Done. " : "Working... ") + tot.made + " made, " + tot.had + " already there" + (tot.failed ? ", " + tot.failed + " failed" : "") + (tot.notitle ? ", " + tot.notitle + " without TMDB info" : "");
+            }
+            function step(cursor) {
+                fetch("/api/stats?ready=warm", { method: "POST", headers: { "x-admin-key": KEY, "Content-Type": "application/json" }, body: JSON.stringify({ cursor: cursor }) })
+                    .then(function (r) { return r.json(); })
+                    .then(function (d) {
+                        if (!d || d.cursor === undefined) { throw new Error((d && d.error) || "failed"); }
+                        ["made", "had", "failed", "notitle", "scanned"].forEach(function (k) { tot[k] += d[k] || 0; });
+                        bad = d.failed && !d.made && !d.had ? bad + 1 : 0;
+                        out.textContent = line(false) + (d.error ? " (" + d.error + ")" : "");
+                        if (bad >= 3) { out.textContent = "Stopped: " + (d.error || "Gemini did not answer") + ". " + line(false) + ". Fix that, then press again."; running = false; go.disabled = false; return; }
+                        if (d.done) { out.textContent = line(true) + (tot.failed ? " Press again to retry the failed ones." : ""); running = false; go.disabled = false; return; }
+                        step(d.cursor);
+                    })
+                    .catch(function (e) { out.textContent = "Stopped: " + e.message + ". Press again to continue."; running = false; go.disabled = false; });
+            }
+            out.textContent = "Starting...";
+            step("0");
+        });
+    })();
+
 })();

@@ -41,7 +41,7 @@ async function allTitles() {
 }
 
 // TMDB: overview, genres, rating and the episode names of the seasons that have ready files. Cached 7 days in Redis.
-async function tmdbInfo(m) {
+async function tmdbInfo(m, opts) {
     const key = process.env.TMDB_API_KEY;
     if (!key) { return null; }
     const seasons = [...new Set(Object.values(m.eps || {}).map(x => x.s).filter(Boolean))].sort((a, b) => a - b);
@@ -49,7 +49,7 @@ async function tmdbInfo(m) {
     const cached = parse((await redis([["GET", ck]]))[0]);
     if (cached && cached.cast !== undefined && seasons.every(n => cached.seasons && cached.seasons[n])) {
         // only the Sinhala intro is missing (new feature, or Gemini failed earlier): make just that, retry at most once an hour
-        if (cached.overview && !cached.si && Date.now() - (cached.siTry || 0) > 3600 * 1000) {
+        if (cached.overview && !cached.si && ((opts && opts.force) || Date.now() - (cached.siTry || 0) > 3600 * 1000)) {
             cached.siTry = Date.now();
             cached.si = await sinhalaSummary(m.t, m.y, m.type, cached.overview);
             await redis([["SET", ck, JSON.stringify(cached), "EX", 7 * 86400]]);
@@ -124,6 +124,7 @@ async function tmdbInfo(m) {
 let sumErr = "";      // why the last Sinhala intro failed (shown in the admin panel)
 async function sinhalaSummary(title, year, type, overview, bulk) {
     sumErr = "";
+    sinhalaSummary.lastErr = "";
     if (!overview) { return ""; }
     const keys = [...new Set([].concat((process.env.GEMINI_API_KEYS || "").split(","), process.env.GEMINI_API_KEY, Array.from({ length: 29 }, (_, i) => process.env["GEMINI_API_KEY_" + (i + 2)])).map(k => (k || "").trim()).filter(Boolean))];
     if (!keys.length && !process.env.GEMINI_SUMMARY_KEY) { sumErr = "no Gemini key"; return ""; }
@@ -150,6 +151,7 @@ async function sinhalaSummary(title, year, type, overview, bulk) {
                 const j = await r.json();
                 const t = String((((j.candidates || [])[0] || {}).content || {}).parts ? j.candidates[0].content.parts.map(x => x.text || "").join("") : "").replace(/[*_`#>"]+/g, "").replace(/\s+/g, " ").trim();
                 if (t.length > 30 && /[\u0D80-\u0DFF]/.test(t)) { return t.slice(0, 600); }
+            sinhalaSummary.lastErr = "Gemini gave no Sinhala text";
                 sumErr = "Gemini answered, but not usable Sinhala text";
             } catch (e) { sumErr = "Gemini timeout / network"; }
         }
@@ -264,6 +266,28 @@ async function intros(req, res) {
     }
     const next = offset + part.length;
     return res.status(200).json(Object.assign({ next: next, total: list.length, done: next >= list.length }, r));
+}
+
+// Admin button: make the TMDB info + Sinhala story intro for every title in the ready index, a few per call.
+async function warm(req, res) {
+    res.setHeader("Cache-Control", "no-store");
+    if (!isAdmin(req)) { return res.status(401).json({ error: "Unauthorized" }); }
+    const b = req.body && typeof req.body === "object" ? req.body : {};
+    const cursor = /^\d{1,20}$/.test(String(b.cursor == null ? "0" : b.cursor)) ? String(b.cursor == null ? "0" : b.cursor) : "0";
+    const [scan] = await redis([["HSCAN", "rdy:idx", cursor, "COUNT", "6"]]);
+    const next = String((scan && scan[0]) || "0");
+    const flat = (scan && scan[1]) || [];
+    const metas = [];
+    for (let i = 1; i < flat.length; i += 2) { const m = parse(flat[i]); if (m && m.id) { metas.push(m); } }
+    const st = { made: 0, had: 0, failed: 0, notitle: 0, error: "" };
+    for (let i = 0; i < metas.length; i += 3) {
+        const r = await Promise.all(metas.slice(i, i + 3).map(async m => {
+            try { const info = await tmdbInfo(m, { force: true }); return !info ? "notitle" : (info.si ? (info.siTry && Date.now() - info.siTry < 60000 ? "made" : "had") : "failed"); } catch (e) { return "failed"; }
+        }));
+        r.forEach(x => { st[x]++; });
+    }
+    if (st.failed && sinhalaSummary.lastErr) { st.error = sinhalaSummary.lastErr; }
+    return res.status(200).json(Object.assign({ cursor: next, done: next === "0", scanned: metas.length }, st));
 }
 
 async function titleData(slug) {
@@ -431,6 +455,7 @@ module.exports = async function ready(req, res) {
         }
 
         if (act === "backfill" && req.method === "POST") { return backfill(req, res); }
+        if (act === "warm" && req.method === "POST") { return warm(req, res); }
         if (act === "intros" && req.method === "POST") { return intros(req, res); }
 
         if ((act === "put" || act === "del") && req.method === "POST") {
