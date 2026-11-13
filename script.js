@@ -2120,6 +2120,8 @@ async function showTitleInfo(item) {
 
 async function selectSearchResult(item) {
 
+    window.__sinsubzAnime = !!(item && item.anime);          // so the home counter can count anime titles
+
     if (!item || !item.imdbID) {
 
         alert(
@@ -4635,7 +4637,7 @@ function trackStat(type, name) {
             return fetch("/api/stats", {
                 method: "POST",
                 headers: headers,
-                body: JSON.stringify({ type: type, name: name || "" })
+                body: JSON.stringify({ type: type, name: name || "", anime: type === "translated" && !!window.__sinsubzAnime })
             });
         }).catch(function () { /* ignore */ });
     } catch (e) { /* ignore */ }

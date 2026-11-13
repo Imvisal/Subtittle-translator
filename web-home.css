@@ -43,7 +43,7 @@ html #searchBtn {
     color: #0b0d1f;
     box-shadow: none;
 }
-html #searchBtn i { display: none; }
+html #searchBtn i { display: inline-block; margin-right: 8px; }
 html #searchBtn:hover:not(:disabled) { box-shadow: 0 10px 28px var(--glow); }
 
 /* pills */
@@ -55,7 +55,7 @@ html .category-chip {
     background: var(--surface-solid);
     border: 1px solid var(--line);
 }
-html .category-chip i { display: none; }
+html .category-chip i { display: inline-block; font-size: 14px; margin-right: 8px; opacity: .9; }
 html .category-chip.active { color: #0b0d1f; background: var(--accent); border-color: var(--accent); box-shadow: none; }
 
 /* ---------- poster cards: title on the poster, year under it ---------- */
@@ -158,7 +158,9 @@ html .search-section { position: relative; isolation: isolate; padding-bottom: 8
     .home-actions { width: 100%; }
     .home-actions .hero-actions { display: flex !important; flex-wrap: nowrap; width: 100%; gap: 8px; }
     .home-actions .hero-actions .btn { flex: 1 1 0; min-width: 0; width: auto; padding: 0 6px; font-size: 12.5px; gap: 6px; justify-content: center; }
-    .home-actions .hero-actions .btn i, .home-actions .hero-actions .sync-ring { display: none; }
+    .home-actions .hero-actions .btn { flex-direction: column; gap: 4px; padding: 10px 4px; height: auto; line-height: 1.15; }
+    .home-actions .hero-actions .btn i { display: inline-block; font-size: 17px; }
+    .home-actions .hero-actions .sync-ring { display: none; }
 }
 
 /* ---------- owner-only Admin link + red activity badge (admin-badge.js) ---------- */
@@ -192,15 +194,23 @@ html .search-section { position: relative; isolation: isolate; padding-bottom: 8
 .na-t { font-size: 12px; color: var(--muted); }
 .na-go { display: block; margin-top: 6px; padding: 11px; text-align: center; border-radius: 10px; font-weight: 700; font-size: 14px; color: #0b0d1f; background: var(--accent); }
 
-/* "Any": a highlighter-marker sweep behind the word (once it has dropped in), then a soft pulse */
+/* "Any": colour flows through the letters, the word floats, and a wavy line draws itself under it */
 .home-find h1, .home-find .hf-line { -webkit-user-select: none; user-select: none; }
 .hf-any {
-    position: relative; z-index: 0; padding: 0 .16em; margin: 0 -.04em; border-radius: .14em;
-    background: linear-gradient(100deg, #7c7af5, #a78bfa 55%, #36e0c8) no-repeat left center / 0% 100%;
-    animation: hfIn .8s cubic-bezier(.2,.7,.2,1) both, hfMark .7s .9s cubic-bezier(.3,.7,.2,1) forwards, hfPulse 3.2s 2.2s ease-in-out infinite;
-    animation-delay: calc(var(--i) * .11s), .9s, 2.2s;
-    box-shadow: 0 0 0 rgba(124, 122, 245, 0);
+    position: relative; padding: 0 .04em;
+    color: transparent; -webkit-text-fill-color: transparent;
+    background: linear-gradient(90deg, #8b7bff, #36e0c8, #ff7ab8, #8b7bff) 0 0 / 300% 100%;
+    -webkit-background-clip: text; background-clip: text;
+    animation: hfIn .8s cubic-bezier(.2,.7,.2,1) both, hfFlow 4s linear infinite, hfFloat 3s ease-in-out 1.2s infinite;
+    animation-delay: calc(var(--i) * .11s), 0s, 1.2s;
 }
-@keyframes hfMark { to { background-size: 100% 100%; } }
-@keyframes hfPulse { 0%, 100% { box-shadow: 0 0 0 rgba(124, 122, 245, 0); } 50% { box-shadow: 0 0 26px rgba(124, 122, 245, .65); } }
-@media (prefers-reduced-motion: reduce) { .hf-any { animation: none; background-size: 100% 100%; } }
+.hf-any::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: -.12em; height: .16em;
+    background: no-repeat center / 100% 100% url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 8' preserveAspectRatio='none'%3E%3Cpath d='M1 5 Q8 0 15 4 T30 4 T45 4 T59 3' fill='none' stroke='%2336e0c8' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E");
+    -webkit-text-fill-color: initial; clip-path: inset(0 100% 0 0);
+    animation: hfLine .8s .9s cubic-bezier(.3,.7,.2,1) forwards;
+}
+@keyframes hfFlow { to { background-position: 300% 0; } }
+@keyframes hfFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes hfLine { to { clip-path: inset(0 0 0 0); } }
+@media (prefers-reduced-motion: reduce) { .hf-any { animation: none; background-position: 0 0; } .hf-any::after { animation: none; clip-path: none; } }

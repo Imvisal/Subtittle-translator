@@ -154,7 +154,8 @@ module.exports = async function handler(req, res) {
                 ["SCARD", "stats:series"],
                 ["SCARD", "stats:episodes"],
                 ["GET", "stats:synced"],
-                ["GET", "stats:merged"]
+                ["GET", "stats:merged"],
+                ["SCARD", "stats:anime"]
             ]);
             res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
             return res.status(200).json({
@@ -164,7 +165,8 @@ module.exports = async function handler(req, res) {
                 series: Number(r[2]) || 0,
                 episodes: Number(r[3]) || 0,
                 synced: Number(r[4]) || 0,
-                merged: Number(r[5]) || 0
+                merged: Number(r[5]) || 0,
+                anime: Number(r[6]) || 0
             });
         }
 
@@ -205,6 +207,7 @@ module.exports = async function handler(req, res) {
             if (topName) {
                 cmds.push(["ZINCRBY", "stats:top", 1, topName], ["ZINCRBY", "stats:top:" + day, 1, topName], ["EXPIRE", "stats:top:" + day, 20 * 86400]);
             }
+            if (body.anime === true && topName) { cmds.push(["SADD", "stats:anime", topName]); }
             if (c && c.movie) cmds.push(["SADD", "stats:movies", c.movie]);
             if (c && c.series) {
                 cmds.push(["SADD", "stats:series", c.series]);

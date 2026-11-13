@@ -14,6 +14,7 @@
         ["translated", "fa-language",     "Subtitle translated",  "Subtitles translated"],
         ["movies",     "fa-film",         "Movie translated",     "Movies translated"],
         ["series",     "fa-tv",           "TV series translated", "TV series translated"],
+        ["anime",      "fa-wand-magic-sparkles", "Anime translated", "Anime translated"],
         ["episodes",   "fa-clapperboard", "Episode translated",   "Episodes translated"],
         ["synced",     "fa-rotate",       "File synced",          "Files synced"],
         ["merged",     "fa-layer-group",  "Video merged",         "Videos merged"]
