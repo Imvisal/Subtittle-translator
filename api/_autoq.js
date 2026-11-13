@@ -8,7 +8,8 @@
    GET  ?autoq=get                      -> { meta, list: [ { imdb, title, year, poster, src, total, done, skipped, todo: [[s,e],...] } ] }
    GET  ?autoq=candidates               -> { items: [ { imdb, tmdb, title, year, poster, src, seasons: [{ s, n, air }], total } ] }
                                            (series that are NOT in the list / Ready store yet; the runner checks Sinhala subs)
-   POST ?autoq=add     { items: [...] } -> appends (no duplicates)
+   GET  ?autoq=find&q=name|tt1234567    -> { items: [ same as candidates + inList ] }  (admin search box: pick any series by hand)
+   POST ?autoq=add     { items: [...], top? } -> appends (no duplicates); top:true puts them first, so they are worked on next
    POST ?autoq=mark    { imdb, eps: [[s,e],...] } -> episodes with no English subtitle: not tried again for 7 days
    POST ?autoq=unskip  { imdb? }        -> clears the "no English subtitle" marks (all series, or one)
    POST ?autoq=drop    { imdb }         -> remove a series from the list
@@ -171,21 +172,40 @@ module.exports = async function autoq(req, res) {
             return res.status(200).json({ items });
         }
 
+        if (act === "find" && req.method === "GET") {
+            const text = String(q(req).q || "").trim().slice(0, 80);
+            if (text.length < 2) { return res.status(400).json({ error: "Type at least 2 letters" }); }
+            const { list } = await readList();
+            let ids = [];
+            if (imdbOk(text)) {
+                const f = await tmdb("/find/" + text + "?external_source=imdb_id");
+                ids = (f.tv_results || []).map(x => ({ id: x.id, base: x }));
+            } else {
+                const r = await tmdb("/search/tv?query=" + encodeURIComponent(text) + "&page=1");
+                ids = (r.results || []).slice(0, 8).map(x => ({ id: x.id, base: x }));
+            }
+            const det = await Promise.all(ids.map(p => detailOf(p.id, "manual", p.base).catch(() => null)));
+            const items = det.filter(Boolean).map(d => Object.assign(d, { inList: list.some(l => l.imdb === d.imdb) }));
+            return res.status(200).json({ items, hidden: ids.length - items.length });
+        }
+
         if (act === "add" && req.method === "POST") {
             const { list } = await readList();
             let added = 0;
+            const fresh = [];
             (Array.isArray(b.items) ? b.items : []).slice(0, 30).forEach(x => {
-                if (!imdbOk(x && x.imdb) || list.some(l => l.imdb === x.imdb) || list.length >= MAX_LIST) { return; }
+                if (!imdbOk(x && x.imdb) || list.some(l => l.imdb === x.imdb) || fresh.some(l => l.imdb === x.imdb) || list.length + fresh.length >= MAX_LIST) { return; }
                 const seasons = (Array.isArray(x.seasons) ? x.seasons : []).slice(0, 60)
                     .map(s => ({ s: Number(s.s) || 0, n: Math.min(Number(s.n) || 0, 300), air: String(s.air || "").slice(0, 10) })).filter(s => s.s > 0 && s.n > 0);
                 if (!seasons.length) { return; }
-                list.push({
+                fresh.push({
                     imdb: x.imdb, tmdb: Number(x.tmdb) || 0, title: clean(x.title, 100), year: clean(x.year, 8),
                     poster: /^https:\/\/[^\s"'<>]{4,300}$/.test(String(x.poster || "")) ? x.poster : "",
                     src: ["demand", "new", "random", "manual"].includes(x.src) ? x.src : "manual", added: Date.now(), seasons, skips: {}
                 });
                 added++;
             });
+            if (b.top === true) { list.unshift(...fresh); } else { list.push(...fresh); }
             await redis([["SET", "aq:list", JSON.stringify(list)]]);
             return res.status(200).json({ ok: true, added, size: list.length });
         }

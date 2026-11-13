@@ -464,6 +464,55 @@
         });
     })();
 
+    // admin: search any series and add it to the list (at the end, or first so it is worked on next)
+    (function () {
+        var inp = $("aqFind"), btn = $("aqFindBtn"), out = $("aqFound");
+        if (!inp || !btn || !out) { return; }
+        function add(it, top, b) {
+            b.disabled = true;
+            fetch("/api/stats?autoq=add", { method: "POST", headers: { "x-admin-key": KEY, "Content-Type": "application/json" }, body: JSON.stringify({ items: [it], top: top }) })
+                .then(function (r) { return r.json(); }).then(function (d) {
+                    b.textContent = d.added ? "Added" : (d.error || "Not added (already there or list full)");
+                    loadQueue();
+                }).catch(function () { b.disabled = false; b.textContent = "Failed, try again"; });
+        }
+        function go() {
+            var t = inp.value.trim();
+            if (t.length < 2) { return; }
+            btn.disabled = true; out.textContent = "Searching...";
+            fetch("/api/stats?autoq=find&q=" + encodeURIComponent(t), { headers: { "x-admin-key": KEY }, cache: "no-store" })
+                .then(function (r) { return r.json(); }).then(function (d) {
+                    out.textContent = "";
+                    if (d.error) { out.textContent = d.error; return; }
+                    var items = d.items || [];
+                    if (!items.length) { out.appendChild(el("div", "muted", "No series found" + (d.hidden ? " (" + d.hidden + " result(s) had no IMDb id or more than 200 episodes)." : "."))); return; }
+                    items.forEach(function (it) {
+                        var row = el("div", "row", "");
+                        row.style.cssText = "justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);flex-wrap:wrap";
+                        var left = el("div", "", "");
+                        left.style.cssText = "display:flex;gap:10px;align-items:center;min-width:0";
+                        if (it.poster) { var im = document.createElement("img"); im.src = it.poster; im.alt = ""; im.width = 40; im.style.borderRadius = "6px"; left.appendChild(im); }
+                        var tx = el("div", "", "");
+                        tx.appendChild(el("b", "", it.title + (it.year ? " (" + it.year + ")" : "")));
+                        tx.appendChild(el("div", "muted", it.total + " episodes · " + it.seasons.length + " season(s)"));
+                        left.appendChild(tx); row.appendChild(left);
+                        var acts = el("div", "", ""); acts.style.cssText = "display:flex;gap:6px;flex-wrap:wrap";
+                        if (it.inList) { acts.appendChild(el("span", "tag", "already in the list")); }
+                        else {
+                            var a1 = el("button", "btn", "Add"); a1.type = "button";
+                            var a2 = el("button", "btn ghost", "Add first"); a2.type = "button";
+                            a1.addEventListener("click", function () { add(it, false, a1); a2.disabled = true; });
+                            a2.addEventListener("click", function () { add(it, true, a2); a1.disabled = true; });
+                            acts.appendChild(a1); acts.appendChild(a2);
+                        }
+                        row.appendChild(acts); out.appendChild(row);
+                    });
+                }).catch(function () { out.textContent = "Could not search."; }).then(function () { btn.disabled = false; });
+        }
+        btn.addEventListener("click", go);
+        inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); go(); } });
+    })();
+
     function loadQueue() {
         if (!KEY) { return; }
         fetch("/api/stats?autoq=get", { headers: { "x-admin-key": KEY }, cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
