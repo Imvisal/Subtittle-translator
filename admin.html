@@ -247,11 +247,6 @@
             <button type="button" class="btn" id="fpGo">Make film pages</button> <span class="muted" id="fpOut"></span>
         </div>
         <div class="card">
-            <h2>Sinhala story intros</h2>
-            <p class="muted" style="margin:0 0 10px">Makes the short spoiler-free Sinhala story text (and the cast / ratings data) for every title page now, instead of waiting for the first visitor. Titles that already have it are skipped, so it is safe to press again. It stops and shows the reason if Gemini refuses (for example, the key is out of quota).</p>
-            <button type="button" class="btn" id="siGo">Make Sinhala intros</button> <span class="muted" id="siOut"></span>
-        </div>
-        <div class="card">
             <h2>Browser notifications <span id="pnCount" class="tag"></span></h2>
             <p class="muted" style="margin:0 0 10px">Visitors who pressed "Turn on" get these even when the site is closed. A message is also sent automatically (at most once every 6 hours) when a NEW title reaches the Ready list. Needs VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY in Vercel.</p>
             <input id="pnTitle" type="text" maxlength="80" placeholder="Title (e.g. New Sinhala subtitles)" style="width:100%;margin-bottom:8px">
