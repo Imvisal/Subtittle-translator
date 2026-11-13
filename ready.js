@@ -114,6 +114,14 @@
         if (!hitsP) { hitsP = fetch("/api/stats?ready=list").then(function (r) { return r.ok ? r.json() : { items: [] }; }).then(function (d) { return Array.isArray(d.items) ? d.items : []; }).catch(function () { return []; }); }
         return hitsP;
     }
+    // a searched title that already has a ready page: the search result opens that page instead of the subtitle list
+    window.__sinsubzReadyUrl = function (imdb) {
+        if (!/^tt\d{5,10}$/.test(String(imdb || ""))) { return Promise.resolve(""); }
+        return Promise.race([allItems(), new Promise(function (r) { setTimeout(function () { r([]); }, 2500); })]).then(function (list) {
+            var it = list.filter(function (x) { return x.id === imdb && x.slug; })[0];
+            return it ? (it.type === "tv" ? "/tv/" : "/film/") + it.slug : "";
+        }).catch(function () { return ""; });
+    };
     window.__sinsubzReadyHits = function (query) {
         var anchor = document.getElementById("searchResults");
         if (!anchor || PAGE) { return; }

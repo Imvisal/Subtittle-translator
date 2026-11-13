@@ -2131,6 +2131,14 @@ async function selectSearchResult(item) {
     }
 
 
+    // already translated and has its own page: go there (poster, cast, download) instead of searching subtitles
+    try {
+        if (window.__sinsubzReadyUrl) {
+            const readyUrl = await window.__sinsubzReadyUrl(item.imdbID);
+            if (readyUrl) { window.location.href = readyUrl; return; }
+        }
+    } catch (e) { /* normal flow */ }
+
     if (searchStatus) {
 
         searchStatus.textContent =
