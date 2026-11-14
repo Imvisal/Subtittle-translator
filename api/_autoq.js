@@ -13,7 +13,9 @@
    POST ?autoq=add     { items: [...], top? } -> appends (no duplicates); top:true puts them first, so they are worked on next
    POST ?autoq=mark    { imdb, eps: [[s,e],...] } -> episodes with no English subtitle: not tried again for 7 days
    POST ?autoq=unskip  { imdb? }        -> clears the "no English subtitle" marks (all series, or one)
-   POST ?autoq=drop    { imdb }         -> remove a series from the list
+   POST ?autoq=drop    { imdb }         -> remove a series / film from the list
+   POST ?autoq=dropdone                 -> remove everything that is completely translated
+   (items have type "tv" (default) or "movie"; a film is one job, key 0x0)
    POST ?autoq=meta    { lastRefill }   -> remembers when the weekly refill ran
 
    Redis:  aq:list (JSON array)   aq:meta (JSON)   sq:z (zset of what visitors typed into the search box, see api/search.js)  */
@@ -65,6 +67,12 @@ function progress(item, have) {
     const done = have[item.imdb] || new Set();
     const now = Date.now();
     const t = today();
+    if (item.type === "movie") {                                   // a film: one job, key 0x0
+        if (done.has("0x0")) { return { total: 1, done: 1, skipped: 0, todo: [] }; }
+        const sk = item.skips && item.skips["0x0"];
+        if (sk && now - sk < SKIP_DAYS * 864e5) { return { total: 1, done: 0, skipped: 1, todo: [] }; }
+        return { total: 1, done: 0, skipped: 0, todo: [[0, 0]] };
+    }
     let total = 0, doneN = 0, skipped = 0;
     const todo = [];
     (item.seasons || []).forEach(se => {
@@ -84,6 +92,16 @@ function progress(item, have) {
 function seasonsOf(d) {
     return (d.seasons || []).filter(s => s.season_number > 0 && s.episode_count > 0)
         .map(s => ({ s: s.season_number, n: s.episode_count, air: s.air_date || "" }));
+}
+
+async function movieDetail(tmdbId, src, base) {
+    const d = await tmdb("/movie/" + tmdbId + "?append_to_response=external_ids");
+    const imdb = d.imdb_id || (d.external_ids && d.external_ids.imdb_id) || "";
+    if (!imdbOk(imdb)) { return null; }
+    return {
+        imdb, tmdb: tmdbId, type: "movie", title: clean(d.title || base.title || "", 100), year: String(d.release_date || base.release_date || "").slice(0, 4),
+        poster: d.poster_path ? "https://image.tmdb.org/t/p/w342" + d.poster_path : "", src, seasons: [], total: 1
+    };
 }
 
 async function detailOf(tmdbId, src, base, big) {
@@ -152,7 +170,7 @@ module.exports = async function autoq(req, res) {
 
         if (act === "get" && req.method === "GET") {
             const [{ list, meta }, have] = await Promise.all([readList(), readyEpisodes()]);
-            const out = list.map(it => Object.assign({ imdb: it.imdb, tmdb: it.tmdb, title: it.title, year: it.year, poster: it.poster, src: it.src, added: it.added }, progress(it, have)));
+            const out = list.map(it => Object.assign({ type: it.type === "movie" ? "movie" : "tv", imdb: it.imdb, tmdb: it.tmdb, title: it.title, year: it.year, poster: it.poster, src: it.src, added: it.added }, progress(it, have)));
             return res.status(200).json({ meta, list: out });
         }
 
@@ -179,15 +197,16 @@ module.exports = async function autoq(req, res) {
             const text = String(q(req).q || "").trim().slice(0, 80);
             if (text.length < 2) { return res.status(400).json({ error: "Type at least 2 letters" }); }
             const { list } = await readList();
+            const film = q(req).kind === "movie";
             let ids = [];
             if (imdbOk(text)) {
                 const f = await tmdb("/find/" + text + "?external_source=imdb_id");
-                ids = (f.tv_results || []).map(x => ({ id: x.id, base: x }));
+                ids = ((film ? f.movie_results : f.tv_results) || []).map(x => ({ id: x.id, base: x }));
             } else {
-                const r = await tmdb("/search/tv?query=" + encodeURIComponent(text) + "&page=1");
+                const r = await tmdb("/search/" + (film ? "movie" : "tv") + "?query=" + encodeURIComponent(text) + "&page=1");
                 ids = (r.results || []).slice(0, 8).map(x => ({ id: x.id, base: x }));
             }
-            const det = await Promise.all(ids.map(p => detailOf(p.id, "manual", p.base, true).catch(() => null)));
+            const det = await Promise.all(ids.map(p => (film ? movieDetail(p.id, "manual", p.base) : detailOf(p.id, "manual", p.base, true)).catch(() => null)));
             const items = det.filter(Boolean).map(d => Object.assign(d, { inList: list.some(l => l.imdb === d.imdb) }));
             return res.status(200).json({ items, hidden: ids.length - items.length });
         }
@@ -198,10 +217,12 @@ module.exports = async function autoq(req, res) {
             const fresh = [];
             (Array.isArray(b.items) ? b.items : []).slice(0, 30).forEach(x => {
                 if (!imdbOk(x && x.imdb) || list.some(l => l.imdb === x.imdb) || fresh.some(l => l.imdb === x.imdb) || list.length + fresh.length >= MAX_LIST) { return; }
-                const seasons = (Array.isArray(x.seasons) ? x.seasons : []).slice(0, 60)
+                const film = x.type === "movie";
+                const seasons = film ? [] : (Array.isArray(x.seasons) ? x.seasons : []).slice(0, 60)
                     .map(s => ({ s: Number(s.s) || 0, n: Math.min(Number(s.n) || 0, 300), air: String(s.air || "").slice(0, 10) })).filter(s => s.s > 0 && s.n > 0);
-                if (!seasons.length) { return; }
+                if (!film && !seasons.length) { return; }
                 fresh.push({
+                    type: film ? "movie" : "tv",
                     imdb: x.imdb, tmdb: Number(x.tmdb) || 0, title: clean(x.title, 100), year: clean(x.year, 8),
                     poster: /^https:\/\/[^\s"'<>]{4,300}$/.test(String(x.poster || "")) ? x.poster : "",
                     src: ["demand", "new", "random", "manual"].includes(x.src) ? x.src : "manual", added: Date.now(), seasons, skips: {}
@@ -221,7 +242,7 @@ module.exports = async function autoq(req, res) {
             it.skips = it.skips || {};
             (Array.isArray(b.eps) ? b.eps : []).slice(0, 500).forEach(p => {
                 const s = Number(p && p[0]), e = Number(p && p[1]);
-                if (s > 0 && e > 0) { it.skips[s + "x" + e] = Date.now(); }
+                if ((s > 0 && e > 0) || (it.type === "movie" && s === 0 && e === 0)) { it.skips[s + "x" + e] = Date.now(); }
             });
             await redis([["SET", "aq:list", JSON.stringify(list)]]);
             return res.status(200).json({ ok: true });
@@ -232,6 +253,14 @@ module.exports = async function autoq(req, res) {
             const { list } = await readList();
             await redis([["SET", "aq:list", JSON.stringify(list.filter(l => l.imdb !== b.imdb))]]);
             return res.status(200).json({ ok: true });
+        }
+
+        if (act === "dropdone" && req.method === "POST") {
+            // remove every series / film that is completely translated
+            const [{ list }, have] = await Promise.all([readList(), readyEpisodes()]);
+            const keep = list.filter(it => { const p = progress(it, have); return !(p.total > 0 && p.done >= p.total); });
+            await redis([["SET", "aq:list", JSON.stringify(keep)]]);
+            return res.status(200).json({ ok: true, removed: list.length - keep.length });
         }
 
         if (act === "unskip" && req.method === "POST") {

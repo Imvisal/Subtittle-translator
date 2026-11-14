@@ -481,12 +481,12 @@
             var t = inp.value.trim();
             if (t.length < 2) { return; }
             btn.disabled = true; out.textContent = "Searching...";
-            fetch("/api/stats?autoq=find&q=" + encodeURIComponent(t), { headers: { "x-admin-key": KEY }, cache: "no-store" })
+            fetch("/api/stats?autoq=find&kind=" + ($("aqKind") ? $("aqKind").value : "tv") + "&q=" + encodeURIComponent(t), { headers: { "x-admin-key": KEY }, cache: "no-store" })
                 .then(function (r) { return r.json(); }).then(function (d) {
                     out.textContent = "";
                     if (d.error) { out.textContent = d.error; return; }
                     var items = d.items || [];
-                    if (!items.length) { out.appendChild(el("div", "muted", "No series found" + (d.hidden ? " (" + d.hidden + " result(s) had no IMDb id)." : "."))); return; }
+                    if (!items.length) { out.appendChild(el("div", "muted", "Nothing found" + (d.hidden ? " (" + d.hidden + " result(s) had no IMDb id)." : "."))); return; }
                     items.forEach(function (it) {
                         var row = el("div", "row", "");
                         row.style.cssText = "justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);flex-wrap:wrap";
@@ -495,7 +495,7 @@
                         if (it.poster) { var im = document.createElement("img"); im.src = it.poster; im.alt = ""; im.width = 40; im.style.borderRadius = "6px"; left.appendChild(im); }
                         var tx = el("div", "", "");
                         tx.appendChild(el("b", "", it.title + (it.year ? " (" + it.year + ")" : "")));
-                        tx.appendChild(el("div", "muted", it.total + " episodes · " + it.seasons.length + " season(s)"));
+                        tx.appendChild(el("div", "muted", it.type === "movie" ? "Film" : it.total + " episodes · " + it.seasons.length + " season(s)"));
                         left.appendChild(tx); row.appendChild(left);
                         var acts = el("div", "", ""); acts.style.cssText = "display:flex;gap:6px;flex-wrap:wrap";
                         if (it.inList) { acts.appendChild(el("span", "tag", "already in the list")); }
@@ -539,6 +539,7 @@
         }).catch(function () { ["sdBars", "sdBars2"].forEach(function (i) { var b = $(i); if (b) { b.textContent = "Could not load."; } }); });
     }
 
+    var aqTab = "w";
     function loadQueue() {
         if (!KEY) { return; }
         loadSubdl();
@@ -548,6 +549,7 @@
             var list = d.list || [];
             var pending = list.filter(function (x) { return x.todo && x.todo.length; });
             $("aqCount").textContent = pending.length + " working / " + list.length + " total";
+            ["aqTabW", "aqTabD"].forEach(function (id) { var t = $(id); if (t && !t.__b) { t.__b = 1; t.addEventListener("click", function () { aqTab = id === "aqTabW" ? "w" : "d"; loadQueue(); }); } });
             $("aqLast").textContent = d.meta && d.meta.lastRefill ? "Last refill: " + new Date(d.meta.lastRefill).toLocaleDateString() + "." : "Not filled yet: the first run fills it.";
             if (!list.length) { host.appendChild(el("div", "muted", "Empty. The next runner start fills it.")); return; }
             var firstPending = pending[0];
@@ -562,21 +564,42 @@
                 });
                 host.appendChild(rb);
             }
+            var isDone = function (x) { return x.total > 0 && x.done >= x.total; };
+            var doneList = list.filter(isDone), workList = list.filter(function (x) { return !isDone(x); });
+            var tw = $("aqTabW"), td = $("aqTabD");
+            if (tw) { tw.textContent = "Working (" + workList.length + ")"; tw.className = aqTab === "w" ? "btn" : "btn ghost"; }
+            if (td) { td.textContent = "Done (" + doneList.length + ")"; td.className = aqTab === "d" ? "btn" : "btn ghost"; }
+            var shown = aqTab === "d" ? doneList : workList;
+            if (aqTab === "d" && doneList.length) {
+                var ra = el("button", "btn", "Remove all " + doneList.length + " done");
+                ra.type = "button"; ra.style.marginBottom = "6px";
+                ra.addEventListener("click", function () {
+                    if (!window.confirm("Remove all finished series / films from the list? Their Sinhala subtitles and pages stay.")) { return; }
+                    ra.disabled = true;
+                    fetch("/api/stats?autoq=dropdone", { method: "POST", headers: { "x-admin-key": KEY, "Content-Type": "application/json" }, body: "{}" })
+                        .then(function () { loadQueue(); }).catch(function () { ra.disabled = false; });
+                });
+                host.appendChild(ra);
+            }
+            if (!shown.length) { host.appendChild(el("div", "muted", aqTab === "d" ? "Nothing finished yet." : "Nothing waiting. The next runner start fills it.")); }
             var AQ_SHOW = 5, aqMore = [];
-            list.forEach(function (it, i) {
+            shown.forEach(function (it, i) {
                 var row = el("div", "row", "");
                 row.style.cssText = "justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line);flex-wrap:wrap";
                 if (i >= AQ_SHOW) { row.style.display = "none"; aqMore.push(row); }
-                var state = it === firstPending ? "NOW" : (it.todo && it.todo.length ? "waiting" : "done");
+                var state = aqTab === "d" ? "done" : (it === firstPending ? "NOW" : (it.todo && it.todo.length ? "waiting" : "no subtitle yet"));
+                var film = it.type === "movie";
                 var txt = el("div", "", "");
                 txt.appendChild(el("b", "", (i + 1) + ". " + it.title + (it.year ? " (" + it.year + ")" : "") + " "));
+                txt.appendChild(el("span", "tag", film ? "Film" : "Series"));
+                txt.appendChild(document.createTextNode(" "));
                 txt.appendChild(el("span", "tag", state));
-                txt.appendChild(el("div", "muted", it.done + " / " + it.total + " episodes" + (it.skipped ? " · " + it.skipped + " waiting for an English subtitle" : "") + " · from " + (it.src || "?")));
+                txt.appendChild(el("div", "muted", (film ? (it.done ? "translated" : "not translated yet") : it.done + " / " + it.total + " episodes") + (it.skipped ? " · " + it.skipped + " waiting for an English subtitle" : "") + " · from " + (it.src || "?")));
                 row.appendChild(txt);
                 var b = el("button", "btn ghost", "Remove");
                 b.type = "button";
                 b.addEventListener("click", function () {
-                    if (!window.confirm("Remove this series from the list?")) { return; }
+                    if (!window.confirm("Remove this from the list?")) { return; }
                     b.disabled = true;
                     fetch("/api/stats?autoq=drop", { method: "POST", headers: { "x-admin-key": KEY, "Content-Type": "application/json" }, body: JSON.stringify({ imdb: it.imdb }) })
                         .then(function () { loadQueue(); }).catch(function () { b.disabled = false; });
