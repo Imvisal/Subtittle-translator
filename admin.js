@@ -365,7 +365,8 @@
         try { localStorage.setItem("sinsubz-admin-tab", name); } catch (e) { /* ignore */ }
         window.scrollTo(0, 0);
         if (name === "logs") { loadLogs(); }
-        if (name === "auto") { loadQueue(); loadReady(); runnerStatus(); }
+        if (name === "health") { loadSubdl(); }
+        if (name === "auto") { loadQueue(); loadSuggested(); loadReady(); runnerStatus(); }
     }
     Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (b) {
         b.addEventListener("click", function () { openTab(b.getAttribute("data-go")); });
@@ -514,25 +515,28 @@
     })();
 
     function loadSubdl() {
-        var bars = $("sdBars"); if (!bars || !KEY) { return; }
+        if (!KEY || !($("sdBars") || $("sdBars2"))) { return; }
         fetch("/api/stats?autoq=subdl", { headers: { "x-admin-key": KEY }, cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
-            bars.textContent = "";
-            var ks = d.keys || [];
-            if (!ks.length) { bars.appendChild(el("div", "muted", "No SubDL key is set.")); return; }
-            var left = 0;
-            ks.forEach(function (k) {
-                left += Math.max(0, d.limit - k.used);
-                var row = el("div", "b");
-                row.appendChild(el("span", "", "Key #" + k.n));
-                var tr = el("div", "track"), f = el("div", "fill");
-                f.style.width = k.left + "%";
-                tr.appendChild(f); row.appendChild(tr);
-                row.appendChild(el("span", "n", k.limited ? "empty" : (k.used + " / " + d.limit)));
-                bars.appendChild(row);
+            [["sdBars", "sdNote"], ["sdBars2", "sdNote2"]].forEach(function (ids) {
+                var bars = $(ids[0]), note = $(ids[1]); if (!bars) { return; }
+                bars.textContent = "";
+                var ks = d.keys || [];
+                if (!ks.length) { bars.appendChild(el("div", "muted", "No SubDL key is set.")); return; }
+                var left = 0;
+                ks.forEach(function (k) {
+                    left += Math.max(0, d.limit - k.used);
+                    var row = el("div", "b");
+                    row.appendChild(el("span", "", "Key #" + k.n));
+                    var tr = el("div", "track"), f = el("div", "fill");
+                    f.style.width = k.left + "%";
+                    tr.appendChild(f); row.appendChild(tr);
+                    row.appendChild(el("span", "n", k.limited ? "empty" : (k.used + " / " + d.limit)));
+                    bars.appendChild(row);
+                });
+                var inMs = Math.max(0, d.resetAt - Date.now());
+                note.textContent = "About " + left + " downloads left across " + ks.length + " keys. Resets in " + Math.floor(inMs / 3600e3) + " h " + Math.floor(inMs % 3600e3 / 60e3) + " min (05:30 Sri Lanka). Keys 1-" + Math.min(ks.length, ks.filter(function (k) { return k.role === "visitors"; }).length) + " are for visitors, the others for the auto runner. SubDL does not tell us the real number: this counts the downloads this site made (change the limit with SUBDL_DAILY_LIMIT). \"empty\" = SubDL itself said the limit is reached.";
             });
-            var inMs = Math.max(0, d.resetAt - Date.now());
-            $("sdNote").textContent = "About " + left + " downloads left across " + ks.length + " keys. Resets in " + Math.floor(inMs / 3600e3) + " h " + Math.floor(inMs % 3600e3 / 60e3) + " min (05:30 Sri Lanka). Keys 1-" + Math.min(ks.length, ks.filter(function (k) { return k.role === "visitors"; }).length) + " are for visitors, the others for the auto runner. SubDL does not tell us the real number: this counts the downloads this site made (change the limit with SUBDL_DAILY_LIMIT). \"empty\" = SubDL itself said the limit is reached.";
-        }).catch(function () { bars.textContent = "Could not load."; });
+        }).catch(function () { ["sdBars", "sdBars2"].forEach(function (i) { var b = $(i); if (b) { b.textContent = "Could not load."; } }); });
     }
 
     function loadQueue() {
@@ -593,6 +597,41 @@
             }
         }).catch(function () { var h = $("aqList"); if (h) { h.textContent = "Could not load."; } });
     }
+    // ---- translations suggested by visitors: approve = it becomes a Ready entry + its own page ----
+    function loadSuggested() {
+        var host = $("spList"); if (!host) { return; }
+        fetch("/api/stats?ready=pending", { headers: { "x-admin-key": KEY }, cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
+            var items = (d && d.items) || [];
+            host.textContent = "";
+            var cnt = $("spCount"); if (cnt) { cnt.textContent = items.length ? String(items.length) : ""; }
+            if (!items.length) { host.appendChild(el("p", "muted", "Nothing waiting.")); return; }
+            items.forEach(function (it) {
+                var row = el("div", "", ""); row.style.cssText = "padding:10px 0;border-top:1px solid var(--line)";
+                row.appendChild(el("div", "", "").appendChild(el("b", "", it.title + (it.year ? " (" + it.year + ")" : "") + (it.type === "tv" ? "  S" + it.s + "E" + it.e : ""))).parentNode);
+                row.appendChild(el("div", "muted", it.imdb + " \u00B7 " + it.lines + " lines \u00B7 by " + it.by));
+                if (it.sample) { row.appendChild(el("div", "muted", it.sample)); }
+                var act = el("div", "row", ""); act.style.cssText = "gap:8px;margin-top:8px";
+                var ok = el("button", "btn", "Approve"), no = el("button", "ghost", "Reject");
+                ok.type = "button"; no.type = "button";
+                no.addEventListener("click", function () {
+                    ok.disabled = no.disabled = true;
+                    fetch("/api/stats?ready=pdel", { method: "POST", headers: { "x-admin-key": KEY, "Content-Type": "application/json" }, body: JSON.stringify({ id: it.id }) }).then(loadSuggested);
+                });
+                ok.addEventListener("click", function () {
+                    ok.disabled = no.disabled = true; ok.textContent = "Working...";
+                    fetch("/api/stats?ready=pending&id=" + it.id, { headers: { "x-admin-key": KEY }, cache: "no-store" }).then(function (r) { return r.json(); }).then(function (full) {
+                        if (!full || !full.srt) { throw new Error((full && full.error) || "Could not read it"); }
+                        return fetch("/api/stats?ready=put", { method: "POST", headers: { "x-admin-key": KEY, "Content-Type": "application/json" },
+                            body: JSON.stringify({ imdb: full.imdb, title: full.title, year: full.year, poster: full.poster, type: full.type, season: full.s, episode: full.e, srt: full.srt, filename: full.filename }) });
+                    }).then(function (r) { if (!r.ok) { throw new Error("Could not add it (" + r.status + ")"); } return fetch("/api/stats?ready=pdel", { method: "POST", headers: { "x-admin-key": KEY, "Content-Type": "application/json" }, body: JSON.stringify({ id: it.id }) }); })
+                        .then(function () { loadSuggested(); loadReady(); })
+                        .catch(function (e) { ok.disabled = no.disabled = false; ok.textContent = "Approve"; window.alert(e.message); });
+                });
+                act.appendChild(ok); act.appendChild(no); row.appendChild(act); host.appendChild(row);
+            });
+        }).catch(function () { /* ignore */ });
+    }
+
     function loadReady() {
         fetch("/api/stats?ready=list", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
             var host = $("rdList"); if (!host) { return; }

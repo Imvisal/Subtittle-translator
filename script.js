@@ -1187,6 +1187,8 @@ uploadProgressUI.status.textContent =
             type: /\bs\d{1,2}\s?e\d{1,3}\b/i.test(String(uploadedFileName || "")) ? "tv" : "movie"
         }, sinhalaSRT, filename);
 
+        // website only: after the alert is closed, offer to suggest this translation for the Ready list (the owner approves it)
+        try { if (window.__sinsubzSuggest) { setTimeout(function () { window.__sinsubzSuggest(sinhalaSRT, filename, uploadedFileName); }, 700); } } catch (e) { /* ignore */ }
 
         alert(
             "Translation completed!\n\n" +

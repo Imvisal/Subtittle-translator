@@ -18,7 +18,7 @@
 "use strict";
 
 const zlib = require("zlib");
-const { hasRedis, redis, clean } = require("./_google");
+const { hasRedis, redis, clean, verifyGoogleUser, overLimit, sha } = require("./_google");
 
 const MAX_SRT = 700000;
 const parse = s => { try { return JSON.parse(s); } catch (e) { return null; } };
@@ -471,6 +471,63 @@ module.exports = async function ready(req, res) {
 
         if (act === "backfill" && req.method === "POST") { return backfill(req, res); }
         if (act === "intros" && req.method === "POST") { return intros(req, res); }
+
+
+        // ---- visitors suggest an uploaded translation for the Ready list; the owner approves it in the admin panel ----
+        if (act === "submit" && req.method === "POST") {
+            res.setHeader("Cache-Control", "no-store");
+            const who = await verifyGoogleUser(req).catch(() => null);
+            if (!who) { return res.status(401).json({ error: "Please sign in with Google first." }); }
+            const b = req.body && typeof req.body === "object" ? req.body : {};
+            if (!imdbOk(b.imdb)) { return res.status(400).json({ error: "Pick the film or series first." }); }
+            const srt = String(b.srt || "");
+            if (srt.length < 400 || srt.length > MAX_SRT || srt.indexOf("-->") < 0) { return res.status(400).json({ error: "That subtitle file is not valid." }); }
+            const cues = (srt.match(/-->/g) || []).length;
+            const letters = (srt.match(/[\u0D80-\u0DFF]/g) || []).length;
+            if (cues < 20 || letters < cues * 3) { return res.status(400).json({ error: "This does not look like a finished Sinhala subtitle." }); }
+            const type = b.type === "tv" ? "tv" : "movie";
+            const s = type === "tv" ? num(b.season) : 0, e = type === "tv" ? num(b.episode) : 0;
+            if (type === "tv" && !(s && e)) { return res.status(400).json({ error: "Enter the season and episode number." }); }
+            const title = clean(b.title, 100);
+            if (!title) { return res.status(400).json({ error: "Missing title." }); }
+            const uk = sha(String(who.uid)).toString("hex").slice(0, 24);
+            if (await overLimit("rdysub", uk, 6, 86400)) { return res.status(429).json({ error: "You sent enough for today. Please try again tomorrow." }); }
+            const dup = (await redis([["SISMEMBER", "rdy:pendkeys", b.imdb + ":" + s + ":" + e]]))[0];
+            if (Number(dup) === 1) { return res.status(200).json({ ok: true, dup: true }); }
+            const id = require("crypto").randomBytes(7).toString("hex");
+            const item = { id, t: Date.now(), imdb: b.imdb, title, year: clean(b.year, 8), poster: https(b.poster) || "", type, s, e, lines: cues, by: clean(who.name, 60) || "Google user",
+                filename: clean(b.filename, 140), srt: zlib.gzipSync(Buffer.from(srt, "utf8")).toString("base64") };
+            await redis([["SET", "rdy:pend:" + id, JSON.stringify(item), "EX", 30 * 86400], ["LPUSH", "rdy:pendl", id], ["LTRIM", "rdy:pendl", 0, 199], ["SADD", "rdy:pendkeys", b.imdb + ":" + s + ":" + e]]);
+            try { await require("./_admin.js").logActivity("translate", "Suggested for Ready: " + title + (type === "tv" ? " S" + s + "E" + e : "")); } catch (x) { /* ignore */ }
+            return res.status(200).json({ ok: true });
+        }
+        if (act === "pending" && req.method === "GET") {
+            res.setHeader("Cache-Control", "no-store");
+            if (!isAdmin(req)) { return res.status(401).json({ error: "Unauthorized" }); }
+            const one = String(q(req).id || "").replace(/[^a-f0-9]/g, "").slice(0, 20);
+            if (one) {
+                const it = parse((await redis([["GET", "rdy:pend:" + one]]))[0]);
+                if (!it) { return res.status(404).json({ error: "Not found" }); }
+                it.srt = zlib.gunzipSync(Buffer.from(it.srt, "base64")).toString("utf8");
+                return res.status(200).json(it);
+            }
+            const ids = (await redis([["LRANGE", "rdy:pendl", 0, 99]]))[0] || [];
+            const rows = ids.length ? (await redis([["MGET", ...ids.map(i => "rdy:pend:" + i)]]))[0] || [] : [];
+            const out = rows.map(parse).filter(Boolean).map(it => {
+                let sample = "";
+                try { sample = zlib.gunzipSync(Buffer.from(it.srt, "base64")).toString("utf8").split(/\r?\n/).filter(l => /[\u0D80-\u0DFF]/.test(l)).slice(0, 3).join(" / ").slice(0, 160); } catch (x) { /* ignore */ }
+                return { id: it.id, t: it.t, imdb: it.imdb, title: it.title, year: it.year, type: it.type, s: it.s, e: it.e, lines: it.lines, by: it.by, sample };
+            });
+            return res.status(200).json({ items: out });
+        }
+        if (act === "pdel" && req.method === "POST") {
+            res.setHeader("Cache-Control", "no-store");
+            if (!isAdmin(req)) { return res.status(401).json({ error: "Unauthorized" }); }
+            const id = String((req.body && req.body.id) || "").replace(/[^a-f0-9]/g, "").slice(0, 20);
+            const it = id && parse((await redis([["GET", "rdy:pend:" + id]]))[0]);
+            await redis([["DEL", "rdy:pend:" + id], ["LREM", "rdy:pendl", 0, id]].concat(it ? [["SREM", "rdy:pendkeys", it.imdb + ":" + it.s + ":" + it.e]] : []));
+            return res.status(200).json({ ok: true });
+        }
 
         if ((act === "put" || act === "del") && req.method === "POST") {
             if (!isAdmin(req)) { return res.status(401).json({ error: "Unauthorized" }); }
