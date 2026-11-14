@@ -82,7 +82,7 @@
                 body.appendChild(r);
             }
             var send = el("button", "cm-more", "Send for approval"); send.type = "button"; send.style.marginTop = "10px";
-            var back = el("button", "cm-link", "Pick another"); back.type = "button"; back.addEventListener("click", function () { picked = null; pickView(token); });
+            var back = el("button", "cm-link", "Pick another"); back.type = "button"; back.addEventListener("click", function () { picked = null; window.__sinsubzUploadFor = null; pickView(token); });
             body.appendChild(send); body.appendChild(back);
             send.addEventListener("click", function () {
                 send.disabled = true; note("Sending...");
@@ -99,7 +99,9 @@
         }
 
         function start() {
-            Promise.resolve(window.__sinsubzIdToken ? window.__sinsubzIdToken() : "").then(function (tk) { if (tk) { pickView(tk); } else { signInView(); } }).catch(signInView);
+            var pre = window.__sinsubzUploadFor;      // came from a title page: the film / episode is already known
+            if (pre && pre.item && !picked) { picked = pre.item; if (pre.season) { g.s = String(pre.season); g.e = String(pre.episode); } }
+            Promise.resolve(window.__sinsubzIdToken ? window.__sinsubzIdToken() : "").then(function (tk) { if (tk) { if (picked) { confirmView(tk); } else { pickView(tk); } } else { signInView(); } }).catch(signInView);
         }
 
         var later = el("button", "cm-link", "No thanks"); later.type = "button"; later.addEventListener("click", close);

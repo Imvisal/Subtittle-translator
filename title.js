@@ -24,6 +24,8 @@
         return "/?" + q;
     }
 
+    function uploadUrl(s, e) { return matchUrl(s, e).replace("/?match=", "/?upload=") + "#upload"; }
+
     function readyCount() { var n = 0; seasonKeys.forEach(function (k) { D.seasons[k].forEach(function (e) { if (e.ready) { n++; } }); }); return n; }
 
     function runtimeText(m) { m = Number(m) || 0; if (!m) { return ""; } return m >= 60 ? Math.floor(m / 60) + "h " + (m % 60 ? m % 60 + "m" : "") : m + " min"; }
@@ -85,7 +87,7 @@
         }).join("") + '</div>' : "";
         var list = (D.seasons[cur] || []).map(function (e) {
             var left = '<span class="tp-en">E' + pad(e.e) + '</span><span class="tp-nm"><b>' + (e.name ? esc(e.name) : "Episode " + e.e) + '</b>' + (airText(e.air) ? "<small>" + airText(e.air) + "</small>" : "") + '</span>';
-            var right = e.ready ? '<button type="button" class="tp-dl" data-s="' + cur + '" data-e="' + e.e + '">⬇ Download</button>' : '<span class="tp-soon">Coming soon</span>';
+            var right = e.ready ? '<button type="button" class="tp-dl" data-s="' + cur + '" data-e="' + e.e + '">⬇ Download</button>' : '<span class="tp-soon">Coming soon<a class="tp-up" href="' + uploadUrl(cur, e.e) + '">Have the English .srt? Translate it</a></span>';
             return '<li class="tp-ep' + (e.ready ? " is-ready" : "") + '">' + left + right + '</li>';
         }).join("");
         return '<section class="tp-card" id="tpEps"><h2>Episodes</h2>' + tabs + '<ul class="tp-eps">' + list + '</ul></section>';

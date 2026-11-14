@@ -6999,6 +6999,32 @@ window.__sinsubzPremiumInfo = async function (mode) {
 })();
 
 
+// "Have the English .srt? Translate it" from an episode that has no Sinhala subtitle yet: /?upload=tt123&t=Title&s=1&e=4#upload
+// Scrolls to the upload box; after the translation the "share it" window already knows the title / episode.
+(function () {
+    try {
+        const p = new URLSearchParams(location.search);
+        const id = p.get("upload");
+        if (!/^tt\d{5,10}$/.test(id || "")) { return; }
+        const season = Number(p.get("s")) || 0, episode = Number(p.get("e")) || 0;
+        const item = { imdbID: id, title: (p.get("t") || "").slice(0, 150), year: (p.get("y") || "").slice(0, 4), poster: /^https:\/\//.test(p.get("p") || "") ? p.get("p") : "", type: season ? "series" : "movie" };
+        window.__sinsubzUploadFor = { item, season, episode };
+        window.addEventListener("load", function () {
+            setTimeout(function () {
+                try { history.replaceState(null, "", location.pathname); } catch (e) { /* ignore */ }
+                const up = document.getElementById("upload");
+                if (!up) { return; }
+                const note = document.createElement("p");
+                note.style.cssText = "margin:10px 0;padding:10px 14px;border-radius:12px;background:rgba(124,108,255,.16);font-weight:700";
+                note.textContent = "Upload the English .srt for " + item.title + (season ? " S" + String(season).padStart(2, "0") + "E" + String(episode).padStart(2, "0") : "") + ". After it is translated you can share it, so others get it too.";
+                const h = up.querySelector("h3");
+                if (h) { h.insertAdjacentElement("afterend", note); }
+                up.scrollIntoView({ behavior: "smooth", block: "center" });
+            }, 500);
+        });
+    } catch (e) { /* ignore */ }
+})();
+
 // ========================================================
 // "MATCH MY VIDEO" LINK (from a title page /tv/<slug>): /?match=tt123&t=Title&y=2014&s=1&e=3
 // Opens the English release list for that episode / film. Picking the release that matches the person's video
