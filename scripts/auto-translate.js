@@ -218,7 +218,7 @@ async function refillIfDue(weekly, meta, emptyList) {
     const noSub = {};      // series -> consecutive episodes without an English subtitle (= not aired / not on SubDL yet)
     const closed = new Set();   // series given up for now (7 days)
     let quotaWaits = 0, noSubAll = 0;
-    const subdlWaits = {}, dlGiveUp = {};
+    const subdlWaits = {}, dlGiveUp = {}, outsideRetries = {};
     stop: for (let i = 0; i < todo.length; i++) {
         const job = todo[i];
         const id = job.t.imdb;
@@ -282,7 +282,15 @@ async function refillIfDue(weekly, meta, emptyList) {
             if (/quota|limit|busy|exhaust|try again/i.test(msg)) {
                 // Not a reason to give up: wait a little and try this episode again, until the quota resets (the loop top
                 // stops at the reset hour). Outside the last hour before the reset (manual test runs) there is nothing to wait for.
-                if (pacificHour() !== 23) { log("Gemini quota is used up and the reset is far away: stopping."); break stop; }
+                if (pacificHour() !== 23) {
+                    // the server already tried every key; a per-minute limit clears in a minute and then a key works again, so try this episode twice more before giving up
+                    if ((outsideRetries[label] = (outsideRetries[label] || 0) + 1) <= 2) {
+                        log("Gemini says no key can answer right now: waiting 60 seconds, then trying " + label + " again (" + outsideRetries[label] + "/2).");
+                        await new Promise(r => setTimeout(r, 60000));
+                        i--; continue;
+                    }
+                    log("Gemini quota is used up on every key and the reset is far away: stopping."); break stop;
+                }
                 quotaWaits++;
                 log("Gemini quota is used up: waiting 2 minutes, then trying " + label + " again (wait " + quotaWaits + ").");
                 for (let w = 0; w < 8; w++) {                      // 8 x 15 s, watching the clock
