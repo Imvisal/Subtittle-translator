@@ -188,3 +188,7 @@
 
 .tp-si { max-width: 62ch; margin: 12px 0 0; padding: 2px 0 2px 14px; border-left: 3px solid #36e0c8; font-size: 15px; line-height: 1.75; color: var(--text); }
 @media (max-width: 720px) { .tp-si { text-align: left; margin-left: auto; margin-right: auto; } }
+
+.tp-season { display: flex; align-items: center; gap: 8px; width: 100%; margin: 0 0 14px; padding: 13px 16px; border: 0; border-radius: 14px; background: linear-gradient(135deg,#7c6cff,#5b8cff); color: #fff; font: inherit; font-weight: 800; font-size: 15px; cursor: pointer; text-align: left; flex-wrap: wrap; }
+.tp-season small { font-weight: 600; opacity: .85; font-size: 12.5px; margin-left: auto; }
+.tp-season:disabled { opacity: .7; cursor: progress; }

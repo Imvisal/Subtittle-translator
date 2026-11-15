@@ -90,7 +90,9 @@
             var right = e.ready ? '<button type="button" class="tp-dl" data-s="' + cur + '" data-e="' + e.e + '">⬇ Download</button>' : '<span class="tp-soon">Coming soon<a class="tp-up" href="' + uploadUrl(cur, e.e) + '">Have the English .srt? Translate it</a></span>';
             return '<li class="tp-ep' + (e.ready ? " is-ready" : "") + '">' + left + right + '</li>';
         }).join("");
-        return '<section class="tp-card" id="tpEps"><h2>Episodes</h2>' + tabs + '<ul class="tp-eps">' + list + '</ul></section>';
+        var nReady = (D.seasons[cur] || []).filter(function (e) { return e.ready; }).length;
+        var all = nReady > 1 ? '<button type="button" class="tp-season" id="tpSeasonDl">' + DLI + 'Download whole season ' + cur + ' <small>' + nReady + ' episodes, one .zip</small></button>' : "";
+        return '<section class="tp-card" id="tpEps"><h2>Episodes</h2>' + tabs + all + '<ul class="tp-eps">' + list + '</ul></section>';
     }
 
     function startTrailer() {
@@ -111,6 +113,7 @@
         hero.querySelector(".tp-tclose").hidden = true;
     }
 
+    var DLI = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>';
     function render() { root.innerHTML = hero() + castCard() + episodes(); }
     render();
     // the page HTML can be a few minutes old (cached) and the Sinhala intro is made on demand: ask once for it and show it when it arrives
@@ -141,12 +144,56 @@
         if (ev.target.closest && ev.target.closest(".tp-tclose")) { stopTrailer(); return; }
         var t = ev.target.closest && ev.target.closest(".tp-tab");
         if (t) { cur = Number(t.getAttribute("data-season")); try { sessionStorage.setItem("tp-season-" + D.id, String(cur)); } catch (e) { /* ignore */ } render(); return; }
+        var sd = ev.target.closest && ev.target.closest("#tpSeasonDl");
+        if (sd) { seasonZip(sd); return; }
         var b = ev.target.closest && ev.target.closest(".tp-dl");
         if (b) { ask(Number(b.getAttribute("data-s")), Number(b.getAttribute("data-e"))); }
     });
 
     var DL = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>Download';
     function find(s, e) { var l = D.seasons[s] || []; for (var i = 0; i < l.length; i++) { if (l[i].e === e) { return l[i]; } } return null; }
+
+    // ---- whole season as one .zip (built here in the browser: a plain "stored" zip, no library) ----
+    var CRC = (function () { var t = [], c, n, k; for (n = 0; n < 256; n++) { c = n; for (k = 0; k < 8; k++) { c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; } t[n] = c >>> 0; } return t; })();
+    function crc32(u8) { var c = 0xFFFFFFFF; for (var i = 0; i < u8.length; i++) { c = CRC[(c ^ u8[i]) & 255] ^ (c >>> 8); } return (c ^ 0xFFFFFFFF) >>> 0; }
+    function makeZip(files) {
+        var enc = new TextEncoder(), parts = [], central = [], off = 0;
+        function w16(a, v) { a.push(v & 255, (v >> 8) & 255); }
+        function w32(a, v) { a.push(v & 255, (v >>> 8) & 255, (v >>> 16) & 255, (v >>> 24) & 255); }
+        files.forEach(function (f) {
+            var nm = enc.encode(f.name), crc = crc32(f.data), h = [];
+            w32(h, 0x04034b50); w16(h, 20); w16(h, 0x0800); w16(h, 0); w16(h, 0); w16(h, 0x21); w32(h, crc); w32(h, f.data.length); w32(h, f.data.length); w16(h, nm.length); w16(h, 0);
+            parts.push(new Uint8Array(h), nm, f.data);
+            var c = [];
+            w32(c, 0x02014b50); w16(c, 20); w16(c, 20); w16(c, 0x0800); w16(c, 0); w16(c, 0); w16(c, 0x21); w32(c, crc); w32(c, f.data.length); w32(c, f.data.length); w16(c, nm.length); w16(c, 0); w16(c, 0); w16(c, 0); w16(c, 0); w32(c, 0); w32(c, off);
+            central.push(new Uint8Array(c), nm);
+            off += h.length + nm.length + f.data.length;
+        });
+        var csize = 0; central.forEach(function (x) { csize += x.length; });
+        var end = []; w32(end, 0x06054b50); w16(end, 0); w16(end, 0); w16(end, files.length); w16(end, files.length); w32(end, csize); w32(end, off); w16(end, 0);
+        return new Blob(parts.concat(central, [new Uint8Array(end)]), { type: "application/zip" });
+    }
+    function seasonZip(btn) {
+        var eps = (D.seasons[cur] || []).filter(function (e) { return e.ready; });
+        if (!eps.length || btn.disabled) { return; }
+        var old = btn.innerHTML, enc = new TextEncoder(), got = [], i = 0, season = cur;
+        btn.disabled = true;
+        function next() {
+            if (i >= eps.length) {
+                if (!got.length) { btn.disabled = false; btn.innerHTML = old; alert("Could not download the episodes. Please try again."); return; }
+                var url = URL.createObjectURL(makeZip(got)), a = document.createElement("a");
+                a.href = url; a.download = D.title.replace(/[\\/:*?"<>|]+/g, "").trim() + " Season " + season + " Sinhala SinSubz.zip";
+                document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+                btn.disabled = false; btn.innerHTML = old; return;
+            }
+            var e = eps[i++];
+            btn.textContent = "Preparing " + i + " / " + eps.length + "\u2026";
+            fetch(fileUrl(season, e.e)).then(function (r) { if (!r.ok) { throw new Error("x"); } return r.arrayBuffer(); }).then(function (buf) {
+                got.push({ name: D.title.replace(/[\\/:*?"<>|]+/g, "").trim() + ".S" + pad(season) + "E" + pad(e.e) + ".Sinhala.SinSubz.srt", data: new Uint8Array(buf) });
+            }).catch(function () { /* skip this one */ }).then(next);
+        }
+        next();
+    }
 
     function ask(s, e) {
         var ep = isTv ? find(s, e) : (D.seasons[0] && D.seasons[0][0]) || null;
