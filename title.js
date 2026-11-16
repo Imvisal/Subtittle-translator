@@ -77,9 +77,9 @@
     function episodes() {
         if (!isTv) {
             var f0 = (D.seasons[0] && D.seasons[0][0]) || {};
-            return '<section class="tp-card tp-dcard" id="tpEps"><h2>Download Sinhala subtitle</h2>' +
-                '<button type="button" class="tp-bigdl tp-dl" data-s="0" data-e="0"><span class="tp-di">\u2B07</span><span class="tp-bt"><b>Download Sinhala subtitle</b>' +
-                '<small>' + (f0.n ? f0.n + ' lines \u00B7 ' : '') + 'free .srt \u00B7 pick your video version</small></span></button>' +
+            return '<section class="tp-card tp-dcard" id="tpEps"><h2>Sinhala subtitle</h2>' +
+                '<button type="button" class="tp-bigdl tp-dl" data-s="0" data-e="0"><span class="tp-di">\u2B07</span><b>Download Sinhala subtitle</b></button>' +
+                '<p class="tp-meta">' + (f0.n ? f0.n + ' lines \u00B7 ' : '') + 'free .srt \u00B7 you pick your video version next</p>' +
                 '<p class="tp-dcount" id="tpDlCount" hidden></p></section>';
         }
         var tabs = seasonKeys.length > 1 ? '<div class="tp-tabs" role="tablist">' + seasonKeys.map(function (k) {
