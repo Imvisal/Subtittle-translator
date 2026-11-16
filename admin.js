@@ -621,6 +621,17 @@
         }).catch(function () { var h = $("aqList"); if (h) { h.textContent = "Could not load."; } });
     }
     // ---- translations suggested by visitors: approve = it becomes a Ready entry + its own page ----
+    (function () {
+        var b = $("spFind"); if (!b) { return; }
+        b.addEventListener("click", function () {
+            b.disabled = true; $("spFindOut").textContent = "Looking through the visitors' saved translations... (up to 40 seconds)";
+            fetch("/api/stats?ready=recover", { method: "POST", headers: { "x-admin-key": KEY, "Content-Type": "application/json" }, body: "{}" })
+                .then(function (r) { return r.json(); }).then(function (d) {
+                    $("spFindOut").textContent = d.error ? d.error : ("Checked " + d.looked + ". Added " + d.added + " to the list" + (d.names && d.names.length ? " (" + d.names.join(", ") + ")" : "") + ". Already there: " + d.exists + ". Not sure about the name: " + d.unsure + ".");
+                    loadSuggested();
+                }).catch(function () { $("spFindOut").textContent = "Could not finish. Press again."; }).then(function () { b.disabled = false; });
+        });
+    })();
     function loadSuggested() {
         var host = $("spList"); if (!host) { return; }
         fetch("/api/stats?ready=pending", { headers: { "x-admin-key": KEY }, cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {

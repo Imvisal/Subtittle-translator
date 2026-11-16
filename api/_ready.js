@@ -244,6 +244,72 @@ async function registerFilm(imdb, opts) {
     } catch (e) { return "error"; }
 }
 
+// ---- admin: look through what signed-in visitors saved ("My translations", kept for some days) and put the ones that are not
+// on the Ready list yet into the approval list. The title is worked out from the name; only a clear match is used. ----
+function guessName(label) {
+    const t = String(label || "").replace(/\.srt$/i, "").replace(/[._]+/g, " ").replace(/[\[\](){}]/g, " ");
+    const m = /\bs(\d{1,2})\s?e(\d{1,3})\b/i.exec(t) || /\b(\d{1,2})x(\d{2,3})\b/i.exec(t);
+    const y = /\b((?:19|20)\d{2})\b/.exec(t);
+    const name = t.replace(/\bs\d{1,2}\s?e\d{1,3}\b.*$/i, "").replace(/\b\d{1,2}x\d{2,3}\b.*$/i, "").replace(/\b(19|20)\d{2}\b.*$/, "").replace(/\b(720p|1080p|2160p|4k|web|webrip|bluray|brrip|hdrip|hdtv|x264|x265)\b.*$/i, "").replace(/\s+Sinhala.*$/i, "").replace(/[-\u2013]+\s*$/, "").replace(/\s+/g, " ").trim();
+    return { name, s: m ? Number(m[1]) : 0, e: m ? Number(m[2]) : 0, y: y ? y[1] : "" };
+}
+const normT = x => String(x || "").toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim();
+
+async function recover(req, res) {
+    res.setHeader("Cache-Control", "no-store");
+    if (!isAdmin(req)) { return res.status(401).json({ error: "Unauthorized" }); }
+    const out = { looked: 0, added: 0, exists: 0, unsure: 0, notsinhala: 0, names: [] };
+    const deadline = Date.now() + 40000;
+    let cursor = "0";
+    const keys = [];
+    do {
+        const [scan] = await redis([["SCAN", cursor, "MATCH", "tr:meta:*", "COUNT", "200"]]);
+        cursor = String((scan && scan[0]) || "0");
+        ((scan && scan[1]) || []).forEach(k => keys.push(k));
+    } while (cursor !== "0" && keys.length < 2000);
+    const seen = new Set();
+    for (const mk of keys) {
+        if (Date.now() > deadline) { break; }
+        const [flat] = await redis([["HGETALL", mk]]);
+        for (let i = 0; flat && i + 1 < flat.length; i += 2) {
+            if (Date.now() > deadline) { break; }
+            const meta = parse(flat[i + 1]); if (!meta) { continue; }
+            const g = guessName(meta.filename || meta.title);
+            if (g.name.length < 2) { out.unsure++; continue; }
+            const tv = !!(g.s && g.e);
+            const dedupe = normT(g.name) + ":" + g.y + ":" + g.s + ":" + g.e;
+            if (seen.has(dedupe)) { continue; }
+            seen.add(dedupe);
+            out.looked++;
+            try {
+                const r = await tmdbRaw("/search/" + (tv ? "tv" : "movie") + "?query=" + encodeURIComponent(g.name) + (!tv && g.y ? "&year=" + g.y : "") + "&page=1");
+                const hit = (r.results || []).find(x => normT(x.title || x.name) === normT(g.name) || normT(x.original_title || x.original_name) === normT(g.name));
+                if (!hit) { out.unsure++; continue; }
+                let imdb = "";
+                if (tv) { const ex = await tmdbRaw("/tv/" + hit.id + "/external_ids"); imdb = ex.imdb_id || ""; }
+                else { const mv = await tmdbRaw("/movie/" + hit.id); imdb = mv.imdb_id || ""; }
+                if (!imdbOk(imdb)) { out.unsure++; continue; }
+                const [idxRaw, dup] = await redis([["HGET", "rdy:idx", imdb], ["SISMEMBER", "rdy:pendkeys", imdb + ":" + g.s + ":" + g.e]]);
+                const idx = parse(idxRaw);
+                if (Number(dup) === 1 || (idx && idx.eps && idx.eps[g.s + "x" + g.e])) { out.exists++; continue; }
+                const packed = (await redis([["GET", "tr:srt:" + mk.slice("tr:meta:".length) + ":" + meta.id]]))[0];
+                if (!packed) { continue; }
+                const srt = zlib.gunzipSync(Buffer.from(packed, "base64")).toString("utf8");
+                const cues = (srt.match(/-->/g) || []).length, letters = (srt.match(/[\u0D80-\u0DFF]/g) || []).length;
+                if (cues < 20 || letters < cues * 3 || srt.length > MAX_SRT) { out.notsinhala++; continue; }
+                const title = clean(hit.title || hit.name, 100);
+                const year = String(hit.release_date || hit.first_air_date || "").slice(0, 4);
+                const id = require("crypto").randomBytes(7).toString("hex");
+                const item = { id, t: Date.now(), imdb, title, year, poster: hit.poster_path ? "https://image.tmdb.org/t/p/w342" + hit.poster_path : "", type: tv ? "tv" : "movie", s: g.s, e: g.e, lines: cues, by: "found in visitors' saved translations",
+                    filename: clean(meta.filename, 140), srt: zlib.gzipSync(Buffer.from(srt, "utf8")).toString("base64") };
+                await redis([["SET", "rdy:pend:" + id, JSON.stringify(item), "EX", 30 * 86400], ["LPUSH", "rdy:pendl", id], ["LTRIM", "rdy:pendl", 0, 199], ["SADD", "rdy:pendkeys", imdb + ":" + g.s + ":" + g.e]]);
+                out.added++; out.names.push(title + (tv ? " S" + g.s + "E" + g.e : ""));
+            } catch (e) { out.unsure++; }
+        }
+    }
+    return res.status(200).json(out);
+}
+
 async function backfill(req, res) {
     res.setHeader("Cache-Control", "no-store");
     if (!isAdmin(req)) { return res.status(401).json({ error: "Unauthorized" }); }
@@ -520,6 +586,7 @@ module.exports = async function ready(req, res) {
             });
             return res.status(200).json({ items: out });
         }
+        if (act === "recover" && req.method === "POST") { return recover(req, res); }
         if (act === "pdel" && req.method === "POST") {
             res.setHeader("Cache-Control", "no-store");
             if (!isAdmin(req)) { return res.status(401).json({ error: "Unauthorized" }); }
