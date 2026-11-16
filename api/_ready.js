@@ -513,6 +513,9 @@ module.exports = async function ready(req, res) {
         if (act === "get" && req.method === "GET") {
             const p = q(req);
             if (!imdbOk(p.id)) { return res.status(400).json({ error: "Bad id" }); }
+            // downloading needs a Google sign-in (the page itself stays public for search engines)
+            const dlUser = await verifyGoogleUser(req).catch(() => null);
+            if (!dlUser) { res.setHeader("Cache-Control", "no-store"); return res.status(401).json({ error: "Sign in with Google to download", needLogin: true }); }
             const s = num(p.s), e = num(p.e);
             const [packed, idx] = await redis([["GET", srtKey(p.id, s, e)], ["HGET", "rdy:idx", p.id]]);
             if (!packed) { return res.status(404).json({ error: "Not found" }); }

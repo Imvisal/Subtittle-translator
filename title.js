@@ -153,6 +153,31 @@
     var DL = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>Download';
     function find(s, e) { var l = D.seasons[s] || []; for (var i = 0; i < l.length; i++) { if (l[i].e === e) { return l[i]; } } return null; }
 
+    // ---- downloads need a Google sign-in: ask for it (once), then fetch the file with the token and save it ----
+    function tokenNow() { return Promise.resolve(window.__sinsubzIdToken ? window.__sinsubzIdToken() : "").catch(function () { return ""; }); }
+    function authToken() {
+        return tokenNow().then(function (tk) {
+            if (tk) { return tk; }
+            return Promise.resolve(window.__sinsubzSignIn ? window.__sinsubzSignIn() : null).catch(function () { /* closed */ }).then(tokenNow);
+        });
+    }
+    function getFile(s, e) {
+        return authToken().then(function (tk) {
+            if (!tk) { throw new Error("login"); }
+            return fetch(fileUrl(s, e), { headers: { Authorization: "Bearer " + tk } });
+        }).then(function (r) {
+            if (r.status === 401) { throw new Error("login"); }
+            if (!r.ok) { throw new Error("x"); }
+            var m = /filename="([^"]+)"/.exec(r.headers.get("Content-Disposition") || "");
+            return r.blob().then(function (b) { return { blob: b, name: m ? m[1] : "Sinhala.SinSubz.srt" }; });
+        });
+    }
+    function saveFile(f) {
+        var url = URL.createObjectURL(f.blob), a = document.createElement("a");
+        a.href = url; a.download = f.name; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    }
+
     // ---- whole season as one .zip (built here in the browser: a plain "stored" zip, no library) ----
     var CRC = (function () { var t = [], c, n, k; for (n = 0; n < 256; n++) { c = n; for (k = 0; k < 8; k++) { c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; } t[n] = c >>> 0; } return t; })();
     function crc32(u8) { var c = 0xFFFFFFFF; for (var i = 0; i < u8.length; i++) { c = CRC[(c ^ u8[i]) & 255] ^ (c >>> 8); } return (c ^ 0xFFFFFFFF) >>> 0; }
@@ -177,7 +202,7 @@
         var eps = (D.seasons[cur] || []).filter(function (e) { return e.ready; });
         if (!eps.length || btn.disabled) { return; }
         var old = btn.innerHTML, enc = new TextEncoder(), got = [], i = 0, season = cur;
-        btn.disabled = true;
+        btn.disabled = true; btn.textContent = "Sign in to download…";
         function next() {
             if (i >= eps.length) {
                 if (!got.length) { btn.disabled = false; btn.innerHTML = old; alert("Could not download the episodes. Please try again."); return; }
@@ -188,11 +213,14 @@
             }
             var e = eps[i++];
             btn.textContent = "Preparing " + i + " / " + eps.length + "\u2026";
-            fetch(fileUrl(season, e.e)).then(function (r) { if (!r.ok) { throw new Error("x"); } return r.arrayBuffer(); }).then(function (buf) {
+            getFile(season, e.e).then(function (f) { return f.blob.arrayBuffer(); }).then(function (buf) {
                 got.push({ name: D.title.replace(/[\\/:*?"<>|]+/g, "").trim() + ".S" + pad(season) + "E" + pad(e.e) + ".Sinhala.SinSubz.srt", data: new Uint8Array(buf) });
             }).catch(function () { /* skip this one */ }).then(next);
         }
-        next();
+        authToken().then(function (tk) {
+            if (!tk) { btn.disabled = false; btn.innerHTML = old; alert("Please sign in with Google to download."); return; }
+            next();
+        });
     }
 
     function ask(s, e) {
@@ -231,7 +259,23 @@
         function close() { if (ov.parentNode) { ov.parentNode.removeChild(ov); } document.removeEventListener("keydown", onKey); }
         function onKey(k) { if (k.key === "Escape") { close(); } }
         ov.addEventListener("click", function (c) { if (c.target === ov || (c.target.closest && c.target.closest(".tp-x"))) { close(); } });
-        ov.querySelector(".tp-opt-a").addEventListener("click", function () { setTimeout(close, 400); try { if (window.SinSubzComments) { window.SinSubzComments.afterTranslate(D.title); } } catch (e) { /* ignore */ } });
+        var oa = ov.querySelector(".tp-opt-a"), busy = false;
+        oa.addEventListener("click", function (c) {
+            c.preventDefault();
+            if (busy) { return; }
+            busy = true;
+            var lbl = oa.querySelector(".tp-obtn"), old = lbl.innerHTML;
+            lbl.textContent = "Please wait…";
+            getFile(si, ei).then(function (f) {
+                saveFile(f); close();
+                try { if (window.SinSubzComments) { window.SinSubzComments.afterTranslate(D.title); } } catch (x) { /* ignore */ }
+            }).catch(function (x) {
+                busy = false; lbl.innerHTML = old;
+                var m = ov.querySelector(".tp-lerr");
+                if (!m) { m = document.createElement("p"); m.className = "tp-mp tp-lerr"; oa.insertAdjacentElement("afterend", m); }
+                m.textContent = x && x.message === "login" ? "Sign in with Google to download. Tap the button to try again." : "Could not download. Please try again.";
+            });
+        });
         document.addEventListener("keydown", onKey);
         document.body.appendChild(ov);
     }

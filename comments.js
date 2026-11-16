@@ -363,4 +363,12 @@
     }
 
     window.SinSubzComments = { afterTranslate: afterTranslate };
+    // title pages have no other sign-in script: let title.js use this one for the download sign-in
+    if (!window.__sinsubzIdToken) {
+        window.__sinsubzIdToken = function () {
+            return loadSdk().then(function () { return fb && fb.auth.authStateReady ? fb.auth.authStateReady() : null; })
+                .then(function () { return fb && fb.auth.currentUser ? fb.auth.currentUser.getIdToken() : ""; }).catch(function () { return ""; });
+        };
+        window.__sinsubzSignIn = function () { return signIn(null); };
+    }
 })();

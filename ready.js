@@ -84,6 +84,22 @@
         panel.querySelector(".rd-x").addEventListener("click", function () { openId = ""; render(); });
     }
 
+    // file links need a Google sign-in now: fetch with the token and save
+    host.addEventListener("click", function (ev) {
+        var a = ev.target.closest && ev.target.closest('a[href^="/api/stats?ready=get"]');
+        if (!a || !window.__sinsubzIdToken) { return; }
+        ev.preventDefault();
+        Promise.resolve(window.__sinsubzIdToken()).catch(function () { return ""; }).then(function (tk) {
+            return tk || Promise.resolve(window.__sinsubzSignIn ? window.__sinsubzSignIn() : null).catch(function () { /* closed */ }).then(function () { return window.__sinsubzIdToken(); });
+        }).then(function (tk) {
+            if (!tk) { alert("Please sign in with Google to download."); return; }
+            return fetch(a.getAttribute("href"), { headers: { Authorization: "Bearer " + tk } }).then(function (r) {
+                if (!r.ok) { throw new Error("x"); }
+                var m = /filename="([^"]+)"/.exec(r.headers.get("Content-Disposition") || "");
+                return r.blob().then(function (b) { var u = URL.createObjectURL(b), l = document.createElement("a"); l.href = u; l.download = m ? m[1] : "Sinhala.SinSubz.srt"; document.body.appendChild(l); l.click(); l.remove(); setTimeout(function () { URL.revokeObjectURL(u); }, 4000); });
+            });
+        }).catch(function () { alert("Could not download. Please try again."); });
+    });
     host.addEventListener("click", function (ev) {
         var c = ev.target.closest && ev.target.closest(".rd-card");
         if (!c) { return; }

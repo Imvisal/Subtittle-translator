@@ -425,8 +425,8 @@ function call(method, url, { headers = {}, body } = {}) {
             ok(rl.body.items.length === 1 && rl.body.items[0].eps.length === 2 && rl.body.items[0].eps[0].e === 1, "ready list groups episodes, sorted");
             ok(rl.body.items[0].p === "https://img.example/p.jpg", "poster kept when a later put has none");
             const g = await call("GET", "/api/stats?ready=get&id=tt0944947&s=1&e=2");
-            ok(g.code === 200 && String(g.body).includes("සිංහල පේළිය 7") && /attachment/.test(g.headers["Content-Disposition"]), "ready get works for everybody");
-            ok((await call("GET", "/api/stats?ready=get&id=tt0944947&s=9&e=9")).code === 404, "ready get 404");
+            ok(g.code === 401 && g.body.needLogin === true, "ready get needs a Google sign-in");
+            ok((await call("GET", "/api/stats?ready=get&id=tt0944947&s=9&e=9")).code === 401, "ready get without sign-in is 401 for any file");
             ok(rl.body.items[0].slug === "game-of-thrones", "title gets a slug");
             const tj = await call("GET", "/api/stats?ready=title&slug=game-of-thrones");
             ok(tj.code === 200 && tj.body.seasons[1].length === 2 && tj.body.seasons[1][1].ready === true, "title json lists the season episodes");
