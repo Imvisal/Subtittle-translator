@@ -8,13 +8,39 @@
     function el(tag, cls, text) { var n = document.createElement(tag); if (cls) { n.className = cls; } if (text != null) { n.textContent = text; } return n; }
 
     function guess(label) {
-        var t = String(label || "").replace(/\.srt$/i, "").replace(/[._]+/g, " ");
-        var m = /\bs(\d{1,2})\s?e(\d{1,3})\b/i.exec(t);
-        var name = t.replace(/\bs\d{1,2}\s?e\d{1,3}\b.*$/i, "").replace(/\b(19|20)\d{2}\b.*$/, "").replace(/\b(720p|1080p|2160p|4k|web|bluray|brrip|hdrip|x264|x265)\b.*$/i, "").replace(/\s+/g, " ").trim();
-        return { q: name, s: m ? m[1] : "", e: m ? m[2] : "" };
+        var t = String(label || "").replace(/\.srt$/i, "").replace(/[._]+/g, " ").replace(/[\[\](){}]/g, " ");
+        var m = /\bs(\d{1,2})\s?e(\d{1,3})\b/i.exec(t) || /\b(\d{1,2})x(\d{2,3})\b/i.exec(t);
+        var y = /\b((?:19|20)\d{2})\b/.exec(t);
+        var name = t.replace(/\bs\d{1,2}\s?e\d{1,3}\b.*$/i, "").replace(/\b\d{1,2}x\d{2,3}\b.*$/i, "").replace(/\b(19|20)\d{2}\b.*$/, "").replace(/\b(720p|1080p|2160p|4k|web|webrip|bluray|brrip|hdrip|hdtv|x264|x265)\b.*$/i, "").replace(/\s+Sinhala.*$/i, "").replace(/[-\u2013]+\s*$/, "").replace(/\s+/g, " ").trim();
+        return { q: name, s: m ? m[1] : "", e: m ? m[2] : "", y: y ? y[1] : "" };
+    }
+    function norm(x) { return String(x || "").toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim(); }
+
+    // No question asked: when the file name says clearly which film / episode it is (name matches, same type, same year when
+    // the name has one), it is sent to the owner's approval list by itself. Nothing is public until the owner approves it.
+    function auto(srt, filename, label) {
+        var g = guess(label || filename);
+        if (!srt || g.q.length < 2) { return Promise.resolve(false); }
+        var tv = !!(g.s && g.e);
+        return Promise.resolve(window.__sinsubzIdToken ? window.__sinsubzIdToken() : "").then(function (tk) {
+            if (!tk) { return false; }
+            return fetch("/api/search?query=" + encodeURIComponent(g.q)).then(function (r) { return r.json(); }).then(function (d) {
+                var rs = (d && d.results) || [];
+                var hit = null;
+                rs.forEach(function (it) {
+                    if (hit || norm(it.title) !== norm(g.q) || (it.type === "series") !== tv) { return; }
+                    if (g.y && it.year && String(it.year).slice(0, 4) !== g.y && !tv) { return; }
+                    hit = it;
+                });
+                if (!hit) { return false; }
+                return fetch("/api/stats?ready=submit", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + tk },
+                    body: JSON.stringify({ imdb: hit.imdbID, title: hit.title, year: hit.year, poster: hit.poster, type: tv ? "tv" : "movie", season: g.s, episode: g.e, srt: srt, filename: filename }) })
+                    .then(function (r) { return r.ok; });
+            });
+        }).catch(function () { return false; });
     }
 
-    window.__sinsubzSuggest = function (srt, filename, label) {
+    function showPopup(srt, filename, label) {
         try {
             if (!srt || document.getElementById("sgWrap")) { return; }
             if (localStorage.getItem("sinsubz-suggest-off") === "1") { return; }
@@ -111,5 +137,9 @@
         document.addEventListener("keydown", function esc(e) { if (e.key === "Escape") { document.removeEventListener("keydown", esc); close(); } });
         document.body.appendChild(wrap);
         start();
+    }
+
+    window.__sinsubzSuggest = function (srt, filename, label) {
+        auto(srt, filename, label).then(function (sent) { if (!sent) { showPopup(srt, filename, label); } });
     };
 })();
