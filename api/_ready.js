@@ -561,7 +561,7 @@ module.exports = async function ready(req, res) {
             const dup = (await redis([["SISMEMBER", "rdy:pendkeys", b.imdb + ":" + s + ":" + e]]))[0];
             if (Number(dup) === 1) { return res.status(200).json({ ok: true, dup: true }); }
             const id = require("crypto").randomBytes(7).toString("hex");
-            const item = { id, t: Date.now(), imdb: b.imdb, title, year: clean(b.year, 8), poster: https(b.poster) || "", type, s, e, lines: cues, by: clean(who.name, 60) || "Google user",
+            const item = { id, t: Date.now(), imdb: b.imdb, title, year: clean(b.year, 8), poster: https(b.poster) || "", type, s, e, lines: cues, by: clean(who.name, 60) || "Google user", maybe: b.maybe === true,
                 filename: clean(b.filename, 140), srt: zlib.gzipSync(Buffer.from(srt, "utf8")).toString("base64") };
             await redis([["SET", "rdy:pend:" + id, JSON.stringify(item), "EX", 30 * 86400], ["LPUSH", "rdy:pendl", id], ["LTRIM", "rdy:pendl", 0, 199], ["SADD", "rdy:pendkeys", b.imdb + ":" + s + ":" + e]]);
             try { await require("./_admin.js").logActivity("translate", "Suggested for Ready: " + title + (type === "tv" ? " S" + s + "E" + e : "")); } catch (x) { /* ignore */ }
@@ -582,7 +582,7 @@ module.exports = async function ready(req, res) {
             const out = rows.map(parse).filter(Boolean).map(it => {
                 let sample = "";
                 try { sample = zlib.gunzipSync(Buffer.from(it.srt, "base64")).toString("utf8").split(/\r?\n/).filter(l => /[\u0D80-\u0DFF]/.test(l)).slice(0, 3).join(" / ").slice(0, 160); } catch (x) { /* ignore */ }
-                return { id: it.id, t: it.t, imdb: it.imdb, title: it.title, year: it.year, type: it.type, s: it.s, e: it.e, lines: it.lines, by: it.by, sample };
+                return { id: it.id, t: it.t, imdb: it.imdb, title: it.title, year: it.year, type: it.type, s: it.s, e: it.e, lines: it.lines, by: it.by, maybe: !!it.maybe, filename: it.filename, sample };
             });
             return res.status(200).json({ items: out });
         }

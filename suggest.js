@@ -19,23 +19,30 @@
     // No question asked: when the file name says clearly which film / episode it is (name matches, same type, same year when
     // the name has one), it is sent to the owner's approval list by itself. Nothing is public until the owner approves it.
     function auto(srt, filename, label) {
+        var pre = window.__sinsubzUploadFor;
         var g = guess(label || filename);
-        if (!srt || g.q.length < 2) { return Promise.resolve(false); }
-        var tv = !!(g.s && g.e);
+        if (!srt) { return Promise.resolve(false); }
         return Promise.resolve(window.__sinsubzIdToken ? window.__sinsubzIdToken() : "").then(function (tk) {
             if (!tk) { return false; }
+            function send(hit, tv, sn, ep, maybe) {
+                return fetch("/api/stats?ready=submit", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + tk },
+                    body: JSON.stringify({ imdb: hit.imdbID, title: hit.title, year: hit.year, poster: hit.poster, type: tv ? "tv" : "movie", season: sn, episode: ep, srt: srt, filename: filename, maybe: !!maybe }) })
+                    .then(function (r) { return r.ok; });
+            }
+            if (pre && pre.item && pre.item.imdbID) { window.__sinsubzUploadFor = null; return send(pre.item, !!pre.season, pre.season, pre.episode, false); }
+            if (g.q.length < 2) { return false; }
+            var tv = !!(g.s && g.e);
             return fetch("/api/search?query=" + encodeURIComponent(g.q)).then(function (r) { return r.json(); }).then(function (d) {
-                var rs = (d && d.results) || [];
+                var rs = ((d && d.results) || []).filter(function (it) { return (it.type === "series") === tv; });
                 var hit = null;
                 rs.forEach(function (it) {
-                    if (hit || norm(it.title) !== norm(g.q) || (it.type === "series") !== tv) { return; }
+                    if (hit || norm(it.title) !== norm(g.q)) { return; }
                     if (g.y && it.year && String(it.year).slice(0, 4) !== g.y && !tv) { return; }
                     hit = it;
                 });
-                if (!hit) { return false; }
-                return fetch("/api/stats?ready=submit", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + tk },
-                    body: JSON.stringify({ imdb: hit.imdbID, title: hit.title, year: hit.year, poster: hit.poster, type: tv ? "tv" : "movie", season: g.s, episode: g.e, srt: srt, filename: filename }) })
-                    .then(function (r) { return r.ok; });
+                var maybe = false;
+                if (!hit && rs.length) { hit = rs[0]; maybe = true; }      // best guess, flagged "not sure" for the owner
+                return hit ? send(hit, tv, g.s, g.e, maybe) : false;
             });
         }).catch(function () { return false; });
     }
@@ -140,6 +147,6 @@
     }
 
     window.__sinsubzSuggest = function (srt, filename, label) {
-        auto(srt, filename, label).then(function (sent) { if (!sent) { showPopup(srt, filename, label); } });
+        auto(srt, filename, label);        // silent: it only goes to the owner's approval tab
     };
 })();

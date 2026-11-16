@@ -7016,7 +7016,7 @@ window.__sinsubzPremiumInfo = async function (mode) {
                 if (!up) { return; }
                 const note = document.createElement("p");
                 note.style.cssText = "margin:10px 0;padding:10px 14px;border-radius:12px;background:rgba(124,108,255,.16);font-weight:700";
-                note.textContent = "Upload the English .srt for " + item.title + (season ? " S" + String(season).padStart(2, "0") + "E" + String(episode).padStart(2, "0") : "") + ". After it is translated you can share it, so others get it too.";
+                note.textContent = "Upload the English .srt for " + item.title + (season ? " S" + String(season).padStart(2, "0") + "E" + String(episode).padStart(2, "0") : "") + ". When it is translated it is sent to the SinSubz owner for approval by itself (sign in with Google), so others get it too.";
                 const h = up.querySelector("h3");
                 if (h) { h.insertAdjacentElement("afterend", note); }
                 up.scrollIntoView({ behavior: "smooth", block: "center" });

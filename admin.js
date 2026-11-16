@@ -33,6 +33,7 @@
     var planFilled = false;
     function renderPlan(pl) {
         if (!pl) { return; }
+        if (!window.__spLoaded) { window.__spLoaded = 1; try { loadSuggested(); } catch (e) { /* ignore */ } }
         var tn = $("tabnPrem"); if (tn) { tn.hidden = !pl.pending; tn.textContent = pl.pending || ""; }
         $("planState").textContent = pl.pending ? pl.pending + " waiting" : "no requests waiting";
         if (!planFilled) {
@@ -366,7 +367,8 @@
         window.scrollTo(0, 0);
         if (name === "logs") { loadLogs(); }
         if (name === "health") { loadSubdl(); }
-        if (name === "auto") { loadQueue(); loadSuggested(); loadReady(); runnerStatus(); }
+        if (name === "auto") { loadQueue(); loadReady(); runnerStatus(); }
+        if (name === "approve") { loadSuggested(); }
     }
     Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (b) {
         b.addEventListener("click", function () { openTab(b.getAttribute("data-go")); });
@@ -638,11 +640,12 @@
             var items = (d && d.items) || [];
             host.textContent = "";
             var cnt = $("spCount"); if (cnt) { cnt.textContent = items.length ? String(items.length) : ""; }
+            var tb = $("tabnApprove"); if (tb) { tb.textContent = String(items.length); tb.hidden = !items.length; }
             if (!items.length) { host.appendChild(el("p", "muted", "Nothing waiting.")); return; }
             items.forEach(function (it) {
                 var row = el("div", "", ""); row.style.cssText = "padding:10px 0;border-top:1px solid var(--line)";
                 row.appendChild(el("div", "", "").appendChild(el("b", "", it.title + (it.year ? " (" + it.year + ")" : "") + (it.type === "tv" ? "  S" + it.s + "E" + it.e : ""))).parentNode);
-                row.appendChild(el("div", "muted", it.imdb + " \u00B7 " + it.lines + " lines \u00B7 by " + it.by));
+                row.appendChild(el("div", "muted", it.imdb + " \u00B7 " + it.lines + " lines \u00B7 by " + it.by + (it.maybe ? " \u00B7 NOT SURE: " + (it.filename || "") : "")));
                 if (it.sample) { row.appendChild(el("div", "muted", it.sample)); }
                 var act = el("div", "row", ""); act.style.cssText = "gap:8px;margin-top:8px";
                 var ok = el("button", "btn", "Approve"), no = el("button", "ghost", "Reject");
