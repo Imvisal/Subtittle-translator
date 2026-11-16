@@ -79,6 +79,7 @@ function classify(name) {
 }
 
 module.exports = async function handler(req, res) {
+    if (await require("./_admin.js").adminGate(req, res)) { return; }
     // GET /api/stats?downloads=1 -> release download counts (kept in a "_" helper file so it does
     // not count as a 13th serverless function; the Hobby plan allows 12)
     if (req.method === "GET" && /(?:^|[?&])downloads(?:=|&|$)/.test(String(req.url || ""))) {
@@ -171,10 +172,18 @@ module.exports = async function handler(req, res) {
         }
 
         if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
-        if (limited(clientIp(req))) return res.status(429).json({ error: "Too many requests" });
+        if (limited(clientIp(req)) || await require("./_google").overLimit("stat", clientIp(req), 30, 60)) return res.status(429).json({ error: "Too many requests" });
 
         const body = req.body || {};
         const type = String(body.type || "");
+
+        // Only a signed-in visitor can add a translated title (translating needs sign-in anyway), at most 60 an hour per account.
+        // Anonymous posts cannot fake the home page counters or fill the database with made-up titles.
+        let statWho = null;
+        if (type === "translated") {
+            statWho = /^Bearer\s+/i.test(String(req.headers.authorization || "")) ? await require("./_google").verifyGoogleUser(req).catch(() => null) : null;
+            if (!statWho || await require("./_google").overLimit("statu", statWho.uid, 60, 3600)) { return res.status(204).end(); }
+        } else if (await require("./_google").overLimit("stath", clientIp(req), 40, 3600)) { return res.status(204).end(); }
         const cmds = [];
 
         const day = require("./_admin.js").dayKey(0);
@@ -190,15 +199,10 @@ module.exports = async function handler(req, res) {
                 cmds.push(["LPUSH", "stats:recent", JSON.stringify({ t: Date.now(), n: shown })], ["LTRIM", "stats:recent", 0, 49]);
             }
 
-            // a signed-in visitor also counts for "translations per user" and "active today"
-            if (/^Bearer\s+/i.test(String(req.headers.authorization || ""))) {
-                try {
-                    const who = await require("./_google").verifyGoogleUser(req);
-                    if (who) {
-                        const uk = require("./_admin.js").uidKeyOf(who.uid);
-                        cmds.push(["HINCRBY", "u:tc", uk, 1], ["SADD", "u:dau:" + day, uk], ["EXPIRE", "u:dau:" + day, 60 * 86400]);
-                    }
-                } catch (e) { /* the counter still counts */ }
+            // the signed-in visitor also counts for "translations per user" and "active today"
+            {
+                const uk = require("./_admin.js").uidKeyOf(statWho.uid);
+                cmds.push(["HINCRBY", "u:tc", uk, 1], ["SADD", "u:dau:" + day, uk], ["EXPIRE", "u:dau:" + day, 60 * 86400]);
             }
 
             const c = classify(body.name);

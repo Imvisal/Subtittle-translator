@@ -1,4 +1,5 @@
 module.exports = async function handler(req, res) {
+    if (req.method === "GET" && await require("./_guard.js").guard(req, res, { kind: "sub", perMin: 40, perHour: 400, cache: 600 })) { return; }
 
     try {
 

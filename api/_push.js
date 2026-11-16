@@ -61,7 +61,7 @@ async function broadcast(msg, maxMs) {
     const [flat] = await redis([["HGETALL", "push:subs"]]);
     const subs = [];
     for (let i = 0; flat && i + 1 < flat.length; i += 2) { try { const s = JSON.parse(flat[i + 1]); if (s && s.e && s.k && s.a) { subs.push({ h: flat[i], s: s }); } } catch (e) { /* skip */ } }
-    const payload = JSON.stringify({ t: String(msg.title || "SinSubz").slice(0, 80), b: String(msg.body || "").slice(0, 160), u: /^\/[\w\-./?=&%#]*$/.test(msg.url || "") ? msg.url : "/" });
+    const payload = JSON.stringify({ t: String(msg.title || "SinSubz").slice(0, 80), b: String(msg.body || "").slice(0, 160), u: /^\/(?!\/)[\w\-./?=&%#]*$/.test(msg.url || "") ? msg.url : "/" });
     const out = { sent: 0, removed: 0, failed: 0 }, dead = [], until = Date.now() + (maxMs || 8000);
     for (let i = 0; i < subs.length && Date.now() < until; i += 20) {
         const r = await Promise.all(subs.slice(i, i + 20).map(x => sendOne(x.s, payload)));

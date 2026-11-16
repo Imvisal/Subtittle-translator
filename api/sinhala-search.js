@@ -1,6 +1,7 @@
 "use strict";
 
 module.exports = async function handler(req, res) {
+    if (req.method === "GET" && await require("./_guard.js").guard(req, res, { kind: "ss", perMin: 20, perHour: 150, cache: 3600 })) { return; }
     try {
         if (req.method !== "GET") {
             return res.status(405).json({

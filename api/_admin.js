@@ -18,7 +18,7 @@
    uidKey = first 24 hex characters of sha256(Firebase uid), the raw uid is never stored. */
 "use strict";
 
-const { hasRedis, redis, verifyGoogleUser, clean, sha } = require("./_google");
+const { hasRedis, redis, verifyGoogleUser, clean, sha, overLimit } = require("./_google");
 
 const PING_EVERY_S = 15 * 60;
 const MAX_USERS_SHOWN = 300;
@@ -47,6 +47,19 @@ function isAdmin(req) {
     if (!want || !got) { return false; }
     const a = sha(want), b = sha(got);
     return a.length === b.length && require("crypto").timingSafeEqual(a, b);
+}
+
+// Wrong admin keys are counted per IP in Redis (shared by every server): after 15 wrong keys in 10 minutes that IP gets 429 for the rest
+// of the window, so the key cannot be guessed. A correct key is never blocked. Call it first in every public handler that accepts the key.
+// Returns true when it already answered (429).
+async function adminGate(req, res) {
+    if (!req.headers || !req.headers["x-admin-key"] || isAdmin(req)) { return false; }
+    if (await overLimit("adminfail", clientIp(req), 15, 600)) {
+        res.setHeader("Cache-Control", "no-store");
+        res.status(429).json({ error: "Too many wrong keys. Try again in 10 minutes." });
+        return true;
+    }
+    return false;
 }
 
 // day in Sri Lanka time (UTC+5:30), "YYYY-MM-DD"
@@ -913,4 +926,4 @@ async function action(req, res) {
     }
 }
 
-module.exports = { isAdmin, logEvent, logActivity, alerts, whoLabel, logs, notifications, pushNotif, quotaLeftPct, resetQuotaCache: function () { quotaLeftCache = { at: 0, day: "", pct: 100 }; }, notifyOwner, planPublic, planSubmit, me, premiumUntil, authUser, loginRequired, checkDailyLimit, pacificDay, ping, overview, health, action, publicAnnouncement, cleanAnnouncement, dayKey, uidKeyOf };
+module.exports = { isAdmin, adminGate, logEvent, logActivity, alerts, whoLabel, logs, notifications, pushNotif, quotaLeftPct, resetQuotaCache: function () { quotaLeftCache = { at: 0, day: "", pct: 100 }; }, notifyOwner, planPublic, planSubmit, me, premiumUntil, authUser, loginRequired, checkDailyLimit, pacificDay, ping, overview, health, action, publicAnnouncement, cleanAnnouncement, dayKey, uidKeyOf };

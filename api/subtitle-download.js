@@ -6,6 +6,8 @@ const MAX_UNZIPPED_BYTES = 8 * 1024 * 1024;   // one extracted .srt
 const subdl = require("./_subdl.js");
 
 module.exports = async function handler(req, res) {
+    if (await require("./_admin.js").adminGate(req, res)) { return; }
+    if (req.method === "GET" && await require("./_guard.js").guard(req, res, { kind: "dl", perMin: 20, perHour: 100, perDay: 300 })) { return; }
 
     try {
 

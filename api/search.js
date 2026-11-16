@@ -290,6 +290,7 @@ async function searchHandler(req, res) {
 };
 
 module.exports = async function handler(req, res) {
+    if (req.method === "GET" && await require("./_guard.js").guard(req, res, { kind: "se", perMin: 60, perHour: 600, cache: 300 })) { return; }
     const logging = req.method === "GET" ? logSearch(req) : null;
     try {
         return await searchHandler(req, res);

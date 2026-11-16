@@ -78,6 +78,7 @@ function clean(v, max) {
 }
 
 module.exports = async function handler(req, res) {
+    if (await require("./_admin.js").adminGate(req, res)) { return; }
     res.setHeader("Cache-Control", "no-store");
 
     if (!URL_BASE || !TOKEN) {

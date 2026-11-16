@@ -28,6 +28,9 @@ for (const f of files) {
     fs.copyFileSync(src, path.join(out, f));
 }
 
+// self-hosted Font Awesome (made by the "Self-host Font Awesome" workflow), so the app's icons need no internet CDN
+if (fs.existsSync(path.join(root, "vendor"))) { fs.cpSync(path.join(root, "vendor"), path.join(out, "vendor"), { recursive: true }); }
+
 // load the app shim before the site's own scripts
 const indexPath = path.join(out, "index.html");
 let html = fs.readFileSync(indexPath, "utf8");

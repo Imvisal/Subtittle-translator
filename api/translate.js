@@ -485,6 +485,7 @@ async function generateInner(prompt, trail) {
 }
 
 module.exports = async function handler(req, res) {
+    if (await require("./_admin.js").adminGate(req, res)) { return; }
 
     // /api/translate?lib=... -> library of finished translations (api/_library.js). It lives behind this
     // file so it does not count as another serverless function (the Hobby plan allows 12).

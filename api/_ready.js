@@ -289,7 +289,7 @@ async function recover(req, res) {
                 if (tv) { const ex = await tmdbRaw("/tv/" + hit.id + "/external_ids"); imdb = ex.imdb_id || ""; }
                 else { const mv = await tmdbRaw("/movie/" + hit.id); imdb = mv.imdb_id || ""; }
                 if (!imdbOk(imdb)) { out.unsure++; continue; }
-                const [idxRaw, dup] = await redis([["HGET", "rdy:idx", imdb], ["SISMEMBER", "rdy:pendkeys", imdb + ":" + g.s + ":" + g.e]]);
+                const [idxRaw, dup] = await redis([["HGET", "rdy:idx", imdb], ["EXISTS", "rdy:pk:" + imdb + ":" + g.s + ":" + g.e]]);
                 const idx = parse(idxRaw);
                 if (Number(dup) === 1 || (idx && idx.eps && idx.eps[g.s + "x" + g.e])) { out.exists++; continue; }
                 const packed = (await redis([["GET", "tr:srt:" + mk.slice("tr:meta:".length) + ":" + meta.id]]))[0];
@@ -302,7 +302,7 @@ async function recover(req, res) {
                 const id = require("crypto").randomBytes(7).toString("hex");
                 const item = { id, t: Date.now(), imdb, title, year, poster: hit.poster_path ? "https://image.tmdb.org/t/p/w342" + hit.poster_path : "", type: tv ? "tv" : "movie", s: g.s, e: g.e, lines: cues, by: "found in visitors' saved translations",
                     filename: clean(meta.filename, 140), srt: zlib.gzipSync(Buffer.from(srt, "utf8")).toString("base64") };
-                await redis([["SET", "rdy:pend:" + id, JSON.stringify(item), "EX", 30 * 86400], ["LPUSH", "rdy:pendl", id], ["LTRIM", "rdy:pendl", 0, 199], ["SADD", "rdy:pendkeys", imdb + ":" + g.s + ":" + g.e]]);
+                await redis([["SET", "rdy:pend:" + id, JSON.stringify(item), "EX", 30 * 86400], ["LPUSH", "rdy:pendl", id], ["LTRIM", "rdy:pendl", 0, 199], ["SET", "rdy:pk:" + imdb + ":" + g.s + ":" + g.e, "1", "EX", 30 * 86400]]);
                 out.added++; out.names.push(title + (tv ? " S" + g.s + "E" + g.e : ""));
             } catch (e) { out.unsure++; }
         }
@@ -561,12 +561,12 @@ module.exports = async function ready(req, res) {
             if (!title) { return res.status(400).json({ error: "Missing title." }); }
             const uk = sha(String(who.uid)).toString("hex").slice(0, 24);
             if (await overLimit("rdysub", uk, 6, 86400)) { return res.status(429).json({ error: "You sent enough for today. Please try again tomorrow." }); }
-            const dup = (await redis([["SISMEMBER", "rdy:pendkeys", b.imdb + ":" + s + ":" + e]]))[0];
+            const dup = (await redis([["EXISTS", "rdy:pk:" + b.imdb + ":" + s + ":" + e]]))[0];
             if (Number(dup) === 1) { return res.status(200).json({ ok: true, dup: true }); }
             const id = require("crypto").randomBytes(7).toString("hex");
             const item = { id, t: Date.now(), imdb: b.imdb, title, year: clean(b.year, 8), poster: https(b.poster) || "", type, s, e, lines: cues, by: clean(who.name, 60) || "Google user", maybe: b.maybe === true,
                 filename: clean(b.filename, 140), srt: zlib.gzipSync(Buffer.from(srt, "utf8")).toString("base64") };
-            await redis([["SET", "rdy:pend:" + id, JSON.stringify(item), "EX", 30 * 86400], ["LPUSH", "rdy:pendl", id], ["LTRIM", "rdy:pendl", 0, 199], ["SADD", "rdy:pendkeys", b.imdb + ":" + s + ":" + e]]);
+            await redis([["SET", "rdy:pend:" + id, JSON.stringify(item), "EX", 30 * 86400], ["LPUSH", "rdy:pendl", id], ["LTRIM", "rdy:pendl", 0, 199], ["SET", "rdy:pk:" + b.imdb + ":" + s + ":" + e, "1", "EX", 30 * 86400]]);
             try { await require("./_admin.js").logActivity("translate", "Suggested for Ready: " + title + (type === "tv" ? " S" + s + "E" + e : "")); } catch (x) { /* ignore */ }
             return res.status(200).json({ ok: true });
         }
@@ -595,7 +595,7 @@ module.exports = async function ready(req, res) {
             if (!isAdmin(req)) { return res.status(401).json({ error: "Unauthorized" }); }
             const id = String((req.body && req.body.id) || "").replace(/[^a-f0-9]/g, "").slice(0, 20);
             const it = id && parse((await redis([["GET", "rdy:pend:" + id]]))[0]);
-            await redis([["DEL", "rdy:pend:" + id], ["LREM", "rdy:pendl", 0, id]].concat(it ? [["SREM", "rdy:pendkeys", it.imdb + ":" + it.s + ":" + it.e]] : []));
+            await redis([["DEL", "rdy:pend:" + id], ["LREM", "rdy:pendl", 0, id]].concat(it ? [["DEL", "rdy:pk:" + it.imdb + ":" + it.s + ":" + it.e]] : []));
             return res.status(200).json({ ok: true });
         }
 
