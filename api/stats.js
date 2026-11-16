@@ -182,7 +182,7 @@ module.exports = async function handler(req, res) {
         let statWho = null;
         if (type === "translated") {
             statWho = /^Bearer\s+/i.test(String(req.headers.authorization || "")) ? await require("./_google").verifyGoogleUser(req).catch(() => null) : null;
-            if (!statWho || await require("./_google").overLimit("statu", statWho.uid, 60, 3600)) { return res.status(204).end(); }
+            if (!statWho || await require("./_google").overLimit("statu", require("./_admin.js").uidKeyOf(statWho.uid), 60, 3600)) { return res.status(204).end(); }
         } else if (await require("./_google").overLimit("stath", clientIp(req), 40, 3600)) { return res.status(204).end(); }
         const cmds = [];
 

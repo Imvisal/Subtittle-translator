@@ -87,10 +87,11 @@ function call(method, url, { headers = {}, body } = {}) {
 
 (async () => {
     // translations: one anonymous, two from signed-in users
-    await call("POST", "/api/stats", { body: { type: "translated", name: "Zootopia.2.2025.Sinhala.SinSubz.srt".replace(/\.srt$/, "") } });
+    await call("POST", "/api/stats", { headers: { authorization: "Bearer tok-nimal" }, body: { type: "translated", name: "Zootopia.2.2025.Sinhala.SinSubz.srt".replace(/\.srt$/, "") } });
     await call("POST", "/api/stats", { headers: { authorization: "Bearer tok-visal" }, body: { type: "translated", name: "The.Mentalist.S01E01.Sinhala.SinSubz" } });
     await call("POST", "/api/stats", { headers: { authorization: "Bearer tok-visal" }, body: { type: "translated", name: "Verity.2026.Sinhala.SinSubz" } });
-    await call("POST", "/api/stats", { headers: { authorization: "Bearer bad-token" }, body: { type: "translated", name: "Fake.Movie.Sinhala.SinSubz" } });
+    await call("POST", "/api/stats", { headers: { authorization: "Bearer tok-nimal" }, body: { type: "translated", name: "Fake.Movie.Sinhala.SinSubz" } });
+    ok((await call("POST", "/api/stats", { body: { type: "translated", name: "Anonymous.Fake.Sinhala.SinSubz" } })).code === 204 && (await call("POST", "/api/stats", { headers: { authorization: "Bearer bad-token" }, body: { type: "translated", name: "Bad.Token.Sinhala.SinSubz" } })).code === 204, "anonymous / bad-token translated posts are ignored");
     await call("POST", "/api/stats", { body: { type: "synced", name: "x.synced" } });
 
     // user pings
