@@ -659,5 +659,10 @@ module.exports = async function ready(req, res) {
     }
 };
 module.exports.pageHtml = pageHtml;
+// how many Ready Sinhala subtitles there are: a film counts 1, every ready episode of a series counts 1 (home page counter)
+module.exports.countReady = async function () {
+    const list = await allTitles();
+    return list.reduce((n, m) => n + (m.type === "tv" ? Object.keys(m.eps || {}).length : 1), 0);
+};
 module.exports.registerFilm = registerFilm;
 module.exports.fillMissingIntros = fillMissingIntros;

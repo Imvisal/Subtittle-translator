@@ -158,9 +158,12 @@ module.exports = async function handler(req, res) {
                 ["GET", "stats:merged"],
                 ["SCARD", "stats:anime"]
             ]);
+            let ready = 0;
+            try { ready = await require("./_ready.js").countReady(); } catch (e) { /* the other counters still work */ }
             res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
             return res.status(200).json({
                 enabled: true,
+                ready: ready,
                 translated: Number(r[0]) || 0,
                 movies: Number(r[1]) || 0,
                 series: Number(r[2]) || 0,

@@ -11,6 +11,7 @@
 
     // key, icon, label (one / many)
     var DEFS = [
+        ["ready",      "fa-closed-captioning", "Ready Sinhala subtitle", "Ready Sinhala subtitles"],
         ["translated", "fa-language",     "Subtitle translated",  "Subtitles translated"],
         ["movies",     "fa-film",         "Movie translated",     "Movies translated"],
         ["series",     "fa-tv",           "TV series translated", "TV series translated"],
