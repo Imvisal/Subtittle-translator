@@ -74,6 +74,19 @@
         }).join("") + '</div></section>';
     }
 
+    function watchCard() {
+        var w = D.wp;
+        if (!w) { return ""; }
+        function row(label, arr) {
+            if (!arr || !arr.length) { return ""; }
+            return '<div class="tp-wr"><span>' + label + '</span><div>' + arr.map(function (n) { return '<a class="tp-wp" href="' + esc(w.link || "#") + '" target="_blank" rel="noopener nofollow">' + esc(n) + '</a>'; }).join("") + '</div></div>';
+        }
+        return '<section class="tp-card tp-watch"><h2>Where to watch</h2>' +
+            '<p class="tp-wn">' + (w.cc === "LK" ? "Available in Sri Lanka" : "Not listed for Sri Lanka. Available in the US") + '. Watch it legally, then add the Sinhala subtitle from above.</p>' +
+            row("Stream", w.stream) + row("Free", w.free) + row("Rent", w.rent) + row("Buy", w.buy) +
+            '<p class="tp-wc">Streaming data by JustWatch</p></section>';
+    }
+
     function episodes() {
         if (!isTv) {
             var f0 = (D.seasons[0] && D.seasons[0][0]) || {};
@@ -114,7 +127,7 @@
     }
 
     var DLI = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>';
-    function render() { root.innerHTML = hero() + castCard() + episodes(); }
+    function render() { root.innerHTML = hero() + castCard() + episodes() + watchCard(); }
     render();
     // the page HTML can be a few minutes old (cached) and the Sinhala intro is made on demand: ask once for it and show it when it arrives
     (function lateIntro() {

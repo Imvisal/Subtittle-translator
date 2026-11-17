@@ -370,6 +370,29 @@ async function fillMissingIntros(maxTitles, ms) {
     return made;
 }
 
+// Where the film / series can be watched legally (TMDB "watch providers", data by JustWatch). Names only, kept 2 days. Sri Lanka first, else US.
+async function watchProviders(m) {
+    const ck = "rdy:wp:" + m.id;
+    try {
+        const c = parse((await redis([["GET", ck]]))[0]);
+        if (c) { return c.none ? null : c; }
+    } catch (e) { /* go on */ }
+    try {
+        const found = await tmdbRaw("/find/" + m.id + "?external_source=imdb_id");
+        const pick = m.type === "tv" ? (found.tv_results || [])[0] : (found.movie_results || [])[0];
+        if (!pick) { return null; }
+        const r = await tmdbRaw("/" + (m.type === "tv" ? "tv" : "movie") + "/" + pick.id + "/watch/providers");
+        const res = r.results || {};
+        const cc = res.LK && (res.LK.flatrate || res.LK.rent || res.LK.buy || res.LK.free || res.LK.ads) ? "LK" : (res.US ? "US" : "");
+        const x = cc ? res[cc] : null;
+        const names = a => (a || []).slice(0, 8).map(p => String(p.provider_name || "").slice(0, 40)).filter(Boolean);
+        const out = x ? { cc, link: /^https:\/\/www\.themoviedb\.org\//.test(x.link || "") ? x.link : "", stream: names(x.flatrate), free: names((x.free || []).concat(x.ads || [])), rent: names(x.rent), buy: names(x.buy) } : null;
+        const has = out && (out.stream.length || out.free.length || out.rent.length || out.buy.length);
+        await redis([["SET", ck, JSON.stringify(has ? out : { none: 1 }), "EX", has ? 2 * 86400 : 6 * 3600]]);
+        return has ? out : null;
+    } catch (e) { return null; }
+}
+
 async function titleData(slug) {
     const list = await allTitles();
     const m = list.find(x => x.slug === slug) || list.find(x => x.id === slug);
@@ -385,7 +408,8 @@ async function titleData(slug) {
         Object.keys(seasons[n].have).forEach(e => { if (!eps.has(Number(e))) { eps.set(Number(e), { e: Number(e), name: "", air: "" }); } });
         seasons[n] = [...eps.values()].sort((a, b) => a.e - b.e).map(e => Object.assign(e, { ready: !!seasons[n].have[e.e], r: (seasons[n].have[e.e] || {}).r || "", n: (seasons[n].have[e.e] || {}).n || 0 }));
     });
-    return { id: m.id, slug: m.slug, title: m.t, year: m.y, poster: m.p, type: m.type, overview: info.overview, trailer: info.trailer || "", backdrop: info.backdrop || "", cast: info.cast || [], by: info.by || [], imdb: info.imdb || "", votes: info.votes || "", rt: info.rt || "", mc: info.mc || "", rated: info.rated || "", si: info.si || "", tagline: info.tagline, genres: info.genres, rating: info.rating, runtime: info.runtime, seasons, url: pageUrl(m) };
+    const wp = await Promise.race([watchProviders(m), new Promise(r => setTimeout(() => r(null), 3500))]).catch(() => null);
+    return { wp, id: m.id, slug: m.slug, title: m.t, year: m.y, poster: m.p, type: m.type, overview: info.overview, trailer: info.trailer || "", backdrop: info.backdrop || "", cast: info.cast || [], by: info.by || [], imdb: info.imdb || "", votes: info.votes || "", rt: info.rt || "", mc: info.mc || "", rated: info.rated || "", si: info.si || "", tagline: info.tagline, genres: info.genres, rating: info.rating, runtime: info.runtime, seasons, url: pageUrl(m) };
 }
 
 function pageHtml(d) {
