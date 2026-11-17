@@ -21,7 +21,13 @@ async function guard(req, res, o) {
     if (o.cache) {
         res.setHeader("Cache-Control", "public, s-maxage=" + o.cache + ", stale-while-revalidate=" + o.cache * 6);
         const st = res.status.bind(res);
-        res.status = function (c) { if (c !== 200) { res.setHeader("Cache-Control", "no-store"); } return st(c); };
+        res.status = function (c) {
+            if (c !== 200) { res.setHeader("Cache-Control", "no-store"); }
+            const r = st(c), js = r.json.bind(r);
+            // an empty answer ("no subtitles yet") is never cached, so the auto runner's retries and new uploads show up at once
+            r.json = function (b) { if (b && (b.error || b.total === 0 || (Array.isArray(b.results) && !b.results.length))) { res.setHeader("Cache-Control", "no-store"); } return js(b); };
+            return r;
+        };
     }
     return false;
 }
