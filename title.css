@@ -209,3 +209,10 @@
 .tp-wp { padding: 7px 13px; border-radius: 99px; background: rgba(255, 255, 255, .07); border: 1px solid rgba(255, 255, 255, .12); color: inherit; font-size: 13.5px; font-weight: 700; text-decoration: none; }
 .tp-wp:active { transform: scale(.97); }
 .tp-wc { margin: 12px 0 0; font-size: 11.5px; color: var(--muted); opacity: .8; }
+
+/* more Sinhala subtitles (server-rendered links) */
+.tp-more h2 { margin-bottom: 14px; }
+.tp-mrow { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+.tp-mc { flex: none; width: 112px; text-decoration: none; color: inherit; scroll-snap-align: start; }
+.tp-mc img { display: block; width: 112px; height: 168px; object-fit: cover; border-radius: 12px; background: rgba(255, 255, 255, .06); box-shadow: 0 8px 20px -10px rgba(0, 0, 0, .7); }
+.tp-mc span { display: block; margin-top: 7px; font-size: 12.5px; font-weight: 700; line-height: 1.3; }
