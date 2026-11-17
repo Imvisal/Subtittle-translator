@@ -4,7 +4,7 @@
  * Never on the home/tool page, login, admin, premium. Change SIZE to the size you picked when you made the unit. */
 (function () {
     "use strict";
-    var UNIT_ID = "2461670";
+    var UNIT_ID = "";             // A-Ads is switched off (the ad units were deleted). Put a unit number here to turn it on again.
     var MOBILE_ID = "2461674";      // adaptive unit for phones (< 740px wide)
     var WIDTH = 728, HEIGHT = 90;   // the unit size you created (728x90, 468x60, 300x250...)
     if (!/^\d{4,12}$/.test(UNIT_ID)) { return; }
