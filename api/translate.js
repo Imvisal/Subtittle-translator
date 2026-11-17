@@ -177,16 +177,19 @@ async function keyBusy(id) {
     const cur = keyUse.get(id);
     const n = (cur && cur.w === w ? cur.n : 0) + 1;
     keyUse.set(id, { w: w, n: n });
-    if (n > KEY_MAX_PER_MIN) return true;
-    try { return await require("./_google").overLimit("kuse", id, KEY_MAX_PER_MIN, 60); } catch (e) { return false; }
+    // per-instance only (no database command per Gemini call): Google's own 429 + the shared cooldown cover the rest
+    return n > KEY_MAX_PER_MIN;
 }
 
 // The same cooldowns, shared by every serverless instance through Redis (a cold instance used to learn the hard way,
 // by getting its own 429, that a key was already cooling). Best effort: Redis problems never block a translation.
+let cdLoadedAt = 0;
 async function loadSharedCooldowns(keys, models) {
     try {
         const g = require("./_google");
         if (!g.hasRedis()) { return; }
+        if (Date.now() - cdLoadedAt < 25000) { return; }      // read at most every 25 s per instance
+        cdLoadedAt = Date.now();
         const ids = [];
         keys.forEach((_, k) => models.forEach(m => ids.push(k + "|" + m)));
         const r = await g.redis([["MGET"].concat(ids.map(i => "gcd:" + i))]);
@@ -236,27 +239,38 @@ function isDailyQuotaMessage(message) {
 //   h:k:<day>  hash  "<keyNumber>:ok|429|bad|err"   (the key itself is never stored)
 // ------------------------------------------------------------------
 const expSeen = new Set();       // day-keys whose expiry this instance already set
-async function track(day, fields, keyFields) {
+// Counters are added up in memory and sent in one go (every ~10 counts, 20 s, or when a job ends): far fewer database commands.
+const pend = new Map();          // redis hash key -> Map(field -> count)
+let pendN = 0, pendAt = 0;
+function bump(hash, field, n) {
+    let m = pend.get(hash); if (!m) { m = new Map(); pend.set(hash, m); }
+    m.set(field, (m.get(field) || 0) + n); pendN++; if (!pendAt) { pendAt = Date.now(); }
+}
+async function flushCounters() {
+    if (!pendN) return;
+    const cmds = [];
+    pend.forEach((m, hash) => {
+        m.forEach((n, f) => cmds.push(["HINCRBY", hash, f, n]));
+        if (!expSeen.has(hash)) { expSeen.add(hash); cmds.push(["EXPIRE", hash, (hash.indexOf("q:") === 0 ? 3 : 35) * 86400]); }
+    });
+    pend.clear(); pendN = 0; pendAt = 0;
     try {
         const g = require("./_google");
-        if (!g.hasRedis()) return;
-        const cmds = [];
-        Object.keys(fields || {}).forEach(f => cmds.push(["HINCRBY", "h:d:" + day, f, fields[f]]));
-        Object.keys(keyFields || {}).forEach(f => cmds.push(["HINCRBY", "h:k:" + day, f, keyFields[f]]));
-        if (!cmds.length) return;
-        // EXPIRE once per day-key per running instance (not on every chunk): about half the commands
-        ["h:d:", "h:k:"].forEach(p => { if (!expSeen.has(p + day)) { expSeen.add(p + day); cmds.push(["EXPIRE", p + day, 35 * 86400]); } });
+        if (!g.hasRedis() || !cmds.length) return;
         await Promise.race([g.redis(cmds), new Promise(r => setTimeout(r, 1500))]);
     } catch (e) { /* ignore */ }
+}
+async function track(day, fields, keyFields, force) {
+    Object.keys(fields || {}).forEach(f => bump("h:d:" + day, f, fields[f]));
+    Object.keys(keyFields || {}).forEach(f => bump("h:k:" + day, f, keyFields[f]));
+    if (force || pendN >= 10 || (pendAt && Date.now() - pendAt > 20000)) { await flushCounters(); }
 }
 
 // requests used per key in the current Pacific day (Gemini's quota day); "<key>:x" = Google said the day's quota is gone
 async function trackQuota(k, exhausted) {
     try {
-        const g = require("./_google");
-        if (!g.hasRedis()) return;
-        const day = require("./_admin.js").pacificDay();
-        await Promise.race([g.redis([["HINCRBY", "q:" + day, exhausted ? (k + 1) + ":x" : String(k + 1), 1]].concat(expSeen.has("q:" + day) ? [] : (expSeen.add("q:" + day), [["EXPIRE", "q:" + day, 3 * 86400]]))), new Promise(r => setTimeout(r, 1500))]);
+        bump("q:" + require("./_admin.js").pacificDay(), exhausted ? (k + 1) + ":x" : String(k + 1), 1);
+        if (exhausted) { await flushCounters(); }
     } catch (e) { /* ignore */ }
 }
 
@@ -450,7 +464,7 @@ async function generateInner(prompt, trail) {
         await new Promise(resolve => setTimeout(resolve, 2000));
     }
 
-    await track(today(), { [sawQuota ? "quota" : (sawBusy ? "busy" : "other")]: 1 });
+    await track(today(), { [sawQuota ? "quota" : (sawBusy ? "busy" : "other")]: 1 }, null, true);
 
     // only per-minute limits were hit: the day's quota is NOT gone, so don't say so (the page waits and retries)
     // (also when only SOME models hit the daily quota: the others just need a minute, the page waits and retries)
@@ -1056,7 +1070,7 @@ ${JSON.stringify(inputItems)}
             );
 
 
-        await track(today(), { ok: 1 });
+        await track(today(), { ok: 1 }, null, true);
         if (limitDone) { await limitDone(); }     // this chunk is translated: counts toward the film / episode
         await require("./_admin.js").logEvent({ type: "ok", lvl: "info", u: logCtx.u, job: logCtx.job, msg: "Translated " + subtitles.length + " lines | key #" + (usedKey || "?") + " " + String(usedModel || "").replace(/^gemini-/, "") + (usedTries > 1 ? " (try " + usedTries + ")" : "") });
 
