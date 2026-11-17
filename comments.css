@@ -47,11 +47,14 @@
 .cm-name { display: inline-flex; align-items: center; gap: 6px; font-size: 14.5px; }
 .cm-name b { font-weight: 700; word-break: break-word; }
 .cm-tick { display: inline-flex; line-height: 0; }
+.cm-nm { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; }
+.cm-nm b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cm-owner {
-    padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 800; letter-spacing: 0.04em;
-    color: #0f5a33; background: rgba(47, 191, 113, 0.22); border: 1px solid rgba(47, 191, 113, 0.5); text-transform: uppercase;
+    display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px 1px 6px;
+    border-radius: 99px; font-size: 10.5px; font-weight: 800; letter-spacing: .02em; line-height: 1.5;
+    color: #fff; background: linear-gradient(135deg, #3fd68a, #1c9a5b);
+    box-shadow: 0 0 0 1px rgba(47, 191, 113, .35), 0 2px 8px rgba(47, 191, 113, .25);
 }
-html[data-theme="dark"] .cm-owner { color: #7be5ae; }
 .cm-time { font-size: 12px; color: var(--muted); }
 .cm-film { margin-top: 4px; font-size: 12px; color: var(--amber); }
 .cm-text { margin: 6px 0 0; white-space: pre-wrap; word-break: break-word; line-height: 1.55; }
@@ -81,8 +84,8 @@ html[data-theme="dark"] .cm-owner { color: #7be5ae; }
 @media (max-width: 480px) { .cm-list > .cm-item { padding: 12px; } .cm-av { width: 34px; height: 34px; } }
 
 .cm-prem {
-    display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; padding: 1px 8px 1px 6px;
-    border-radius: 99px; font-size: 10.5px; font-weight: 800; letter-spacing: .02em; line-height: 1.5;
+    display: inline-flex; flex: none; align-items: center; justify-content: center; width: 20px; height: 20px; padding: 0;
+    border-radius: 50%; line-height: 1;
     color: #3a2600; background: linear-gradient(135deg, #ffd75e, #f5a30c);
     box-shadow: 0 0 0 1px rgba(245, 163, 12, .35), 0 2px 8px rgba(245, 163, 12, .25);
     vertical-align: middle;

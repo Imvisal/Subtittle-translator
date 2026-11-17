@@ -116,14 +116,22 @@
             t.title = "Verified owner";
             line.appendChild(t);
         }
-        line.appendChild(el("b", "", c.name || "Google user"));
-        if (c.owner) { line.appendChild(el("span", "cm-owner", "Owner")); }
+        var nm = el("span", "cm-nm");
+        nm.appendChild(el("b", "", c.name || "Google user"));
         if (c.premium) {
             var pb = el("span", "cm-prem");
             pb.title = "SinSubz Premium member";
-            pb.innerHTML = '<svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><path fill="currentColor" d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5L3 8z"/></svg>';   // fixed markup
-            pb.appendChild(document.createTextNode("Premium"));
-            line.appendChild(pb);
+            pb.setAttribute("aria-label", "SinSubz Premium member");
+            pb.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path fill="currentColor" d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5L3 8z"/></svg>';   // fixed markup
+            nm.appendChild(pb);
+        }
+        line.appendChild(nm);
+        if (c.owner) {
+            var ob = el("span", "cm-owner");
+            ob.title = "Site creator";
+            ob.innerHTML = '<svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><path fill="currentColor" d="M12 2l8 3v6c0 5-3.4 9.3-8 11-4.6-1.7-8-6-8-11V5l8-3z"/></svg>';   // fixed markup
+            ob.appendChild(document.createTextNode("Creator"));
+            line.appendChild(ob);
         }
         return line;
     }
