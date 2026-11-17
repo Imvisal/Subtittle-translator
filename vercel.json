@@ -15,7 +15,7 @@
       ]
     },
     {
-      "source": "/(ad-box|ad-box-320)\\.html",
+      "source": "/(ad-box|ad-box-320|ad-box-native)\\.html",
       "headers": [
         { "key": "Content-Security-Policy", "value": "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; frame-ancestors 'self'" },
         { "key": "Referrer-Policy", "value": "no-referrer-when-downgrade" },
@@ -23,7 +23,7 @@
       ]
     },
     {
-      "source": "/((?!ad-box(?:-320)?\\.html).*)",
+      "source": "/((?!ad-box(?:-320|-native)?\\.html).*)",
       "headers": [
         {
           "key": "X-Content-Type-Options",

@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Advertisement</title>
+<style>html,body{margin:0;padding:0;background:transparent}</style></head>
+<body>
+<script async="async" data-cfasync="false" src="https://bancadeltempoidea.org/21/7abafd8fc4722938e0af80da9d6b892e"></script>
+<div id="container-7abafd8fc4722938e0af80da9d6b892e"></div>
+<script>
+/* tell the page how tall the ad is, so the frame fits it (the frame is sandboxed: it can only send a message) */
+(function () {
+    var last = 0;
+    function send() {
+        var h = Math.ceil(document.documentElement.scrollHeight || document.body.scrollHeight || 0);
+        if (h && h !== last) { last = h; try { parent.postMessage({ sinsubzAd: "native", h: h }, "*"); } catch (e) { /* ignore */ } }
+    }
+    if (window.ResizeObserver) { new ResizeObserver(send).observe(document.body); }
+    setInterval(send, 1500); window.addEventListener("load", send);
+})();
+</script>
+</body></html>

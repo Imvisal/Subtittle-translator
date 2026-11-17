@@ -30,6 +30,18 @@
         var cast = tp.querySelector(".tp-cast") || tp.querySelector("#tpEps");
         if (cast) { tp.insertBefore(slot("/ad-box-320.html", 320, 50), cast); }
     }
+    /* Adsterra native banner: at the end of the page; its frame grows to the height the ad reports */
+    var nat = slot("/ad-box-native.html", 560, 300);
+    nat.style.width = "100%"; nat.style.maxWidth = "560px";
+    var nf = nat.querySelector("iframe"); nf.style.width = "100%"; nf.style.maxWidth = "560px"; nf.removeAttribute("width");
+    window.addEventListener("message", function (ev) {
+        if (ev.source !== nf.contentWindow || !ev.data || ev.data.sinsubzAd !== "native") { return; }
+        var h = Math.max(60, Math.min(900, Number(ev.data.h) || 0));
+        if (h) { nf.style.height = h + "px"; nf.height = String(h); }
+    });
+    if (tp) {
+        tp.insertBefore(nat, tp.querySelector(".tp-foot") || null);
+    } else { host.appendChild(nat); }
     if (tp) {
         var seo = tp.querySelector(".tp-seo") || tp.querySelector(".tp-foot");
         tp.insertBefore(d, seo || null);
