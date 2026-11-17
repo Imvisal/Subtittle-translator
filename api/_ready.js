@@ -412,6 +412,9 @@ async function titleData(slug) {
     return { wp, id: m.id, slug: m.slug, title: m.t, year: m.y, poster: m.p, type: m.type, overview: info.overview, trailer: info.trailer || "", backdrop: info.backdrop || "", cast: info.cast || [], by: info.by || [], imdb: info.imdb || "", votes: info.votes || "", rt: info.rt || "", mc: info.mc || "", rated: info.rated || "", si: info.si || "", tagline: info.tagline, genres: info.genres, rating: info.rating, runtime: info.runtime, seasons, url: pageUrl(m) };
 }
 
+// Monetag tag for the film / TV pages (never on the guide pages that run AdSense)
+const MT_TAG = '<script src="https://quge5.com/88/tag.min.js" data-zone="311206" async data-cfasync="false"></script>';
+
 function pageHtml(d) {
     const isTv = d.type === "tv";
     const readyCount = Object.values(d.seasons).reduce((a, l) => a + l.filter(e => e.ready).length, 0);
@@ -468,7 +471,7 @@ function pageHtml(d) {
         '<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">' +
         '<link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/title.css"><link rel="stylesheet" href="/comments.css">' +
         '<script>try{var t=localStorage.getItem("sinsubz-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>' +
-        '<script type="application/ld+json">' + JSON.stringify(ld).replace(/</g, "\\u003c") + "</script></head>" +
+        '<script type="application/ld+json">' + JSON.stringify(ld).replace(/</g, "\\u003c") + "</script>" + MT_TAG + "</head>" +
         '<body class="tp-page"><div class="tp-wrap"><nav class="tp-crumb" aria-label="Breadcrumb"><a href="/">SinSubz</a> › <a href="/#readyTitles">' + crumbName + '</a> › <span>' + esc(d.title) + '</span></nav><div id="tp"><noscript>' + noscript + "</noscript></div>" + seoBlock +
         '<section class="comments-section tp-comments" id="comments"><div class="cm-wrap" id="commentsRoot" hidden data-imdb="' + esc(d.id) + '" data-film="' + esc(d.title) + '"></div></section>' +
         '<p class="tp-foot">Subtitles made by SinSubz. Only the subtitle is provided, not the video.</p></div>' +
