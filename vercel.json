@@ -77,6 +77,11 @@
   ],
   "redirects": [
     {
+      "source": "/download.html",
+      "destination": "/",
+      "permanent": true
+    },
+    {
       "source": "/((?!api/).*)",
       "has": [{ "type": "host", "value": "subtittle-translator.vercel.app" }],
       "destination": "https://sinsubs.site/$1",
