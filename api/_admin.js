@@ -715,7 +715,7 @@ function cleanAnnouncement(a) {
     if (expires && !/^\d{4}-\d{2}-\d{2}$/.test(expires)) { return { error: "Expires must look like 2026-12-31" }; }
     if (a.image && !https(a.image)) { return { error: "Image must be an https link" }; }
     if (a.url && !https(a.url)) { return { error: "Link must be an https link" }; }
-    const platforms = (Array.isArray(a.platforms) ? a.platforms : []).filter(p => p === "android" || p === "windows");
+    const platforms = (Array.isArray(a.platforms) ? a.platforms : []).filter(p => p === "android" || p === "windows" || p === "web");
     return { value: {
         enabled: a.enabled !== false, id: id, title: title, body: body,
         image: https(a.image), url: https(a.url),

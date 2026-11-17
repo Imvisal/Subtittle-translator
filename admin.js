@@ -88,6 +88,7 @@
         $("anExp").value = a.expires || "";
         $("anAnd").checked = !a.platforms || a.platforms.indexOf("android") !== -1;
         $("anWin").checked = !a.platforms || a.platforms.indexOf("windows") !== -1;
+        $("anWeb").checked = !!a.platforms && a.platforms.indexOf("web") !== -1;
     }
 
     function post(action, id, extra) {
@@ -798,12 +799,14 @@
         var pf = [];
         if ($("anAnd").checked) { pf.push("android"); }
         if ($("anWin").checked) { pf.push("windows"); }
-        if (!window.confirm("Send this announcement to all app users?")) { return; }
+        if ($("anWeb").checked) { pf.push("web"); }
+        if (!pf.length) { $("anMsg").textContent = "Tick at least one place to show it."; return; }
+        if (!window.confirm("Send this announcement to everybody you ticked?")) { return; }
         postAction({ action: "announce", announcement: {
             enabled: true, id: $("anId").value.trim(), title: $("anTitle").value, body: $("anBody").value,
             image: $("anImg").value.trim(), url: $("anUrl").value.trim(), openLabel: $("anOpen").value, laterLabel: $("anLater").value,
             platforms: pf, expires: $("anExp").value
-        } }).then(function () { $("anMsg").textContent = "Sent. Apps get it within about 15 minutes (Android) / 6 hours (Windows)."; annFilled = false; load(); })
+        } }).then(function () { $("anMsg").textContent = "Sent. The website shows it within a few minutes; apps within about 15 minutes (Android) / 6 hours (Windows)."; annFilled = false; load(); })
             .catch(function (e) { $("anMsg").textContent = e.message; window.alert(e.message); });
     });
     $("anStop").addEventListener("click", function () {
