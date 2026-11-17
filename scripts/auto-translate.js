@@ -70,7 +70,7 @@ async function translateInPage(job) {
     let r, d, list = [];
     for (let attempt = 0; attempt < 2 && !list.length; attempt++) {      // an empty answer may be a hiccup: ask once more
         if (attempt) { await new Promise(res => setTimeout(res, 6000)); }
-        r = await fetch("/api/subtitles?" + q);
+        r = await fetch("/api/subtitles?" + q + "&_r=" + Date.now());        // _r: never a CDN-cached answer
         d = await r.json();
         if (!r.ok) { throw new Error("subtitle search: " + (d.error || r.status)); }
         list = (d.results || []).filter(s => !s.hearingImpaired).concat((d.results || []).filter(s => s.hearingImpaired));
@@ -127,7 +127,7 @@ function sriLankaWeekday() {
 // does one of the Sinhala sites already have a subtitle for this series?  (null = could not check)
 async function hasSinhala(c) {
     try {
-        const r = await api("/api/sinhala-search?title=" + encodeURIComponent(c.title) + "&year=" + encodeURIComponent(c.year || "") + "&type=series");
+        const r = await api("/api/sinhala-search?title=" + encodeURIComponent(c.title) + "&year=" + encodeURIComponent(c.year || "") + "&type=series&_r=" + Date.now(), { headers: AK() });
         if (!r.ok || !r.json) { return null; }
         return !!r.json.found;
     } catch (e) { return null; }
@@ -209,7 +209,7 @@ async function refillIfDue(weekly, meta, emptyList) {
     await ctx.addInitScript(() => {
         try { Object.defineProperty(window, "__sinsubzIdToken", { value: async () => "runner", configurable: false, writable: false }); } catch (e) { /* ignore */ }
     });
-    await ctx.route(/\/api\/(translate|subtitle-download)/, route => route.continue({ headers: Object.assign({}, route.request().headers(), { "x-admin-key": KEY }) }));
+    await ctx.route(/\/api\/(translate|subtitle-download|subtitles|sinhala-search)/, route => route.continue({ headers: Object.assign({}, route.request().headers(), { "x-admin-key": KEY }) }));
     const page = await ctx.newPage();
     await page.goto(SITE + "/", { waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => typeof translateWithLibrary === "function" && typeof buildSRT === "function", null, { timeout: 60000 });

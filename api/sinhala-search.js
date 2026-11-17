@@ -192,6 +192,8 @@ module.exports = async function handler(req, res) {
             });
 
 
+        if (!unique.length && res.getHeader("Cache-Control")) { res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600"); }     // "not found" may be a hiccup: only 5 minutes
+
         return res.status(200).json({
             found: unique.length > 0,
             title,

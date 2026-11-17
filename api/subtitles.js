@@ -524,6 +524,8 @@ module.exports = async function handler(req, res) {
         // RESPONSE
         // ==================================================
 
+        if (!unique.length) { res.setHeader("Cache-Control", "no-store"); }     // an empty answer may be a hiccup: never keep it in the CDN
+
         return res.status(200).json({
 
             success: true,
