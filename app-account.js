@@ -218,6 +218,7 @@
 
     // Tells the server this account uses the app (counted per platform in the admin panel). Once per sign-in.
     function pingServer() {
+        try { var lp = Number(localStorage.getItem("sinsubz.ping") || 0); if (Date.now() - lp < 15 * 60 * 1000) { return; } localStorage.setItem("sinsubz.ping", String(Date.now())); } catch (e) { /* no storage: just ping */ }
         try {
             var plat = /Electron/i.test(navigator.userAgent || "") ? "windows" : "android";
             token().then(function (tk) {

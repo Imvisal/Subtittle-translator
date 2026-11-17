@@ -522,7 +522,15 @@ module.exports = async function ready(req, res) {
 
         if ((act === "page" || act === "title") && req.method === "GET") {
             const slug = String(q(req).slug || "").toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 80);
-            const d = slug ? await titleData(slug) : null;
+            let d = null;
+            try { d = slug ? await titleData(slug) : null; }
+            catch (e) {
+                // the database is unreachable (for example its quota): say "try again", not "Not found" (so search engines keep the page)
+                res.setHeader("Cache-Control", "no-store"); res.setHeader("Retry-After", "300");
+                if (act === "title") { return res.status(503).json({ error: "Temporarily unavailable" }); }
+                res.setHeader("Content-Type", "text/html; charset=utf-8");
+                return res.status(503).send('<!DOCTYPE html><meta charset="utf-8"><meta name="robots" content="noindex"><title>Please try again | SinSubz</title><body style="font-family:system-ui;background:#07080d;color:#eee;text-align:center;padding:80px 20px"><h1>Please try again in a few minutes</h1><p><a style="color:#9aa6ff" href="/">Go to SinSubz</a></p></body>');
+            }
             if (!d && slug && act === "page") {
                 // a near-miss address (cut-off, or with/without the year) goes to the one title it clearly means
                 const base = slug.replace(/-(19|20)\d\d$/, "");

@@ -971,7 +971,7 @@
 
         // new-release alerts (bell): load now, then keep fresh while the app is open
         loadInbox();
-        setInterval(function () { if (!document.hidden) { loadInbox(); } }, 30000);
+        setInterval(function () { if (!document.hidden) { loadInbox(); } }, 180000);   // every 3 min (was 30 s): fewer database commands
 
         try { window.history.replaceState({ appTab: "find", jobs: false }, ""); } catch (e) { /* ignore */ }
         applyView("find", false);
