@@ -523,10 +523,16 @@ module.exports = async function ready(req, res) {
         if ((act === "page" || act === "title") && req.method === "GET") {
             const slug = String(q(req).slug || "").toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 80);
             const d = slug ? await titleData(slug) : null;
+            if (!d && slug && act === "page") {
+                // a near-miss address (cut-off, or with/without the year) goes to the one title it clearly means
+                const base = slug.replace(/-(19|20)\d\d$/, "");
+                const near = (await allTitles()).filter(x => x.slug && (x.slug.indexOf(base) === 0 || base.indexOf(x.slug) === 0 || x.slug.replace(/-(19|20)\d\d$/, "") === base));
+                if (near.length === 1) { res.setHeader("Location", (near[0].type === "tv" ? "/tv/" : "/film/") + near[0].slug); return res.status(301).end(); }
+            }
             if (!d) {
                 if (act === "title") { return res.status(404).json({ error: "Not found" }); }
                 res.setHeader("Content-Type", "text/html; charset=utf-8");
-                return res.status(404).send('<!DOCTYPE html><meta charset="utf-8"><meta name="robots" content="noindex"><title>Not found | SinSubz</title><body style="font-family:system-ui;background:#07080d;color:#eee;text-align:center;padding:80px 20px"><h1>Not found</h1><p><a style="color:#9aa6ff" href="/">Go to SinSubz</a></p></body>');
+                return res.status(404).send('<!DOCTYPE html><meta charset="utf-8"><meta name="robots" content="noindex"><title>Not found | SinSubz</title><body style="font-family:system-ui;background:#07080d;color:#eee;text-align:center;padding:80px 20px"><h1>Not found</h1><p>This title has no ready Sinhala subtitle yet.</p><p><a style="color:#9aa6ff" href="/">Search and translate it on SinSubz</a> &middot; <a style="color:#9aa6ff" href="/ready.html">See all ready subtitles</a></p></body>');
             }
             res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=3600");
             if (act === "title") { return res.status(200).json(d); }
