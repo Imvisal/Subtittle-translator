@@ -73,7 +73,9 @@ async function overLimit(kind, id, max, windowSec) {
     if (!hasRedis()) { return false; }
     try {
         const k = "rl:" + kind + ":" + String(id).slice(0, 64) + ":" + Math.floor(Date.now() / (windowSec * 1000));
-        const r = await redis([["INCR", k], ["EXPIRE", k, windowSec * 2]]);
+        const r = await redis([["INCR", k]]);
+        // set the expiry only when the counter is new (one command per request instead of two)
+        if (Number(r[0]) === 1) { redis([["EXPIRE", k, windowSec * 2]]).catch(() => { /* the key is unique per window, so a missed expiry is harmless */ }); }
         return Number(r[0]) > max;
     } catch (e) { return false; }
 }

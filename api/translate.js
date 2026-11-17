@@ -235,6 +235,7 @@ function isDailyQuotaMessage(message) {
 //   h:d:<day>  hash  ok / json / quota / busy / other / salvaged
 //   h:k:<day>  hash  "<keyNumber>:ok|429|bad|err"   (the key itself is never stored)
 // ------------------------------------------------------------------
+const expSeen = new Set();       // day-keys whose expiry this instance already set
 async function track(day, fields, keyFields) {
     try {
         const g = require("./_google");
@@ -243,7 +244,8 @@ async function track(day, fields, keyFields) {
         Object.keys(fields || {}).forEach(f => cmds.push(["HINCRBY", "h:d:" + day, f, fields[f]]));
         Object.keys(keyFields || {}).forEach(f => cmds.push(["HINCRBY", "h:k:" + day, f, keyFields[f]]));
         if (!cmds.length) return;
-        cmds.push(["EXPIRE", "h:d:" + day, 35 * 86400], ["EXPIRE", "h:k:" + day, 35 * 86400]);
+        // EXPIRE once per day-key per running instance (not on every chunk): about half the commands
+        ["h:d:", "h:k:"].forEach(p => { if (!expSeen.has(p + day)) { expSeen.add(p + day); cmds.push(["EXPIRE", p + day, 35 * 86400]); } });
         await Promise.race([g.redis(cmds), new Promise(r => setTimeout(r, 1500))]);
     } catch (e) { /* ignore */ }
 }
@@ -254,7 +256,7 @@ async function trackQuota(k, exhausted) {
         const g = require("./_google");
         if (!g.hasRedis()) return;
         const day = require("./_admin.js").pacificDay();
-        await Promise.race([g.redis([["HINCRBY", "q:" + day, exhausted ? (k + 1) + ":x" : String(k + 1), 1], ["EXPIRE", "q:" + day, 3 * 86400]]), new Promise(r => setTimeout(r, 1500))]);
+        await Promise.race([g.redis([["HINCRBY", "q:" + day, exhausted ? (k + 1) + ":x" : String(k + 1), 1]].concat(expSeen.has("q:" + day) ? [] : (expSeen.add("q:" + day), [["EXPIRE", "q:" + day, 3 * 86400]]))), new Promise(r => setTimeout(r, 1500))]);
     } catch (e) { /* ignore */ }
 }
 
