@@ -31,21 +31,29 @@
         slots.push({ box: d, frame: f });
         return d;
     }
-    var d = slot("/ad-box.html", 300, 250);
+    /* The 300x250 banner unit gets no ads (blank box), the native unit does: both places use the native ad (its frame grows to the height the ad reports) */
+    function nativeSlot() {
+        var n = slot("/ad-box-native.html", 560, 300);
+        n.style.width = "100%"; n.style.maxWidth = "560px";
+        var f = n.querySelector("iframe"); f.style.width = "100%"; f.style.maxWidth = "560px"; f.removeAttribute("width");
+        return n;
+    }
+    window.addEventListener("message", function (ev) {
+        if (!ev.data || ev.data.sinsubzAd !== "native") { return; }
+        for (var i = 0; i < slots.length; i++) {
+            var f = slots[i].frame;
+            if (f.contentWindow !== ev.source || !/native/.test(f.getAttribute("src") || "")) { continue; }
+            var h = Math.max(60, Math.min(900, Number(ev.data.h) || 0));
+            if (h) { f.style.height = h + "px"; f.height = String(h); }
+        }
+    });
+    var d = nativeSlot();
     /* phones: a slim 320x50 banner under the top block of the page as well */
     if (tp && window.innerWidth < 740) {
         var cast = tp.querySelector(".tp-cast") || tp.querySelector("#tpEps");
         if (cast) { tp.insertBefore(slot("/ad-box-320.html", 320, 50), cast); }
     }
-    /* Adsterra native banner: at the end of the page; its frame grows to the height the ad reports */
-    var nat = slot("/ad-box-native.html", 560, 300);
-    nat.style.width = "100%"; nat.style.maxWidth = "560px";
-    var nf = nat.querySelector("iframe"); nf.style.width = "100%"; nf.style.maxWidth = "560px"; nf.removeAttribute("width");
-    window.addEventListener("message", function (ev) {
-        if (ev.source !== nf.contentWindow || !ev.data || ev.data.sinsubzAd !== "native") { return; }
-        var h = Math.max(60, Math.min(900, Number(ev.data.h) || 0));
-        if (h) { nf.style.height = h + "px"; nf.height = String(h); }
-    });
+    var nat = nativeSlot();
     if (tp) {
         tp.insertBefore(nat, tp.querySelector(".tp-foot") || null);
     } else { host.appendChild(nat); }
