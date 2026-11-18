@@ -214,3 +214,11 @@ html .search-section { position: relative; isolation: isolate; padding-bottom: 8
 @keyframes hfFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 @keyframes hfLine { to { clip-path: inset(0 0 0 0); } }
 @media (prefers-reduced-motion: reduce) { .hf-any { animation: none; background-position: 0 0; } .hf-any::after { animation: none; clip-path: none; } }
+
+
+/* Sponsored banner (the owner's own promo) under the hero; hidden for Premium members */
+.promo-ad { position: relative; width: min(720px, calc(100% - 32px)); margin: 28px auto; }
+.promo-ad a { display: block; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,.1); box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+.promo-ad img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: #0a0d14; }
+.promo-ad-tag { position: absolute; top: 8px; left: 10px; z-index: 1; padding: 2px 8px; border-radius: 99px; font: 600 10.5px/1.5 system-ui, sans-serif; color: #fff; background: rgba(0,0,0,.55); pointer-events: none; }
+.is-premium .promo-ad { display: none; }
