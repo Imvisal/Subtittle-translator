@@ -526,6 +526,8 @@
     })();
 
     // visitor requests (request.html): approve = put on top of the runner list, reject = remove
+    var rqN = 0, spN = 0;
+    function badge() { var tb = $("tabnApprove"); if (tb) { var n = rqN + spN; tb.textContent = String(n); tb.hidden = !n; } }
     function loadRequests() {
         var box = $("rqList"); if (!box) { return; }
         var H = { "x-admin-key": KEY, "Content-Type": "application/json" };
@@ -533,6 +535,7 @@
             var items = d.items || [];
             box.textContent = "";
             if ($("rqCount")) { $("rqCount").textContent = items.length ? String(items.length) : ""; }
+            rqN = items.length; badge();
             if (!items.length) { box.appendChild(el("div", "muted", "No requests.")); return; }
             items.forEach(function (it) {
                 var row = el("div", "row", "");
@@ -766,7 +769,7 @@
             window.__spItems = items;
             host.textContent = "";
             var cnt = $("spCount"); if (cnt) { cnt.textContent = items.length ? String(items.length) : ""; }
-            var tb = $("tabnApprove"); if (tb) { tb.textContent = String(items.length); tb.hidden = !items.length; }
+            spN = items.length; badge();
             if (!items.length) { host.appendChild(el("p", "muted", "Nothing waiting.")); return; }
             items.forEach(function (it) {
                 var row = el("div", "", ""); row.style.cssText = "padding:10px 0;border-top:1px solid var(--line)";
