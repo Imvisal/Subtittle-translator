@@ -3,6 +3,15 @@
 <style>html,body{margin:0;padding:0;background:transparent;overflow:hidden}</style></head>
 <body>
 <script>
+/* The frame is sandboxed (no allow-same-origin), so reading document.cookie / localStorage THROWS and stops the ad script.
+   Give the ad harmless in-memory versions instead: the ad still runs, and still cannot touch the SinSubz sign-in or storage. */
+(function () {
+    try { var ck = ""; Object.defineProperty(document, "cookie", { configurable: true, get: function () { return ck; }, set: function (v) { ck = String(v).split(";")[0]; } }); } catch (e) { /* ignore */ }
+    function mem() { var d = {}; return { getItem: function (k) { return Object.prototype.hasOwnProperty.call(d, k) ? d[k] : null; }, setItem: function (k, v) { d[k] = String(v); }, removeItem: function (k) { delete d[k]; }, clear: function () { d = {}; }, key: function (i) { return Object.keys(d)[i] || null; }, get length() { return Object.keys(d).length; } }; }
+    ["localStorage", "sessionStorage"].forEach(function (n) { try { Object.defineProperty(window, n, { configurable: true, value: mem() }); } catch (e) { /* ignore */ } });
+})();
+</script>
+<script>
   atOptions = {
     'key' : '5c54726f866d27b3217568d8d59a953a',
     'format' : 'iframe',
