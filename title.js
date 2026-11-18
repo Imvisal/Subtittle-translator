@@ -250,7 +250,26 @@
             '<a class="tp-opt tp-opt-a" href="' + fileUrl(si, ei) + '" download><span class="tp-ot"><b>' + (rel ? esc(rel) : "Ready subtitle") + ' <i class="tp-tag-si">Sinhala</i></b><span>Works with most versions. Ready now.</span></span><span class="tp-obtn">'+DL+'</span></a>' +
             '<div class="tp-sec">Other Sinhala subtitle video versions <small>synced to your file</small></div>' +
             '<div class="tp-rels" id="tpRels"><p class="tp-mp">Loading versions\u2026</p></div>' +
+            '<div class="tp-adbox" id="tpAdBox" hidden><div class="tp-adlbl">Advertisement</div></div>' +
             '</div>';
+        /* one native ad at the very bottom of the popup, well away from the Download buttons (sandboxed frame; it hides itself when there is no ad) */
+        (function popupAd() {
+            if (/^(capacitor|file|app):/.test(location.protocol)) { return; }
+            var bx = ov.querySelector("#tpAdBox"), fr = document.createElement("iframe");
+            fr.src = "/ad-box-native.html"; fr.title = "Advertisement"; fr.loading = "lazy";
+            fr.setAttribute("sandbox", "allow-scripts allow-popups allow-popups-to-escape-sandbox");
+            fr.referrerPolicy = "no-referrer-when-downgrade";
+            fr.style.cssText = "border:0;width:100%;max-width:420px;height:200px;display:block;margin:0 auto;background:transparent;";
+            bx.appendChild(fr); bx.hidden = false;
+            function onMsg(ev) {
+                if (ev.source !== fr.contentWindow || !ev.data) { return; }
+                if (ev.data.sinsubzAd === "none") { bx.hidden = true; }
+                else if (ev.data.sinsubzAd === "native") { var h = Math.max(60, Math.min(260, Number(ev.data.h) || 0)); if (h) { fr.style.height = h + "px"; } }
+            }
+            window.addEventListener("message", onMsg);
+            var obs = new MutationObserver(function () { if (!document.body.contains(ov)) { window.removeEventListener("message", onMsg); obs.disconnect(); } });
+            obs.observe(document.body, { childList: true });
+        })();
         (function loadRels() {
             var box = null;
             var q = "/api/subtitles?imdb_id=" + encodeURIComponent(D.id) + (isTv ? "&type=episode&season=" + s + "&episode=" + e : "&type=movie");

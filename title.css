@@ -168,6 +168,9 @@
 .tp-obtn { flex: none; padding: 8px 14px; border-radius: 10px; font-weight: 800; font-size: 13px; color: #0b0d1f; background: linear-gradient(180deg, #a9a7ff, #8381f7); }
 .tp-opt-r { margin-top: 8px; }
 .tp-rels { max-height: 42vh; overflow-y: auto; }
+.tp-modal { max-height: calc(100vh - 32px); overflow-y: auto; }
+.tp-adbox { margin-top: 22px; padding-top: 12px; border-top: 1px solid var(--line); text-align: center; }
+.tp-adlbl { font: 11px/1.2 sans-serif; opacity: .55; margin-bottom: 6px; }
 .tp-opt .tp-obtn { display: inline-block; margin: 0; font-size: 13px; color: #0b0d1f; line-height: 1.2; }
 .tp-opt .tp-ot { margin: 0; }
 .tp-opt .tp-ot > span { margin-top: 3px; }
