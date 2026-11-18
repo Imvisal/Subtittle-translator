@@ -7,6 +7,12 @@
     var tp = document.querySelector(".tp-wrap");
     var host = tp || document.querySelector("main.legal-container");
     if (!host || document.querySelector(".ad300")) { return; }
+    var slots = [];
+    /* an ad frame says "none" when its network gave nothing: remove the empty box (and its "Advertisement" label) */
+    window.addEventListener("message", function (ev) {
+        if (!ev.data || ev.data.sinsubzAd !== "none") { return; }
+        for (var i = 0; i < slots.length; i++) { if (slots[i].frame.contentWindow === ev.source) { slots[i].box.style.display = "none"; } }
+    });
     function slot(src, w, h) {
         var d = document.createElement("div");
         d.className = "ad300";
@@ -22,6 +28,7 @@
         f.referrerPolicy = "no-referrer-when-downgrade";
         f.style.cssText = "border:0;width:" + w + "px;height:" + h + "px;max-width:100%;display:block;margin:0 auto;background:transparent;";
         d.appendChild(small); d.appendChild(f);
+        slots.push({ box: d, frame: f });
         return d;
     }
     var d = slot("/ad-box.html", 300, 250);

@@ -25,4 +25,18 @@
     setInterval(send, 1500); window.addEventListener("load", send);
 })();
 </script>
+<script>
+/* If the ad network gave nothing (script blocked or failed, nothing drawn after 8 s) tell the page, so it hides the empty "Advertisement" box. */
+(function () {
+    var said = false;
+    function none() { if (said) { return; } said = true; try { parent.postMessage({ sinsubzAd: "none" }, "*"); } catch (e) { /* ignore */ } }
+    var sc = document.querySelectorAll('script[src^="https://"]');
+    for (var i = 0; i < sc.length; i++) { sc[i].addEventListener("error", none); }
+    setTimeout(function () {
+        var c = document.querySelector('[id^="container-"]');
+        var drawn = c ? c.children.length > 0 : !!document.querySelector("iframe, ins, img, a, object, embed");
+        if (!drawn) { none(); }
+    }, 8000);
+})();
+</script>
 </body></html>

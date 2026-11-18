@@ -21,4 +21,18 @@
   };
 </script>
 <script src="https://bancadeltempoidea.org/22/5c54726f866d27b3217568d8d59a953a"></script>
+<script>
+/* If the ad network gave nothing (script blocked or failed, nothing drawn after 8 s) tell the page, so it hides the empty "Advertisement" box. */
+(function () {
+    var said = false;
+    function none() { if (said) { return; } said = true; try { parent.postMessage({ sinsubzAd: "none" }, "*"); } catch (e) { /* ignore */ } }
+    var sc = document.querySelectorAll('script[src^="https://"]');
+    for (var i = 0; i < sc.length; i++) { sc[i].addEventListener("error", none); }
+    setTimeout(function () {
+        var c = document.querySelector('[id^="container-"]');
+        var drawn = c ? c.children.length > 0 : !!document.querySelector("iframe, ins, img, a, object, embed");
+        if (!drawn) { none(); }
+    }, 8000);
+})();
+</script>
 </body></html>
