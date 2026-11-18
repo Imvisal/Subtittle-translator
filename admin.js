@@ -675,10 +675,55 @@
                 }).catch(function () { $("spFindOut").textContent = "Could not finish. Press again."; }).then(function () { b.disabled = false; });
         });
     })();
+    // Approve all / Reject all (one by one, so a failure stops at that item and nothing is half-done)
+    (function () {
+        var ba = $("spApproveAll"), br = $("spRejectAll"), out = $("spBulkOut");
+        if (!ba || !br) { return; }
+        function setBusy(on) { ba.disabled = br.disabled = on; }
+        function pdel(id) { return fetch("/api/stats?ready=pdel", { method: "POST", headers: { "x-admin-key": KEY, "Content-Type": "application/json" }, body: JSON.stringify({ id: id }) }); }
+        function approveOne(it) {
+            return fetch("/api/stats?ready=pending&id=" + it.id, { headers: { "x-admin-key": KEY }, cache: "no-store" }).then(function (r) { return r.json(); }).then(function (full) {
+                if (!full || !full.srt) { throw new Error((full && full.error) || "Could not read it"); }
+                return fetch("/api/stats?ready=put", { method: "POST", headers: { "x-admin-key": KEY, "Content-Type": "application/json" },
+                    body: JSON.stringify({ imdb: full.imdb, title: full.title, year: full.year, poster: full.poster, type: full.type, season: full.s, episode: full.e, srt: full.srt, filename: full.filename }) });
+            }).then(function (r) { if (!r.ok) { throw new Error("Could not add it (" + r.status + ")"); } return pdel(it.id); });
+        }
+        function run(list, fn, verb) {
+            setBusy(true);
+            var i = 0, ok = 0;
+            (function next() {
+                if (i >= list.length) { out.textContent = verb + " " + ok + " of " + list.length + "."; setBusy(false); loadSuggested(); loadReady(); return; }
+                out.textContent = verb + "... " + (i + 1) + " / " + list.length;
+                var it = list[i++];
+                fn(it).then(function () { ok++; next(); }).catch(function (e) {
+                    out.textContent = "Stopped at " + (it.title || it.id) + ": " + (e && e.message ? e.message : "failed") + ". " + ok + " done.";
+                    setBusy(false); loadSuggested(); loadReady();
+                });
+            })();
+        }
+        ba.addEventListener("click", function () {
+            var items = (window.__spItems || []).slice();
+            if (!items.length) { out.textContent = "Nothing waiting."; return; }
+            var unsure = items.filter(function (x) { return x.maybe; });
+            if (!window.confirm("Approve all " + items.length + " suggested translations? Each one gets its own film / TV page.")) { return; }
+            if (unsure.length && !window.confirm(unsure.length + " of them are NOT SURE (the name did not match exactly).\n\nOK = approve those too\nCancel = approve only the sure ones and leave the " + unsure.length + " for you to check")) {
+                items = items.filter(function (x) { return !x.maybe; });
+            }
+            if (!items.length) { out.textContent = "Nothing to approve."; return; }
+            run(items, approveOne, "Approved");
+        });
+        br.addEventListener("click", function () {
+            var items = (window.__spItems || []).slice();
+            if (!items.length) { out.textContent = "Nothing waiting."; return; }
+            if (!window.confirm("Reject (delete) all " + items.length + " suggested translations? This cannot be undone.")) { return; }
+            run(items, function (it) { return pdel(it.id).then(function (r) { if (!r.ok) { throw new Error("Failed (" + r.status + ")"); } }); }, "Rejected");
+        });
+    })();
     function loadSuggested() {
         var host = $("spList"); if (!host) { return; }
         fetch("/api/stats?ready=pending", { headers: { "x-admin-key": KEY }, cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
             var items = (d && d.items) || [];
+            window.__spItems = items;
             host.textContent = "";
             var cnt = $("spCount"); if (cnt) { cnt.textContent = items.length ? String(items.length) : ""; }
             var tb = $("tabnApprove"); if (tb) { tb.textContent = String(items.length); tb.hidden = !items.length; }
