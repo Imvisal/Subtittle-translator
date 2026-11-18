@@ -279,6 +279,20 @@ module.exports = async function autoq(req, res) {
             return res.status(200).json({ ok: true });
         }
 
+        if (act === "reorder" && req.method === "POST") {
+            // b.order = imdb ids in the new order. The items named there swap among the places they already had; every other item stays where it is.
+            const order = (Array.isArray(b.order) ? b.order : []).filter(imdbOk).slice(0, 500);
+            const { list } = await readList();
+            const byId = new Map(list.map(l => [l.imdb, l]));
+            const wanted = order.filter((id, i) => byId.has(id) && order.indexOf(id) === i);
+            const slots = [];
+            list.forEach((l, i) => { if (wanted.includes(l.imdb)) { slots.push(i); } });
+            const next = list.slice();
+            slots.forEach((pos, k) => { next[pos] = byId.get(wanted[k]); });
+            await redis([["SET", "aq:list", JSON.stringify(next)]]);
+            return res.status(200).json({ ok: true, moved: wanted.length });
+        }
+
         if (act === "drop" && req.method === "POST") {
             if (!imdbOk(b.imdb)) { return res.status(400).json({ error: "Bad imdb id" }); }
             const { list } = await readList();

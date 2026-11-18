@@ -551,6 +551,29 @@
     }
 
     var aqTab = "w";
+    // drag a list row up or down (pointer events: works with a mouse and with a finger); on release the new order is saved
+    function aqDrag(ev, handle, row, host) {
+        if (ev.button != null && ev.button > 0) { return; }
+        ev.preventDefault();
+        row.style.opacity = ".55"; row.style.background = "rgba(124,140,255,.14)";
+        function visibleRows() { return Array.prototype.filter.call(host.children, function (r) { return r.getAttribute && r.getAttribute("data-imdb") && r.style.display !== "none" && r !== row; }); }
+        function move(e) {
+            if (e.clientY < 70) { window.scrollBy(0, -14); } else if (e.clientY > window.innerHeight - 70) { window.scrollBy(0, 14); }
+            var rows = visibleRows(), target = null;
+            for (var i = 0; i < rows.length; i++) { var rc = rows[i].getBoundingClientRect(); if (e.clientY < rc.top + rc.height / 2) { target = rows[i]; break; } }
+            if (target) { if (row.nextSibling !== target) { host.insertBefore(row, target); } }
+            else if (rows.length) { var last = rows[rows.length - 1]; if (last.nextSibling !== row) { host.insertBefore(row, last.nextSibling); } }
+        }
+        function up() {
+            window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", up);
+            row.style.opacity = ""; row.style.background = "";
+            var order = Array.prototype.filter.call(host.children, function (r) { return r.getAttribute && r.getAttribute("data-imdb"); }).map(function (r) { return r.getAttribute("data-imdb"); });
+            fetch("/api/stats?autoq=reorder", { method: "POST", headers: { "x-admin-key": KEY, "Content-Type": "application/json" }, body: JSON.stringify({ order: order }) })
+                .then(function () { loadQueue(); }).catch(function () { loadQueue(); });
+        }
+        // on the window (not the handle): moving the row in the page would drop a capture held by the handle
+        window.addEventListener("pointermove", move); window.addEventListener("pointerup", up); window.addEventListener("pointercancel", up);
+    }
     function loadQueue() {
         if (!KEY) { return; }
         loadSubdl();
@@ -596,8 +619,16 @@
             var AQ_SHOW = 5, aqMore = [];
             shown.forEach(function (it, i) {
                 var row = el("div", "row", "");
-                row.style.cssText = "justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line);flex-wrap:wrap";
+                row.style.cssText = "justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);flex-wrap:wrap";
+                row.setAttribute("data-imdb", it.imdb);
                 if (i >= AQ_SHOW) { row.style.display = "none"; aqMore.push(row); }
+                if (aqTab === "w") {            // drag handle: move the item up or down (mouse or finger)
+                    var hd = el("span", "", "\u2630");
+                    hd.title = "Drag up or down to change the order";
+                    hd.style.cssText = "cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;padding:6px 8px;font-size:18px;line-height:1;opacity:.75;flex:none";
+                    hd.addEventListener("pointerdown", function (ev) { aqDrag(ev, hd, row, host); });
+                    row.appendChild(hd);
+                }
                 var state = aqTab === "d" ? "done" : (it === firstPending ? "NOW" : (it.todo && it.todo.length ? "waiting" : "no subtitle yet"));
                 var film = it.type === "movie";
                 var txt = el("div", "", "");
@@ -606,6 +637,7 @@
                 txt.appendChild(document.createTextNode(" "));
                 txt.appendChild(el("span", "tag", state));
                 txt.appendChild(el("div", "muted", (film ? (it.done ? "translated" : "not translated yet") : it.done + " / " + it.total + " episodes") + (it.skipped ? " · " + it.skipped + " waiting for an English subtitle" : "") + " · from " + (it.src || "?")));
+                txt.style.flex = "1 1 160px";
                 row.appendChild(txt);
                 var b = el("button", "btn ghost", "Remove");
                 b.type = "button";
