@@ -174,6 +174,26 @@ module.exports = async function autoq(req, res) {
             return res.status(200).json({ meta, list: out });
         }
 
+        // random well-rated films that are not on the Ready list / in the list yet (the runner then checks the Sinhala sites)
+        if (act === "candidates" && req.method === "GET" && q(req).kind === "movie") {
+            const [{ list }, have] = await Promise.all([readList(), readyEpisodes()]);
+            const known = new Set(list.map(x => x.imdb).concat(Object.keys(have)));
+            const pool = [];
+            for (const p of [1 + Math.floor(Math.random() * 15), 1 + Math.floor(Math.random() * 15), 1 + Math.floor(Math.random() * 15)]) {
+                try {
+                    const r = await tmdb("/discover/movie?sort_by=popularity.desc&vote_average.gte=6.4&vote_count.gte=800&with_original_language=en&without_genres=99,10770&page=" + p);
+                    (r.results || []).forEach(x => { if (!pool.some(y => y.id === x.id)) { pool.push({ id: x.id, base: x }); } });
+                } catch (e) { /* ignore */ }
+            }
+            for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
+            const items = [];
+            for (let i = 0; i < pool.length && items.length < 30; i += 8) {
+                const batch = await Promise.all(pool.slice(i, i + 8).map(p => movieDetail(p.id, "random", p.base).catch(() => null)));
+                batch.forEach(d => { if (d && !known.has(d.imdb) && !items.some(x => x.imdb === d.imdb)) { items.push(d); } });
+            }
+            return res.status(200).json({ items });
+        }
+
         if (act === "candidates" && req.method === "GET") {
             const [{ list }, have] = await Promise.all([readList(), readyEpisodes()]);
             const known = new Set(list.map(x => x.imdb).concat(Object.keys(have)));
@@ -275,6 +295,7 @@ module.exports = async function autoq(req, res) {
         if (act === "meta" && req.method === "POST") {
             const { meta } = await readList();
             if (b.lastRefill) { meta.lastRefill = Date.now(); }
+            if (b.lastFilmRefill) { meta.lastFilmRefill = Date.now(); }
             await redis([["SET", "aq:meta", JSON.stringify(meta)]]);
             return res.status(200).json({ ok: true, meta });
         }

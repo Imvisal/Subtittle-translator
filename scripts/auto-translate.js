@@ -19,6 +19,7 @@
         next one. Every Sunday up to 10 new series WITHOUT a Sinhala subtitle (baiscope / cineru / sinhalasub) are added
         to the end: demand (what visitors translated / searched) first, then newly released, then random good ones.
         The very first run fills the list at once (REFILL=1 forces a refill any day).
+     3. Every day up to 5 RANDOM well-rated films WITHOUT a Sinhala subtitle are added too (DAILY_FILMS=5, FILM_REFILL=1 forces it).
    Stops by itself when Gemini says the quota is used up, at the quota reset, or after 3 failures in a row.  Safe to
    run again: finished episodes are skipped and the next run continues where this one stopped. */
 "use strict";
@@ -159,6 +160,28 @@ async function refillIfDue(weekly, meta, emptyList) {
     return true;
 }
 
+// Every day (once per Sri Lanka day): add up to <n> random films WITHOUT a Sinhala subtitle to the list
+async function refillFilmsIfDue(n, meta) {
+    const day = d => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Colombo" }).format(new Date(d));
+    if (n <= 0 || (process.env.FILM_REFILL !== "1" && meta.lastFilmRefill && day(meta.lastFilmRefill) === day(Date.now()))) { log("Daily films: already added today."); return false; }
+    log("Daily films: looking for up to " + n + " random films without a Sinhala subtitle ...");
+    const cand = await api("/api/stats?autoq=candidates&kind=movie", { headers: AK() });
+    if (!cand.ok) { log("  film candidates failed: " + cand.status + " " + cand.text.slice(0, 120)); return false; }
+    const picked = [];
+    for (const c of ((cand.json && cand.json.items) || [])) {
+        if (picked.length >= n) { break; }
+        let found = null;
+        try { const r = await api("/api/sinhala-search?title=" + encodeURIComponent(c.title) + "&year=" + encodeURIComponent(c.year || "") + "&type=movie&_r=" + Date.now(), { headers: AK() }); if (r.ok && r.json) { found = !!r.json.found; } } catch (e) { /* unknown */ }
+        if (found === true) { log("  skip " + c.title + ": already has a Sinhala subtitle"); continue; }
+        picked.push(c);
+        log("  + " + c.title + " (" + c.year + ")" + (found === null ? " [could not check the Sinhala sites]" : ""));
+    }
+    if (picked.length) { const r = await post("/api/stats?autoq=add", { items: picked }); log("  added " + ((r.json && r.json.added) || 0) + " films, list size " + ((r.json && r.json.size) || "?")); }
+    else { log("  no new film found today."); }
+    await post("/api/stats?autoq=meta", { lastFilmRefill: true });
+    return true;
+}
+
 (async () => {
     if (!KEY) { console.error("ADMIN_KEY is not set"); process.exit(1); }
 
@@ -188,6 +211,8 @@ async function refillIfDue(weekly, meta, emptyList) {
     const emptyList = remaining() === 0 && wanted(queue).length === 0;
     try { if (await refillIfDue(weekly, (aq.json && aq.json.meta) || {}, emptyList)) { aq = await api("/api/stats?autoq=get", { headers: AK() }); } } catch (e) { log("refill failed: " + e.message); }
 
+    try { if (await refillFilmsIfDue(Number(process.env.DAILY_FILMS) || 5, (aq.json && aq.json.meta) || {})) { aq = await api("/api/stats?autoq=get", { headers: AK() }); } } catch (e) { log("film refill failed: " + e.message); }
+
     const list = await api("/api/stats?ready=list");
     const have = new Set();
     ((list.json && list.json.items) || []).forEach(it => it.eps.forEach(e => have.add(it.id + "|" + (it.type === "tv" ? e.s : 0) + "|" + (it.type === "tv" ? e.e : 0))));
@@ -197,6 +222,8 @@ async function refillIfDue(weekly, meta, emptyList) {
     ((aq.json && aq.json.list) || []).forEach(sr => {
         (sr.todo || []).forEach(p => all.push({ t: { imdb: sr.imdb, title: sr.title, year: sr.year, poster: sr.poster, type: sr.type === "movie" ? "movie" : "tv" }, season: p[0], episode: p[1], queued: true }));
     });
+    // the daily films go before the long series list, so the 5 films of the day really get done
+    { const first = all.filter(j => !j.queued || j.t.type === "movie"), rest = all.filter(j => j.queued && j.t.type !== "movie"); all = first.concat(rest); }
     if (process.env.LIST_ONLY === "1") { log("LIST_ONLY: would work on " + [...new Set(all.map(j => j.t.title))].join(", ")); return; }
     const todo = all.filter(j => !have.has(j.t.imdb + "|" + j.season + "|" + j.episode));
     log("Queue: " + todo.length + " episodes / films to do in " + new Set(todo.map(j => j.t.imdb)).size + " titles, this run does at most " + maxRun + ".");
