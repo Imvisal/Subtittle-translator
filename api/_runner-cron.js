@@ -44,9 +44,11 @@ module.exports = async function runnerCron(req, res) {
     }, opt || {}));
     const active = async () => {
         const out = [];
-        for (const st of ["in_progress", "queued"]) {
-            const r = await gh("/actions/workflows/auto-translate.yml/runs?status=" + st + "&per_page=10");
-            if (r.ok) { const j = await r.json(); (j.workflow_runs || []).forEach(x => out.push({ id: x.id, since: x.run_started_at || x.created_at, status: x.status })); }
+        for (const wf of ["auto-translate.yml", "auto-films.yml"]) {       // the series run and the separate films run
+            for (const st of ["in_progress", "queued"]) {
+                const r = await gh("/actions/workflows/" + wf + "/runs?status=" + st + "&per_page=10").catch(() => null);
+                if (r && r.ok) { const j = await r.json(); (j.workflow_runs || []).forEach(x => out.push({ id: x.id, since: x.run_started_at || x.created_at, status: x.status })); }
+            }
         }
         return out;
     };
@@ -61,6 +63,13 @@ module.exports = async function runnerCron(req, res) {
             const runs = await active();
             for (const r of runs) { await gh("/actions/runs/" + r.id + "/cancel", { method: "POST" }).catch(() => null); }
             return res.status(200).json({ ok: true, stopped: runs.length });
+        }
+        if (act === "startfilms") {
+            if ((await active()).length) { return res.status(200).json({ ok: false, error: "A run is already going" }); }
+            try { await g.redis([["DEL", "aq:stop"]]); } catch (e) { /* ignore */ }
+            const r = await gh("/actions/workflows/auto-films.yml/dispatches", { method: "POST", body: JSON.stringify({ ref: "main" }) });
+            if (r.status !== 204) { return res.status(502).json({ error: r.status === 404 ? "auto-films.yml is not in the runner repo yet" : "GitHub answered " + r.status }); }
+            return res.status(200).json({ ok: true, started: true });
         }
         if (act === "start") {
             if ((await active()).length) { return res.status(200).json({ ok: false, error: "A run is already going" }); }

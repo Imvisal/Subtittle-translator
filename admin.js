@@ -458,6 +458,14 @@
                 setTimeout(runnerStatus, 4000);
             }).catch(function () { $("arMsg").textContent = "Could not start."; }).then(function () { a.disabled = false; });
         });
+        var f = $("arFilms");
+        if (f) { f.addEventListener("click", function () {
+            f.disabled = true; $("arMsg").textContent = "Starting the films run...";
+            runnerCall("startfilms").then(function (d) {
+                $("arMsg").textContent = d.started ? "Films run started (picks up to 5 random films, then translates them). Watch the Logs tab. It stops by itself after 90 minutes." : (d.error || "Could not start.");
+                setTimeout(runnerStatus, 4000);
+            }).catch(function () { $("arMsg").textContent = "Could not start."; }).then(function () { f.disabled = false; });
+        }); }
         b.addEventListener("click", function () {
             if (!window.confirm("Stop the auto translator?")) { return; }
             b.disabled = true; $("arMsg").textContent = "Stopping...";
