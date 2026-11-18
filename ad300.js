@@ -49,7 +49,26 @@
         }
     });
     var d = nativeSlot();
-    if (home && host === home) { home.appendChild(d); return; }
+    if (home && host === home) {
+        home.appendChild(d);
+        /* tool results: one native ad under the Download button, added only AFTER a result exists (a gap keeps it away from the button) */
+        var after = function (watch, attr, ready, anchor) {
+            var el = document.getElementById(watch), made = false;
+            if (!el || !anchor) { return; }
+            function check() {
+                if (made || !ready(el)) { return; }
+                made = true;
+                var a = nativeSlot(); a.style.marginTop = "44px";
+                anchor.parentNode.insertBefore(a, anchor.nextSibling);
+            }
+            new MutationObserver(check).observe(el, { attributes: true, attributeFilter: [attr] });
+            check();
+        };
+        var dlb = document.getElementById("downloadBtn"), syd = document.getElementById("syncDownload");
+        after("downloadBtn", "disabled", function (el) { return !el.disabled; }, dlb);
+        after("syncResult", "hidden", function (el) { return !el.hidden; }, syd);
+        return;
+    }
     /* phones: a slim 320x50 banner under the top block of the page as well */
     if (tp && window.innerWidth < 740) {
         var cast = tp.querySelector(".tp-cast") || tp.querySelector("#tpEps");
