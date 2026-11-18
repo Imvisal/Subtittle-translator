@@ -19,7 +19,8 @@
         next one. Every Sunday up to 10 new series WITHOUT a Sinhala subtitle (baiscope / cineru / sinhalasub) are added
         to the end: demand (what visitors translated / searched) first, then newly released, then random good ones.
         The very first run fills the list at once (REFILL=1 forces a refill any day).
-     3. Every day up to 5 RANDOM well-rated films WITHOUT a Sinhala subtitle are added too (DAILY_FILMS=5, FILM_REFILL=1 forces it).
+     3. (own run, FILMS_ONLY=1, workflow auto-films.yml, any time of day; the quota-hour run above does series only)
+        Every day up to 5 RANDOM well-rated films WITHOUT a Sinhala subtitle are added too (DAILY_FILMS=5, FILM_REFILL=1 forces it).
    Stops by itself when Gemini says the quota is used up, at the quota reset, or after 3 failures in a row.  Safe to
    run again: finished episodes are skipped and the next run continues where this one stopped. */
 "use strict";
@@ -185,7 +186,9 @@ async function refillFilmsIfDue(n, meta) {
 (async () => {
     if (!KEY) { console.error("ADMIN_KEY is not set"); process.exit(1); }
 
-    const manual = (process.env.GITHUB_EVENT_NAME === "workflow_dispatch" && process.env.FROM_CRON !== "1") || process.env.FORCE === "1";
+    // FILMS_ONLY=1: the separate daily FILMS run (own workflow, any time of day): only films, no quota-reset-hour rule
+    const filmsOnly = process.env.FILMS_ONLY === "1";
+    const manual = (process.env.GITHUB_EVENT_NAME === "workflow_dispatch" && process.env.FROM_CRON !== "1") || process.env.FORCE === "1" || filmsOnly;
     // Vercel's free cron can fire up to an hour early/late: if it came early (Pacific hour 22) just wait for hour 23.
     if (!manual && pacificHour() === 22) {
         log("Started early (Pacific hour 22): waiting for the last hour before the reset (23) ...");
@@ -209,9 +212,9 @@ async function refillFilmsIfDue(n, meta) {
         (((aq.json && aq.json.list) || []).length ? " (" + ((aq.json.list)).map(sr => sr.title + ": " + (sr.todo || []).length + " left, " + (sr.skipped || 0) + " skipped").join("; ") + ")" : "") + ".");
     // nothing left in the list (finished, or all skipped/cleared): fill it again now instead of waiting for Sunday
     const emptyList = remaining() === 0 && wanted(queue).length === 0;
-    try { if (await refillIfDue(weekly, (aq.json && aq.json.meta) || {}, emptyList)) { aq = await api("/api/stats?autoq=get", { headers: AK() }); } } catch (e) { log("refill failed: " + e.message); }
+    if (!filmsOnly) { try { if (await refillIfDue(weekly, (aq.json && aq.json.meta) || {}, emptyList)) { aq = await api("/api/stats?autoq=get", { headers: AK() }); } } catch (e) { log("refill failed: " + e.message); } }
 
-    try { if (await refillFilmsIfDue(Number(process.env.DAILY_FILMS) || 5, (aq.json && aq.json.meta) || {})) { aq = await api("/api/stats?autoq=get", { headers: AK() }); } } catch (e) { log("film refill failed: " + e.message); }
+    if (filmsOnly || process.env.FILM_REFILL === "1") try { if (await refillFilmsIfDue(Number(process.env.DAILY_FILMS) || 5, (aq.json && aq.json.meta) || {})) { aq = await api("/api/stats?autoq=get", { headers: AK() }); } } catch (e) { log("film refill failed: " + e.message); }
 
     const list = await api("/api/stats?ready=list");
     const have = new Set();
@@ -225,6 +228,8 @@ async function refillFilmsIfDue(n, meta) {
     // the daily films go before the long series list, so the 5 films of the day really get done
     { const first = all.filter(j => !j.queued || j.t.type === "movie"), rest = all.filter(j => j.queued && j.t.type !== "movie"); all = first.concat(rest); }
     if (process.env.LIST_ONLY === "1") { log("LIST_ONLY: would work on " + [...new Set(all.map(j => j.t.title))].join(", ")); return; }
+    // the daytime run does the series; the separate films run does the films
+    all = all.filter(j => filmsOnly ? j.t.type !== "tv" : j.t.type === "tv");
     const todo = all.filter(j => !have.has(j.t.imdb + "|" + j.season + "|" + j.episode));
     log("Queue: " + todo.length + " episodes / films to do in " + new Set(todo.map(j => j.t.imdb)).size + " titles, this run does at most " + maxRun + ".");
     if (!todo.length) { return; }
