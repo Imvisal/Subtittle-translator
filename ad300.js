@@ -5,7 +5,8 @@
     "use strict";
     if (/^(capacitor|file|app):/.test(location.protocol) || !document.body) { return; }
     var tp = document.querySelector(".tp-wrap");
-    var host = tp || document.querySelector("main.legal-container");
+    var home = document.getElementById("homeAd");          // the home page: ONE native ad above the footer (never near the search / buttons)
+    var host = tp || document.querySelector("main.legal-container") || home;
     if (!host || document.querySelector(".ad300")) { return; }
     var slots = [];
     /* an ad frame says "none" when its network gave nothing: remove the empty box (and its "Advertisement" label) */
@@ -48,6 +49,7 @@
         }
     });
     var d = nativeSlot();
+    if (home && host === home) { home.appendChild(d); return; }
     /* phones: a slim 320x50 banner under the top block of the page as well */
     if (tp && window.innerWidth < 740) {
         var cast = tp.querySelector(".tp-cast") || tp.querySelector("#tpEps");
