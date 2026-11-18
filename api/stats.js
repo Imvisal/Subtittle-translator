@@ -108,6 +108,9 @@ module.exports = async function handler(req, res) {
     if (/(?:^|[?&])mttest(?:=|&|$)/.test(String(req.url || ""))) {
         return require("./_mt.js").testHandler(req, res);
     }
+    if (/(?:^|[?&])req=[a-z]+/.test(String(req.url || ""))) {
+        return require("./_requests.js")(req, res);
+    }
     if (/(?:^|[?&])autoq(?:=|&|$)/.test(String(req.url || ""))) {
         return require("./_autoq.js")(req, res);
     }

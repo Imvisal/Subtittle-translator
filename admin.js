@@ -525,6 +525,46 @@
         inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); go(); } });
     })();
 
+    // visitor requests (request.html): approve = put on top of the runner list, reject = remove
+    function loadRequests() {
+        var box = $("rqList"); if (!box) { return; }
+        var H = { "x-admin-key": KEY, "Content-Type": "application/json" };
+        fetch("/api/stats?req=list", { headers: H, cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
+            var items = d.items || [];
+            box.textContent = "";
+            if ($("rqCount")) { $("rqCount").textContent = items.length ? String(items.length) : ""; }
+            if (!items.length) { box.appendChild(el("div", "muted", "No requests.")); return; }
+            items.forEach(function (it) {
+                var row = el("div", "row", "");
+                row.style.cssText = "justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);flex-wrap:wrap";
+                var left = el("div", "", ""); left.style.cssText = "display:flex;gap:10px;align-items:center;min-width:0";
+                if (it.poster) { var im = document.createElement("img"); im.src = it.poster; im.alt = ""; im.width = 40; im.style.borderRadius = "6px"; left.appendChild(im); }
+                var tx = el("div", "", "");
+                tx.appendChild(el("b", "", it.title + (it.year ? " (" + it.year + ")" : "")));
+                tx.appendChild(el("div", "muted", (it.type === "movie" ? "Film" : "TV series") + " · " + it.votes + (it.votes === 1 ? " request" : " requests")));
+                left.appendChild(tx); row.appendChild(left);
+                var acts = el("div", "", ""); acts.style.cssText = "display:flex;gap:6px";
+                var ok = el("button", "btn", "Approve"), no = el("button", "btn ghost", "Reject"); ok.type = no.type = "button";
+                function drop() { return fetch("/api/stats?req=drop", { method: "POST", headers: H, body: JSON.stringify({ imdb: it.imdb }) }); }
+                no.addEventListener("click", function () { no.disabled = ok.disabled = true; drop().then(loadRequests); });
+                ok.addEventListener("click", function () {
+                    ok.disabled = no.disabled = true; ok.textContent = "Adding...";
+                    fetch("/api/stats?autoq=find&kind=" + it.type + "&q=" + it.imdb, { headers: H, cache: "no-store" }).then(function (r) { return r.json(); }).then(function (f) {
+                        var m = (f.items || []).filter(function (x) { return x.imdb === it.imdb; })[0];
+                        if (!m) { throw new Error("Not found on TMDB / no episodes"); }
+                        if (m.inList) { return drop(); }
+                        return fetch("/api/stats?autoq=add", { method: "POST", headers: H, body: JSON.stringify({ items: [m], top: true }) }).then(function (r) { return r.json(); }).then(function (a) {
+                            if (!a.added) { throw new Error(a.error || "Not added (list full?)"); }
+                            return drop();
+                        });
+                    }).then(function () { loadRequests(); loadQueue(); }).catch(function (e) { ok.textContent = (e && e.message) || "Failed"; no.disabled = false; });
+                });
+                acts.appendChild(ok); acts.appendChild(no); row.appendChild(acts); box.appendChild(row);
+            });
+        }).catch(function () { box.textContent = "Could not load requests."; });
+    }
+    loadRequests();
+
     function loadSubdl() {
         if (!KEY || !($("sdBars") || $("sdBars2"))) { return; }
         fetch("/api/stats?autoq=subdl", { headers: { "x-admin-key": KEY }, cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {

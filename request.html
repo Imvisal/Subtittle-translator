@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Request a Sinhala subtitle for any movie or TV series. Search the title, send the request, and we translate it.">
+    <meta name="theme-color" content="#080d1b">
+    <title>Request a Sinhala Subtitle - SinSubz</title>
+    <link rel="canonical" href="https://sinsubs.site/request.html">
+    <meta name="robots" content="index, follow">
+    <link rel="icon" href="/favicon.ico?v=1133" sizes="48x48">
+    <link rel="icon" href="/favicon.svg?v=1133" type="image/svg+xml" sizes="any">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="request.css">
+    <script>(function(){try{var t=localStorage.getItem("sinsubz-theme");if(t==="light"||t==="dark"){document.documentElement.setAttribute("data-theme",t);}}catch(e){}})();</script>
+</head>
+<body class="legal-page">
+<main class="legal-container">
+    <header class="legal-header">
+        <a href="index.html" class="back-home">← Back to SinSubz</a>
+        <div class="legal-logo"><img src="logo-128.png?v=1133" alt="SinSubz"></div>
+        <h1>Request a Subtitle</h1>
+        <p>Can't find a Sinhala subtitle? Ask for it.</p>
+    </header>
+    <article class="legal-content">
+        <p>Search the movie or TV series, pick it, and send the request. When we approve it, it is translated and its page is made. Titles that are already translated are shown to you straight away.</p>
+
+        <div class="cf-gate" id="rqGate">
+            <button type="button" class="cf-google" id="rqSignIn">Sign in with Google to send a request</button>
+            <p class="cf-gate-note" id="rqGateNote"></p>
+        </div>
+
+        <div id="rqBox" hidden>
+            <div class="cf-who" id="rqWho"></div>
+            <div class="rq-search">
+                <input id="rqQ" type="search" maxlength="80" placeholder="Movie or TV series name..." autocomplete="off">
+                <button type="button" class="cf-btn" id="rqGo">Search</button>
+            </div>
+            <p class="cf-status" id="rqStatus" role="status" aria-live="polite"></p>
+            <div id="rqResults"></div>
+        </div>
+    </article>
+</main>
+<script src="request.js" defer></script>
+</body>
+</html>
