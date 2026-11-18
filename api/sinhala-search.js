@@ -485,6 +485,30 @@ function buildCandidateUrls(
 
 async function siteSearch(source, title, year) {
 
+    // 1) WordPress REST search (JSON, does not depend on the theme's HTML)
+    try {
+        const r = await fetch(
+            `https://${source.host}/wp-json/wp/v2/search?per_page=15&search=${encodeURIComponent(title)}`,
+            { headers: { "User-Agent": "Mozilla/5.0 (compatible; SinSubz/1.0)", "Accept": "application/json" }, signal: AbortSignal.timeout(6000) }
+        );
+        if (r.ok) {
+            const list = await r.json();
+            let best = null;
+            (Array.isArray(list) ? list : []).forEach(it => {
+                const text = stripHTML(String((it && it.title) || "")).trim();
+                const url = String((it && it.url) || "");
+                if (!text || !url) { return; }
+                const hay = normalizeTitle(text + " " + url);
+                if (!hay.includes(normalizeTitle(title))) { return; }
+                if (year && !hay.includes(normalizeTitle(title) + " " + year)) { return; }     // "The Notebook 2 (2010)" is not "The Notebook (2010)"
+                const score = matchScore(title, year, text, "", url);
+                if (score >= 90 && (!best || score > best.score)) { best = { url, title: text.slice(0, 160), score }; }
+            });
+            if (best) { return best; }
+        }
+    } catch (error) { /* fall through to the HTML search */ }
+
+    // 2) the normal search page (HTML)
     try {
 
         const response = await fetch(
@@ -513,11 +537,10 @@ async function siteSearch(source, title, year) {
             const text = stripHTML(m[2]).trim();
             if (!text) { continue; }
 
-            // the page must name the film AND its year (title text or address) and be a subtitle page
+            // these are Sinhala-subtitle sites: a page that names the film AND its year is its subtitle page
             const hay = normalizeTitle(text + " " + link.pathname);
             if (!hay.includes(normalizeTitle(title))) { continue; }
-            if (year && !hay.includes(year)) { continue; }
-            if (!/subtitle|sub\b|උපසිරැසි|උපසිරසි/i.test(text + " " + link.pathname)) { continue; }
+            if (year && !hay.includes(normalizeTitle(title) + " " + year)) { continue; }
 
             const score = matchScore(title, year, text, "", link.href);
 
