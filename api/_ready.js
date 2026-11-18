@@ -480,7 +480,7 @@ function pageHtml(d) {
         '<body class="tp-page"><div class="tp-wrap"><nav class="tp-crumb" aria-label="Breadcrumb"><a href="/">SinSubz</a> › <a href="/#readyTitles">' + crumbName + '</a> › <span>' + esc(d.title) + '</span></nav><div id="tp"><noscript>' + noscript + "</noscript></div>" + seoBlock + moreHtml +
         '<section class="comments-section tp-comments" id="comments"><div class="cm-wrap" id="commentsRoot" hidden data-imdb="' + esc(d.id) + '" data-film="' + esc(d.title) + '"></div></section>' +
         '<p class="tp-foot">Subtitles made by SinSubz. Only the subtitle is provided, not the video.</p></div>' +
-        '<script type="application/json" id="tp-data">' + seed + '</script><script src="/title.js"></script><script src="/comments.js" defer></script><script src="/aads.js" defer></script><script src="/ad300.js" defer></script><script src="/push.js" defer></script></body></html>';
+        '<script type="application/json" id="tp-data">' + seed + '</script><script src="/title.js"></script><script src="/sponsor-popup.js" defer></script><script src="/comments.js" defer></script><script src="/aads.js" defer></script><script src="/ad300.js" defer></script><script src="/push.js" defer></script></body></html>';
 }
 
 function isAdmin(req) { return require("./_admin.js").isAdmin(req); }

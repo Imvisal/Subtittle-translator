@@ -214,15 +214,19 @@
     function seasonZip(btn) {
         var eps = (D.seasons[cur] || []).filter(function (e) { return e.ready; });
         if (!eps.length || btn.disabled) { return; }
-        var old = btn.innerHTML, enc = new TextEncoder(), got = [], i = 0, season = cur;
+        var old = btn.innerHTML, enc = new TextEncoder(), got = [], i = 0, season = cur, ad = Promise.resolve();
         btn.disabled = true; btn.textContent = "Sign in to download…";
         function next() {
             if (i >= eps.length) {
                 if (!got.length) { btn.disabled = false; btn.innerHTML = old; alert("Could not download the episodes. Please try again."); return; }
-                var url = URL.createObjectURL(makeZip(got)), a = document.createElement("a");
-                a.href = url; a.download = D.title.replace(/[\\/:*?"<>|]+/g, "").trim() + " Season " + season + " Sinhala SinSubz.zip";
-                document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
-                btn.disabled = false; btn.innerHTML = old; return;
+                btn.textContent = "Almost ready\u2026";
+                ad.then(function () {      // the sponsored popup (sponsor-popup.js) runs while the files are prepared; the zip is saved when it ends
+                    var url = URL.createObjectURL(makeZip(got)), a = document.createElement("a");
+                    a.href = url; a.download = D.title.replace(/[\\/:*?"<>|]+/g, "").trim() + " Season " + season + " Sinhala SinSubz.zip";
+                    document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+                    btn.disabled = false; btn.innerHTML = old;
+                });
+                return;
             }
             var e = eps[i++];
             btn.textContent = "Preparing " + i + " / " + eps.length + "\u2026";
@@ -232,6 +236,7 @@
         }
         authToken().then(function (tk) {
             if (!tk) { btn.disabled = false; btn.innerHTML = old; alert("Please sign in with Google to download."); return; }
+            if (window.__sinsubzSponsor) { ad = window.__sinsubzSponsor(); }
             next();
         });
     }

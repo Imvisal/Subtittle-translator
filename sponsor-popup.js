@@ -5,13 +5,17 @@
 (function () {
     "use strict";
     var KEY = "sinsubz_sponsor_at", GAP = 15 * 60 * 1000, SECS = 12, SHOW_AT = 45, LINK = "https://discord-media-player-rpc-site.vercel.app/";
+    function premium() {
+        if (document.documentElement.classList.contains("is-premium")) { return true; }
+        try { return Number(localStorage.getItem("sinsubz-web-premium")) > Date.now(); } catch (e) { return false; }   // title pages do not set the class
+    }
     var armed = true, shown = false, last = 0;
 
     function seenRecently() { try { return Date.now() - Number(localStorage.getItem(KEY) || 0) < GAP; } catch (e) { return false; } }
     function mark() { try { localStorage.setItem(KEY, String(Date.now())); } catch (e) { /* ignore */ } }
     function el(tag, cls, text) { var n = document.createElement(tag); if (cls) { n.className = cls; } if (text) { n.textContent = text; } return n; }
 
-    function show() {
+    function show(onEnd) {
         shown = true; mark();
         var st = document.createElement("style");
         st.textContent =
@@ -38,6 +42,7 @@
         act.appendChild(get); act.appendChild(close);
         card.appendChild(top); card.appendChild(img); card.appendChild(bar); card.appendChild(act); back.appendChild(card);
 
+        function finish() { if (back.parentNode) { back.parentNode.removeChild(back); } if (onEnd) { var f = onEnd; onEnd = null; f(); } }
         function start() {
             if (start.done) { return; } start.done = true;
             var left = SECS;
@@ -45,22 +50,30 @@
             var t = setInterval(function () {
                 left--;
                 if (left > 0) { cnt.textContent = "Ad closes in " + left + "s"; return; }
-                clearInterval(t); cnt.textContent = "Ad finished"; close.hidden = false; close.focus();
+                clearInterval(t); cnt.textContent = "Ad finished"; if (onEnd) { finish(); return; } close.hidden = false; close.focus();
             }, 1000);
         }
         img.addEventListener("load", start);
-        img.addEventListener("error", function () { if (back.parentNode) { back.parentNode.removeChild(back); } });   // no picture: no popup
-        close.addEventListener("click", function () { if (back.parentNode) { back.parentNode.removeChild(back); } });
+        img.addEventListener("error", finish);   // no picture: no popup
+        close.addEventListener("click", finish);
         img.src = "mediarpc-ad.gif?v=2";
         document.body.appendChild(back);
     }
+
+    /* whole-season download (title.js): show the ad while the files are prepared; resolves when the ad has finished (or at once for Premium) and then closes itself */
+    window.__sinsubzSponsor = function () {
+        return new Promise(function (resolve) {
+            if (premium()) { resolve(); return; }
+            show(resolve);
+        });
+    };
 
     window.addEventListener("sinsubz:progress", function (ev) {
         var p = Number(ev && ev.detail && ev.detail.percent) || 0;
         if (p < last - 20) { armed = true; shown = false; }        // a new translation started (progress went back down)
         last = p;
         if (!armed || shown || p < SHOW_AT || p > 85) { return; }
-        if (document.documentElement.classList.contains("is-premium") || seenRecently()) { armed = false; return; }
+        if (premium() || seenRecently()) { armed = false; return; }
         armed = false; show();
     });
 })();
