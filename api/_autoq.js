@@ -174,23 +174,34 @@ module.exports = async function autoq(req, res) {
             return res.status(200).json({ meta, list: out });
         }
 
-        // random well-rated films that are not on the Ready list / in the list yet (the runner then checks the Sinhala sites)
+        // films for the daily run: group "new" = recent releases (any rating), group "old" = older films rated 5+.
+        // They are not on the Ready list / in the list yet; the runner then checks the Sinhala sites and takes 4 new + 1 old.
         if (act === "candidates" && req.method === "GET" && q(req).kind === "movie") {
             const [{ list }, have] = await Promise.all([readList(), readyEpisodes()]);
             const known = new Set(list.map(x => x.imdb).concat(Object.keys(have)));
-            const pool = [];
-            for (const p of [1 + Math.floor(Math.random() * 15), 1 + Math.floor(Math.random() * 15), 1 + Math.floor(Math.random() * 15)]) {
-                try {
-                    const r = await tmdb("/discover/movie?sort_by=popularity.desc&vote_average.gte=6.4&vote_count.gte=800&with_original_language=en&without_genres=99,10770&page=" + p);
-                    (r.results || []).forEach(x => { if (!pool.some(y => y.id === x.id)) { pool.push({ id: x.id, base: x }); } });
-                } catch (e) { /* ignore */ }
-            }
-            for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
+            const dayStr = n => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);
+            const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; } return a; };
+            const grab = async (urls) => {
+                const pool = [];
+                for (const u of urls) {
+                    try { ((await tmdb(u)).results || []).forEach(x => { if (!pool.some(y => y.id === x.id)) { pool.push({ id: x.id, base: x }); } }); } catch (e) { /* ignore */ }
+                }
+                return shuffle(pool);
+            };
+            // recent: released 20 to 150 days ago (a new film needs its digital release before an English subtitle exists)
+            const recent = await grab([1, 2, 3].map(p => "/discover/movie?sort_by=popularity.desc&with_original_language=en&without_genres=99,10770&vote_count.gte=15&primary_release_date.gte=" + dayStr(150) + "&primary_release_date.lte=" + dayStr(20) + "&page=" + p));
+            // older: released more than 2 years ago, TMDB rating 5+, popular enough to have a subtitle
+            const older = await grab([1 + Math.floor(Math.random() * 20), 1 + Math.floor(Math.random() * 20)].map(p => "/discover/movie?sort_by=popularity.desc&with_original_language=en&without_genres=99,10770&vote_average.gte=5&vote_count.gte=300&primary_release_date.lte=" + dayStr(730) + "&page=" + p));
             const items = [];
-            for (let i = 0; i < pool.length && items.length < 30; i += 8) {
-                const batch = await Promise.all(pool.slice(i, i + 8).map(p => movieDetail(p.id, "random", p.base).catch(() => null)));
-                batch.forEach(d => { if (d && !known.has(d.imdb) && !items.some(x => x.imdb === d.imdb)) { items.push(d); } });
-            }
+            const fill = async (pool, group, max) => {
+                let n = 0;
+                for (let i = 0; i < pool.length && n < max; i += 8) {
+                    const batch = await Promise.all(pool.slice(i, i + 8).map(p => movieDetail(p.id, "random", p.base).catch(() => null)));
+                    batch.forEach(d => { if (d && n < max && !known.has(d.imdb) && !items.some(x => x.imdb === d.imdb)) { items.push(Object.assign(d, { group })); n++; } });
+                }
+            };
+            await fill(recent, "new", 20);
+            await fill(older, "old", 12);
             return res.status(200).json({ items });
         }
 
