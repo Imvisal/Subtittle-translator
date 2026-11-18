@@ -165,6 +165,31 @@ module.exports = async function handler(req, res) {
 
         /*
         ====================================================
+        3. THE SITES' OWN SEARCH (WordPress ?s=): finds pages whose address does not follow a pattern
+        ====================================================
+        */
+
+        for (const source of sources) {
+
+            if (found.some(x => x.source === source.name)) {
+                continue;
+            }
+
+            const hit = await siteSearch(source, title, cleanYear);
+
+            if (hit) {
+                found.push({
+                    source: source.name,
+                    url: hit.url,
+                    title: hit.title,
+                    score: hit.score
+                });
+            }
+        }
+
+
+        /*
+        ====================================================
         REMOVE DUPLICATES
         ====================================================
         */
@@ -392,6 +417,18 @@ function buildCandidateUrls(
         urls.push(
             `https://www.baiscope.lk/${slug}-${year}-sinhala-subtitles/`
         );
+
+        urls.push(
+            `https://www.baiscope.lk/movies/${slug}-${year}-with-sinhala-subtitles/`
+        );
+
+        urls.push(
+            `https://www.baiscope.lk/${slug}-${year}-with-sinhala-subtitles/`
+        );
+
+        urls.push(
+            `https://www.baiscope.lk/movies/${slug}-sinhala-subtitles/`
+        );
     }
 
 
@@ -439,6 +476,61 @@ function buildCandidateUrls(
     }
 
     return urls;
+}
+
+
+/* ========================================================
+   SITE SEARCH (WordPress "?s=")
+======================================================== */
+
+async function siteSearch(source, title, year) {
+
+    try {
+
+        const response = await fetch(
+            `https://${source.host}/?s=${encodeURIComponent(title)}`,
+            {
+                headers: { "User-Agent": "Mozilla/5.0 (compatible; SinSubz/1.0)" },
+                redirect: "follow",
+                signal: AbortSignal.timeout(6000)
+            }
+        );
+
+        if (!response.ok) { return null; }
+
+        const html = await response.text();
+        const re = /<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+        let m, best = null;
+
+        while ((m = re.exec(html))) {
+
+            let link;
+            try { link = new URL(m[1], `https://${source.host}/`); } catch { continue; }
+
+            const host = link.hostname.toLowerCase().replace(/^www\./, "");
+            if (host !== source.host || link.pathname.length < 8) { continue; }
+
+            const text = stripHTML(m[2]).trim();
+            if (!text) { continue; }
+
+            // the page must name the film AND its year (title text or address) and be a subtitle page
+            const hay = normalizeTitle(text + " " + link.pathname);
+            if (!hay.includes(normalizeTitle(title))) { continue; }
+            if (year && !hay.includes(year)) { continue; }
+            if (!/subtitle|sub\b|උපසිරැසි|උපසිරසි/i.test(text + " " + link.pathname)) { continue; }
+
+            const score = matchScore(title, year, text, "", link.href);
+
+            if (score >= 90 && (!best || score > best.score)) {
+                best = { url: link.href, title: text.slice(0, 160), score };
+            }
+        }
+
+        return best;
+
+    } catch (error) {
+        return null;
+    }
 }
 
 

@@ -66,7 +66,7 @@ module.exports = async function runnerCron(req, res) {
         }
         if (act === "startfilms") {
             if ((await active()).length) { return res.status(200).json({ ok: false, error: "A run is already going" }); }
-            try { await g.redis([["DEL", "aq:stop"]]); } catch (e) { /* ignore */ }
+            try { await g.redis([["DEL", "aq:stop"], ["SET", "aq:manual", "1", "EX", "5700"]]); } catch (e) { /* ignore */ }   // "Run films now": no quota reserve for ~95 minutes (like Run now)
             const r = await gh("/actions/workflows/auto-films.yml/dispatches", { method: "POST", body: JSON.stringify({ ref: "main" }) });
             if (r.status !== 204) { return res.status(502).json({ error: r.status === 404 ? "auto-films.yml is not in the runner repo yet" : "GitHub answered " + r.status }); }
             return res.status(200).json({ ok: true, started: true });
