@@ -21,7 +21,7 @@
         The very first run fills the list at once (REFILL=1 forces a refill any day).
      3. (own run, FILMS_ONLY=1, workflow auto-films.yml, any time of day; the quota-hour run above does series only)
         Every day up to 5 RANDOM well-rated films WITHOUT a Sinhala subtitle are added too (DAILY_FILMS=5, FILM_REFILL=1 forces it).
-   Stops by itself when Gemini says the quota is used up, at the quota reset, or after 3 failures in a row.  Safe to
+   Stops by itself when Gemini says the quota is used up, at the quota reset, or after 10 failures in a row (one bad episode never stops the run).  Safe to
    run again: finished episodes are skipped and the next run continues where this one stopped. */
 "use strict";
 
@@ -263,6 +263,7 @@ async function refillFilmsIfDue(n, meta) {
     await page.goto(SITE + "/", { waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => typeof translateWithLibrary === "function" && typeof buildSRT === "function", null, { timeout: 60000 });
 
+    const FAIL_LIMIT = 10;   // a failed episode is skipped and the run goes on with the next one; only a long unbroken streak (Gemini really down) stops it
     let done = 0, failsInRow = 0;
     const noSub = {};      // series -> consecutive episodes without an English subtitle (= not aired / not on SubDL yet)
     const rechecked = new Set();   // titles already re-checked on the Sinhala sites in this run
@@ -333,7 +334,7 @@ async function refillFilmsIfDue(n, meta) {
                 }
                 log("Download still failing for " + label + ": leaving it for the next run.");
                 if ((dlGiveUp[id] = (dlGiveUp[id] || 0) + 1) >= 2) { closed.add(id); log("  2 episodes of " + job.t.title + " could not be downloaded: skipping this series for this run (not marked), next series."); }
-                if (++failsInRow >= 3) { log("3 failures in a row: stopping."); break stop; }
+                if (++failsInRow >= FAIL_LIMIT) { log(FAIL_LIMIT + " failures in a row: stopping."); break stop; }
                 continue;
             }
             if (/quota|limit|busy|exhaust|try again/i.test(msg)) {
@@ -358,7 +359,7 @@ async function refillFilmsIfDue(n, meta) {
                 i--;                                               // same episode again
                 continue;
             }
-            if (++failsInRow >= 3) { log("3 failures in a row: stopping."); break stop; }
+            if (++failsInRow >= FAIL_LIMIT) { log(FAIL_LIMIT + " failures in a row: stopping."); break stop; }
         }
     }
     await browser.close();
