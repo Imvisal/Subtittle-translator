@@ -4319,6 +4319,8 @@ function updateTranslationProgress(
             `Translated ${completed}/${total} subtitles — chunk ${chunkNumber}/${totalChunks}`;
     }
 
+    try { window.dispatchEvent(new CustomEvent("sinsubz:progress", { detail: { percent: percent } })); } catch (e) { /* ignore */ }
+
     // App notifications (Android / desktop only)
     if (window.__appNotify) {
         try { window.__appNotify.progress(percent, completed, total); } catch (e) { /* ignore */ }
