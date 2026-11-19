@@ -82,6 +82,11 @@ async function tmdbInfo(m, opts) {
             by: m.type === "tv" ? (d.created_by || []).slice(0, 3).map(x => String(x.name || "").slice(0, 60)).filter(Boolean)
                 : ((d.credits && d.credits.crew) || []).filter(x => x.job === "Director").slice(0, 3).map(x => String(x.name || "").slice(0, 60)),
             totalSeasons: d.number_of_seasons || 0,
+            countries: (() => {
+                const names = new Intl.DisplayNames(["en"], { type: "region" });
+                const codes = m.type === "tv" ? (d.origin_country || []) : (d.production_countries || []).map(c => c.iso_3166_1);
+                return codes.slice(0, 2).map(c => { try { return names.of(c) || c; } catch (e) { return c; } });
+            })(),
             seasons: {}
         };
         // IMDb / Rotten Tomatoes / Metascore / age rating (OMDb). If OMDb is busy, keep the rest and look again in 6 hours.
@@ -707,6 +712,7 @@ module.exports = async function ready(req, res) {
 };
 module.exports.pageHtml = pageHtml;
 // how many Ready Sinhala subtitles there are: a film counts 1, every ready episode of a series counts 1 (home page counter)
+module.exports.tmdbInfo = tmdbInfo;
 module.exports.countReady = async function () {
     const list = await allTitles();
     return list.reduce((n, m) => n + (m.type === "tv" ? Object.keys(m.eps || {}).length : 1), 0);
