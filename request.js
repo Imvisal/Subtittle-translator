@@ -64,7 +64,9 @@
                     else { btn.disabled = false; btn.textContent = "Request"; say((x.d && x.d.error) || "Could not send. Try again.", "bad"); }
                 }).catch(function () { btn.disabled = false; btn.textContent = "Request"; say("No connection. Please try again.", "bad"); });
         });
-        d.appendChild(im); d.appendChild(t); d.appendChild(btn);
+        var wl = document.createElement("a"); wl.className = "rq-wal"; wl.target = "_blank"; wl.rel = "noopener noreferrer"; wl.textContent = "WhatsApp";
+        wl.href = "https://wa.me/94774789096?text=" + encodeURIComponent("Hi SinSubz, please add a Sinhala subtitle for: " + (it.title || "") + (it.year ? " (" + it.year + ")" : "") + " https://www.imdb.com/title/" + it.imdbID + "/");
+        d.appendChild(im); d.appendChild(t); d.appendChild(btn); d.appendChild(wl);
         return d;
     }
     function search() {
@@ -78,6 +80,8 @@
             items.filter(function (x) { return x.imdbID && (x.type === "movie" || x.type === "series"); }).forEach(function (x) { out.appendChild(row(x)); });
         }).catch(function () { say("Could not search. Try again.", "bad"); }).then(function () { go.disabled = false; });
     }
+    var waGen = $("rqWa");
+    if (waGen) { qi.addEventListener("input", function () { waGen.href = "https://wa.me/94774789096?text=" + encodeURIComponent("Hi SinSubz, please add a Sinhala subtitle for: " + qi.value.trim()); }); }
     go.addEventListener("click", search);
     qi.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); search(); } });
 })();
