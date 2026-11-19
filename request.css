@@ -14,3 +14,6 @@
 .rq-wa a.cf-btn{display:inline-flex!important;align-items:center;gap:10px;background:#25d366!important;color:#06200e!important;text-decoration:none!important;font-weight:700;line-height:1}
 .rq-wa a.cf-btn *{color:#06200e!important;text-decoration:none!important}
 .rq-wa a.cf-btn svg{display:block;flex:0 0 auto;width:20px;height:20px}
+.rq-choice{display:flex;gap:8px;flex-wrap:wrap;padding:0 0 12px 60px}
+.rq-choice[hidden]{display:none}
+.rq-choice a.cf-btn{text-decoration:none;display:inline-block;background:#25d366;color:#08210f}

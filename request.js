@@ -19,7 +19,8 @@
         return loading;
     }
     function paint() {
-        gate.hidden = !!current; box.hidden = !current;
+        gate.hidden = !!current; box.hidden = false;       // searching is open to everyone; only "Request on website" needs the Google sign-in
+        who.textContent = "";
         if (!current) { return; }
         who.textContent = "Signed in as " + (current.displayName || current.email || "Google user") + " · ";
         var b = document.createElement("button"); b.type = "button"; b.className = "cf-link"; b.textContent = "Sign out";
@@ -37,6 +38,7 @@
             });
         }).then(function () { signIn.disabled = false; });
     });
+    paint();
     try { if (localStorage.getItem("sinsubz-web-signed-in")) { loadSdk(); } } catch (e) { /* ignore */ }
 
     function row(it) {
@@ -48,8 +50,9 @@
         var b = document.createElement("b"); b.textContent = it.title || "";
         var s = document.createElement("span"); s.textContent = (it.type === "series" ? "TV series" : "Film") + (it.year ? " · " + it.year : "");
         t.appendChild(b); t.appendChild(s);
-        var btn = document.createElement("button"); btn.type = "button"; btn.className = "cf-btn"; btn.textContent = "Request";
+        var btn = document.createElement("button"); btn.type = "button"; btn.className = "cf-btn"; btn.textContent = "Request on website";
         btn.addEventListener("click", function () {
+            if (!current) { say("Please sign in with Google (button above) to request on the website, or use WhatsApp.", "bad"); gate.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
             btn.disabled = true; btn.textContent = "Sending...";
             current.getIdToken().then(function (tk) {
                 return fetch("/api/stats?req=add", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + tk },
@@ -59,14 +62,21 @@
                     var st = x.ok && x.d.status;
                     if (st === "ready" || st === "queued") {
                         btn.textContent = st === "ready" ? "Already translated" : "Already in the queue"; 
-                        if (st === "ready") { var a = document.createElement("a"); a.className = "cf-btn"; a.href = (it.type === "series" ? "/tv/" : "/film/") + it.imdbID; a.textContent = "Open"; d.appendChild(a); }
+                        if (st === "ready") { var a = document.createElement("a"); a.className = "cf-btn"; a.href = (it.type === "series" ? "/tv/" : "/film/") + it.imdbID; a.textContent = "Open"; ch.appendChild(a); }
                     } else if (st) { btn.textContent = st === "again" ? "Already requested" : "Request sent ✓"; }
                     else { btn.disabled = false; btn.textContent = "Request"; say((x.d && x.d.error) || "Could not send. Try again.", "bad"); }
                 }).catch(function () { btn.disabled = false; btn.textContent = "Request"; say("No connection. Please try again.", "bad"); });
         });
-        var wl = document.createElement("a"); wl.className = "rq-wal"; wl.target = "_blank"; wl.rel = "noopener noreferrer"; wl.textContent = "WhatsApp";
-        wl.href = "https://wa.me/94774789096?text=" + encodeURIComponent("Hi SinSubz, please add a Sinhala subtitle for: " + (it.title || "") + (it.year ? " (" + it.year + ")" : "") + " https://www.imdb.com/title/" + it.imdbID + "/");
-        d.appendChild(im); d.appendChild(t); d.appendChild(btn); d.appendChild(wl);
+        var big = /^https:\/\/image\.tmdb\.org\//.test(it.poster || "") ? it.poster.replace(/\/t\/p\/w\d+\//, "/t/p/w500/") : "";
+        var wl = document.createElement("a"); wl.className = "cf-btn rq-walink"; wl.target = "_blank"; wl.rel = "noopener noreferrer"; wl.textContent = "Send via WhatsApp";
+        wl.href = "https://wa.me/94774789096?text=" + encodeURIComponent("Hi SinSubz, please add a Sinhala subtitle for:\n" + (it.title || "") + (it.year ? " (" + it.year + ")" : "") + (it.type === "series" ? " - TV series" : " - Movie") + "\nIMDb: https://www.imdb.com/title/" + it.imdbID + "/" + (big ? "\nPoster: " + big : ""));
+        var pick = document.createElement("button"); pick.type = "button"; pick.className = "cf-btn"; pick.textContent = "Request";
+        var ch = document.createElement("div"); ch.className = "rq-choice"; ch.hidden = true;
+        ch.appendChild(btn); ch.appendChild(wl);
+        pick.addEventListener("click", function () { ch.hidden = !ch.hidden; });
+        d.appendChild(im); d.appendChild(t); d.appendChild(pick);
+        var wrap = document.createElement("div"); wrap.appendChild(d); wrap.appendChild(ch);
+        d = wrap;
         return d;
     }
     function search() {
