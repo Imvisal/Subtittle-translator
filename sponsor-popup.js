@@ -15,6 +15,14 @@
     function mark() { try { localStorage.setItem(KEY, String(Date.now())); } catch (e) { /* ignore */ } }
     function el(tag, cls, text) { var n = document.createElement(tag); if (cls) { n.className = cls; } if (text) { n.textContent = text; } return n; }
 
+    /* the GIF (2 MB) is fetched once in the background, so the popup never waits for the network; every showing gets its own blob URL = the GIF starts from its first frame */
+    var gifBlob = null, GIF = "mediarpc-ad.gif?v=2";
+    function preload() {
+        if (gifBlob || !window.fetch || premium() || /^(capacitor|file|app):/.test(location.protocol)) { return; }
+        fetch(GIF).then(function (r) { return r.ok ? r.blob() : null; }).then(function (b) { if (b) { gifBlob = b; } }).catch(function () { /* ignore */ });
+    }
+    if (document.readyState === "complete") { setTimeout(preload, 1500); } else { window.addEventListener("load", function () { setTimeout(preload, 1500); }); }
+
     function show(onEnd) {
         shown = true; if (!onEnd) { mark(); }   // the season-zip ad does not use up the 15-minute allowance of the mid-translation ad
         var st = document.createElement("style");
@@ -53,10 +61,10 @@
                 clearInterval(t); cnt.textContent = "Ad finished"; close.hidden = false; close.focus();   // never closes by itself: the visitor presses Close (the zip is then saved)
             }, 1000);
         }
-        img.addEventListener("load", function () { (img.decode ? img.decode() : Promise.resolve()).then(start, start); });
+        img.addEventListener("load", function () { var go = function () { start(); }; if (img.decode) { Promise.race([img.decode(), new Promise(function (r) { setTimeout(r, 1500); })]).then(go, go); } else { go(); } });
         img.addEventListener("error", finish);   // no picture: no popup
         close.addEventListener("click", finish);
-        img.src = "mediarpc-ad.gif?v=2&t=" + Date.now();   // fresh load = the GIF starts from its first frame every time
+        img.src = gifBlob ? URL.createObjectURL(gifBlob) : GIF + "&t=" + Date.now();   // fresh source = the GIF starts from its first frame every time
         document.body.appendChild(back);
     }
 
