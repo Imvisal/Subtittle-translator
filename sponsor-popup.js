@@ -16,7 +16,7 @@
     function el(tag, cls, text) { var n = document.createElement(tag); if (cls) { n.className = cls; } if (text) { n.textContent = text; } return n; }
 
     function show(onEnd) {
-        shown = true; mark();
+        shown = true; if (!onEnd) { mark(); }   // the season-zip ad does not use up the 15-minute allowance of the mid-translation ad
         var st = document.createElement("style");
         st.textContent =
             ".spn-back{position:fixed;inset:0;z-index:99998;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(5,6,12,.55);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px)}" +
@@ -72,7 +72,7 @@
         var p = Number(ev && ev.detail && ev.detail.percent) || 0;
         if (p < last - 20) { armed = true; shown = false; }        // a new translation started (progress went back down)
         last = p;
-        if (!armed || shown || p < SHOW_AT || p > 85) { return; }
+        if (!armed || shown || p < SHOW_AT || p > 97) { return; }
         if (premium() || seenRecently()) { armed = false; return; }
         armed = false; show();
     });
