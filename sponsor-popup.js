@@ -4,7 +4,7 @@
    - the page behind is dimmed + lightly blurred; hidden for Premium members. Website only (WEBONLY in index.html). */
 (function () {
     "use strict";
-    var KEY = "sinsubz_sponsor_at", GAP = 15 * 60 * 1000, SECS = 12, SHOW_AT = 45, LINK = "https://discord-media-player-rpc-site.vercel.app/";
+    var KEY = "sinsubz_sponsor_at", GAP = 15 * 60 * 1000, SECS = 14, SHOW_AT = 45, LINK = "https://discord-media-player-rpc-site.vercel.app/";
     function premium() {
         if (document.documentElement.classList.contains("is-premium")) { return true; }
         try { return Number(localStorage.getItem("sinsubz-web-premium")) > Date.now(); } catch (e) { return false; }   // title pages do not set the class
@@ -24,7 +24,7 @@
             ".spn-top{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;font-size:12px;color:#aab0c8}" +
             ".spn-top b{font-weight:700;letter-spacing:.06em;text-transform:uppercase}" +
             ".spn-card img{display:block;width:100%;height:auto;aspect-ratio:16/9;background:#0a0d14}" +
-            ".spn-bar{height:3px;background:rgba(255,255,255,.1)}.spn-bar i{display:block;height:100%;width:0;background:#8b8bff;transition:width 12s linear}" +
+            ".spn-bar{height:3px;background:rgba(255,255,255,.1)}.spn-bar i{display:block;height:100%;width:0;background:#8b8bff;transition:width 14s linear}" +
             ".spn-act{display:flex;gap:10px;padding:12px 14px}" +
             ".spn-act a,.spn-act button{flex:1;text-align:center;border:0;border-radius:12px;padding:12px;font:700 15px inherit;cursor:pointer;text-decoration:none}" +
             ".spn-get{background:linear-gradient(135deg,#7c7cff,#b58cff);color:#0b0c16}" +
@@ -50,13 +50,13 @@
             var t = setInterval(function () {
                 left--;
                 if (left > 0) { cnt.textContent = "Ad closes in " + left + "s"; return; }
-                clearInterval(t); cnt.textContent = "Ad finished"; if (onEnd) { finish(); return; } close.hidden = false; close.focus();
+                clearInterval(t); cnt.textContent = "Ad finished"; close.hidden = false; close.focus();   // never closes by itself: the visitor presses Close (the zip is then saved)
             }, 1000);
         }
-        img.addEventListener("load", start);
+        img.addEventListener("load", function () { (img.decode ? img.decode() : Promise.resolve()).then(start, start); });
         img.addEventListener("error", finish);   // no picture: no popup
         close.addEventListener("click", finish);
-        img.src = "mediarpc-ad.gif?v=2";
+        img.src = "mediarpc-ad.gif?v=2&t=" + Date.now();   // fresh load = the GIF starts from its first frame every time
         document.body.appendChild(back);
     }
 
