@@ -521,15 +521,15 @@ module.exports = async function handler(req, res) {
         // the owner's scheduled runner (GitHub Actions, scripts/auto-translate.js) sends the admin key
         const isRunner = require("./_admin.js").isAdmin(req);
 
-        // The runner only gets the share of the daily Gemini quota above RUNNER_RESERVE_PCT (default 70% is kept for visitors)
+        // The runner only gets the share of the daily Gemini quota above RUNNER_RESERVE_PCT (default 50% is kept for visitors)
         if (isRunner) {
             // last hour before the Pacific-midnight reset (about 12:30-13:30 in Sri Lanka): what is left would be lost anyway,
-            // so the runner may use almost all of it (keeps RUNNER_LAST_HOUR_RESERVE_PCT, default 8%). Any other time: 70% stays for visitors.
+            // so the runner may use almost all of it (keeps RUNNER_LAST_HOUR_RESERVE_PCT, default 8%). Any other time: 50% stays for visitors.
             const pacHour = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", hour: "numeric", hour12: false }).format(new Date())) % 24;
             const lastHour = pacHour === 23;
             const reserve = Number(process.env.RUNNER_RESERVE_PCT);
             const reserveLast = Number(process.env.RUNNER_LAST_HOUR_RESERVE_PCT);
-            let keep = lastHour ? (Number.isFinite(reserveLast) ? reserveLast : 8) : (Number.isFinite(reserve) ? reserve : 70);
+            let keep = lastHour ? (Number.isFinite(reserveLast) ? reserveLast : 8) : (Number.isFinite(reserve) ? reserve : 50);
             // "Run now" in the admin panel: no quota limit at all while that run lasts (flag aq:manual, 65 minutes)
             try { const gg = require("./_google"); if (gg.hasRedis() && (await gg.redis([["GET", "aq:manual"]]))[0]) { keep = 0; } } catch (e) { /* keep the normal limit */ }
             if (keep > 0 && (await require("./_admin.js").quotaLeftPct()) <= keep) {
