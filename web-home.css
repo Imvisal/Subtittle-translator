@@ -194,7 +194,7 @@ html .search-section { position: relative; isolation: isolate; padding-bottom: 8
 .na-t { font-size: 12px; color: var(--muted); }
 .na-go { display: block; margin-top: 6px; padding: 11px; text-align: center; border-radius: 10px; font-weight: 700; font-size: 14px; color: #0b0d1f; background: var(--accent); }
 
-/* "Any": colour flows through the letters, the word floats, and a wavy line draws itself under it */
+/* "Any": colour flows through the letters and the word floats (no underline) */
 .home-find h1, .home-find .hf-line { -webkit-user-select: none; user-select: none; }
 .hf-any {
     position: relative; padding: 0 .04em;
@@ -204,16 +204,9 @@ html .search-section { position: relative; isolation: isolate; padding-bottom: 8
     animation: hfIn .8s cubic-bezier(.2,.7,.2,1) both, hfFlow 4s linear infinite, hfFloat 3s ease-in-out 1.2s infinite;
     animation-delay: calc(var(--i) * .11s), 0s, 1.2s;
 }
-.hf-any::after {
-    content: ""; position: absolute; left: 0; right: 0; bottom: -.12em; height: .16em;
-    background: no-repeat center / 100% 100% url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 8' preserveAspectRatio='none'%3E%3Cpath d='M1 5 Q8 0 15 4 T30 4 T45 4 T59 3' fill='none' stroke='%2336e0c8' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E");
-    -webkit-text-fill-color: initial; clip-path: inset(0 100% 0 0);
-    animation: hfLine .8s .9s cubic-bezier(.3,.7,.2,1) forwards;
-}
 @keyframes hfFlow { to { background-position: 300% 0; } }
 @keyframes hfFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
-@keyframes hfLine { to { clip-path: inset(0 0 0 0); } }
-@media (prefers-reduced-motion: reduce) { .hf-any { animation: none; background-position: 0 0; } .hf-any::after { animation: none; clip-path: none; } }
+@media (prefers-reduced-motion: reduce) { .hf-any { animation: none; background-position: 0 0; } }
 
 
 /* Sponsored banner (the owner's own promo) under the hero; hidden for Premium members */
