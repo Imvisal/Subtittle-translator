@@ -1049,7 +1049,7 @@ function createUploadProgressUI() {
                 gap:12px;
                 margin-bottom:14px;
             ">
-                <strong>🇱🇰 Translating to Sinhala</strong>
+                <strong>Translating to Sinhala</strong>
 
                 <span id="uploadTranslatePercent" style="
                     color:#38bdf8;
@@ -1859,7 +1859,7 @@ async function checkSinhalaSubtitles(
                 <div class="sinhala-available">
 
                     <strong>
-                        🇱🇰 Sinhala Subtitle Available
+                        Sinhala Subtitle Available
                     </strong>
 
                     <div class="sinhala-source-links">
@@ -2652,7 +2652,7 @@ async function displaySubtitleResults(
                     <div class="sinhala-first-header">
 
                         <span class="sinhala-first-icon">
-                            🇱🇰
+                            
                         </span>
 
                         <div>
@@ -3285,7 +3285,7 @@ async function selectSubtitle(
 
                     <div class="tr-chips">
                         <span class="tr-chip">${translated.length} subtitles</span>
-                        <span class="tr-chip">🇱🇰 Sinhala</span>
+                        <span class="tr-chip">Sinhala</span>
                     </div>
 
                     <p class="translation-file-name">

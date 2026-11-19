@@ -61,7 +61,7 @@
             (D.overview ? '<p class="tp-over">' + esc(D.overview) + '</p>' : "") +
             (D.si ? '<p class="tp-si" lang="si">' + esc(D.si) + '</p>' : "") +
             (D.by && D.by.length ? '<p class="tp-by"><span>' + (isTv ? "Created by" : "Directed by") + '</span> ' + D.by.map(esc).join(", ") + '</p>' : "") +
-            '<div class="tp-badge">\uD83C\uDDF1\uD83C\uDDF0 ' + (isTv ? n + " Sinhala subtitle" + (n === 1 ? "" : "s") + " ready" : "Sinhala subtitle ready") + '</div>' +
+            '<div class="tp-badge">' + (isTv ? n + " Sinhala subtitle" + (n === 1 ? "" : "s") + " ready" : "Sinhala subtitle ready") + '</div>' +
             '<div class="tp-actions">' + actions + '</div>' +
             '</div></div></section>';
     }
