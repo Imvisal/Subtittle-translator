@@ -944,6 +944,12 @@ ${JSON.stringify(inputItems)}
 
                 if (translationMap.size > 0) break;
 
+                if (!modelText) {   // empty answer: say WHY (safety block / stop reason) so the Admin log shows it
+                    const pf = generated.data?.promptFeedback?.blockReason, fr = generated.data?.candidates?.[0]?.finishReason;
+                    console.error("Gemini empty answer: blockReason=", pf, "finishReason=", fr);
+                    try { await require("./_admin.js").logEvent({ type: "json", lvl: "error", u: logCtx.u, job: logCtx.job, msg: "Gemini empty answer: " + (pf ? "blocked (" + pf + ")" : "finish " + (fr || "unknown")) }); } catch (e) { /* ignore */ }
+                }
+
                 await require("./_admin.js").logEvent({ type: "json", lvl: "error", u: logCtx.u, job: logCtx.job, msg: modelText ? "Invalid JSON from Gemini" : "Empty reply from Gemini" });
                 return res.status(502).json({
                     error: modelText
