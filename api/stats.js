@@ -108,6 +108,9 @@ module.exports = async function handler(req, res) {
     if (/(?:^|[?&])mttest(?:=|&|$)/.test(String(req.url || ""))) {
         return require("./_mt.js").testHandler(req, res);
     }
+    if (/(?:^|[?&])tg=test(?:&|$)/.test(String(req.url || "")) && req.method === "POST") {
+        return require("./_telegram.js").test(req, res);
+    }
     if (/(?:^|[?&])req=[a-z]+/.test(String(req.url || ""))) {
         return require("./_requests.js")(req, res);
     }

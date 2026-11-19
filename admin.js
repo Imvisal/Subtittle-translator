@@ -567,6 +567,14 @@
         }).catch(function () { box.textContent = "Could not load requests."; });
     }
     loadRequests();
+    if ($("tgTest")) {
+        $("tgTest").addEventListener("click", function () {
+            var m = $("tgMsg"); m.textContent = "Sending...";
+            fetch("/api/stats?tg=test", { method: "POST", headers: { "x-admin-key": KEY } }).then(function (r) { return r.json(); })
+                .then(function (d) { m.textContent = d.ok ? "Sent. Check your channel." : (d.error || "Failed"); })
+                .catch(function () { m.textContent = "Failed"; });
+        });
+    }
 
     function loadSubdl() {
         if (!KEY || !($("sdBars") || $("sdBars2"))) { return; }

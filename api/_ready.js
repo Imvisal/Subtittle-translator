@@ -239,7 +239,7 @@ async function registerFilm(imdb, opts) {
         m.eps["0x0"] = { s: 0, e: 0, f: (title + (year ? " " + year : "") + ".Sinhala.SinSubz.srt").replace(/[\\/:*?"<>|]+/g, "_"), r: "", n: made.count, ts: o.ts || Date.now() };
         const packed = zlib.gzipSync(Buffer.from(made.srt, "utf8")).toString("base64");
         await redis([["SET", srtKey(imdb, 0, 0), packed], ["HSETNX", "rdy:idx", imdb, JSON.stringify(m)]]);
-        if (!o.ts) { await warmTitle(m, 5000); }          // the backfill (o.ts set) is warmed by its own admin button
+        if (!o.ts) { await warmTitle(m, 5000); await require("./_telegram.js").postNew(m, 0, 0); }          // the backfill (o.ts set) is warmed by its own admin button
         return "created";
     } catch (e) { return "error"; }
 }
@@ -695,7 +695,8 @@ module.exports = async function ready(req, res) {
             };
             const packed = zlib.gzipSync(Buffer.from(srt, "utf8")).toString("base64");
             await redis([["SET", srtKey(b.imdb, s, e), packed], ["HSET", "rdy:idx", b.imdb, JSON.stringify(m)]]);
-            if (isNew) { await warmTitle(m, 14000); await require("./_push.js").notifyNewTitle(m); }          // browser notification (at most one per 6 hours)
+            if (isNew) { await warmTitle(m, 14000); await require("./_push.js").notifyNewTitle(m); }
+            await require("./_telegram.js").postNew(m, type === "tv" ? s : 0, type === "tv" ? e : 0);          // Telegram channel: once per film / per TV season          // browser notification (at most one per 6 hours)
             return res.status(200).json({ ok: true });
         }
 
