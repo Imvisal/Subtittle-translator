@@ -4107,3 +4107,7 @@ html.tm-open, html.tm-open body { overflow: hidden; }
 .app .tr-chip { padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 700; color: var(--text); background: rgba(127,180,255,0.12); border: 1px solid rgba(127,180,255,0.3); }
 .app .translation-status.success .translation-file-name { opacity: 0.8; }
 .app .translation-status.success .select-title-btn { margin-top: 18px; padding: 13px 28px; font-size: 15px; box-shadow: 0 10px 28px rgba(139,139,255,0.4); }
+
+.foot-social{display:flex;justify-content:center;gap:14px;margin:6px 0 12px}
+.foot-social a{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;color:#9aa0b8;background:rgba(255,255,255,.06);transition:color .15s,background .15s}
+.foot-social a:hover,.foot-social a:focus-visible{color:#fff;background:rgba(139,139,255,.25)}
