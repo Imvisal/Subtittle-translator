@@ -8,5 +8,5 @@
 .rq-item button,.rq-item a{flex:none}
 .rq-item a.cf-btn{text-decoration:none;display:inline-block}
 .rq-wa{margin-top:22px;padding-top:16px;border-top:1px solid var(--border,#2a3350);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.rq-wa a{text-decoration:none;display:inline-block;background:#25d366;color:#08210f}
+.rq-wa a{text-decoration:none;display:inline-flex;align-items:center;gap:9px;background:#25d366;color:#08210f;font-weight:700}.rq-wa a span{text-decoration:none}
 .rq-item a.rq-wal{font-size:.8rem;opacity:.8;text-decoration:underline;white-space:nowrap}
