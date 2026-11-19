@@ -317,6 +317,10 @@ module.exports = async function autoq(req, res) {
             return res.status(200).json({ ok: true, cleared: n });
         }
 
+        if (act === "manual" && req.method === "POST") {      // the runner was started BY HAND (GitHub "Run workflow"): no quota reserve for ~65 min, like Admin "Run now"
+            await redis([["DEL", "aq:stop"], ["SET", "aq:manual", "1", "EX", "3900"]]);
+            return res.status(200).json({ ok: true });
+        }
         if (act === "meta" && req.method === "POST") {
             const { meta } = await readList();
             if (b.lastRefill) { meta.lastRefill = Date.now(); }

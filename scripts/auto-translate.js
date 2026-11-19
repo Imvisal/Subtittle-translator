@@ -206,6 +206,10 @@ async function refillFilmsIfDue(n, meta) {
     // FILMS_ONLY=1: the separate daily FILMS run (own workflow, any time of day): only films, no quota-reset-hour rule
     const filmsOnly = process.env.FILMS_ONLY === "1";
     const manual = (process.env.GITHUB_EVENT_NAME === "workflow_dispatch" && process.env.FROM_CRON !== "1") || process.env.FORCE === "1" || filmsOnly;
+    // started by hand (GitHub "Run workflow" button or FORCE): tell the server so it lifts the Gemini quota reserve (same as Admin "Run now")
+    if ((process.env.GITHUB_EVENT_NAME === "workflow_dispatch" && process.env.FROM_CRON !== "1") || process.env.FORCE === "1") {
+        try { const r = await api("/api/stats?autoq=manual", { method: "POST", headers: AK() }); log(r.ok ? "Started by hand: no Gemini quota limit for this run." : "Could not lift the quota limit (" + r.status + ")."); } catch (e) { /* keep the normal limit */ }
+    }
     // Vercel's free cron can fire up to an hour early/late: if it came early (Pacific hour 22) just wait for hour 23.
     if (!manual && pacificHour() === 22) {
         log("Started early (Pacific hour 22): waiting for the last hour before the reset (23) ...");
