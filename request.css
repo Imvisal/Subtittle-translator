@@ -10,3 +10,7 @@
 .rq-wa{margin-top:22px;padding-top:16px;border-top:1px solid var(--border,#2a3350);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .rq-wa a{text-decoration:none;display:inline-flex;align-items:center;gap:9px;background:#25d366;color:#08210f;font-weight:700}.rq-wa a span{text-decoration:none}
 .rq-item a.rq-wal{font-size:.8rem;opacity:.8;text-decoration:underline;white-space:nowrap}
+
+.rq-wa a.cf-btn{display:inline-flex!important;align-items:center;gap:10px;background:#25d366!important;color:#06200e!important;text-decoration:none!important;font-weight:700;line-height:1}
+.rq-wa a.cf-btn *{color:#06200e!important;text-decoration:none!important}
+.rq-wa a.cf-btn svg{display:block;flex:0 0 auto;width:20px;height:20px}
