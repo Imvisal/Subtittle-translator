@@ -53,7 +53,7 @@ html[data-theme="light"] .pm-page { --pm-bg:#f6f5ff; --pm-card:#ffffff; --pm-car
 .pm-drop img { max-width:100%; max-height:220px; border-radius:10px; }
 .pm-drop input { display:none; }
 .pm-btn { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; margin-top:16px; padding:15px; border:0; border-radius:16px; font:inherit; font-size:16px; font-weight:800; cursor:pointer; color:#3a2600; background:linear-gradient(135deg,var(--pm-gold1),var(--pm-gold2)); box-shadow:0 10px 30px rgba(245,163,12,.35); }
-.pm-btn.g { background:#fff; color:#1f1f1f; box-shadow:0 6px 20px rgba(0,0,0,.25); }
+.pm-btn.g { background:linear-gradient(180deg,#9a98ff,#8381f7); color:#0b0c16; box-shadow:0 6px 18px rgba(131,129,247,.35); }
 .pm-btn:disabled { opacity:.6; cursor:default; }
 .pm-msg { min-height:20px; margin:8px 0 0; font-size:14px; color:#ff9a9a; }
 .pm-foot { margin-top:26px; text-align:center; font-size:13px; color:var(--pm-dim); line-height:2; }

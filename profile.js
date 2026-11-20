@@ -64,8 +64,8 @@
         box.textContent = "";
         if (!me.signedIn) {
             var c = el("div", "pf-card"); c.style.textAlign = "center";
-            c.appendChild(el("p", "", "Sign in with Google to see your profile and your saved subtitles."));
-            var b = el("button", "pm-btn g", "Sign in with Google"); b.type = "button";
+            c.appendChild(el("p", "", "Sign in to see your profile and your saved subtitles."));
+            var b = el("button", "pm-btn g", "Sign in"); b.type = "button";
             b.addEventListener("click", function () { b.disabled = true; (window.__sinsubzSignIn ? window.__sinsubzSignIn() : Promise.resolve()).catch(function () { /* cancelled */ }).then(load); });
             c.appendChild(b); box.appendChild(c); return;
         }

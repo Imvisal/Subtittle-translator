@@ -103,8 +103,8 @@
         // send the slip
         var send = card("Send your slip");
         if (!d.signedIn) {
-            send.appendChild(el("p", "Sign in with Google so we know which account to upgrade.", "color:inherit;opacity:.8;margin:0"));
-            var b = cls("button", "pm-btn g", "Sign in with Google"); b.type = "button";
+            send.appendChild(el("p", "Sign in so we know which account to upgrade.", "color:inherit;opacity:.8;margin:0"));
+            var b = cls("button", "pm-btn g", "Sign in"); b.type = "button";
             b.addEventListener("click", function () {
                 b.disabled = true;
                 (window.__sinsubzSignIn ? window.__sinsubzSignIn() : Promise.resolve()).catch(function () { /* ignore */ }).then(load);

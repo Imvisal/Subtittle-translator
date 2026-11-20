@@ -69,7 +69,7 @@
 
         function signInView() {
             body.textContent = "";
-            var b = el("button", "cm-more", "Sign in with Google"); b.type = "button";
+            var b = el("button", "cm-more", "Sign in"); b.type = "button";
             b.addEventListener("click", function () { b.disabled = true; (window.__sinsubzSignIn ? window.__sinsubzSignIn() : Promise.resolve()).catch(function () { /* cancelled */ }).then(function () { start(); }); });
             body.appendChild(b);
         }

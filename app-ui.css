@@ -633,13 +633,13 @@ html.app-kb #appTabs {
 .acc-gbtn {
   display: flex; align-items: center; justify-content: center; gap: 12px;
   width: 100%; min-height: 50px; padding: 0 18px;
-  background: #fff; color: #3c4043;
-  border: 1px solid #dadce0; border-radius: 14px;
-  font: 600 16px/1 inherit; font-family: inherit; letter-spacing: .1px;
-  box-shadow: 0 1px 2px rgba(0,0,0,.25), 0 6px 18px rgba(66,133,244,.18);
+  background: linear-gradient(180deg, #9a98ff, #8381f7); color: #0b0c16;
+  border: 0; border-radius: 14px;
+  font: 700 16px/1 inherit; font-family: inherit; letter-spacing: .1px;
+  box-shadow: 0 6px 18px rgba(131,129,247,.35);
   cursor: pointer; -webkit-tap-highlight-color: transparent;
   transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
 }
-.acc-gbtn:active { transform: scale(.98); background: #f1f3f4; box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+.acc-gbtn:active { transform: scale(.98); box-shadow: 0 2px 8px rgba(131,129,247,.3); }
 .acc-gbtn:disabled { opacity: .6; }
 .acc-glogo { width: 22px; height: 22px; flex: 0 0 22px; }
