@@ -35,7 +35,7 @@
         if (loading) { return loading; }
         loading = Promise.all([import(SDK + "firebase-app.js"), import(SDK + "firebase-auth.js")]).then(function (m) {
             var auth = m[1].getAuth(m[0].initializeApp(CFG));
-            fb = { auth: auth, signInWithPopup: m[1].signInWithPopup, Provider: m[1].GoogleAuthProvider, signOut: m[1].signOut };
+            fb = { auth: auth, signInWithPopup: m[1].signInWithPopup, Provider: m[1].GoogleAuthProvider, signOut: m[1].signOut, m: m[1] };
             m[1].onAuthStateChanged(auth, function (u) { current = u; paint(); });
         }).catch(function () {
             loading = null;
@@ -62,12 +62,22 @@
         who.appendChild(line); who.appendChild(b); who.appendChild(out);
     }
 
+    // sign-in dialog (login-modal.js: Google / Facebook / email + password); falls back to the plain Google popup if it cannot load
+    function openLogin(f) {
+        return new Promise(function (res, rej) {
+            function run() { window.sinsubzLogin(f.m, f.auth).then(res, rej); }
+            if (window.sinsubzLogin) { run(); return; }
+            var s = document.createElement("script"); s.src = "/login-modal.js"; s.onload = run;
+            s.onerror = function () { f.signInWithPopup(f.auth, new f.Provider()).then(res, rej); };
+            document.head.appendChild(s);
+        });
+    }
     signInBtn.addEventListener("click", function () {
         gateNote.textContent = "";
         signInBtn.disabled = true;
         loadSdk().then(function () {
             if (!fb) { return; }
-            return fb.signInWithPopup(fb.auth, new fb.Provider()).catch(function (e) {
+            return openLogin(fb).catch(function (e) {
                 var code = (e && e.code) || "";
                 if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") { return; }
                 gateNote.textContent = code === "auth/unauthorized-domain"

@@ -48,6 +48,9 @@ async function verifyGoogleUser(req) {
     const u = ((await r.json()).users || [])[0];
     if (!u || !u.localId) return null;
 
+    // email + password accounts count only after the email is verified (stops throw-away accounts); Google / Facebook are already verified by them
+    const provs = (u.providerUserInfo || []).map(x => x.providerId);
+    if (provs.length && provs.every(x => x === "password") && u.emailVerified !== true) { return null; }
     const email = String(u.email || "").toLowerCase();
     return {
         uid: u.localId,

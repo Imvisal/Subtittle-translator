@@ -3679,7 +3679,7 @@ async function translateSubtitleChunksImpl(
         if (!(await getTok())) {
             await askToSignIn(getTok);
             if (!(await getTok())) {
-                throw new Error("Please sign in with Google to translate.");
+                throw new Error("Please sign in to translate.");
             }
         }
     }

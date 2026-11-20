@@ -43,7 +43,7 @@
         if (loading) { return loading; }
         loading = Promise.all([import(SDK + "firebase-app.js"), import(SDK + "firebase-auth.js")]).then(function (m) {
             var auth = m[1].getAuth(m[0].initializeApp(CFG));
-            fb = { auth: auth, signInWithPopup: m[1].signInWithPopup, Provider: m[1].GoogleAuthProvider };
+            fb = { auth: auth, signInWithPopup: m[1].signInWithPopup, Provider: m[1].GoogleAuthProvider, m: m[1] };
             m[1].onAuthStateChanged(auth, function (u) {
                 var changed = (!!u) !== (!!current) || (u && current && u.uid !== current.uid);
                 current = u;
@@ -54,11 +54,22 @@
         return loading;
     }
 
+
+    // sign-in dialog (login-modal.js: Google / Facebook / email + password); falls back to the plain Google popup if it cannot load
+    function openLogin(f) {
+        return new Promise(function (res, rej) {
+            function run() { window.sinsubzLogin(f.m, f.auth).then(res, rej); }
+            if (window.sinsubzLogin) { run(); return; }
+            var s = document.createElement("script"); s.src = "/login-modal.js"; s.onload = run;
+            s.onerror = function () { f.signInWithPopup(f.auth, new (f.Provider || f.GoogleAuthProvider)()).then(res, rej); };
+            document.head.appendChild(s);
+        });
+    }
     function signIn(noteEl) {
         if (noteEl) { noteEl.textContent = ""; }
         return loadSdk().then(function () {
             if (!fb) { if (noteEl) { noteEl.textContent = "Could not load Google sign-in. Please try again."; } return; }
-            return fb.signInWithPopup(fb.auth, new fb.Provider()).catch(function (e) {
+            return openLogin(fb).catch(function (e) {
                 var code = (e && e.code) || "";
                 if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") { return; }
                 if (noteEl) { noteEl.textContent = "Sign-in failed. Please try again."; }
@@ -144,7 +155,7 @@
         function paint() {
             box.textContent = "";
             if (!current) {
-                var g = el("button", "cm-google", "Sign in with Google to " + (opts.reply ? "reply" : "comment"));
+                var g = el("button", "cm-google", "Sign in to " + (opts.reply ? "reply" : "comment"));
                 g.type = "button";
                 g.addEventListener("click", function () { g.disabled = true; signIn(note).then(function () { g.disabled = false; }); });
                 box.appendChild(g);

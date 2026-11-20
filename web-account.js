@@ -85,7 +85,7 @@
     function render() {
         if (!user) {
             host.innerHTML =
-                '<button type="button" class="wa-btn" id="waIn" aria-label="Sign in with Google">' +
+                '<button type="button" class="wa-btn" id="waIn" aria-label="Sign in">' +
                 G_LOGO + '<span class="wa-txt">Sign in</span></button>';
             document.getElementById("waIn").addEventListener("click", signIn);
             return;
@@ -332,6 +332,7 @@
                 auth: auth,
                 signInWithPopup: m[1].signInWithPopup,
                 GoogleAuthProvider: m[1].GoogleAuthProvider,
+                m: m[1],
                 signOut: m[1].signOut
             };
             m[1].onAuthStateChanged(auth, function (u) {
@@ -373,11 +374,22 @@
         } catch (e) { /* ignore */ }
     }
 
+
+    // sign-in dialog (login-modal.js: Google / Facebook / email + password); falls back to the plain Google popup if it cannot load
+    function openLogin(f) {
+        return new Promise(function (res, rej) {
+            function run() { window.sinsubzLogin(f.m, f.auth).then(res, rej); }
+            if (window.sinsubzLogin) { run(); return; }
+            var s = document.createElement("script"); s.src = "/login-modal.js"; s.onload = run;
+            s.onerror = function () { f.signInWithPopup(f.auth, new (f.Provider || f.GoogleAuthProvider)()).then(res, rej); };
+            document.head.appendChild(s);
+        });
+    }
     function signIn() {
         var btn = document.getElementById("waIn");
         if (btn) { btn.disabled = true; }
         return loadSdk().then(function () {
-            return fb.signInWithPopup(fb.auth, new fb.GoogleAuthProvider());
+            return openLogin(fb);
         }).then(function () {
             toast("Signed in");
         }).catch(function (e) {

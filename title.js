@@ -235,7 +235,7 @@
             }).catch(function () { /* skip this one */ }).then(next);
         }
         authToken().then(function (tk) {
-            if (!tk) { btn.disabled = false; btn.innerHTML = old; alert("Please sign in with Google to download."); return; }
+            if (!tk) { btn.disabled = false; btn.innerHTML = old; alert("Please sign in to download."); return; }
             if (window.__sinsubzSponsor) { ad = window.__sinsubzSponsor(); }
             next();
         });
@@ -310,7 +310,7 @@
                 busy = false; lbl.innerHTML = old;
                 var m = ov.querySelector(".tp-lerr");
                 if (!m) { m = document.createElement("p"); m.className = "tp-mp tp-lerr"; oa.insertAdjacentElement("afterend", m); }
-                m.textContent = x && x.message === "login" ? "Sign in with Google to download. Tap the button to try again." : "Could not download. Please try again.";
+                m.textContent = x && x.message === "login" ? "Sign in to download. Tap the button to try again." : "Could not download. Please try again.";
             });
         });
         document.addEventListener("keydown", onKey);
