@@ -1,5 +1,5 @@
-/* SinSubz website: Sponsored popup (Media RPC GIF) shown once in the MIDDLE of a translation.
-   - appears when a translation passes ~45% (never at the start or the end), at most once per 15 minutes per visitor
+/* SinSubz website: Sponsored popup (Media RPC GIF) shown when a file is DOWNLOADED (after the translation is finished), never while translating.
+   - single file: at most once per 15 minutes per visitor; whole-season zip: every time (title.js)
    - no close button: "Ad closes in N s" counts down the length of the GIF (12 s), then "Close" appears
    - the page behind is dimmed + lightly blurred; hidden for Premium members. Website only (WEBONLY in index.html). */
 (function () {
@@ -9,7 +9,7 @@
         if (document.documentElement.classList.contains("is-premium")) { return true; }
         try { return Number(localStorage.getItem("sinsubz-web-premium")) > Date.now(); } catch (e) { return false; }   // title pages do not set the class
     }
-    var armed = true, shown = false, last = 0;
+    var shown = false;
 
     function seenRecently() { try { return Date.now() - Number(localStorage.getItem(KEY) || 0) < GAP; } catch (e) { return false; } }
     function mark() { try { localStorage.setItem(KEY, String(Date.now())); } catch (e) { /* ignore */ } }
@@ -23,8 +23,8 @@
     }
     if (document.readyState === "complete") { setTimeout(preload, 1500); } else { window.addEventListener("load", function () { setTimeout(preload, 1500); }); }
 
-    function show(onEnd) {
-        shown = true; if (!onEnd) { mark(); }   // the season-zip ad does not use up the 15-minute allowance of the mid-translation ad
+    function show(onEnd, useGap) {
+        shown = true; if (useGap) { mark(); }   // single-file downloads: at most one ad per 15 minutes; the season zip always shows it
         var st = document.createElement("style");
         st.textContent =
             ".spn-back{position:fixed;inset:0;z-index:99998;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(5,6,12,.55);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px)}" +
@@ -69,19 +69,11 @@
     }
 
     /* whole-season download (title.js): show the ad while the files are prepared; resolves when the ad has finished (or at once for Premium) and then closes itself */
-    window.__sinsubzSponsor = function () {
+    window.__sinsubzSponsor = function (useGap) {
         return new Promise(function (resolve) {
-            if (premium()) { resolve(); return; }
-            show(resolve);
+            if (premium() || (useGap && seenRecently())) { resolve(); return; }
+            show(resolve, !!useGap);
         });
     };
 
-    window.addEventListener("sinsubz:progress", function (ev) {
-        var p = Number(ev && ev.detail && ev.detail.percent) || 0;
-        if (p < last - 20) { armed = true; shown = false; }        // a new translation started (progress went back down)
-        last = p;
-        if (!armed || shown || p < SHOW_AT || p > 97) { return; }
-        if (premium() || seenRecently()) { armed = false; return; }
-        armed = false; show();
-    });
 })();
