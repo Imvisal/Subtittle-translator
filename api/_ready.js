@@ -117,6 +117,7 @@ async function tmdbInfo(m, opts) {
         }
         info.si = (cached && cached.si) || "";
         info.siTry = Date.now();
+        { const v = info.imdb ? "i:" + info.imdb : (info.rating ? "t:" + info.rating : ""); if (v) { redis([["HSET", "rdy:rt", m.id, v]]).catch(() => {}); } }   // rating tag on the ready posters
         await redis([["SET", ck, JSON.stringify(info), "EX", omdbOk ? 7 * 86400 : 6 * 3600]]);
         if (!info.si && info.overview) {
             info.si = await sinhalaSummary(m.t, m.y, m.type, info.overview, !!(opts && opts.force));
@@ -497,16 +498,20 @@ module.exports = async function ready(req, res) {
 
         if (act === "list" && req.method === "GET") {
             res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
-            const [flat] = await redis([["HGETALL", "rdy:idx"]]);
+            const [flat, rtFlat] = await redis([["HGETALL", "rdy:idx"], ["HGETALL", "rdy:rt"]]);
+            const rt = {};
+            for (let i = 0; rtFlat && i < rtFlat.length; i += 2) { rt[rtFlat[i]] = rtFlat[i + 1]; }      // imdb id -> "i:8.1" (IMDb) or "t:7.8" (TMDB)
             const items = [];
             const need = [];
+            const needRt = [];
             for (let i = 0; flat && i < flat.length; i += 2) {
                 const m = parse(flat[i + 1]);
                 if (!m) { continue; }
                 if (!m.gt && need.length < 6) { need.push(m); }
                 const eps = Object.values(m.eps || {}).map(x => ({ s: x.s, e: x.e, n: x.n, ts: x.ts }))
                     .sort((a, b) => a.s - b.s || a.e - b.e);
-                items.push({ id: m.id, slug: m.slug || slugify(m.t), t: m.t, y: m.y, p: m.p, g: m.g || [], type: m.type, eps, ts: Math.max(0, ...eps.map(x => x.ts || 0)) });
+                if (!rt[m.id] && needRt.length < 4) { needRt.push(m); }
+                items.push({ id: m.id, slug: m.slug || slugify(m.t), t: m.t, y: m.y, p: m.p, g: m.g || [], r: rt[m.id] || "", type: m.type, eps, ts: Math.max(0, ...eps.map(x => x.ts || 0)) });
             }
             // titles saved before genres existed: look up a few per request (TMDB), remember them, so the filter fills itself
             if (need.length && process.env.TMDB_API_KEY) {
@@ -519,6 +524,16 @@ module.exports = async function ready(req, res) {
                         await redis([["HSET", "rdy:idx", m.id, JSON.stringify(m)]]);
                         const it = items.find(x => x.id === m.id); if (it) { it.g = g; }
                     } catch (e) { /* try again next time */ }
+                }));
+            }
+            // titles without a rating yet: a few per request (from the cached TMDB / OMDb info), remembered in rdy:rt, so the tags fill themselves
+            if (needRt.length && process.env.TMDB_API_KEY) {
+                await Promise.all(needRt.map(async m => {
+                    try {
+                        const inf = await tmdbInfo(m);
+                        const v = inf ? (inf.imdb ? "i:" + inf.imdb : (inf.rating ? "t:" + inf.rating : "")) : "";
+                        if (v) { await redis([["HSET", "rdy:rt", m.id, v]]); const it = items.find(x => x.id === m.id); if (it) { it.r = v; } }
+                    } catch (e) { /* next time */ }
                 }));
             }
             items.sort((a, b) => b.ts - a.ts);

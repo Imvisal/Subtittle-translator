@@ -6,6 +6,11 @@
     var host = document.getElementById("readyTitles");
     if (!host) { return; }
 
+    // IMDb rating tag (r = "i:8.1" from IMDb, or "t:7.8" from TMDB); nothing when unknown
+    function rate(it) {
+        var m = /^([it]):(\d{1,2}(?:\.\d)?)$/.exec(it && it.r || "");
+        return m ? '<span class="rd-rate' + (m[1] === "i" ? " is-imdb" : "") + '">' + (m[1] === "i" ? "IMDb " : "\u2605 ") + m[2] + '</span>' : "";
+    }
     function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
     function pad(n) { return String(n).padStart(2, "0"); }
     function posterOk(u) { return /^https:\/\//.test(String(u || "")); }
@@ -56,7 +61,7 @@
             var tag = it.type === "tv" ? n + (n === 1 ? " episode" : " episodes") : "Film";
             return '<a class="rd-card" href="' + (it.type === "tv" ? "/tv/" : "/film/") + esc(it.slug || it.id) + '">' +
                 '<span class="rd-poster">' + (posterOk(it.p) ? '<img src="' + esc(it.p) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '<i>🎬</i>') +
-                '<span class="rd-tag">' + esc(tag) + '</span></span>' +
+                '<span class="rd-tag">' + esc(tag) + '</span>' + rate(it) + '</span>' +
                 '<span class="rd-name">' + esc(it.t) + '</span>' +
                 (it.y ? '<span class="rd-year">' + esc(it.y) + '</span>' : '') + '</a>';
         }).join("");
@@ -159,7 +164,7 @@
                 var n = (it.eps || []).length;
                 return '<a class="rd-card" href="' + (it.type === "tv" ? "/tv/" : "/film/") + esc(it.slug || it.id) + '"><span class="rd-poster">' +
                     (posterOk(it.p) ? '<img src="' + esc(it.p) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '<i>🎬</i>') +
-                    '<span class="rd-tag">' + esc(it.type === "tv" ? n + (n === 1 ? " episode" : " episodes") : "Film") + '</span></span>' +
+                    '<span class="rd-tag">' + esc(it.type === "tv" ? n + (n === 1 ? " episode" : " episodes") : "Film") + '</span>' + rate(it) + '</span>' +
                     '<span class="rd-name">' + esc(it.t) + '</span>' + (it.y ? '<span class="rd-year">' + esc(it.y) + '</span>' : '') + '</a>';
             }).join("") + '</div>';
             anchor.parentNode.insertBefore(box, anchor);
