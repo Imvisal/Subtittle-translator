@@ -27,7 +27,7 @@
 .cm-post:disabled, .cm-more:disabled, .cm-google:disabled { opacity: 0.6; cursor: default; }
 .cm-google {
     display: inline-flex; align-items: center; gap: 10px; padding: 11px 20px; border-radius: 999px; cursor: pointer;
-    font: inherit; font-weight: 700; color: #1f1f1f; background: #fff; border: 1px solid #dadce0; justify-self: start;
+    font: inherit; font-weight: 700; color: #0b0c16; background: linear-gradient(180deg, #9a98ff, #8381f7); border: 0; justify-self: start;
 }
 .cm-note { margin: 0; min-height: 1.2em; font-size: 13px; color: #ff8a8a; }
 .cm-list, .cm-replies { list-style: none; margin: 0; padding: 0; }

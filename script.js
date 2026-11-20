@@ -3628,9 +3628,9 @@ function askToSignIn(getTok) {
         wrap.innerHTML =
             '<div style="max-width:380px;width:100%;background:#14172b;color:#eceaff;border:1px solid #2c3050;border-radius:20px;padding:24px;text-align:center;font-family:inherit;box-shadow:0 20px 60px rgba(0,0,0,.5)">' +
             '<div style="font-size:19px;font-weight:800;margin-bottom:8px">Sign in to translate</div>' +
-            '<div style="font-size:14.5px;line-height:1.55;opacity:.85">Translating needs a free Google account. Each account can translate <b>2 films and 5 TV episodes per day</b>.</div>' +
+            '<div style="font-size:14.5px;line-height:1.55;opacity:.85">Translating needs a free account (sign in with Google, Facebook or email). Each account can translate <b>2 films and 5 TV episodes per day</b>.</div>' +
             '<div id="signInAskMsg" style="min-height:20px;margin-top:8px;font-size:13px;color:#ff9a9a"></div>' +
-            '<button id="signInAskGo" type="button" style="margin-top:10px;width:100%;padding:13px;border:0;border-radius:14px;background:#fff;color:#1f1f1f;font-size:16px;font-weight:700;cursor:pointer">Sign in with Google</button>' +
+            '<button id="signInAskGo" type="button" style="margin-top:10px;width:100%;padding:13px;border:0;border-radius:14px;background:linear-gradient(180deg,#9a98ff,#8381f7);color:#0b0c16;font-size:16px;font-weight:700;cursor:pointer">Sign in</button>' +
             '<button id="signInAskNo" type="button" style="margin-top:8px;background:none;border:0;color:inherit;opacity:.65;font-size:14px;text-decoration:underline;cursor:pointer">Not now</button>' +
             '</div>';
         document.body.appendChild(wrap);
