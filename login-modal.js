@@ -21,6 +21,7 @@
             ".lg-tabs button.on{background:#8381f7;border-color:#8381f7;color:#0b0c16}" +
             ".lg-in{display:block;width:100%;box-sizing:border-box;margin-bottom:9px;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.16);background:#0b0d16;color:#eef0fa;font:inherit}" +
             ".lg-keep{display:flex;align-items:center;gap:8px;margin:0 0 12px;font-size:.9rem;color:#c9ccdd;cursor:pointer;user-select:none}.lg-keep input{width:17px;height:17px;accent-color:#8381f7;margin:0}" +
+            ".lg-pw{position:relative}.lg-pw .lg-in{padding-right:44px}.lg-eye{position:absolute;right:4px;top:0;height:calc(100% - 9px);width:42px;border:0;background:none;color:#9a9db3;cursor:pointer;display:flex;align-items:center;justify-content:center}.lg-eye:hover{color:#eef0fa}" +
             ".lg-in[hidden]{display:none}.lg-go{width:100%;padding:12px;border:0;border-radius:12px;background:linear-gradient(180deg,#9a98ff,#8381f7);color:#0b0c16;font:700 15px inherit;cursor:pointer}.lg-go:disabled{opacity:.6}" +
             ".lg-msg{min-height:18px;margin:8px 0 0;font-size:.85rem;color:#ff9aa8}.lg-msg.ok{color:#7ee2a8}" +
             ".lg-link{background:none;border:0;color:#9a9db3;font:inherit;font-size:.82rem;cursor:pointer;text-decoration:underline;padding:6px 0}";
@@ -81,7 +82,16 @@
             var pass = el("input", "lg-in"); pass.type = "password"; pass.placeholder = "Password"; pass.autocomplete = "current-password";
             var go = el("button", "lg-go", "Sign in"); go.type = "button";
             var forgot = el("button", "lg-link", "Forgot password?"); forgot.type = "button";
-            box.appendChild(nameI); box.appendChild(mail); box.appendChild(pass); box.appendChild(go); box.appendChild(forgot); box.appendChild(msg);
+            var pw = el("div", "lg-pw"), eye = el("button", "lg-eye"); eye.type = "button"; eye.setAttribute("aria-label", "Show password");
+            var EYE = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+            var EYE_OFF = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+            eye.innerHTML = EYE;
+            eye.addEventListener("click", function () {
+                var show = pass.type === "password"; pass.type = show ? "text" : "password";
+                eye.innerHTML = show ? EYE_OFF : EYE; eye.setAttribute("aria-label", show ? "Hide password" : "Show password"); pass.focus();
+            });
+            pw.appendChild(pass); pw.appendChild(eye);
+            box.appendChild(nameI); box.appendChild(mail); box.appendChild(pw); box.appendChild(go); box.appendChild(forgot); box.appendChild(msg);
             function setMode(m) {
                 mode = m; tIn.className = m === "in" ? "on" : ""; tUp.className = m === "up" ? "on" : "";
                 nameI.hidden = m !== "up"; go.textContent = m === "up" ? "Create account" : "Sign in"; forgot.hidden = m === "up";
