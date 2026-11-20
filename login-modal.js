@@ -20,6 +20,7 @@
             ".lg-tabs{display:flex;gap:6px;margin-bottom:10px}.lg-tabs button{flex:1;padding:8px;border-radius:10px;border:1px solid rgba(255,255,255,.14);background:transparent;color:#c9ccdd;font:600 13px inherit;cursor:pointer}" +
             ".lg-tabs button.on{background:#8381f7;border-color:#8381f7;color:#0b0c16}" +
             ".lg-in{display:block;width:100%;box-sizing:border-box;margin-bottom:9px;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.16);background:#0b0d16;color:#eef0fa;font:inherit}" +
+            ".lg-keep{display:flex;align-items:center;gap:8px;margin:0 0 12px;font-size:.9rem;color:#c9ccdd;cursor:pointer;user-select:none}.lg-keep input{width:17px;height:17px;accent-color:#8381f7;margin:0}" +
             ".lg-in[hidden]{display:none}.lg-go{width:100%;padding:12px;border:0;border-radius:12px;background:linear-gradient(180deg,#9a98ff,#8381f7);color:#0b0c16;font:700 15px inherit;cursor:pointer}.lg-go:disabled{opacity:.6}" +
             ".lg-msg{min-height:18px;margin:8px 0 0;font-size:.85rem;color:#ff9aa8}.lg-msg.ok{color:#7ee2a8}" +
             ".lg-link{background:none;border:0;color:#9a9db3;font:inherit;font-size:.82rem;cursor:pointer;text-decoration:underline;padding:6px 0}";
@@ -63,6 +64,13 @@
                 return b;
             }
             var msg = el("p", "lg-msg");
+            // "Stay signed in": on = stays signed in on this device (default); off = signed out when the browser is closed
+            var keep = el("label", "lg-keep"), cb = el("input"); cb.type = "checkbox"; cb.checked = true;
+            keep.appendChild(cb); keep.appendChild(el("span", "", "Stay signed in"));
+            cb.addEventListener("change", function () {
+                try { M.setPersistence(auth, cb.checked ? M.browserLocalPersistence : M.browserSessionPersistence).catch(function () { /* keep the default */ }); } catch (e) { /* older SDK */ }
+            });
+            box.appendChild(keep);
             box.appendChild(prov("Continue with Google", "lg-g", ICON_G, function () { return new M.GoogleAuthProvider(); }));
             if (M.FacebookAuthProvider) { box.appendChild(prov("Continue with Facebook", "lg-fb", ICON_F, function () { return new M.FacebookAuthProvider(); })); }
             box.appendChild(el("div", "lg-or", "or use email"));
