@@ -567,6 +567,50 @@
         }).catch(function () { box.textContent = "Could not load requests."; });
     }
     loadRequests();
+    // database backup / restore (api/_backup.js): pages through Redis, saves one JSON file
+    (function () {
+        var go = $("bkGo"), file = $("bkFile"), msg = $("bkMsg");
+        if (!go) { return; }
+        var H = { "x-admin-key": KEY, "Content-Type": "application/json" };
+        function post(a, body) { return fetch("/api/stats?backup=" + a, { method: "POST", headers: H, body: JSON.stringify(body) }).then(function (r) { if (!r.ok) { throw new Error("HTTP " + r.status); } return r.json(); }); }
+        go.addEventListener("click", function () {
+            go.disabled = true; msg.textContent = "Listing keys...";
+            var keys = [], cur = "0";
+            (function page() {
+                fetch("/api/stats?backup=keys&cursor=" + cur, { headers: H, cache: "no-store" }).then(function (r) { if (!r.ok) { throw new Error("HTTP " + r.status); } return r.json(); }).then(function (d) {
+                    keys = keys.concat(d.keys || []); cur = d.cursor || "0";
+                    msg.textContent = "Listing keys... " + keys.length;
+                    if (cur !== "0") { return page(); }
+                    var items = [], i = 0;
+                    (function batch() {
+                        if (i >= keys.length) { return finish(items); }
+                        post("dump", { keys: keys.slice(i, i + 40) }).then(function (r) { items = items.concat(r.items || []); i += 40; msg.textContent = "Saving... " + Math.min(i, keys.length) + " / " + keys.length; batch(); }).catch(fail);
+                    })();
+                }).catch(fail);
+            })();
+            function finish(items) {
+                var blob = new Blob([JSON.stringify({ app: "sinsubz", at: new Date().toISOString(), count: items.length, items: items })], { type: "application/json" });
+                var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "sinsubz-backup-" + new Date().toISOString().slice(0, 10) + ".json";
+                document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+                msg.textContent = "Done. " + items.length + " keys saved."; go.disabled = false;
+            }
+            function fail(e) { msg.textContent = "Failed: " + ((e && e.message) || "error") + ". Try again."; go.disabled = false; }
+        });
+        file.addEventListener("change", function () {
+            var f = file.files && file.files[0]; file.value = "";
+            if (!f) { return; }
+            if (window.prompt("This REPLACES the same keys in the live database with the file's copy. Type RESTORE to continue.") !== "RESTORE") { msg.textContent = "Cancelled."; return; }
+            f.text().then(function (t) {
+                var d = JSON.parse(t), items = (d && d.items) || [], i = 0, done = 0;
+                if (d.app !== "sinsubz" || !items.length) { throw new Error("Not a SinSubz backup"); }
+                (function batch() {
+                    if (i >= items.length) { msg.textContent = "Restored " + done + " keys."; return; }
+                    post("restore", { items: items.slice(i, i + 40) }).then(function (r) { done += r.restored || 0; i += 40; msg.textContent = "Restoring... " + Math.min(i, items.length) + " / " + items.length; batch(); })
+                        .catch(function (e) { msg.textContent = "Failed at " + i + ": " + e.message; });
+                })();
+            }).catch(function (e) { msg.textContent = "Could not read the file: " + e.message; });
+        });
+    })();
     if ($("tgTest")) {
         $("tgTest").addEventListener("click", function () {
             var m = $("tgMsg"); m.textContent = "Sending...";

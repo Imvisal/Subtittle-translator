@@ -179,6 +179,15 @@
             </div>
         </div>
 
+            <div class="card">
+                <h2>Database backup</h2>
+                <p class="muted" style="margin:0 0 10px">Saves the translations, ready subtitles, lists, users and settings from Redis to a file on this device. Takes a few minutes and uses some Redis commands, so do it about once a week. Keep the file private.</p>
+                <div class="row" style="gap:8px;flex-wrap:wrap">
+                    <button id="bkGo" type="button">Download backup</button>
+                    <label class="btn ghost" style="cursor:pointer">Restore from file<input id="bkFile" type="file" accept="application/json,.json" hidden></label>
+                </div>
+                <p class="empty" id="bkMsg"></p>
+            </div>
         </div>
 
         <div class="tabpane" data-tab="users" hidden>
