@@ -290,12 +290,12 @@ function today() {
 
 async function generateWithFallback(prompt, premium) {
     const trail = [];
-    const out = await generateInner(prompt, trail);
+    const out = await generateInner(prompt, trail, premium);
     if (out && typeof out === "object") { out.trail = trail; }
     return out;
 }
 
-async function generateInner(prompt, trail) {
+async function generateInner(prompt, trail, premium) {
     const keys = getKeys(!!premium);
     const models = getModels();
 
