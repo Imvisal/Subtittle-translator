@@ -452,6 +452,14 @@ async function mailUser(to, subject, text) {
     }
 }
 
+function mailPremium(rq) {
+    const day = new Date(rq.until).toISOString().slice(0, 10);
+    return mailUser(rq.email, "Your SinSubz Premium is active",
+        "Hi" + (rq.name ? " " + rq.name : "") + ",\n\nThank you! Your payment was confirmed and your SinSubz Premium is now active until " + day + ".\n" +
+        "No ads, and every feature is unlocked. Just sign in on https://sinsubs.site with the same account.\n\n" +
+        "If anything looks wrong, use the Contact page on the site.\n\nSinSubz");
+}
+
 // ---------------------------------------------------------------- e-mail to the owner (Resend, plain HTTPS: no extra package)
 // Env: RESEND_API_KEY  (resend.com, free).  NOTIFY_EMAIL (default = owner e-mail; with Resend's free
 // onboarding sender this must be the e-mail the Resend account was made with).  Never throws, never blocks long.
@@ -910,13 +918,16 @@ async function action(req, res) {
             await pushNotif(rq.uk, what === "planApprove"
                 ? { type: "premium", title: "Premium activated \uD83D\uDC51", body: "Thank you! Your Premium plan is active until " + new Date(rq.until).toISOString().slice(0, 10) + "." }
                 : { type: "premium", title: "Premium request not approved", body: "We could not approve your Premium request. Please check the payment slip and try again, or send us a message from the Contact page." }).catch(() => null);
-            if (what === "planApprove") {
-                const day = new Date(rq.until).toISOString().slice(0, 10);
-                await mailUser(rq.email, "Your SinSubz Premium is active",
-                    "Hi" + (rq.name ? " " + rq.name : "") + ",\n\nThank you! Your payment was confirmed and your SinSubz Premium is now active until " + day + ".\n" +
-                    "No ads, and every feature is unlocked. Just sign in on https://sinsubs.site with the same account.\n\n" +
-                    "If anything looks wrong, use the Contact page on the site.\n\nSinSubz");
-            }
+            if (what === "planApprove") { await mailPremium(rq); }
+            return res.status(200).json({ ok: true });
+        }
+        if (what === "planMail") {      // (re)send the "Premium is active" e-mail for an already approved request
+            if (!/^[0-9a-f]{12}$/.test(id)) { return res.status(400).json({ error: "Bad id" }); }
+            const [raw] = await redis([["HGET", "prem:req", id]]);
+            const rq = parse(raw);
+            if (!rq) { return res.status(404).json({ error: "Request not found" }); }
+            if (rq.status !== "approved") { return res.status(409).json({ error: "Only approved requests can be e-mailed." }); }
+            if (!(await mailPremium(rq))) { return res.status(502).json({ error: "The e-mail was not sent. Check RESEND_API_KEY and USER_MAIL_FROM (verified domain) in Vercel, then the Resend logs." }); }
             return res.status(200).json({ ok: true });
         }
         if (what === "reply") {

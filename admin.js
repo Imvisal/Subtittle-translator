@@ -73,6 +73,16 @@
                 bar.appendChild(view); bar.appendChild(ok); bar.appendChild(no);
                 row.appendChild(bar); row.appendChild(img);
             }
+            if (q.status === "approved" && q.email) {
+                var mb = el("button", "ghost mini", "Send email"); mb.type = "button"; mb.style.marginTop = "6px";
+                mb.addEventListener("click", function () {
+                    if (!window.confirm("Send the 'Premium is active' e-mail to " + q.email + "?")) { return; }
+                    mb.disabled = true; mb.textContent = "Sending…";
+                    postAction({ action: "planMail", id: q.id }).then(function () { mb.textContent = "Sent ✓"; })
+                        .catch(function (e) { mb.disabled = false; mb.textContent = "Send email"; window.alert(e.message); });
+                });
+                row.appendChild(mb);
+            }
             host.appendChild(row);
         });
     }
