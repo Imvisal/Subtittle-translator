@@ -5,6 +5,7 @@
 //   GEMINI_API_KEY            (existing key, still works)
 //   GEMINI_API_KEY_2 ... _10  (extra keys, each from a DIFFERENT Google project)
 //   GEMINI_API_KEYS           (optional, comma separated list instead)
+//   GEMINI_BACKUP_KEY, GEMINI_BACKUP_KEY_2 ...  (own-name keys, always tried after the numbered ones)
 //   GEMINI_MODELS             (optional, comma separated, best model first)
 //
 // Daily quota is per Google Cloud PROJECT, so extra keys only help when
@@ -137,6 +138,12 @@ function getKeys() {
 
     for (let i = 2; i <= 30; i++) {
         list.push(process.env["GEMINI_API_KEY_" + i]);
+    }
+
+    // keys with their own name (tried after all the numbered ones): GEMINI_BACKUP_KEY, GEMINI_BACKUP_KEY_2, ...
+    list.push(process.env.GEMINI_BACKUP_KEY);
+    for (let i = 2; i <= 10; i++) {
+        list.push(process.env["GEMINI_BACKUP_KEY_" + i]);
     }
 
     return [...new Set(
