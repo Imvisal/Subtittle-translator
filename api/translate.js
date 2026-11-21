@@ -861,7 +861,7 @@ ${JSON.stringify(inputItems)}
 
             // every Gemini key is out of its DAILY quota (or the owner forces the fallback to test it): use the backup
             // translator instead of telling the person "limit reached". It is dressed up as a Gemini reply so the checks below still run.
-            if (attempt === 1 && mt.enabled() && ((generated.error && generated.code === "QUOTA_EXHAUSTED" && !isRunner) || forceMt)) {
+            if (attempt === 1 && mt.enabled() && ((generated.error && !isRunner && (generated.code === "QUOTA_EXHAUSTED" || generated.status === 503 || Number(generated.status) >= 500)) || forceMt)) {   // daily quota gone, or Gemini is down / overloaded (5xx)
                 try {
                     let text = "", via = "";
                     if (mt.llmEnabled()) {
@@ -876,7 +876,7 @@ ${JSON.stringify(inputItems)}
                     }
                     generated = { data: { candidates: [{ content: { parts: [{ text }] } }] }, key: 0, model: via };
                     usedMt = true;
-                    await require("./_admin.js").logEvent({ type: "gemini", lvl: "warn", u: logCtx.u, job: logCtx.job, msg: (forceMt ? "TEST: " : "Gemini quota gone -> ") + "used " + via + " for " + pending.length + " lines" });
+                    await require("./_admin.js").logEvent({ type: "gemini", lvl: "warn", u: logCtx.u, job: logCtx.job, msg: (forceMt ? "TEST: " : (generated.code === "QUOTA_EXHAUSTED" ? "Gemini quota gone -> " : "Gemini down/busy (" + (generated.status || "?") + ") -> ")) + "used " + via + " for " + pending.length + " lines" });
                 } catch (e) {
                     await require("./_admin.js").logEvent({ type: "gemini", lvl: "error", u: logCtx.u, job: logCtx.job, msg: "MT fallback failed: " + String(e && e.message || e).slice(0, 120) });
                     if (forceMt) { return res.status(502).json({ error: "Backup translator failed: " + String(e && e.message || e).slice(0, 160), code: "MT_FAILED" }); }
