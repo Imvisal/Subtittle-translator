@@ -5,7 +5,7 @@
 //   GEMINI_API_KEY            (existing key, still works)
 //   GEMINI_API_KEY_2 ... _10  (extra keys, each from a DIFFERENT Google project)
 //   GEMINI_API_KEYS           (optional, comma separated list instead)
-//   GEMINI_BACKUP_KEY, GEMINI_BACKUP_KEY_2 ...  (own-name keys, always tried after the numbered ones)
+//   GEMINI_BACKUP_KEY, GEMINI_BACKUP_KEY_2 ...  (PREMIUM-ONLY keys: used by Premium members after all the others; never by free visitors or the runner)
 //   GEMINI_MODELS             (optional, comma separated, best model first)
 //
 // Daily quota is per Google Cloud PROJECT, so extra keys only help when
@@ -127,7 +127,7 @@ const DEFAULT_MODELS = [
     "gemini-2.5-flash"
 ];
 
-function getKeys() {
+function getKeys(includeReserved) {
     const list = [];
 
     if (process.env.GEMINI_API_KEYS) {
@@ -140,10 +140,13 @@ function getKeys() {
         list.push(process.env["GEMINI_API_KEY_" + i]);
     }
 
-    // keys with their own name (tried after all the numbered ones): GEMINI_BACKUP_KEY, GEMINI_BACKUP_KEY_2, ...
-    list.push(process.env.GEMINI_BACKUP_KEY);
-    for (let i = 2; i <= 10; i++) {
-        list.push(process.env["GEMINI_BACKUP_KEY_" + i]);
+    // Reserved for PREMIUM members only (tried after all the others): GEMINI_BACKUP_KEY, GEMINI_BACKUP_KEY_2, ...
+    // Free visitors and the auto-runner never use them, so a Premium member can still translate when every other key is out of quota.
+    if (includeReserved) {
+        list.push(process.env.GEMINI_BACKUP_KEY);
+        for (let i = 2; i <= 10; i++) {
+            list.push(process.env["GEMINI_BACKUP_KEY_" + i]);
+        }
     }
 
     return [...new Set(
@@ -285,7 +288,7 @@ function today() {
     return new Date(Date.now() + 5.5 * 3600e3).toISOString().slice(0, 10);
 }
 
-async function generateWithFallback(prompt) {
+async function generateWithFallback(prompt, premium) {
     const trail = [];
     const out = await generateInner(prompt, trail);
     if (out && typeof out === "object") { out.trail = trail; }
@@ -293,7 +296,7 @@ async function generateWithFallback(prompt) {
 }
 
 async function generateInner(prompt, trail) {
-    const keys = getKeys();
+    const keys = getKeys(!!premium);
     const models = getModels();
 
     if (keys.length === 0) {
@@ -578,9 +581,11 @@ module.exports = async function handler(req, res) {
         // ---- Google sign-in required + daily limit per user (see api/_admin.js) ----
         let limitDone = null;
         let logCtx = { u: "", job: "" };
+        let premiumReq = false;       // Premium members may also use the reserved GEMINI_BACKUP_KEY* keys
         {
             const adm = require("./_admin.js");
             const who = isRunner ? { uid: "runner", owner: true, email: "auto-runner" } : await adm.authUser(req);
+            try { if (who && who.uid && !isRunner) { premiumReq = (await adm.premiumUntil(adm.uidKeyOf(who.uid))) > Date.now(); } } catch (e) { premiumReq = false; }
             logCtx = { u: adm.whoLabel(who, req), job: String((req.body && req.body.job) || title || "").slice(0, 80) };
             if (adm.loginRequired(who, req)) {
                 await adm.logEvent({ type: "login", lvl: "warn", u: logCtx.u, msg: "Sign-in required (refused)" });
@@ -864,7 +869,7 @@ ${JSON.stringify(inputItems)}
 
             let generated = forceMt
                 ? { error: "forced", status: 429, code: "QUOTA_EXHAUSTED" }
-                : await generateWithFallback(buildPrompt(pending));
+                : await generateWithFallback(buildPrompt(pending), premiumReq);
 
             // every Gemini key is out of its DAILY quota (or the owner forces the fallback to test it): use the backup
             // translator instead of telling the person "limit reached". It is dressed up as a Gemini reply so the checks below still run.
