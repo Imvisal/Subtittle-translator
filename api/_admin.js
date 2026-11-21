@@ -434,7 +434,10 @@ async function mailUser(to, subject, text) {
     try {
         const key = String(process.env.RESEND_API_KEY || "").trim();
         const from = String(process.env.USER_MAIL_FROM || "").trim();
-        if (!key || !from || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(to || ""))) { return false; }
+        mailUser.why = "";
+        if (!key) { mailUser.why = "RESEND_API_KEY is not set on the server (add it in Vercel, then redeploy)."; return false; }
+        if (!from) { mailUser.why = "USER_MAIL_FROM is not set on the server (add it in Vercel, then redeploy)."; return false; }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(to || ""))) { mailUser.why = "This request has no valid e-mail address."; return false; }
         const ctl = new AbortController();
         const timer = setTimeout(function () { ctl.abort(); }, 4000);
         const r = await fetch("https://api.resend.com/emails", {
@@ -444,10 +447,15 @@ async function mailUser(to, subject, text) {
             signal: ctl.signal
         });
         clearTimeout(timer);
-        if (!r.ok) { console.warn("mailUser: Resend answered " + r.status); }
+        if (!r.ok) {
+            console.warn("mailUser: Resend answered " + r.status);
+            let msg = ""; try { const j = await r.json(); msg = String(j && (j.message || j.error) || ""); } catch (e) { /* ignore */ }
+            mailUser.why = "Resend answered " + r.status + (msg ? ": " + msg.slice(0, 220) : "");
+        }
         return r.ok;
     } catch (e) {
         console.warn("mailUser failed: " + (e && e.name));
+        mailUser.why = "Could not reach Resend (" + (e && e.name) + ").";
         return false;
     }
 }
@@ -927,7 +935,7 @@ async function action(req, res) {
             const rq = parse(raw);
             if (!rq) { return res.status(404).json({ error: "Request not found" }); }
             if (rq.status !== "approved") { return res.status(409).json({ error: "Only approved requests can be e-mailed." }); }
-            if (!(await mailPremium(rq))) { return res.status(502).json({ error: "The e-mail was not sent. Check RESEND_API_KEY and USER_MAIL_FROM (verified domain) in Vercel, then the Resend logs." }); }
+            if (!(await mailPremium(rq))) { return res.status(502).json({ error: "The e-mail was not sent. " + (mailUser.why || "") }); }
             return res.status(200).json({ ok: true });
         }
         if (what === "reply") {
