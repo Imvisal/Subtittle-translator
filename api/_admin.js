@@ -427,6 +427,31 @@ function envNum(name, dflt) {
     return v != null && v !== "" && !isNaN(Number(v)) ? Number(v) : dflt;
 }
 
+// ---------------------------------------------------------------- e-mail to a customer (Resend)
+// Env: RESEND_API_KEY and USER_MAIL_FROM, e.g. "SinSubz <no-reply@sinsubs.site>". Resend only delivers to people other than
+// the account owner after the sending domain is verified (Resend dashboard > Domains). Without it this quietly does nothing.
+async function mailUser(to, subject, text) {
+    try {
+        const key = String(process.env.RESEND_API_KEY || "").trim();
+        const from = String(process.env.USER_MAIL_FROM || "").trim();
+        if (!key || !from || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(to || ""))) { return false; }
+        const ctl = new AbortController();
+        const timer = setTimeout(function () { ctl.abort(); }, 4000);
+        const r = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: { "Authorization": "Bearer " + key, "Content-Type": "application/json" },
+            body: JSON.stringify({ from: from, to: [to], subject: subject, text: text }),
+            signal: ctl.signal
+        });
+        clearTimeout(timer);
+        if (!r.ok) { console.warn("mailUser: Resend answered " + r.status); }
+        return r.ok;
+    } catch (e) {
+        console.warn("mailUser failed: " + (e && e.name));
+        return false;
+    }
+}
+
 // ---------------------------------------------------------------- e-mail to the owner (Resend, plain HTTPS: no extra package)
 // Env: RESEND_API_KEY  (resend.com, free).  NOTIFY_EMAIL (default = owner e-mail; with Resend's free
 // onboarding sender this must be the e-mail the Resend account was made with).  Never throws, never blocks long.
@@ -885,6 +910,13 @@ async function action(req, res) {
             await pushNotif(rq.uk, what === "planApprove"
                 ? { type: "premium", title: "Premium activated \uD83D\uDC51", body: "Thank you! Your Premium plan is active until " + new Date(rq.until).toISOString().slice(0, 10) + "." }
                 : { type: "premium", title: "Premium request not approved", body: "We could not approve your Premium request. Please check the payment slip and try again, or send us a message from the Contact page." }).catch(() => null);
+            if (what === "planApprove") {
+                const day = new Date(rq.until).toISOString().slice(0, 10);
+                await mailUser(rq.email, "Your SinSubz Premium is active",
+                    "Hi" + (rq.name ? " " + rq.name : "") + ",\n\nThank you! Your payment was confirmed and your SinSubz Premium is now active until " + day + ".\n" +
+                    "No ads, and every feature is unlocked. Just sign in on https://sinsubs.site with the same account.\n\n" +
+                    "If anything looks wrong, use the Contact page on the site.\n\nSinSubz");
+            }
             return res.status(200).json({ ok: true });
         }
         if (what === "reply") {
