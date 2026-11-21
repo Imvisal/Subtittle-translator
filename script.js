@@ -4714,7 +4714,7 @@ function downloadTextFile(
 
     // Inside the Android app, blob downloads do not work in the WebView.
     // app-shim.js (only included in the app build) saves + shares the file.
-    // website: the Sponsored GIF popup (sponsor-popup.js) while the download is ready; app / no popup script: the older banner screen
+    // the optional Sponsored popup script (not installed now) runs first; otherwise the "download ready" banner screen
     var save = function () {
         if (typeof window.__appSaveTextFile === "function") {
             window.__appSaveTextFile(text, filename);
