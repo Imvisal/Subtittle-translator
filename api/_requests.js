@@ -63,7 +63,29 @@ module.exports = async function (req, res) {
             await redis([["HSETNX", "rq:p", b.imdb, JSON.stringify(rec)]]);
         }
         const added = Number((await redis([["SADD", "rq:u:" + b.imdb, uk], ["EXPIRE", "rq:u:" + b.imdb, 90 * 86400]]))[0]);
+        // remember the e-mail so we can tell the person when the Sinhala subtitle is ready (kept 120 days, never shown anywhere)
+        if (who.email) { await redis([["HSET", "rq:m:" + b.imdb, uk, who.email], ["EXPIRE", "rq:m:" + b.imdb, 120 * 86400]]); }
         return res.status(200).json({ status: added ? "sent" : "again" });
     }
     return res.status(404).json({ error: "Not found" });
+};
+
+// Called when a title becomes ready: one e-mail to everyone who requested it (needs RESEND_API_KEY + USER_MAIL_FROM), then forgotten.
+module.exports.mailRequesters = async function (m) {
+    try {
+        if (!hasRedis() || !m || !m.id) { return 0; }
+        const key = "rq:m:" + m.id;
+        const flat = (await redis([["HGETALL", key]]))[0] || [];
+        if (!flat.length) { return 0; }
+        await redis([["DEL", key]]);
+        const A = require("./_admin.js");
+        const url = "https://sinsubs.site" + (m.type === "tv" ? "/tv/" : "/film/") + (m.slug || m.id);
+        let n = 0;
+        for (let i = 1; i < flat.length && n < 40; i += 2) {
+            const ok = await A.mailUser(flat[i], "Your Sinhala subtitle is ready: " + (m.t || "your request"),
+                "Hi,\n\nYou asked for a Sinhala subtitle for \"" + (m.t || "this title") + "\" on SinSubz. It is ready now:\n" + url + "\n\nEnjoy!\nSinSubz");
+            if (ok) { n++; }
+        }
+        return n;
+    } catch (e) { return 0; }
 };

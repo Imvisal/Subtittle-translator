@@ -33,7 +33,12 @@ const KEY = process.env.ADMIN_KEY || "";
 const MAX_MS = (Number(process.env.MAX_MINUTES) || 60) * 60 * 1000;
 let started = Date.now();
 
-function log() { console.log.apply(console, ["[" + new Date().toISOString().slice(11, 19) + "]"].concat([].slice.call(arguments))); }
+const problems = [];   // reasons the run stopped early: they are e-mailed to the owner at the end
+function log() {
+    const msg = [].slice.call(arguments).join(" ");
+    if (/failures in a row: stopping|SubDL looks unavailable|quota is used up on every key and the reset is far away/.test(msg)) { problems.push(msg.trim()); }
+    console.log.apply(console, ["[" + new Date().toISOString().slice(11, 19) + "]"].concat([].slice.call(arguments)));
+}
 
 function pacificHour() {
     return Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", hour: "numeric", hour12: false }).format(new Date())) % 24;
@@ -368,4 +373,9 @@ async function refillFilmsIfDue(n, meta) {
     }
     await browser.close();
     log("Finished. Translated " + done + " this run.");
+    if (problems.length) {
+        try {
+            await post("/api/stats?alert=1", { subject: "SinSubz runner stopped early (" + done + " translated)", text: "The auto-translate run stopped early:\n\n- " + problems.join("\n- ") + "\n\nTranslated this run: " + done + "\nSee the Actions log on GitHub for details." });
+        } catch (e) { /* ignore */ }
+    }
 })().catch(e => { console.error(e); process.exit(1); });

@@ -716,6 +716,7 @@ module.exports = async function ready(req, res) {
             const packed = zlib.gzipSync(Buffer.from(srt, "utf8")).toString("base64");
             await redis([["SET", srtKey(b.imdb, s, e), packed], ["HSET", "rdy:idx", b.imdb, JSON.stringify(m)]]);
             if (isNew) { await warmTitle(m, 14000); await require("./_push.js").notifyNewTitle(m); }
+            if (isNew) { await require("./_requests.js").mailRequesters(m); }          // e-mail the visitors who requested this title
             await require("./_telegram.js").postNew(m, type === "tv" ? s : 0, type === "tv" ? e : 0);          // Telegram channel: once per film / per TV season          // browser notification (at most one per 6 hours)
             return res.status(200).json({ ok: true });
         }

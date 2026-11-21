@@ -114,6 +114,13 @@ module.exports = async function handler(req, res) {
     if (/(?:^|[?&])tg=test(?:&|$)/.test(String(req.url || "")) && req.method === "POST") {
         return require("./_telegram.js").test(req, res);
     }
+    if (/(?:^|[?&])alert=1(?:&|$)/.test(String(req.url || "")) && req.method === "POST") {      // the runner reports a problem -> e-mail to the owner
+        const A = require("./_admin.js");
+        if (!A.isAdmin(req)) { return res.status(401).json({ error: "Admin key needed" }); }
+        const b = (req.body && typeof req.body === "object") ? req.body : {};
+        const ok = await A.notifyOwner(String(b.subject || "SinSubz alert").slice(0, 120), String(b.text || "").slice(0, 3000));
+        return res.status(200).json({ ok });
+    }
     if (/(?:^|[?&])req=[a-z]+/.test(String(req.url || ""))) {
         return require("./_requests.js")(req, res);
     }
