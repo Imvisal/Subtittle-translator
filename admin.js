@@ -611,7 +611,9 @@
             var f = file.files && file.files[0]; file.value = "";
             if (!f) { return; }
             if (window.prompt("This REPLACES the same keys in the live database with the file's copy. Type RESTORE to continue.") !== "RESTORE") { msg.textContent = "Cancelled."; return; }
-            f.text().then(function (t) {
+            (/\.gz$/i.test(f.name) && window.DecompressionStream
+                ? new Response(f.stream().pipeThrough(new DecompressionStream("gzip"))).text()
+                : f.text()).then(function (t) {
                 var d = JSON.parse(t), items = (d && d.items) || [], i = 0, done = 0;
                 if (d.app !== "sinsubz" || !items.length) { throw new Error("Not a SinSubz backup"); }
                 (function batch() {
