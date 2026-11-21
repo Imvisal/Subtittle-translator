@@ -927,6 +927,11 @@ async function action(req, res) {
                 ? { type: "premium", title: "Premium activated \uD83D\uDC51", body: "Thank you! Your Premium plan is active until " + new Date(rq.until).toISOString().slice(0, 10) + "." }
                 : { type: "premium", title: "Premium request not approved", body: "We could not approve your Premium request. Please check the payment slip and try again, or send us a message from the Contact page." }).catch(() => null);
             if (what === "planApprove") { await mailPremium(rq); }
+            else {
+                await mailUser(rq.email, "About your SinSubz Premium request",
+                    "Hi" + (rq.name ? " " + rq.name : "") + ",\n\nWe could not approve your Premium request yet. Please check that the payment slip is clear and the amount is right, then send it again from https://sinsubs.site/premium.html. " +
+                    "If you think this is a mistake, use the Contact page on the site.\n\nSinSubz");
+            }
             return res.status(200).json({ ok: true });
         }
         if (what === "planMail") {      // (re)send the "Premium is active" e-mail for an already approved request
@@ -977,4 +982,30 @@ async function action(req, res) {
     }
 }
 
-module.exports = { isAdmin, adminGate, logEvent, logActivity, alerts, whoLabel, logs, notifications, pushNotif, quotaLeftPct, resetQuotaCache: function () { quotaLeftCache = { at: 0, day: "", pct: 100 }; }, notifyOwner, planPublic, planSubmit, me, premiumUntil, authUser, loginRequired, checkDailyLimit, pacificDay, ping, overview, health, action, publicAnnouncement, cleanAnnouncement, dayKey, uidKeyOf };
+// Called by the scheduled cron (once a day at most): e-mails Premium members whose plan ends within 3 days (once per expiry date).
+async function premiumReminders() {
+    try {
+        if (!process.env.RESEND_API_KEY || !process.env.USER_MAIL_FROM) { return 0; }
+        const today = new Date().toISOString().slice(0, 10);
+        const [first] = await redis([["SET", "prem:rem:day", today, "NX", "EX", 129600]]);
+        if (!first) { return 0; }                                  // already ran today (the cron fires twice a day)
+        const [all, done] = await redis([["HGETALL", "u:prem"], ["HGETALL", "prem:remd"]]);
+        const until = pairs(all), sent = pairs(done);
+        const now = Date.now();
+        let n = 0;
+        for (const uk of Object.keys(until)) {
+            const end = Number(until[uk]);
+            if (!(end > now && end - now <= 3 * 86400e3) || sent[uk] === String(end) || n >= 40) { continue; }
+            const [raw] = await redis([["HGET", "u:info", uk]]);
+            const u = parse(raw) || {};
+            if (!u.e) { continue; }
+            const ok = await mailUser(u.e, "Your SinSubz Premium ends soon",
+                "Hi" + (u.n ? " " + u.n : "") + ",\n\nYour SinSubz Premium ends on " + new Date(end).toISOString().slice(0, 10) + ".\n" +
+                "To keep it (no ads, all features), renew from https://sinsubs.site/premium.html before then. If you already renewed, you can ignore this e-mail.\n\nSinSubz");
+            if (ok) { await redis([["HSET", "prem:remd", uk, String(end)]]); n++; }
+        }
+        return n;
+    } catch (e) { return 0; }
+}
+
+module.exports = { premiumReminders, isAdmin, adminGate, logEvent, logActivity, alerts, whoLabel, logs, notifications, pushNotif, quotaLeftPct, resetQuotaCache: function () { quotaLeftCache = { at: 0, day: "", pct: 100 }; }, notifyOwner, planPublic, planSubmit, me, premiumUntil, authUser, loginRequired, checkDailyLimit, pacificDay, ping, overview, health, action, publicAnnouncement, cleanAnnouncement, dayKey, uidKeyOf };

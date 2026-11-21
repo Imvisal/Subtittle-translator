@@ -35,6 +35,7 @@ module.exports = async function runnerCron(req, res) {
 
     // the scheduled call (no act): also fill a few missing Sinhala story intros, so no title needs a visit to get one
     if (!act) { try { await require("./_ready.js").fillMissingIntros(6, 12000); } catch (e) { /* never blocks the runner */ } }
+    if (!act) { try { await require("./_admin.js").premiumReminders(); } catch (e) { /* never blocks the runner */ } }     // "Premium ends soon" e-mails
 
     if (!token) { return res.status(503).json({ error: "GITHUB_DISPATCH_TOKEN is not set" }); }
     const repo = /^[\w.-]+\/[\w.-]+$/.test(process.env.GITHUB_REPO || "") ? process.env.GITHUB_REPO : "visalhmg123-cell/sinsubz-runner1";
