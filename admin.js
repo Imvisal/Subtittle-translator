@@ -255,7 +255,7 @@
         Q.keys.forEach(function (k) {
             qSum += k.left;
             var row = el("div", "b");
-            row.appendChild(el("span", "", "Key #" + k.n));
+            row.appendChild(el("span", "", "#" + k.n + (k.name ? " " + k.name : "") + (k.premium ? " (Premium)" : "")));
             var tr = el("div", "track"), f = el("div", "fill");
             f.style.width = k.left + "%";
             tr.appendChild(f); row.appendChild(tr);
@@ -281,7 +281,8 @@
         var kb = $("keys"); kb.textContent = "";
         d.health.keys.forEach(function (k) {
             var tr = el("tr");
-            tr.appendChild(el("td", "", "#" + k.n));
+            var qk = (d.quota.keys || []).filter(function (x) { return x.n === k.n; })[0] || {};
+            tr.appendChild(el("td", "", "#" + k.n + (qk.name ? " " + qk.name : "") + (qk.premium ? " (Premium)" : "")));
             tr.appendChild(el("td", k.today ? "ok" : "", fmt(k.today)));
             tr.appendChild(el("td", "", fmt(k.ok)));
             tr.appendChild(el("td", k.q429 ? "bad" : "", fmt(k.q429)));

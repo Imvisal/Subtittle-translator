@@ -266,10 +266,11 @@ async function overview(req, res) {
                 const used = pairs(r[QI]);
                 const limit = Math.max(1, Number(process.env.GEMINI_DAILY_LIMIT) || 1000);
                 const n = Math.max(geminiKeys().length, 1);
-                const list = [];
+                const list = [], labels = geminiKeyLabels();
                 for (let i = 1; i <= n; i++) {
                     const u = Number(used[String(i)]) || 0, dead = Number(used[i + ":x"]) > 0;
-                    list.push({ n: i, used: u, exhausted: dead, left: dead ? 0 : Math.max(0, Math.round((1 - u / limit) * 100)) });
+                    const lb = labels[i - 1] || {};
+                    list.push({ n: i, name: lb.name || "", premium: !!lb.premium, used: u, exhausted: dead, left: dead ? 0 : Math.max(0, Math.round((1 - u / limit) * 100)) });
                 }
                 return { limit: limit, resetAt: pacificResetAt(), keys: list };
             })(),
@@ -303,6 +304,19 @@ async function overview(req, res) {
 }
 
 // ---------------------------------------------------------------- admin: health check
+// Same order/dedupe as geminiKeys(), but with the env-var name of each key (shown in the admin panel).
+function geminiKeyLabels() {
+    const raw = [];
+    if (process.env.GEMINI_API_KEYS) { process.env.GEMINI_API_KEYS.split(",").forEach((k, i) => raw.push(["GEMINI_API_KEYS #" + (i + 1), k])); }
+    raw.push(["GEMINI_API_KEY", process.env.GEMINI_API_KEY]);
+    for (let i = 2; i <= 10; i++) { raw.push(["GEMINI_API_KEY_" + i, process.env["GEMINI_API_KEY_" + i]]); }
+    raw.push(["GEMINI_BACKUP_KEY", process.env.GEMINI_BACKUP_KEY]);
+    for (let i = 2; i <= 10; i++) { raw.push(["GEMINI_BACKUP_KEY_" + i, process.env["GEMINI_BACKUP_KEY_" + i]]); }
+    const seen = new Set(), out = [];
+    raw.forEach(([name, k]) => { k = (k || "").trim(); if (k && !seen.has(k)) { seen.add(k); out.push({ name: name, premium: /^GEMINI_BACKUP_KEY/.test(name) }); } });
+    return out;
+}
+
 function geminiKeys() {
     const list = [];
     if (process.env.GEMINI_API_KEYS) { list.push(...process.env.GEMINI_API_KEYS.split(",")); }
