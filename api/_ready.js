@@ -419,7 +419,7 @@ async function titleData(slug) {
     const tsOf = x => Math.max(0, ...Object.values(x.eps || {}).map(e => e.ts || 0));
     const mg = new Set(m.g || []);
     const more = list.filter(x => x.id !== m.id && x.p).map(x => ({ x, score: (x.g || []).filter(g => mg.has(g)).length * 2 + (x.type === m.type ? 1 : 0), ts: tsOf(x) }))
-        .sort((a, b) => b.score - a.score || b.ts - a.ts).slice(0, 8)
+        .sort((a, b) => b.score - a.score || b.ts - a.ts).slice(0, 12)
         .map(o => ({ slug: o.x.slug, title: o.x.t, year: o.x.y, poster: o.x.p, type: o.x.type }));
     return { more, wp, id: m.id, slug: m.slug, title: m.t, year: m.y, poster: m.p, type: m.type, overview: info.overview, trailer: info.trailer || "", backdrop: info.backdrop || "", cast: info.cast || [], by: info.by || [], imdb: info.imdb || "", votes: info.votes || "", rt: info.rt || "", mc: info.mc || "", rated: info.rated || "", si: info.si || "", tagline: info.tagline, genres: info.genres, rating: info.rating, runtime: info.runtime, seasons, url: pageUrl(m) };
 }
@@ -467,7 +467,7 @@ function pageHtml(d) {
     const seoBlock = '<section class="tp-card tp-seo"><h2>' + esc(d.title) + " Sinhala Subtitles (සිංහල උපසිරැසි)</h2>" +
         "<p>Download " + esc(d.title) + " Sinhala sub for free. SinSubz makes natural spoken Sinhala subtitles (.srt) that fit your video. " +
         esc(d.title) + " සිංහල උපසිරැසි නොමිලේ ඩවුන්ලෝඩ් කරගන්න.</p>" + faqHtml + "</section>";
-    const moreHtml = (d.more && d.more.length) ? '<section class="tp-card tp-more"><h2>More Sinhala subtitles</h2><div class="tp-mrow">' + d.more.map(x =>
+    const moreHtml = (d.more && d.more.length) ? '<section class="tp-card tp-more"><h2>Similar Sinhala subtitles <span lang="si" style="font-weight:600;opacity:.7">· සමාන උපසිරැසි</span></h2><div class="tp-mrow">' + d.more.map(x =>
         '<a class="tp-mc" href="/' + (x.type === "tv" ? "tv" : "film") + "/" + esc(x.slug) + '"><img src="' + esc(x.poster) + '" alt="' + esc(x.title) + ' Sinhala subtitles" loading="lazy" width="120" height="180"><span>' + esc(x.title) + (x.year ? " (" + esc(x.year) + ")" : "") + "</span></a>").join("") + "</div></section>" : "";
     const seed = JSON.stringify(d).replace(/</g, "\\u003c");
     const noscript = (d.overview ? "<h1>" + esc(d.title) + " Sinhala Subtitles</h1><p>" + esc(d.overview) + "</p>" + (d.si ? "<p>" + esc(d.si) + "</p>" : "") : "") + (!isTv ? '<p><a href="/api/stats?ready=get&amp;id=' + esc(d.id) + '&amp;s=0&amp;e=0">Download ' + esc(d.title) + " Sinhala subtitle (.srt)</a></p>" : "") + (!isTv ? "" : Object.keys(d.seasons).map(n => "<h3>Season " + esc(n) + "</h3><ul>" + d.seasons[n].filter(e => e.ready).map(e =>
