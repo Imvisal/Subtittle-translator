@@ -1,5 +1,4 @@
 /* SinSubz website: makes the search box inviting.
-   - the placeholder types out example titles ("Breaking Bad", ...) while the box is empty
    - "Try:" chips under it with a few of our ready titles: one tap searches for them
    No effect on the search itself (it only fills the same input and presses the same button). */
 (function () {
@@ -9,26 +8,7 @@
     var row = document.querySelector(".search-row");
     if (!input || !btn || !row) { return; }
 
-    var names = ["Breaking Bad", "Stranger Things", "Money Heist", "Squid Game", "The Last of Us", "Interstellar", "Wednesday", "Game of Thrones"];
-    var base = "Search a movie or TV series…";
-    var reduce = false;
-    try { reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { /* ignore */ }
-
-    // typing placeholder
-    var ni = 0, ci = 0, dir = 1, timer = 0;
-    function tick() {
-        clearTimeout(timer);
-        if (input.value) { input.placeholder = base; timer = setTimeout(tick, 1500); return; }
-        var w = names[ni];
-        ci += dir;
-        input.placeholder = "Try “" + w.slice(0, ci) + (ci < w.length || dir < 0 ? "▏" : "") + "”";
-        var wait = 70;
-        if (dir > 0 && ci >= w.length) { dir = -1; wait = 1500; }
-        else if (dir < 0 && ci <= 0) { dir = 1; ni = (ni + 1) % names.length; wait = 350; }
-        else if (dir < 0) { wait = 35; }
-        timer = setTimeout(tick, wait);
-    }
-    if (reduce) { input.placeholder = base; } else { input.placeholder = base; timer = setTimeout(tick, 1200); }
+    input.placeholder = "Search a movie or TV series…";
 
     // "Try:" chips from the newest ready titles
     var box = document.createElement("div");
