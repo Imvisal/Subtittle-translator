@@ -6141,27 +6141,6 @@ async function loadCategory(category) {
 
     try {
 
-        if (category === "ready-movie" || category === "ready-tv") {
-            // titles that already have a Sinhala subtitle: newest first, a tap opens the title page to download
-            const wantTv = category === "ready-tv";
-            const rr = await fetch("/api/stats?ready=list");
-            const rd = rr.ok ? await rr.json() : { items: [] };
-            const rows = (Array.isArray(rd.items) ? rd.items : [])
-                .filter(function (x) { return x && x.p && (wantTv ? x.type === "tv" : x.type !== "tv"); })
-                .sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); })
-                .slice(0, 60)
-                .map(function (x) {
-                    return { imdbID: x.id, title: x.t, year: x.y, poster: x.p, type: x.type === "tv" ? "series" : "movie",
-                        href: "/" + (x.type === "tv" ? "tv" : "film") + "/" + (x.slug || x.id) };
-                });
-            if (!rows.length) {
-                container.innerHTML = '<div class="category-empty">🎬<p>Nothing ready here yet.</p></div>';
-                return;
-            }
-            renderCategoryResults(rows, container);
-            return;
-        }
-
         const response =
             await fetch(
                 `/api/categories?category=${encodeURIComponent(
@@ -6212,7 +6191,7 @@ async function loadCategory(category) {
 
 
         renderCategoryResults(
-            results.slice(0, 10),
+            await mixWithReady(category, results),
             container
         );
 
@@ -6261,6 +6240,43 @@ async function loadCategory(category) {
 
 
 // ========================================================
+// READY TITLES IN THE CATEGORY LISTS (website only)
+// Trending: the trending titles we already have in Sinhala come first.  Movies / TV: our newest ready titles, then 3 new ones
+// we do not have yet (as before).  Anime: unchanged.  A ready card opens the title page to download.
+// ========================================================
+
+let readyListP = null;
+
+async function mixWithReady(category, results) {
+    const fallback = results.slice(0, 10);
+    if (category !== "trending" && category !== "movie" && category !== "tv") { return fallback; }
+    try {
+        if (!readyListP) {
+            readyListP = fetch("/api/stats?ready=list").then(function (r) { return r.ok ? r.json() : { items: [] }; })
+                .then(function (d) { return Array.isArray(d.items) ? d.items : []; }).catch(function () { return []; });
+        }
+        const list = (await readyListP).filter(function (x) { return x && x.p; });
+        if (!list.length) { return fallback; }
+        const byId = {};
+        list.forEach(function (x) { byId[x.id] = x; });
+        const asCard = function (x) {
+            return { imdbID: x.id, title: x.t, year: x.y, poster: x.p, type: x.type === "tv" ? "series" : "movie",
+                href: "/" + (x.type === "tv" ? "tv" : "film") + "/" + (x.slug || x.id), ready: true };
+        };
+        const newest = function (a, b) { return (b.ts || 0) - (a.ts || 0); };
+        const fresh = results.filter(function (r) { return !byId[r.imdbID] && !r.anime; });
+        if (category === "trending") {
+            const hot = results.filter(function (r) { return byId[r.imdbID]; }).map(function (r) { return asCard(byId[r.imdbID]); });
+            return hot.concat(results.filter(function (r) { return !byId[r.imdbID]; })).slice(0, Math.max(10, hot.length));
+        }
+        const want = category === "tv" ? "tv" : "movie";
+        const mine = list.filter(function (x) { return want === "tv" ? x.type === "tv" : x.type !== "tv"; }).sort(newest).slice(0, 7).map(asCard);
+        return mine.concat(fresh.slice(0, 3));
+    } catch (e) { return fallback; }
+}
+
+
+// ========================================================
 // CATEGORY NAME
 // ========================================================
 
@@ -6271,9 +6287,7 @@ function getCategoryName(category) {
         trending: "Trending",
         movie: "Movies",
         tv: "TV Series",
-        anime: "Anime",
-        "ready-movie": "Ready Movies",
-        "ready-tv": "Ready TV"
+        anime: "Anime"
 
     };
 
@@ -6343,6 +6357,7 @@ function renderCategoryResults(
     }
 
     function typeBadge(item) {
+        if (item.ready) return "✅ Ready";
         if (item.anime) return "🎌 Anime";
         return item.type === "series" ? "📺 TV" : "🎬 Movie";
     }
