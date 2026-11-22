@@ -4115,3 +4115,6 @@ html.tm-open, html.tm-open body { overflow: hidden; }
 
 .contact-card{min-width:0}.contact-card>div:last-child{min-width:0}
 .contact-card[href^="mailto"] p{font-size:11.5px;overflow-wrap:anywhere}.contact-card{gap:12px;padding:16px}
+
+/* category badge: text label in the app; the website swaps it for a subtitle icon (see web-home.css) */
+.category-type-badge .cb-ic, .category-type-badge .cb-sr { display: none; }

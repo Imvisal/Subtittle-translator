@@ -6357,9 +6357,10 @@ function renderCategoryResults(
     }
 
     function typeBadge(item) {
-        if (item.ready) return "✅ Ready";
-        if (item.anime) return "🎌 Anime";
-        return item.type === "series" ? "📺 TV" : "🎬 Movie";
+        // app: the text label.  website (web-home.css): only the subtitle icon, green = ready in Sinhala, grey = not yet
+        const txt = item.ready ? "✅ Ready" : item.anime ? "🎌 Anime" : item.type === "series" ? "📺 TV" : "🎬 Movie";
+        return '<span class="cb-txt">' + txt + '</span><i class="fa-solid fa-closed-captioning cb-ic" aria-hidden="true"></i>' +
+            '<span class="cb-sr">' + (item.ready ? "Sinhala subtitle ready" : "Not translated yet") + "</span>";
     }
 
     function buildGrid(slice) {
