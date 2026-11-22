@@ -6375,7 +6375,7 @@ function renderCategoryResults(
             const card =
                 document.createElement("article");
 
-            card.className = "category-card";
+            card.className = "category-card" + (item.ready ? " is-ready" : "");
 
             const poster =
                 item.poster &&

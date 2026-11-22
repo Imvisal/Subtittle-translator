@@ -71,7 +71,9 @@ html .category-poster-wrap::after {
     height: 62%;
     background: linear-gradient(to top, rgba(8, 9, 26, 0.92), rgba(8, 9, 26, 0.55) 45%, transparent);
 }
-html .category-type-badge, html .category-poster-wrap .imdb-slot { display: none; }
+html .category-type-badge { display: none; }
+/* titles we already have in Sinhala get a green "Ready" tag (top-left); the IMDb rating is shown top-right for every poster */
+html .category-card.is-ready .category-type-badge { display: inline-block; color: #06210f; background: #66cc66; border-color: transparent; font-weight: 800; }
 
 html .category-card-info { padding: 9px 2px 0; position: static; }
 html .category-card-info h3 {
