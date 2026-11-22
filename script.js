@@ -6141,6 +6141,27 @@ async function loadCategory(category) {
 
     try {
 
+        if (category === "ready-movie" || category === "ready-tv") {
+            // titles that already have a Sinhala subtitle: newest first, a tap opens the title page to download
+            const wantTv = category === "ready-tv";
+            const rr = await fetch("/api/stats?ready=list");
+            const rd = rr.ok ? await rr.json() : { items: [] };
+            const rows = (Array.isArray(rd.items) ? rd.items : [])
+                .filter(function (x) { return x && x.p && (wantTv ? x.type === "tv" : x.type !== "tv"); })
+                .sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); })
+                .slice(0, 60)
+                .map(function (x) {
+                    return { imdbID: x.id, title: x.t, year: x.y, poster: x.p, type: x.type === "tv" ? "series" : "movie",
+                        href: "/" + (x.type === "tv" ? "tv" : "film") + "/" + (x.slug || x.id) };
+                });
+            if (!rows.length) {
+                container.innerHTML = '<div class="category-empty">🎬<p>Nothing ready here yet.</p></div>';
+                return;
+            }
+            renderCategoryResults(rows, container);
+            return;
+        }
+
         const response =
             await fetch(
                 `/api/categories?category=${encodeURIComponent(
@@ -6250,7 +6271,9 @@ function getCategoryName(category) {
         trending: "Trending",
         movie: "Movies",
         tv: "TV Series",
-        anime: "Anime"
+        anime: "Anime",
+        "ready-movie": "Ready Movies",
+        "ready-tv": "Ready TV"
 
     };
 
@@ -6369,7 +6392,7 @@ function renderCategoryResults(
                     </div>
 
                     <button type="button" class="category-select-btn">
-                        Select
+                        ${item.href ? "Download" : "Select"}
                     </button>
 
                 </div>
@@ -6383,6 +6406,7 @@ function renderCategoryResults(
                 selectButton.addEventListener(
                     "click",
                     function () {
+                        if (item.href) { location.href = item.href; return; }
                         selectSearchResult(item);
                     }
                 );
@@ -6394,10 +6418,11 @@ function renderCategoryResults(
             card.setAttribute("aria-label", "Select " + (item.title || ""));
             card.addEventListener("click", function (e) {
                 if (selectButton && selectButton.contains(e.target)) { return; }   // the button has its own handler
+                if (item.href) { location.href = item.href; return; }
                 selectSearchResult(item);
             });
             card.addEventListener("keydown", function (e) {
-                if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectSearchResult(item); }
+                if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (item.href) { location.href = item.href; } else { selectSearchResult(item); } }
             });
 
             grid.appendChild(card);
