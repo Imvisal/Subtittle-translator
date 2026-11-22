@@ -199,7 +199,7 @@ async function refillFilmsIfDue(n, meta) {
     await take(all.filter(c => c.group !== "new"), wantOld, "older film");
     if (picked.length < n) { await take(all.filter(c => c.group === "new"), n, "new release"); }       // one group ran short: fill up
     if (picked.length < n) { await take(all.filter(c => c.group !== "new"), n, "older film"); }
-    if (picked.length) { const r = await post("/api/stats?autoq=add", { items: picked }); log("  added " + ((r.json && r.json.added) || 0) + " films, list size " + ((r.json && r.json.size) || "?")); }
+    if (picked.length) { const r = await post("/api/stats?autoq=add", { items: picked }); log("  added " + ((r.json && r.json.added) || 0) + " films" + ((r.json && r.json.pruned) ? " (" + r.json.pruned + " finished ones removed from the full list)" : "") + ", list size " + ((r.json && r.json.size) || "?")); }
     else { log("  no new film found today."); }
     await post("/api/stats?autoq=meta", { lastFilmRefill: true });
     return true;

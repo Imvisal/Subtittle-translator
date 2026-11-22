@@ -274,8 +274,17 @@ module.exports = async function autoq(req, res) {
 
         if (act === "add" && req.method === "POST") {
             const { list } = await readList();
-            let added = 0;
+            let added = 0, pruned = 0;
             const fresh = [];
+            // the list is full (MAX_LIST): drop the oldest FINISHED entries (everything translated, nothing waiting) to make room.
+            // They stay on the Ready list; only the work queue forgets them.
+            const incoming = Math.min((Array.isArray(b.items) ? b.items : []).length, 30);
+            if (list.length + incoming > MAX_LIST) {
+                const have = await readyEpisodes();
+                const finished = list.filter(it => { const p = progress(it, have); return p.total > 0 && p.done === p.total && !p.todo.length && !p.skipped; })
+                    .sort((a, c) => (a.added || 0) - (c.added || 0));
+                finished.slice(0, list.length + incoming - MAX_LIST).forEach(it => { list.splice(list.indexOf(it), 1); pruned++; });
+            }
             (Array.isArray(b.items) ? b.items : []).slice(0, 30).forEach(x => {
                 if (!imdbOk(x && x.imdb) || list.some(l => l.imdb === x.imdb) || fresh.some(l => l.imdb === x.imdb) || list.length + fresh.length >= MAX_LIST) { return; }
                 const film = x.type === "movie";
@@ -292,7 +301,7 @@ module.exports = async function autoq(req, res) {
             });
             if (b.top === true) { list.unshift(...fresh); } else { list.push(...fresh); }
             await redis([["SET", "aq:list", JSON.stringify(list)]]);
-            return res.status(200).json({ ok: true, added, size: list.length });
+            return res.status(200).json({ ok: true, added, pruned, size: list.length });
         }
 
         if (act === "mark" && req.method === "POST") {
