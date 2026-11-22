@@ -1759,6 +1759,25 @@ function displaySearchResults(results) {
 
 
 // ========================================================
+// OUR OWN READY LIST (replaces the old "Sinhala Subtitle Available" links to other sites)
+// ========================================================
+
+async function ourReadyFor(imdb) {
+    try {
+        if (!/^tt\d+$/.test(String(imdb || ""))) { return null; }
+        if (!readyListP) {
+            readyListP = fetch("/api/stats?ready=list").then(function (r) { return r.ok ? r.json() : { items: [] }; })
+                .then(function (d) { return Array.isArray(d.items) ? d.items : []; }).catch(function () { return []; });
+        }
+        const list = await readyListP;
+        return list.find(function (x) { return x && x.id === imdb; }) || null;
+    } catch (e) { return null; }
+}
+
+function readyHref(x) { return "/" + (x.type === "tv" ? "tv" : "film") + "/" + (x.slug || x.id); }
+
+
+// ========================================================
 // CHECK SINHALA SUBTITLE
 // ========================================================
 
@@ -1780,90 +1799,20 @@ async function checkSinhalaSubtitles(
 
     try {
 
-        const params =
-            new URLSearchParams({
+        const mine = await ourReadyFor(item.imdbID);
 
-                title:
-                    item.title || "",
-
-                year:
-                    String(
-                        item.year || ""
-                    ),
-
-                type:
-                    item.type || "movie"
-
-            });
-
-
-        const response =
-            await fetch(
-                `/api/sinhala-search?${params.toString()}`
-            );
-
-
-        const data =
-            await response.json();
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                data.error ||
-                "Sinhala search failed"
-            );
-
-        }
-
-
-        if (
-            data.found &&
-            Array.isArray(data.sources) &&
-            data.sources.length
-        ) {
-
-            const links =
-                data.sources
-                    .filter(
-                        source =>
-                            source &&
-                            source.url
-                    )
-                    .slice(0, 3)
-                    .map(
-                        source => `
-
-                            <a
-                                href="${escapeAttribute(
-                                    source.url
-                                )}"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="sinhala-source-link"
-                            >
-                                ${escapeHTML(
-                                    source.source ||
-                                    "Source"
-                                )}
-                                ↗
-                            </a>
-
-                        `
-                    )
-                    .join("");
-
+        if (mine) {
 
             status.innerHTML = `
 
                 <div class="sinhala-available">
 
                     <strong>
-                        Sinhala Subtitle Available
+                        Sinhala subtitle ready
                     </strong>
 
                     <div class="sinhala-source-links">
-                        ${links}
+                        <a href="${escapeAttribute(readyHref(mine))}" class="sinhala-source-link">Download</a>
                     </div>
 
                 </div>
@@ -2566,84 +2515,9 @@ async function displaySubtitleResults(
 
     try {
 
-        const params =
-            new URLSearchParams({
+        const mine = await ourReadyFor(movie?.imdbID);
 
-                title:
-                    movie?.title || "",
-
-                year:
-                    String(
-                        movie?.year || ""
-                    ),
-
-                type:
-                    movie?.type || "movie"
-
-            });
-
-
-        const response =
-            await fetch(
-                `/api/sinhala-search?${params.toString()}`
-            );
-
-
-        const data =
-            await response.json();
-
-
-        if (
-            response.ok &&
-            data.found &&
-            Array.isArray(data.sources) &&
-            data.sources.length
-        ) {
-
-            const links =
-                data.sources
-                    .filter(
-                        function (source) {
-
-                            return (
-                                source &&
-                                source.url
-                            );
-
-                        }
-                    )
-                    .slice(0, 3)
-                    .map(
-                        function (source) {
-
-                            return `
-
-                                <a
-                                    href="${escapeAttribute(
-                                        source.url
-                                    )}"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    class="sinhala-first-source"
-                                >
-
-                                    ${escapeHTML(
-                                        source.source ||
-                                        "Source"
-                                    )}
-
-                                    <i
-                                        class="fa-solid fa-arrow-up-right-from-square"
-                                    ></i>
-
-                                </a>
-
-                            `;
-
-                        }
-                    )
-                    .join("");
-
+        if (mine) {
 
             sinhalaHTML = `
 
@@ -2651,35 +2525,11 @@ async function displaySubtitleResults(
 
                     <div class="sinhala-first-header">
 
-                        <span class="sinhala-first-icon">
-                            
-                        </span>
-
                         <div>
 
                             <strong>
-                                Sinhala Subtitle Available
+                                Sinhala subtitle ready
                             </strong>
-
-                            <small>
-
-                                ${escapeHTML(
-                                    movie?.title || ""
-                                )}
-
-                                ${
-                                    movie?.year
-                                        ? `
-                                            (${escapeHTML(
-                                                String(
-                                                    movie.year
-                                                )
-                                            )})
-                                          `
-                                        : ""
-                                }
-
-                            </small>
 
                         </div>
 
@@ -2688,7 +2538,7 @@ async function displaySubtitleResults(
 
                     <div class="sinhala-first-sources">
 
-                        ${links}
+                        <a href="${escapeAttribute(readyHref(mine))}" class="sinhala-first-source">Download</a>
 
                     </div>
 
