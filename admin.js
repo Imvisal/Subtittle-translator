@@ -536,6 +536,91 @@
         inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); go(); } });
     })();
 
+    // Discover tab: TMDB lists -> check the Sinhala sites per title -> add the ones nobody has translated to the auto list
+    (function () {
+        var out = $("dcOut"), load = $("dcLoad"), more = $("dcMore"), addAll = $("dcAddAll"), msg = $("dcMsg"), only = $("dcOnly");
+        if (!out || !load) { return; }
+        var H = { "x-admin-key": KEY, "Content-Type": "application/json" };
+        var page = 0, rows = [], queue = [], running = 0, gen = 0;
+        function setTag(r, cls, text) { r.tag.className = "tag"; r.tag.style.cssText = cls; r.tag.textContent = text; }
+        function refresh() {
+            var shown = 0, free = 0;
+            rows.forEach(function (r) {
+                var hide = only.checked && r.found === true;
+                r.el.hidden = hide;
+                if (!hide) { shown++; }
+                if (r.found === false && !r.it.inList && !r.added) { free++; }
+            });
+            $("dcCount").textContent = rows.length ? shown + " / " + rows.length : "";
+            addAll.hidden = !free; addAll.textContent = "Add all " + free + " \"no Sinhala sub\" to the list";
+        }
+        function check(r) {
+            var kind = r.it.type === "movie" ? "movie" : "series";
+            return fetch("/api/sinhala-search?title=" + encodeURIComponent(r.it.title) + "&year=" + encodeURIComponent(r.it.year || "") + "&type=" + kind + "&_r=" + Date.now(), { headers: { "x-admin-key": KEY }, cache: "no-store" })
+                .then(function (x) { return x.ok ? x.json() : null; }).then(function (d) {
+                    if (!d) { r.found = null; setTag(r, "", "could not check"); return; }
+                    r.found = !!d.found;
+                    if (r.found) { setTag(r, "background:#3a2a2a;color:#f0b4b4", "has Sinhala sub (" + ((d.sources || []).map(function (s) { return s.source; }).slice(0, 2).join(", ") || "other site") + ")"); }
+                    else { setTag(r, "background:#12361f;color:#7fe6a1", "no Sinhala sub \u2713"); }
+                }).catch(function () { r.found = null; setTag(r, "", "could not check"); });
+        }
+        function pump(g) {
+            while (running < 2 && queue.length && g === gen) {
+                (function (r) { running++; check(r).then(function () { running--; refresh(); pump(g); }); })(queue.shift());
+            }
+        }
+        function add(r, top) {
+            r.btns.forEach(function (b) { b.disabled = true; });
+            return fetch("/api/stats?autoq=add", { method: "POST", headers: H, body: JSON.stringify({ items: [r.it], top: top }) }).then(function (x) { return x.json(); }).then(function (d) {
+                r.added = !!d.added || true; r.acts.textContent = ""; r.acts.appendChild(el("span", "tag", d.added ? "added" : "already there / list full"));
+                refresh(); if (typeof loadQueue === "function") { loadQueue(); }
+            }).catch(function () { r.btns.forEach(function (b) { b.disabled = false; }); });
+        }
+        function addRow(it) {
+            var row = el("div", "row", "");
+            row.style.cssText = "justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);flex-wrap:wrap";
+            var left = el("div", "", ""); left.style.cssText = "display:flex;gap:10px;align-items:center;min-width:0";
+            if (it.poster) { var im = document.createElement("img"); im.src = it.poster; im.alt = ""; im.width = 40; im.style.borderRadius = "6px"; left.appendChild(im); }
+            var tx = el("div", "", "");
+            tx.appendChild(el("b", "", it.title + (it.year ? " (" + it.year + ")" : "") + (it.rating ? "  \u2605 " + it.rating : "")));
+            tx.appendChild(el("div", "muted", it.type === "movie" ? "Film" : it.total + " episodes \u00b7 " + it.seasons.length + " season(s)"));
+            var tag = el("span", "tag", "checking..."); tag.style.marginTop = "4px"; tag.style.display = "inline-block"; tx.appendChild(tag);
+            left.appendChild(tx); row.appendChild(left);
+            var acts = el("div", "", ""); acts.style.cssText = "display:flex;gap:6px;flex-wrap:wrap";
+            var r = { it: it, el: row, tag: tag, acts: acts, found: undefined, btns: [] };
+            if (it.inList) { acts.appendChild(el("span", "tag", "already in the list")); }
+            else {
+                var a1 = el("button", "btn", "Add"), a2 = el("button", "btn ghost", "Add first"); a1.type = a2.type = "button";
+                a1.addEventListener("click", function () { add(r, false); }); a2.addEventListener("click", function () { add(r, true); });
+                acts.appendChild(a1); acts.appendChild(a2); r.btns = [a1, a2];
+            }
+            row.appendChild(acts); out.appendChild(row); rows.push(r); queue.push(r);
+        }
+        function fetchPage(p, fresh) {
+            load.disabled = more.disabled = true; msg.textContent = "Loading...";
+            if (fresh) { gen++; out.textContent = ""; rows = []; queue = []; running = 0; }
+            fetch("/api/stats?autoq=discover&kind=" + $("dcKind").value + "&list=" + $("dcList").value + "&lang=" + $("dcLang").value + "&page=" + p, { headers: H, cache: "no-store" })
+                .then(function (r) { return r.json(); }).then(function (d) {
+                    if (d.error) { msg.textContent = d.error; return; }
+                    page = d.page; (d.items || []).forEach(addRow);
+                    msg.textContent = (d.items || []).length ? "Checking the Sinhala sites (a few seconds per title)..." : "Nothing new on this page.";
+                    more.hidden = !(page < (d.totalPages || 1)); refresh(); pump(gen);
+                }).catch(function () { msg.textContent = "Could not load."; }).then(function () { load.disabled = more.disabled = false; });
+        }
+        load.addEventListener("click", function () { fetchPage(1, true); });
+        more.addEventListener("click", function () { fetchPage(page + 1, false); });
+        only.addEventListener("change", refresh);
+        addAll.addEventListener("click", function () {
+            var todo = rows.filter(function (r) { return r.found === false && !r.it.inList && !r.added; });
+            if (!todo.length || !window.confirm("Add " + todo.length + " titles to the end of the auto list?")) { return; }
+            addAll.disabled = true;
+            fetch("/api/stats?autoq=add", { method: "POST", headers: H, body: JSON.stringify({ items: todo.map(function (r) { return r.it; }).slice(0, 30) }) }).then(function (x) { return x.json(); }).then(function (d) {
+                todo.slice(0, 30).forEach(function (r) { r.added = true; r.acts.textContent = ""; r.acts.appendChild(el("span", "tag", "added")); });
+                msg.textContent = "Added " + (d.added || 0) + " (list size " + (d.size || "?") + ")."; refresh(); if (typeof loadQueue === "function") { loadQueue(); }
+            }).catch(function () { msg.textContent = "Could not add."; }).then(function () { addAll.disabled = false; });
+        });
+    })();
+
     // visitor requests (request.html): approve = put on top of the runner list, reject = remove
     var rqN = 0, spN = 0;
     function badge() { var tb = $("tabnApprove"); if (tb) { var n = rqN + spN; tb.textContent = String(n); tb.hidden = !n; } }

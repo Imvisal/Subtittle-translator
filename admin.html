@@ -112,6 +112,7 @@
             <button type="button" class="tab" data-go="users">Users</button>
             <button type="button" class="tab" data-go="premium">Premium <span class="tabn" id="tabnPrem" hidden></span></button>
             <button type="button" class="tab" data-go="auto">Auto <span class="tabn" id="tabnAuto" hidden></span></button>
+            <button type="button" class="tab" data-go="discover">Discover</button>
             <button type="button" class="tab" data-go="approve">Approve <span class="tabn" id="tabnApprove" hidden></span></button>
             <button type="button" class="tab" data-go="announce">Announcement</button>
             <button type="button" class="tab" data-go="logs">Logs</button>
@@ -285,6 +286,25 @@
         </div>
         </div>
 
+        <div class="tabpane" data-tab="discover" hidden>
+        <div class="card">
+            <h2>Discover: films &amp; series with no Sinhala subtitle <span id="dcCount" class="tag"></span></h2>
+            <p class="muted" style="margin:0 0 10px">Browse what is trending / popular / new, and check each title on the Sinhala sites. Titles that have <b>no Sinhala subtitle anywhere</b> are the ones that bring new visitors. Add them to the auto list (at the end, or first so they are worked on next). Titles already translated by SinSubz are not shown.</p>
+            <div class="row" style="gap:8px;margin:0 0 10px;flex-wrap:wrap;align-items:center">
+                <select id="dcKind" aria-label="Films or series"><option value="movie">Films</option><option value="tv">TV series</option></select>
+                <select id="dcList" aria-label="List"><option value="trending">Trending this week</option><option value="popular">Popular</option><option value="new">New releases</option><option value="toprated">Top rated</option></select>
+                <select id="dcLang" aria-label="Language"><option value="en">English-language</option><option value="any">Any language</option></select>
+                <button class="btn" id="dcLoad" type="button">Load</button>
+            </div>
+            <label class="muted" style="display:flex;gap:8px;align-items:center;margin:0 0 10px"><input type="checkbox" id="dcOnly" checked> Show only titles with no Sinhala subtitle</label>
+            <div class="row" style="gap:8px;margin:0 0 10px;flex-wrap:wrap">
+                <button class="btn" id="dcAddAll" type="button" hidden>Add all "no Sinhala sub" to the list</button>
+                <span class="muted" id="dcMsg"></span>
+            </div>
+            <div id="dcOut"></div>
+            <div class="row" style="margin-top:10px"><button class="btn ghost" id="dcMore" type="button" hidden>Load more</button></div>
+        </div>
+        </div>
         <div class="tabpane" data-tab="approve" hidden>
         <div class="card">
             <h2>Requests from visitors <span id="rqCount" class="tag"></span></h2>

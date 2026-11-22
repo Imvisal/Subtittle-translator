@@ -242,6 +242,36 @@ module.exports = async function autoq(req, res) {
             return res.status(200).json({ items, hidden: ids.length - items.length });
         }
 
+        // Admin "Discover" tab: browse TMDB lists of films / series that are not in the list or the Ready store yet.
+        // list = trending | popular | toprated | new ; lang = en | any ; page = 1..5.  The admin page then checks the Sinhala sites per title.
+        if (act === "discover" && req.method === "GET") {
+            const film = q(req).kind === "movie";
+            const kind = film ? "movie" : "tv";
+            const lst = ["trending", "popular", "toprated", "new"].includes(q(req).list) ? q(req).list : "trending";
+            const page = Math.min(5, Math.max(1, Number(q(req).page) || 1));
+            const en = q(req).lang !== "any";
+            const dayStr = n => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);
+            const lg = en ? "&with_original_language=en" : "";
+            let url;
+            if (lst === "trending") { url = "/trending/" + kind + "/week?page=" + page; }
+            else if (lst === "popular") { url = "/discover/" + kind + "?sort_by=popularity.desc&vote_count.gte=100&without_genres=99,10763,10767,10764,10766,10770" + lg + "&page=" + page; }
+            else if (lst === "toprated") { url = "/discover/" + kind + "?sort_by=vote_average.desc&vote_count.gte=1500&without_genres=99,10763,10767,10764,10766,10770" + lg + "&page=" + page; }
+            else { url = film
+                ? "/discover/movie?sort_by=popularity.desc&vote_count.gte=15&without_genres=99,10770" + lg + "&primary_release_date.gte=" + dayStr(150) + "&primary_release_date.lte=" + dayStr(20) + "&page=" + page
+                : "/discover/tv?sort_by=popularity.desc&without_genres=10763,10767,10764,10766" + lg + "&first_air_date.gte=" + dayStr(90) + "&first_air_date.lte=" + today() + "&page=" + page; }
+            const [{ list }, have] = await Promise.all([readList(), readyEpisodes()]);
+            const r = await tmdb(url);
+            let base = (r.results || []).filter(x => !en || lst !== "trending" || x.original_language === "en");
+            base = base.slice(0, 20);
+            const det = [];
+            for (let i = 0; i < base.length; i += 8) {
+                const batch = await Promise.all(base.slice(i, i + 8).map(x => (film ? movieDetail(x.id, "manual", x) : detailOf(x.id, "manual", x)).catch(() => null)));
+                batch.forEach((d, k) => { if (d) { d.rating = Math.round((Number(base[i + k].vote_average) || 0) * 10) / 10; det.push(d); } });
+            }
+            const items = det.filter(d => !have[d.imdb]).map(d => Object.assign(d, { inList: list.some(l => l.imdb === d.imdb) }));
+            return res.status(200).json({ items, page, totalPages: Math.min(5, Number(r.total_pages) || 1), skipped: det.length - items.length });
+        }
+
         if (act === "add" && req.method === "POST") {
             const { list } = await readList();
             let added = 0;
