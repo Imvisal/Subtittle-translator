@@ -1821,15 +1821,7 @@ async function checkSinhalaSubtitles(
 
         } else {
 
-            status.innerHTML = `
-
-                <div class="sinhala-not-found">
-
-                    ✨ Sinhala subtitle not found
-
-                </div>
-
-            `;
+            status.innerHTML = "";
 
         }
 
@@ -1842,15 +1834,7 @@ async function checkSinhalaSubtitles(
         );
 
 
-        status.innerHTML = `
-
-            <div class="sinhala-not-found">
-
-                ✨ Sinhala subtitle not found
-
-            </div>
-
-        `;
+        status.innerHTML = "";
 
     }
 
@@ -2548,15 +2532,7 @@ async function displaySubtitleResults(
 
         } else {
 
-            sinhalaHTML = `
-
-                <div class="sinhala-first-not-found">
-
-                    ✨ Sinhala subtitle not found
-
-                </div>
-
-            `;
+            sinhalaHTML = "";
 
         }
 
@@ -2569,15 +2545,7 @@ async function displaySubtitleResults(
         );
 
 
-        sinhalaHTML = `
-
-            <div class="sinhala-first-not-found">
-
-                ✨ Sinhala subtitle not found
-
-            </div>
-
-        `;
+        sinhalaHTML = "";
 
     }
 
