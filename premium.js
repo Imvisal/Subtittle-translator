@@ -72,7 +72,8 @@
         });
         tb.appendChild(tbody); cmp.appendChild(tb); box.appendChild(cmp);
 
-        if (!d.enabled) { return; }
+        if (d.paypal) { box.appendChild(paypalCard(d)); }
+        if (!d.bankOn) { return; }
 
         // how to pay
         var how = card("How to pay");
@@ -155,18 +156,57 @@
         box.appendChild(tgLink());
     }
 
+    // PayPal: the buyer leaves for PayPal, pays (PayPal account or card), and comes back to /premium.html?pp=return&token=<order>
+    function paypalCard(d) {
+        var c = card("Pay with PayPal or card");
+        c.appendChild(el("p", "Premium switches on right after the payment, nothing to send or wait for.", "margin:0 0 12px;opacity:.85"));
+        var msg = cls("p", "pm-msg");
+        if (!d.signedIn) {
+            var s1 = cls("button", "pm-btn g", "Sign in to pay"); s1.type = "button";
+            s1.addEventListener("click", function () { s1.disabled = true; (window.__sinsubzSignIn ? window.__sinsubzSignIn() : Promise.resolve()).catch(function () { /* ignore */ }).then(load); });
+            c.appendChild(s1);
+            return c;
+        }
+        var label = "Pay $" + d.usd + " for " + d.days + " days";
+        var go = cls("button", "pm-btn", label); go.type = "button";
+        go.addEventListener("click", function () {
+            msg.textContent = ""; go.disabled = true; go.textContent = "Opening PayPal…";
+            api("POST", { paypal: "create" }).then(function (r) { window.location.href = r.url; })
+                .catch(function (e) { msg.textContent = e.message; go.disabled = false; go.textContent = label; });
+        });
+        c.appendChild(go); c.appendChild(msg);
+        c.appendChild(el("small", "You pay on PayPal's own page. We never see your card details.", "display:block;margin-top:10px;opacity:.7"));
+        return c;
+    }
+
     function tgLink() {
         var a = cls("a", "pm-tg", "Need help? Message us on Telegram");
         a.href = "https://t.me/sinsubz"; a.target = "_blank"; a.rel = "noopener";
         return a;
     }
 
+    var note = "";
     function load() {
-        api("GET").then(render).catch(function () { box.textContent = ""; box.appendChild(el("p", "Could not load. Try again.")); });
+        api("GET").then(function (d) {
+            render(d);
+            if (note) { var n = cls("div", note.indexOf("✅") === 0 ? "pm-active" : "pm-bad", note); box.insertBefore(n, box.firstChild); }
+        }).catch(function () { box.textContent = ""; box.appendChild(el("p", "Could not load. Try again.")); });
+    }
+
+    // coming back from PayPal: take the payment, then show the result above the page
+    function afterPayPal(done) {
+        var q = new URLSearchParams(location.search), mode = q.get("pp"), order = q.get("token");
+        if (!mode) { done(); return; }
+        try { history.replaceState(null, "", location.pathname); } catch (e) { /* ignore */ }
+        if (mode === "cancel") { note = "The PayPal payment was cancelled. You were not charged."; done(); return; }
+        if (!order) { done(); return; }
+        box.textContent = "Finishing your payment…";
+        api("POST", { paypal: "capture", orderId: order }).then(function () { note = "✅ Payment received. Your Premium is active. Thank you!"; })
+            .catch(function (e) { note = e.message; }).then(done);
     }
 
     // the Google sign-in state is restored by web-account.js; give it a moment, then load
     (function wait(n) {
-        if (window.__sinsubzAuthReady) { window.__sinsubzAuthReady().then(load); } else if (n > 40) { load(); } else { setTimeout(function () { wait(n + 1); }, 100); }
+        if (window.__sinsubzAuthReady) { window.__sinsubzAuthReady().then(function () { afterPayPal(load); }); } else if (n > 40) { afterPayPal(load); } else { setTimeout(function () { wait(n + 1); }, 100); }
     })(0);
 })();

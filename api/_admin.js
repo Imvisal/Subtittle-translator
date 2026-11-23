@@ -535,7 +535,8 @@ async function planPublic(req, res) {
         const r = await redis(cmds);
         const cfg = Object.assign({ price: "", bank: "", enabled: false }, parse(r[0]) || {});
         const out = {
-            enabled: !!(cfg.enabled && (cfg.bank || cfg.account)), price: cfg.price, bank: cfg.bank || "",
+            bankOn: !!(cfg.enabled && (cfg.bank || cfg.account)), paypal: ppOn(), usd: ppOn() ? ppPrice() : "",
+            enabled: !!((cfg.enabled && (cfg.bank || cfg.account)) || ppOn()), price: cfg.price, bank: cfg.bank || "",
             holder: cfg.holder || "", bankName: cfg.bankName || "", branch: cfg.branch || "", account: cfg.account || "", days: 30,
             movies: envNum("PREMIUM_MOVIES_PER_DAY", 10), episodes: envNum("PREMIUM_EPISODES_PER_DAY", 30),
             freeMovies: envNum("LIMIT_MOVIES_PER_DAY", 2), freeEpisodes: envNum("LIMIT_EPISODES_PER_DAY", 5),
@@ -563,6 +564,8 @@ async function planSubmit(req, res) {
         if (!who) { return res.status(401).json({ error: "Please sign in with Google first." }); }
         const key = uidKeyOf(who.uid);
         const b = req.body && typeof req.body === "object" ? req.body : {};
+        if (b.paypal === "create") { return await paypalCreate(res, who, key); }
+        if (b.paypal === "capture") { return await paypalCapture(res, who, key, b); }
         const ref = clean(b.ref, 80);
         if (ref.length < 3) { return res.status(400).json({ error: "Write the transfer reference or the name on the transfer." }); }
         const slip = String(b.slip || "");
@@ -587,6 +590,85 @@ async function planSubmit(req, res) {
         return res.status(200).json({ ok: true });
     } catch (e) {
         return res.status(500).json({ error: "Could not send. Try again." });
+    }
+}
+
+// ---------------------------------------------------------------- Premium purchase with PayPal (Orders v2, redirect flow: no PayPal script on our pages)
+// Env: PAYPAL_CLIENT_ID, PAYPAL_SECRET, PAYPAL_PRICE_USD (e.g. 3.00), PAYPAL_MODE ("sandbox" to test; anything else = live).
+// create  -> order + the PayPal page address; the buyer pays there (PayPal account or, where offered, a card), PayPal sends him back to /premium.html?token=<order>
+// capture -> we take the money, check it, and switch Premium on for the account that started the order (once per order).
+const PP_DAYS = 30;
+function ppOn() { return !!(process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_SECRET && ppPrice()); }
+function ppPrice() { const v = Number(process.env.PAYPAL_PRICE_USD); return v > 0 && v < 1000 ? v.toFixed(2) : ""; }
+function ppBase() { return String(process.env.PAYPAL_MODE || "").toLowerCase() === "sandbox" ? "https://api-m.sandbox.paypal.com" : "https://api-m.paypal.com"; }
+async function ppCall(path, method, body, token, reqId) {
+    const ctl = new AbortController();
+    const timer = setTimeout(function () { ctl.abort(); }, 9000);
+    try {
+        const h = token ? { "Authorization": "Bearer " + token, "Content-Type": "application/json" }
+            : { "Authorization": "Basic " + Buffer.from(process.env.PAYPAL_CLIENT_ID + ":" + process.env.PAYPAL_SECRET).toString("base64"), "Content-Type": "application/x-www-form-urlencoded" };
+        if (reqId) { h["PayPal-Request-Id"] = reqId; }
+        const r = await fetch(ppBase() + path, { method: method, headers: h, body: body, signal: ctl.signal });
+        const j = await r.json().catch(function () { return {}; });
+        return { ok: r.ok, status: r.status, json: j };
+    } finally { clearTimeout(timer); }
+}
+async function ppToken() {
+    const r = await ppCall("/v1/oauth2/token", "POST", "grant_type=client_credentials");
+    return r.ok && r.json.access_token ? r.json.access_token : "";
+}
+async function paypalCreate(res, who, key) {
+    if (!ppOn()) { return res.status(503).json({ error: "PayPal is not set up yet." }); }
+    try {
+        const tk = await ppToken();
+        if (!tk) { return res.status(502).json({ error: "PayPal is not reachable right now. Try again in a minute." }); }
+        const order = {
+            intent: "CAPTURE",
+            purchase_units: [{ custom_id: key, description: "SinSubz Premium (" + PP_DAYS + " days)", amount: { currency_code: "USD", value: ppPrice() } }],
+            payment_source: { paypal: { experience_context: {
+                brand_name: "SinSubz", user_action: "PAY_NOW", shipping_preference: "NO_SHIPPING", landing_page: "GUEST_CHECKOUT",
+                return_url: "https://sinsubs.site/premium.html?pp=return", cancel_url: "https://sinsubs.site/premium.html?pp=cancel"
+            } } }
+        };
+        const r = await ppCall("/v2/checkout/orders", "POST", JSON.stringify(order), tk, require("crypto").randomBytes(12).toString("hex"));
+        const link = ((r.json.links || []).find(function (l) { return l.rel === "payer-action" || l.rel === "approve"; }) || {}).href || "";
+        if (!r.ok || !r.json.id || !/^https:\/\/www\.(sandbox\.)?paypal\.com\//.test(link)) { return res.status(502).json({ error: "Could not start the PayPal payment. Try again." }); }
+        await redis([["SET", "pp:o:" + r.json.id, key, "EX", 3 * 86400]]);
+        return res.status(200).json({ ok: true, url: link });
+    } catch (e) {
+        return res.status(502).json({ error: "PayPal is not reachable right now. Try again in a minute." });
+    }
+}
+async function paypalCapture(res, who, key, b) {
+    if (!ppOn()) { return res.status(503).json({ error: "PayPal is not set up yet." }); }
+    const id = String(b.orderId || "");
+    if (!/^[A-Za-z0-9]{8,40}$/.test(id)) { return res.status(400).json({ error: "Bad order." }); }
+    try {
+        const [owner, done] = await redis([["GET", "pp:o:" + id], ["GET", "pp:done:" + id]]);
+        if (owner !== key) { return res.status(403).json({ error: "This payment belongs to another account." }); }
+        if (done) { return res.status(200).json({ ok: true, already: true, until: Number(done) || 0 }); }
+        const tk = await ppToken();
+        if (!tk) { return res.status(502).json({ error: "PayPal is not reachable right now. Open this page again in a minute." }); }
+        let r = await ppCall("/v2/checkout/orders/" + id + "/capture", "POST", "{}", tk, id);
+        if (r.status === 422) { r = await ppCall("/v2/checkout/orders/" + id, "GET", undefined, tk); }     // already captured (a retry): read the order instead
+        const cap = ((((r.json.purchase_units || [])[0] || {}).payments || {}).captures || [])[0] || {};
+        const paid = r.ok && r.json.status === "COMPLETED" && cap.status === "COMPLETED" && cap.amount && cap.amount.currency_code === "USD" && Number(cap.amount.value) >= Number(ppPrice());
+        if (!paid) { return res.status(402).json({ error: "The payment was not completed. If money was taken, message us with this order: " + id }); }
+        const [first] = await redis([["SET", "pp:done:" + id, "1", "NX", "EX", 400 * 86400]]);
+        if (!first) { return res.status(200).json({ ok: true, already: true }); }
+        const [cur] = await redis([["HGET", "u:prem", key]]);
+        const until = Math.max(Date.now(), Number(cur) || 0) + PP_DAYS * 86400e3;
+        const rid = require("crypto").randomBytes(6).toString("hex");
+        const rec = { id: rid, uk: key, name: clean(who.name, 60), email: clean(who.email, 120), ref: "PayPal " + id, t: Date.now(), status: "approved", until: until, done: Date.now() };
+        await redis([["HSET", "u:prem", key, String(until)], ["SET", "pp:done:" + id, String(until), "EX", 400 * 86400], ["HSET", "prem:req", rid, JSON.stringify(rec)]]);
+        premCache.delete(key);
+        await logActivity("premium", "Premium (PayPal): " + (rec.name || rec.email)).catch(() => null);
+        await pushNotif(key, { type: "premium", title: "Premium activated 👑", body: "Thank you! Your Premium plan is active until " + new Date(until).toISOString().slice(0, 10) + "." }).catch(() => null);
+        await mailPremium(rec);
+        await notifyOwner("SinSubz: PayPal Premium payment from " + (rec.name || rec.email), "USD " + ppPrice() + " received through PayPal.\n\nName: " + rec.name + "\nEmail: " + rec.email + "\nOrder: " + id + "\nPremium until: " + new Date(until).toISOString().slice(0, 10) + "\n").catch(() => null);
+        return res.status(200).json({ ok: true, until: until });
+    } catch (e) {
+        return res.status(502).json({ error: "Could not finish. Open this page again in a minute; you will not be charged twice." });
     }
 }
 
