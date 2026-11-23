@@ -59,3 +59,20 @@ html[data-theme="light"] .pm-page { --pm-bg:#f6f5ff; --pm-card:#ffffff; --pm-car
 .pm-foot { margin-top:26px; text-align:center; font-size:13px; color:var(--pm-dim); line-height:2; }
 .pm-foot a { color:var(--pm-dim); text-decoration:none; margin:0 6px; }
 .pm-tg { display:block; margin-top:16px; text-align:center; color:#7fd0ff; font-size:14px; text-decoration:none; }
+
+/* PayPal / card box */
+.pm-pay { position: relative; border: 1px solid rgba(251,191,36,.55); background: linear-gradient(160deg, rgba(251,191,36,.10), rgba(251,191,36,.02) 55%), var(--pm-card, #101530); box-shadow: 0 10px 34px rgba(245,158,11,.14); }
+.pm-pay-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+.pm-pay-head h2 { margin: 0; }
+.pm-pay-badge { font-size: 12px; font-weight: 700; padding: 5px 11px; border-radius: 999px; color: #1a1200; background: linear-gradient(180deg, #fde68a, #fbbf24); white-space: nowrap; }
+.pm-pay-price { display: flex; align-items: baseline; gap: 10px; margin: 10px 0 14px; flex-wrap: wrap; }
+.pm-pay-price b { font-size: 40px; line-height: 1; font-weight: 800; color: #fbbf24; letter-spacing: -.5px; }
+.pm-pay-price small { opacity: .75; font-size: 13px; }
+.pm-pay-list { list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 8px; }
+.pm-pay-list li { position: relative; padding-left: 26px; font-size: 14px; line-height: 1.4; opacity: .95; }
+.pm-pay-list li::before { content: "✓"; position: absolute; left: 0; top: 0; width: 18px; height: 18px; border-radius: 50%; background: rgba(34,197,94,.18); color: #22c55e; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.pm-pay-go { width: 100%; font-size: 16px; padding: 15px 20px; border-radius: 14px; box-shadow: 0 8px 22px rgba(245,158,11,.35); }
+.pm-pay-go:disabled { opacity: .7; cursor: wait; }
+.pm-pay-chips { display: flex; justify-content: center; gap: 8px; margin: 14px 0 8px; flex-wrap: wrap; }
+.pm-chip { font-size: 12px; font-weight: 800; letter-spacing: .3px; padding: 5px 12px; border-radius: 8px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12); }
+.pm-pay-note { display: block; text-align: center; opacity: .65; font-size: 12px; }

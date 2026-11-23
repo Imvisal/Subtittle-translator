@@ -158,24 +158,42 @@
 
     // PayPal: the buyer leaves for PayPal, pays (PayPal account or card), and comes back to /premium.html?pp=return&token=<order>
     function paypalCard(d) {
-        var c = card("Pay with PayPal or card");
-        c.appendChild(el("p", "Premium switches on right after the payment, nothing to send or wait for.", "margin:0 0 12px;opacity:.85"));
+        var c = cls("section", "pm-card pm-pay");
+        var head = cls("div", "pm-pay-head");
+        head.appendChild(cls("h2", "", "Pay online"));
+        head.appendChild(cls("span", "pm-pay-badge", "⚡ Instant"));
+        c.appendChild(head);
+
+        var price = cls("div", "pm-pay-price");
+        price.appendChild(cls("b", "", "$" + d.usd));
+        price.appendChild(cls("small", "", "for " + d.days + " days of Premium"));
+        c.appendChild(price);
+
+        var ul = cls("ul", "pm-pay-list");
+        ["Premium switches on the moment you pay", "Visa, Mastercard or your PayPal balance", "No slip to send, nothing to wait for"].forEach(function (t) {
+            var li = cls("li", "", t); ul.appendChild(li);
+        });
+        c.appendChild(ul);
+
         var msg = cls("p", "pm-msg");
         if (!d.signedIn) {
             var s1 = cls("button", "pm-btn g", "Sign in to pay"); s1.type = "button";
             s1.addEventListener("click", function () { s1.disabled = true; (window.__sinsubzSignIn ? window.__sinsubzSignIn() : Promise.resolve()).catch(function () { /* ignore */ }).then(load); });
             c.appendChild(s1);
-            return c;
+        } else {
+            var label = "🔒  Pay $" + d.usd + " securely";
+            var go = cls("button", "pm-btn pm-pay-go", label); go.type = "button";
+            go.addEventListener("click", function () {
+                msg.textContent = ""; go.disabled = true; go.textContent = "Opening PayPal…";
+                api("POST", { paypal: "create" }).then(function (r) { window.location.href = r.url; })
+                    .catch(function (e) { msg.textContent = e.message; go.disabled = false; go.textContent = label; });
+            });
+            c.appendChild(go); c.appendChild(msg);
         }
-        var label = "Pay $" + d.usd + " for " + d.days + " days";
-        var go = cls("button", "pm-btn", label); go.type = "button";
-        go.addEventListener("click", function () {
-            msg.textContent = ""; go.disabled = true; go.textContent = "Opening PayPal…";
-            api("POST", { paypal: "create" }).then(function (r) { window.location.href = r.url; })
-                .catch(function (e) { msg.textContent = e.message; go.disabled = false; go.textContent = label; });
-        });
-        c.appendChild(go); c.appendChild(msg);
-        c.appendChild(el("small", "You pay on PayPal's own page. We never see your card details.", "display:block;margin-top:10px;opacity:.7"));
+        var chips = cls("div", "pm-pay-chips");
+        ["VISA", "Mastercard", "PayPal"].forEach(function (t) { chips.appendChild(cls("span", "pm-chip", t)); });
+        c.appendChild(chips);
+        c.appendChild(cls("small", "pm-pay-note", "You pay on PayPal's own secure page. We never see your card details."));
         return c;
     }
 
