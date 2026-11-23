@@ -507,6 +507,12 @@ async function generateInner(prompt, trail, premium) {
         };
     }
 
+    // every key that was left is blocked / deleted (Google: "service account deleted or disabled", invalid key ...):
+    // that is our problem, not the visitor's -> a calm message (the real text stays in the admin log / Health table as "Rejected")
+    if ((lastStatus === 400 || lastStatus === 401 || lastStatus === 403) && /api key|service account|permission|not valid|billing/i.test(String(lastMessage))) {
+        return { status: 503, code: "KEY_REJECTED", detail: lastMessage, error: "The translator is having a problem right now. Please try again in a few minutes." };
+    }
+
     return { status: lastStatus, error: lastMessage };
 }
 
