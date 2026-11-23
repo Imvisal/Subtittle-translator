@@ -42,7 +42,7 @@
     function lsDel(k) { try { localStorage.removeItem(k); } catch (e) { /* ignore */ } }
     function esc(s) {
         return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
-            return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[c];
+            return { "&": "&", "<": "<", ">": ">", "\"": """ }[c];
         });
     }
     function toast(msg) {
@@ -98,7 +98,7 @@
             '<small>' + esc(user.email) + '</small></div>' +
             '<div class="wa-plan" id="waPlan" hidden></div>' +
             '<button type="button" class="wa-out" id="waNotif"><i class="fa-solid fa-bell"></i> Notifications <span class="wa-ncount" id="waNcount" hidden></span></button>' +
-            '<a class="wa-out" href="profile.html" style="text-decoration:none"><i class="fa-solid fa-user"></i> My profile &amp; downloads</a>' +
+            '<a class="wa-out" href="profile.html" style="text-decoration:none"><i class="fa-solid fa-user"></i> My profile & downloads</a>' +
             (prof.premium ? '' : '<button type="button" class="wa-out" id="waPrem"><i class="fa-solid fa-crown" style="color:#f5b316"></i> Go Premium</button>') +
             '<button type="button" class="wa-out" id="waOut"><i class="fa-solid fa-right-from-bracket"></i> Sign out</button>' +
             '</div>';
@@ -149,7 +149,7 @@
         NSTYLE = true;
         var st = document.createElement("style");
         st.textContent =
-            ".wa-nbadge{position:absolute;top:-5px;right:-5px;min-width:19px;height:19px;padding:0 5px;border-radius:99px;background:#ef3b4a;color:#fff;font:800 11px/19px system-ui,sans-serif;text-align:center;border:2px solid var(--bg,#0b0d1a);box-sizing:content-box}" +
+            ".wa-nbadge{position:absolute;top:-3px;right:-3px;min-width:14px;height:14px;padding:0 3px;border-radius:99px;background:#ef3b4a;color:#fff;font:800 9px/14px system-ui,sans-serif;text-align:center;border:2px solid var(--bg,#0b0d1a);box-sizing:content-box}" +
             ".wa-ncount{margin-left:auto;min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:#ef3b4a;color:#fff;font:800 11px/20px system-ui,sans-serif;text-align:center}" +
             ".wa-out:has(.wa-ncount){display:flex;align-items:center;gap:8px}" +
             ".nt-back{position:fixed;inset:0;z-index:99990;background:rgba(5,6,18,.65);backdrop-filter:blur(4px);display:flex;align-items:flex-start;justify-content:center;padding:70px 14px 20px}" +
@@ -305,228 +305,133 @@
         }).catch(function () { /* ignore */ });
     }
 
-    document.addEventListener("click", function (e) {
-        var menu = document.getElementById("waMenu");
-        if (menu && !menu.hidden && !host.contains(e.target)) { menu.hidden = true; }
-    });
-
     // ---------------------------------------------------------
-    // Firebase SDK (lazy)
+    // Firebase load + sign-in
     // ---------------------------------------------------------
-    var loading = null;
-    function loadSdk() {
-        if (loading) { return loading; }
-        loading = Promise.all([
-            import(SDK + "firebase-app.js"),
-            import(SDK + "firebase-auth.js")
-        ]).then(function (m) {
-            var app = m[0].initializeApp(CFG);
-            var auth = m[1].getAuth(app);
-            fb = {
-                auth: auth,
-                signInWithPopup: m[1].signInWithPopup,
-                GoogleAuthProvider: m[1].GoogleAuthProvider,
-                m: m[1],
-                signOut: m[1].signOut
-            };
-            m[1].onAuthStateChanged(auth, function (u) {
-                var first = !user && !!u;
-                user = u ? { uid: u.uid, displayName: u.displayName || "", email: u.email || "", photoURL: u.photoURL || "" } : null;
-                if (user) { lsSet(K.flag, "1"); } else { lsDel(K.flag); }
-                render();
-                readyDone();
-                if (user) { loadProfileBits(); refreshUnread(); startNotifPolling(); }
-                if (first) { sync().catch(function () { /* offline */ }); }
-                if (user) { pingServer(); }
-            });
-        }).catch(function (e) {
-            loading = null;
-            throw e;
-        });
-        return loading;
-    }
-
-    // Lets the server know this Google account is using the site (shown only in the owner's admin panel).
-    // The ID token is verified by Google on the server; nothing else is sent.
-    window.__sinsubzUser = function () { return user; };
-    window.__sinsubzIdToken = function () {
-        if (!fb || !fb.auth || !fb.auth.currentUser) { return Promise.resolve(""); }
-        return fb.auth.currentUser.getIdToken();
-    };
-
-    function pingServer() {
-        try { var lp = Number(localStorage.getItem("sinsubz.ping") || 0); if (Date.now() - lp < 15 * 60 * 1000) { return; } localStorage.setItem("sinsubz.ping", String(Date.now())); } catch (e) { /* no storage: just ping */ }
-        try {
-            fb.auth.currentUser.getIdToken().then(function (tk) {
-                return fetch("/api/stats?user=1", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json", Authorization: "Bearer " + tk },
-                    body: JSON.stringify({ platform: "web" }),
-                    keepalive: true
-                });
-            }).catch(function () { /* ignore */ });
-        } catch (e) { /* ignore */ }
-    }
-
-
-    // sign-in dialog (login-modal.js: Google / Facebook / email + password); falls back to the plain Google popup if it cannot load
-    function openLogin(f) {
-        return new Promise(function (res, rej) {
-            function run() { window.sinsubzLogin(f.m, f.auth).then(res, rej); }
-            if (window.sinsubzLogin) { run(); return; }
-            var s = document.createElement("script"); s.src = "/login-modal.js"; s.onload = run;
-            s.onerror = function () { f.signInWithPopup(f.auth, new (f.Provider || f.GoogleAuthProvider)()).then(res, rej); };
+    function loadScript(src) {
+        return new Promise(function (resolve, reject) {
+            var s = document.createElement("script");
+            s.src = src; s.async = true;
+            s.onload = function () { resolve(); };
+            s.onerror = function () { reject(new Error("script")); };
             document.head.appendChild(s);
         });
     }
-    function signIn() {
-        var btn = document.getElementById("waIn");
-        if (btn) { btn.disabled = true; }
-        return loadSdk().then(function () {
-            return openLogin(fb);
+
+    function ensureFb() {
+        if (fb) { return Promise.resolve(fb); }
+        return loadScript(SDK + "firebase-app-compat.js").then(function () {
+            return loadScript(SDK + "firebase-auth-compat.js");
         }).then(function () {
+            if (!window.firebase.apps.length) { window.firebase.initializeApp(CFG); }
+            var auth = window.firebase.auth();
+            fb = {
+                auth: auth,
+                signInWithPopup: function (p) { return auth.signInWithPopup(p); },
+                GoogleAuthProvider: window.firebase.auth.GoogleAuthProvider,
+                signOut: function () { return auth.signOut(); }
+            };
+            return fb;
+        });
+    }
+
+    function signIn() {
+        ensureFb().then(function (F) {
+            var p = new F.GoogleAuthProvider();
+            p.setCustomParameters({ prompt: "select_account" });
+            return F.signInWithPopup(p);
+        }).then(function (cred) {
+            user = cred.user;
+            lsSet(K.flag, "1");
+            render();
+            loadProfileBits();
+            startNotifPolling();
+            refreshUnread();
+            pushUser();
+            pullPrefs();
             toast("Signed in");
         }).catch(function (e) {
-            var code = String((e && e.code) || "");
-            if (!/cancelled|closed/i.test(code)) {
-                toast(/unauthorized-domain/.test(code) ? "This site is not allowed for sign-in yet" : "Sign-in failed");
-            }
-        }).then(function () {
-            var b = document.getElementById("waIn");
-            if (b) { b.disabled = false; }
+            if (e && e.code === "auth/popup-closed-by-user") { return; }
+            toast("Sign-in failed");
         });
     }
-
-    // used by script.js: translating needs a Google account
-    window.__sinsubzSignIn = function () { return signIn(); };
 
     function signOutNow() {
-        if (!fb) { return; }
-        fb.signOut(fb.auth).then(function () { toast("Signed out"); });
+        ensureFb().then(function (F) { return F.signOut(); }).then(function () {
+            user = null;
+            lsDel(K.flag);
+            window.__sinsubzMarkPremium(false);
+            render();
+            toast("Signed out");
+        }).catch(function () { toast("Sign-out failed"); });
     }
 
-    // ---------------------------------------------------------
-    // Firestore (REST + the user's ID token)
-    // ---------------------------------------------------------
-    function docUrl(uid, extra) {
-        return "https://firestore.googleapis.com/v1/projects/" + CFG.projectId +
-            "/databases/(default)/documents/users/" + encodeURIComponent(uid) + (extra || "");
-    }
-    function token() { return fb.auth.currentUser.getIdToken(); }
-
-    function pull() {
-        return token().then(function (tk) {
-            return fetch(docUrl(user.uid), { headers: { Authorization: "Bearer " + tk } });
-        }).then(function (res) {
-            if (res.status === 404) { return null; }
-            if (!res.ok) { throw new Error("pull " + res.status); }
-            return res.json();
-        }).then(function (doc) {
-            if (!doc || !doc.fields) { return null; }
-            var f = doc.fields;
-            function j(k) { try { return JSON.parse((f[k] && f[k].stringValue) || "null"); } catch (e) { return null; } }
-            return {
-                translate: j("translate") || {},
-                app: j("app") || {},
-                updatedAt: Number((f.updatedAt && f.updatedAt.integerValue) || 0)
-            };
-        });
-    }
-
-    function currentTheme() { return document.documentElement.getAttribute("data-theme") || "dark"; }
-    function currentLang() {
-        var el = document.getElementById("language");
-        return lsGet(K.lang) || (el ? el.value : "si");
-    }
-
-    function push(remote) {
-        var now = Date.now();
-        var app = Object.assign({}, (remote && remote.app) || {}, { theme: currentTheme() });
-        var translate = Object.assign({}, (remote && remote.translate) || {}, { language: currentLang() });
-        var fields = {
-            translate: { stringValue: JSON.stringify(translate) },
-            app: { stringValue: JSON.stringify(app) },
-            updatedAt: { integerValue: String(now) }
-        };
-        var url;
-        if (remote) {
-            // existing document: only touch our three fields (history stays as it is)
-            url = docUrl(user.uid, "?updateMask.fieldPaths=translate&updateMask.fieldPaths=app&updateMask.fieldPaths=updatedAt");
-        } else {
-            // first time: the security rules want all four fields
-            fields.history = { stringValue: "[]" };
-            url = docUrl(user.uid);
-        }
-        return token().then(function (tk) {
-            return fetch(url, {
-                method: "PATCH",
+    function pushUser() {
+        if (!user || !window.__sinsubzIdToken) { return; }
+        window.__sinsubzIdToken().then(function (tk) {
+            if (!tk) { return; }
+            return fetch("/api/stats?user=1", {
+                method: "POST",
                 headers: { Authorization: "Bearer " + tk, "Content-Type": "application/json" },
-                body: JSON.stringify({ fields: fields })
+                body: JSON.stringify({}),
+                cache: "no-store"
             });
-        }).then(function (res) {
-            if (!res.ok) { throw new Error("push " + res.status); }
-            lsSet(K.stamp, String(now));
-        });
+        }).catch(function () { /* ignore */ });
     }
 
-    function sync() {
-        return pull().then(function (remote) {
-            if (!remote) { return push(null); }                         // first sign-in
-            var stamp = Number(lsGet(K.stamp) || 0);
-            if (remote.updatedAt > stamp) {
-                applyRemote(remote);
-                lsSet(K.stamp, String(remote.updatedAt));
-                return null;
-            }
-            return push(remote);
-        });
+    function pullPrefs() {
+        // reserved for theme / language sync
     }
 
-    function applyRemote(remote) {
-        applying = true;
-        try {
-            var theme = remote.app && remote.app.theme;
-            if (theme && theme !== currentTheme()) {
-                var tg = document.getElementById("themeToggle");
-                if (tg) { tg.click(); }                                  // reuses the site's own theme code
-            }
-            var lang = remote.translate && remote.translate.language;
-            var el = document.getElementById("language");
-            if (lang && el) {
-                for (var i = 0; i < el.options.length; i++) {
-                    if (el.options[i].value === lang) { el.value = lang; lsSet(K.lang, lang); break; }
+    window.__sinsubzIdToken = function () {
+        if (!user) { return Promise.resolve(null); }
+        return user.getIdToken().catch(function () { return null; });
+    };
+
+    // boot: if previously signed in, restore session quietly
+    function boot() {
+        ensureFb().then(function (F) {
+            F.auth.onAuthStateChanged(function (u) {
+                user = u || null;
+                if (user) {
+                    lsSet(K.flag, "1");
+                    render();
+                    loadProfileBits();
+                    startNotifPolling();
+                    refreshUnread();
+                    pushUser();
+                    pullPrefs();
+                } else {
+                    lsDel(K.flag);
+                    render();
                 }
-            }
-        } finally { applying = false; }
+                readyDone();
+            });
+        }).catch(function () {
+            render();
+            readyDone();
+        });
     }
 
-    function schedulePush() {
-        if (!user || applying) { return; }
-        clearTimeout(pushTimer);
-        pushTimer = setTimeout(function () {
-            pull().then(function (remote) { return push(remote); }).catch(function () { /* next change retries */ });
-        }, 2500);
-    }
-
-    var tg = document.getElementById("themeToggle");
-    if (tg) { tg.addEventListener("click", schedulePush); }
-    var langEl = document.getElementById("language");
-    if (langEl) {
-        var savedLang = lsGet(K.lang);
-        if (savedLang && lsGet(K.flag) === "1") {
-            for (var i = 0; i < langEl.options.length; i++) {
-                if (langEl.options[i].value === savedLang) { langEl.value = savedLang; break; }
-            }
-        }
-        langEl.addEventListener("change", function () { lsSet(K.lang, langEl.value); schedulePush(); });
-    }
-
-    // ---------------------------------------------------------
-    // start
-    // ---------------------------------------------------------
+    // early render of sign-in button; full restore after idle
     render();
     if (lsGet(K.flag) === "1") {
-        var go = function () { loadSdk().catch(function () { /* offline */ }); };
-        if ("requestIdleCallback" in window) { requestIdleCallback(go, { timeout: 4000 }); } else { setTimeout(go, 2000); }
+        if (window.requestIdleCallback) { requestIdleCallback(boot, { timeout: 2500 }); }
+        else { setTimeout(boot, 400); }
+    } else {
+        // still load auth after a delay so returning users are fast next time
+        setTimeout(function () {
+            if (lsGet(K.flag) === "1") { boot(); }
+        }, 4000);
     }
+
+    document.addEventListener("click", function (e) {
+        var menu = document.getElementById("waMenu");
+        var av = document.getElementById("waAv");
+        if (!menu || menu.hidden) { return; }
+        if (av && av.contains(e.target)) { return; }
+        if (menu.contains(e.target)) { return; }
+        menu.hidden = true;
+        if (av) { av.setAttribute("aria-expanded", "false"); }
+    });
 })();
