@@ -72,9 +72,37 @@
         });
         tb.appendChild(tbody); cmp.appendChild(tb); box.appendChild(cmp);
 
-        if (d.paypal) { box.appendChild(paypalCard(d)); }
-        if (!d.bankOn) { return; }
+        // two ways to pay: the buyer picks one first, then only that part is shown
+        var both = d.paypal && d.bankOn;
+        var area = cls("div", "pm-area");
+        var tiles = {};
+        function pick(m) {
+            area.textContent = "";
+            Object.keys(tiles).forEach(function (k) { tiles[k].classList.toggle("on", k === m); tiles[k].setAttribute("aria-pressed", k === m ? "true" : "false"); });
+            if (m === "paypal") { area.appendChild(paypalCard(d)); } else if (m === "bank") { renderBank(d, area); }
+            else { area.appendChild(cls("p", "pm-choose", "Choose how you want to pay 👆")); }
+            if (m && both) { try { area.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (e) { /* ignore */ } }
+        }
+        function tile(key, icon, title, sub, price) {
+            var b = cls("button", "pm-method"); b.type = "button";
+            b.appendChild(cls("span", "pm-m-ico", icon));
+            var t = cls("span", "pm-m-txt"); t.appendChild(cls("b", "", title)); t.appendChild(cls("small", "", sub)); b.appendChild(t);
+            if (price) { b.appendChild(cls("span", "pm-m-price", price)); }
+            b.addEventListener("click", function () { pick(key); });
+            tiles[key] = b; return b;
+        }
+        if (both) {
+            box.appendChild(cls("h2", "pm-pick-h", "How do you want to pay?"));
+            var row = cls("div", "pm-methods");
+            row.appendChild(tile("paypal", "💳", "Card or PayPal", "Instant, Premium switches on at once", "$" + d.usd));
+            row.appendChild(tile("bank", "🏦", "Bank transfer", "Send a slip, we approve within a day", d.price || ""));
+            box.appendChild(row);
+        }
+        box.appendChild(area);
+        pick(!both ? (d.paypal ? "paypal" : "bank") : (d.request && d.request.status !== "approved" ? "bank" : ""));
+    }
 
+    function renderBank(d, box) {
         // how to pay
         var how = card("How to pay");
         var ol = cls("ol", "pm-steps");

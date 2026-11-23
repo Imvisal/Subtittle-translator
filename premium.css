@@ -76,3 +76,18 @@ html[data-theme="light"] .pm-page { --pm-bg:#f6f5ff; --pm-card:#ffffff; --pm-car
 .pm-pay-chips { display: flex; justify-content: center; gap: 8px; margin: 14px 0 8px; flex-wrap: wrap; }
 .pm-chip { font-size: 12px; font-weight: 800; letter-spacing: .3px; padding: 5px 12px; border-radius: 8px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12); }
 .pm-pay-note { display: block; text-align: center; opacity: .65; font-size: 12px; }
+
+/* payment method chooser */
+.pm-pick-h { font-size: 17px; margin: 22px 0 10px; text-align: center; }
+.pm-methods { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+.pm-method { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; text-align: left; padding: 14px; border-radius: 16px; cursor: pointer; font: inherit; color: inherit; background: rgba(255,255,255,.04); border: 1.5px solid rgba(255,255,255,.14); transition: border-color .15s, background .15s, transform .12s; }
+.pm-method:hover { border-color: rgba(251,191,36,.6); }
+.pm-method:active { transform: scale(.98); }
+.pm-method.on { border-color: #fbbf24; background: linear-gradient(160deg, rgba(251,191,36,.16), rgba(251,191,36,.04)); box-shadow: 0 6px 22px rgba(245,158,11,.18); }
+.pm-m-ico { font-size: 26px; line-height: 1; }
+.pm-m-txt { display: flex; flex-direction: column; gap: 3px; }
+.pm-m-txt b { font-size: 15px; }
+.pm-m-txt small { opacity: .7; font-size: 12px; line-height: 1.35; }
+.pm-m-price { margin-top: auto; font-weight: 800; font-size: 18px; color: #fbbf24; }
+.pm-choose { text-align: center; opacity: .7; margin: 6px 0 12px; }
+@media (max-width: 380px) { .pm-methods { grid-template-columns: 1fr; } }
