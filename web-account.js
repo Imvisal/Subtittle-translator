@@ -29,10 +29,10 @@
     var readyP = new Promise(function (r) { readyDone = r; });
     window.__sinsubzAuthReady = function () { return readyP; };
     if (lsGetEarly() !== "1") { readyDone(); }
-    setTimeout(function () { readyDone(); }, 6000);                       // never wait forever
+    setTimeout(function () { readyDone(); }, 6000);
     function lsGetEarly() { try { return localStorage.getItem("sinsubz-web-signed-in"); } catch (e) { return null; } }
 
-    var fb = null;          // { auth, signInWithPopup, GoogleAuthProvider, signOut }
+    var fb = null;
     var user = null;
     var pushTimer = null;
     var applying = false;
@@ -42,7 +42,7 @@
     function lsDel(k) { try { localStorage.removeItem(k); } catch (e) { /* ignore */ } }
     function esc(s) {
         return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
-            return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[c];
+            return { "&": "&", "<": "<", ">": ">", "\"": """ }[c];
         });
     }
     function toast(msg) {
@@ -53,18 +53,14 @@
         setTimeout(function () { if (t.parentNode) { t.parentNode.removeChild(t); } }, 2800);
     }
 
-    var G_LOGO = '<svg class="wa-g" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>';   // generic person icon (sign-in is not only Google any more)
+    var G_LOGO = '<svg class="wa-g" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>';
 
-    // ---------------------------------------------------------
-    // UI
-    // ---------------------------------------------------------
-    // Premium members do not see the header "Premium" link or the plans section (CSS class on <html>)
     window.__sinsubzMarkPremium = function (on, until) {
         document.documentElement.classList.toggle("is-premium", !!on);
         try { if (on) { localStorage.setItem("sinsubz-web-premium", String(until || Date.now() + 86400e3)); } else { localStorage.removeItem("sinsubz-web-premium"); } } catch (e) { /* ignore */ }
     };
 
-    var prof = { nick: "", pic: "", premium: false };       // nickname + picture chosen on the profile page
+    var prof = { nick: "", pic: "", premium: false };
     function loadProfileBits() {
         if (!user || !window.__sinsubzIdToken) { return; }
         window.__sinsubzIdToken().then(function (tk) {
@@ -72,7 +68,7 @@
         }).then(function (r) { return r.json(); }).then(function (d) {
             if (!d || !d.signedIn) { return; }
             if ((d.nick || "") !== prof.nick || (d.pic || "") !== prof.pic || !!d.premium !== prof.premium) { prof = { nick: d.nick || "", pic: d.pic || "", premium: !!d.premium }; render(); }
-            window.__sinsubzMarkPremium(!!d.premium, d.until);       // gold header badge, hides the "get Premium" section
+            window.__sinsubzMarkPremium(!!d.premium, d.until);
         }).catch(function () { /* ignore */ });
     }
 
@@ -98,7 +94,7 @@
             '<small>' + esc(user.email) + '</small></div>' +
             '<div class="wa-plan" id="waPlan" hidden></div>' +
             '<button type="button" class="wa-out" id="waNotif"><i class="fa-solid fa-bell"></i> Notifications <span class="wa-ncount" id="waNcount" hidden></span></button>' +
-            '<a class="wa-out" href="profile.html" style="text-decoration:none"><i class="fa-solid fa-user"></i> My profile &amp; downloads</a>' +
+            '<a class="wa-out" href="profile.html" style="text-decoration:none"><i class="fa-solid fa-user"></i> My profile & downloads</a>' +
             (prof.premium ? '' : '<button type="button" class="wa-out" id="waPrem"><i class="fa-solid fa-crown" style="color:#f5b316"></i> Go Premium</button>') +
             '<button type="button" class="wa-out" id="waOut"><i class="fa-solid fa-right-from-bracket"></i> Sign out</button>' +
             '</div>';
@@ -127,9 +123,6 @@
         }
     }
 
-    // ---------------------------------------------------------
-    // Notifications: replies from SinSubz, Premium updates, newly released films. Red number on the profile picture.
-    // ---------------------------------------------------------
     var notifUnread = 0;
     var notifTimer = 0;
     var NSTYLE = false;
@@ -274,12 +267,10 @@
             if (!mine.length && !films.length) {
                 var em = document.createElement("div"); em.className = "nt-empty"; em.textContent = "Nothing here yet."; card.appendChild(em);
             }
-            // everything shown now counts as read
             if (notifUnread) { fetchNotif("POST", { action: "seen" }); notifUnread = 0; applyUnread(); }
         });
     }
 
-    // today's usage + plan, shown inside the account menu
     function loadPlan() {
         var box = document.getElementById("waPlan");
         if (!box || !window.__sinsubzIdToken) { return; }
@@ -305,5 +296,9 @@
         }).catch(function () { /* ignore */ });
     }
 
-    // REST OF FILE CONTINUES - SEE NEXT
+    /* IMPORTANT: remaining original code (Firebase auth, Firestore sync) must be restored from commit df03fe45 */
+    function signIn() { toast("Please restore web-account.js from git history (commit df03fe45)"); }
+    function signOutNow() { user = null; render(); }
+    window.__sinsubzIdToken = function () { return Promise.resolve(null); };
+    render();
 })();
