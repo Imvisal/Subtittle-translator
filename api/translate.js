@@ -451,7 +451,7 @@ async function generateInner(prompt, trail, premium) {
 
             // bad / blocked key -> skip that key for a while
             if (
-                response.status === 403 ||
+                response.status === 403 || response.status === 401 ||
                 (response.status === 400 && /api key|service account|not valid|billing|permission/i.test(message))
             ) {
                 cooldowns.set(id, Date.now() + 60 * 60 * 1000);
