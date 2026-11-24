@@ -328,16 +328,20 @@ async function generateInner(prompt, trail, premium) {
         const allCooling = keys.every((_, k) => models.every(m => (cooldowns.get(k + "|" + m) || 0) > nowT));
         if (allCooling) {
             await new Promise(r => setTimeout(r, 4000));
+            // random keys (not always #1, #2, #3: those may be the ones that really are empty), first model first
+            const cand = [];
+            models.forEach((m, mi) => keys.forEach((_, k) => cand.push({ k: k, m: m, mi: mi, r: Math.random() })));
+            cand.sort((a, b) => (a.mi - b.mi) || (a.r - b.r));
             let freed = 0;
-            outer: for (const m of models) {
-                for (let k = 0; k < keys.length; k++) {
-                    const id = k + "|" + m;
-                    if (Date.now() - (lastProbe.get(id) || 0) > 60 * 1000) {
-                        cooldowns.delete(id); lastProbe.set(id, Date.now()); trail.push("#" + (k + 1) + " " + m.replace(/^gemini-/, "") + " re-probe");
-                        if (++freed >= 3) { break outer; }
-                    }
+            for (const c of cand) {
+                const id = c.k + "|" + c.m;
+                if (Date.now() - (lastProbe.get(id) || 0) > 60 * 1000) {
+                    cooldowns.delete(id); lastProbe.set(id, Date.now()); trail.push("#" + (c.k + 1) + " " + c.m.replace(/^gemini-/, "") + " re-probe");
+                    try { const g = require("./_google"); if (g.hasRedis()) { g.redis([["DEL", "gcd:" + id]]).catch(() => { /* ignore */ }); } } catch (e) { /* ignore */ }
+                    if (++freed >= 3) { break; }
                 }
             }
+            cdLoadedAt = Date.now();   // don't re-read the shared cooldowns we just cleared
         }
     }
 
