@@ -353,6 +353,7 @@ async function health(req, res) {
             // which Vercel variable + the last 4 characters, so the broken key is easy to find in Vercel / AI Studio
             const who = (keyNames[i] ? keyNames[i].name : "key") + " …" + key.slice(-4);
             if (!r.ok) { throw new Error("HTTP " + r.status + " " + who); }
+            return who + (keyNames[i] && keyNames[i].premium ? " (Premium only)" : "");
         }));
     });
     if (!geminiKeys().length) { checks.push(Promise.resolve({ name: "Gemini keys", ok: false, ms: 0, note: "none set" })); }

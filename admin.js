@@ -353,7 +353,7 @@
                 d.results.forEach(function (x) {
                     var li = el("li");
                     li.appendChild(el("span", x.ok ? "ok" : "bad", (x.ok ? "\u2713 " : "\u2717 ") + x.name));
-                    li.appendChild(el("span", "", x.ok ? x.ms + " ms" : x.note));
+                    li.appendChild(el("span", "", x.ok ? (x.note && x.note !== "OK" ? x.note + " \u00b7 " : "") + x.ms + " ms" : x.note));
                     ul.appendChild(li);
                 });
             })
