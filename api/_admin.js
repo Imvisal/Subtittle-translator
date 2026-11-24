@@ -309,7 +309,7 @@ function geminiKeyLabels() {
     const raw = [];
     if (process.env.GEMINI_API_KEYS) { process.env.GEMINI_API_KEYS.split(",").forEach((k, i) => raw.push(["GEMINI_API_KEYS #" + (i + 1), k])); }
     raw.push(["GEMINI_API_KEY", process.env.GEMINI_API_KEY]);
-    for (let i = 2; i <= 10; i++) { raw.push(["GEMINI_API_KEY_" + i, process.env["GEMINI_API_KEY_" + i]]); }
+    for (let i = 2; i <= 30; i++) { raw.push(["GEMINI_API_KEY_" + i, process.env["GEMINI_API_KEY_" + i]]); }
     raw.push(["GEMINI_BACKUP_KEY", process.env.GEMINI_BACKUP_KEY]);
     for (let i = 2; i <= 10; i++) { raw.push(["GEMINI_BACKUP_KEY_" + i, process.env["GEMINI_BACKUP_KEY_" + i]]); }
     const seen = new Set(), out = [];
@@ -321,7 +321,7 @@ function geminiKeys() {
     const list = [];
     if (process.env.GEMINI_API_KEYS) { list.push(...process.env.GEMINI_API_KEYS.split(",")); }
     list.push(process.env.GEMINI_API_KEY);
-    for (let i = 2; i <= 10; i++) { list.push(process.env["GEMINI_API_KEY_" + i]); }
+    for (let i = 2; i <= 30; i++) { list.push(process.env["GEMINI_API_KEY_" + i]); }
     list.push(process.env.GEMINI_BACKUP_KEY);                       // Premium-only keys (same order as api/translate.js)
     for (let i = 2; i <= 10; i++) { list.push(process.env["GEMINI_BACKUP_KEY_" + i]); }
     return [...new Set(list.map(k => (k || "").trim()).filter(Boolean))];
