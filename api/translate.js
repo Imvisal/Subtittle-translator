@@ -492,8 +492,9 @@ async function generateInner(prompt, trail, premium) {
             status: 429,
             code: "QUOTA_EXHAUSTED",
             detail: lastMessage,
-            error:
-                "Today's free translation limit has been reached. " +
+            error: premium
+                ? "The AI service has hit its daily capacity for now (this is not your Premium limit). Please try again in a little while, we are working on it."
+                : "Today's free translation limit has been reached. " +
                 "Please try again later."
         };
     }
