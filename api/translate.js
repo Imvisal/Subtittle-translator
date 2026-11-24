@@ -288,6 +288,8 @@ function today() {
     return new Date(Date.now() + 5.5 * 3600e3).toISOString().slice(0, 10);
 }
 
+const lastProbe = new Map();   // "<key>|<model>" -> time of the last forced re-probe of a cooling key
+
 async function generateWithFallback(prompt, premium) {
     const trail = [];
     const out = await generateInner(prompt, trail, premium);
@@ -317,6 +319,27 @@ async function generateInner(prompt, trail, premium) {
     const startKey = process.env.GEMINI_KEY_ROTATE === "1" ? Math.floor(Math.random() * keys.length) : 0;
 
     await loadSharedCooldowns(keys, models);
+
+    // Every key+model is "cooling"? Don't give up at once: wait a few seconds, then let up to 3 of them try again
+    // (a cooldown can be stale or a per-minute limit mistaken for the daily one). Each key is re-probed at most once a minute,
+    // so a really empty day does not turn into a flood of requests. A key that answers is used right away.
+    {
+        const nowT = Date.now();
+        const allCooling = keys.every((_, k) => models.every(m => (cooldowns.get(k + "|" + m) || 0) > nowT));
+        if (allCooling) {
+            await new Promise(r => setTimeout(r, 4000));
+            let freed = 0;
+            outer: for (const m of models) {
+                for (let k = 0; k < keys.length; k++) {
+                    const id = k + "|" + m;
+                    if (Date.now() - (lastProbe.get(id) || 0) > 60 * 1000) {
+                        cooldowns.delete(id); lastProbe.set(id, Date.now()); trail.push("#" + (k + 1) + " " + m.replace(/^gemini-/, "") + " re-probe");
+                        if (++freed >= 3) { break outer; }
+                    }
+                }
+            }
+        }
+    }
 
     // Two passes: if every model was only "busy" (503), wait a moment and retry once.
     for (let pass = 0; pass < 2; pass++) {
