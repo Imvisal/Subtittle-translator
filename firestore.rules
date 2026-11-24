@@ -1,0 +1,18 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // each signed-in user can read/write only their own document
+    match /users/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['history', 'translate', 'app', 'updatedAt'])
+        && request.resource.data.history is string && request.resource.data.history.size() < 60000
+        && request.resource.data.translate is string && request.resource.data.translate.size() < 2000
+        && request.resource.data.app is string && request.resource.data.app.size() < 2000;
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

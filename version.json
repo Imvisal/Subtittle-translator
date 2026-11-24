@@ -1,0 +1,10 @@
+{
+  "version": "1.1.36",
+  "notes": "New: the film poster shows while a subtitle is being translated. Supports .ass / .ssa subtitle files. Downloaded files now include the video version (BluRay, WEBRip...). A translation that failed can be resumed. Ready Sinhala subtitles on the home screen, with a banner ad (hidden for Premium).",
+  "android": {
+    "url": "https://sinsubs.site/get/android"
+  },
+  "windows": {
+    "url": "https://sinsubs.site/get/windows"
+  }
+}

@@ -1,0 +1,124 @@
+{
+  "functions": {
+    "api/new-releases.js": {
+      "maxDuration": 30
+    },
+    "api/stats.js": {
+      "maxDuration": 30
+    }
+  },
+  "headers": [
+    {
+      "source": "/vendor/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/(ad-box|ad-box-320|ad-box-native)\\.html",
+      "headers": [
+        { "key": "Content-Security-Policy", "value": "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; frame-ancestors 'self'" },
+        { "key": "Referrer-Policy", "value": "no-referrer-when-downgrade" },
+        { "key": "Cache-Control", "value": "public, max-age=300" }
+      ]
+    },
+    {
+      "source": "/((?!ad-box(?:-320|-native)?\\.html).*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+        },
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin-allow-popups"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://aarems.org https://cdnjs.cloudflare.com https://va.vercel-scripts.com https://www.gstatic.com https://apis.google.com https://pagead2.googlesyndication.com https://partner.googleadservices.com https://tpc.googlesyndication.com https://www.googletagservices.com https://fundingchoicesmessages.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' https: data: blob:; connect-src 'self' https://aarems.org https://vitals.vercel-insights.com https://*.googleapis.com https://apis.google.com https://pagead2.googlesyndication.com https://fundingchoicesmessages.google.com https://*.g.doubleclick.net https://ep1.adtrafficquality.google https://www.gstatic.com; media-src 'self' blob:; frame-src 'self' https://acceptable.a-ads.com https://ad.a-ads.com https://sinsubz-2071.firebaseapp.com https://accounts.google.com https://www.youtube-nocookie.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://www.google.com https://fundingchoicesmessages.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)\\.(png|svg|ico|webp)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/announcement.json",
+      "destination": "/api/stats?announcement=1"
+    },
+    {
+      "source": "/tv/:slug",
+      "destination": "/api/stats?ready=page&slug=:slug"
+    },
+    {
+      "source": "/film/:slug",
+      "destination": "/api/stats?ready=page&slug=:slug"
+    },
+    {
+      "source": "/sitemap-titles.xml",
+      "destination": "/api/stats?ready=sitemap"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/download.html",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/((?!api/).*)",
+      "has": [{ "type": "host", "value": "subtittle-translator.vercel.app" }],
+      "destination": "https://sinsubs.site/$1",
+      "permanent": true
+    },
+    {
+      "source": "/get/android",
+      "destination": "https://github.com/Imvisal/Subtittle-translator/releases/latest/download/SinSubz.apk",
+      "permanent": false
+    },
+    {
+      "source": "/get/windows",
+      "destination": "https://github.com/Imvisal/Subtittle-translator/releases/latest/download/SinSubz-Setup.exe",
+      "permanent": false
+    },
+    {
+      "source": "/get/portable",
+      "destination": "https://github.com/Imvisal/Subtittle-translator/releases/latest/download/SinSubz-Portable.exe",
+      "permanent": false
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/stats?cron=runner",
+      "schedule": "20 6 * * *"
+    },
+    {
+      "path": "/api/stats?cron=runner",
+      "schedule": "20 7 * * *"
+    }
+  ]
+}

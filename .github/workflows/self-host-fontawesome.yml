@@ -1,0 +1,41 @@
+name: Self-host Font Awesome
+
+# Run it ONCE from the Actions tab ("Run workflow"). It downloads Font Awesome 6.5.2 from the npm package, puts the files in
+# /vendor/fa and points index.html at them, so the icons no longer depend on a third-party CDN
+# (a CDN problem or a hacked CDN can no longer break or change the site). Then it commits the change to main.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Download Font Awesome 6.5.2
+        run: |
+          npm pack @fortawesome/fontawesome-free@6.5.2
+          tar -xzf fortawesome-fontawesome-free-6.5.2.tgz
+          rm -rf vendor/fa
+          mkdir -p vendor/fa/css vendor/fa/webfonts
+          cp package/css/all.min.css vendor/fa/css/
+          cp package/webfonts/*.woff2 vendor/fa/webfonts/
+          rm -rf package fortawesome-fontawesome-free-6.5.2.tgz
+          ls -la vendor/fa/css vendor/fa/webfonts
+      - name: Point the pages at the local copy
+        run: |
+          sed -i 's#https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css#/vendor/fa/css/all.min.css#g' index.html
+          grep -n "vendor/fa" index.html
+      - name: Commit
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A
+          git commit -m "Self-host Font Awesome (no third-party CDN)" || echo "nothing to commit"
+          git pull --rebase origin main
+          git push origin HEAD:main

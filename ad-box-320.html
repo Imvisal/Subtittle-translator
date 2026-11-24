@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Advertisement</title>
+<style>html,body{margin:0;padding:0;background:transparent;overflow:hidden}</style></head>
+<body>
+<script>
+/* The frame is sandboxed (no allow-same-origin), so reading document.cookie / localStorage THROWS and stops the ad script.
+   Give the ad harmless in-memory versions instead: the ad still runs, and still cannot touch the SinSubz sign-in or storage. */
+(function () {
+    try { var ck = ""; Object.defineProperty(document, "cookie", { configurable: true, get: function () { return ck; }, set: function (v) { ck = String(v).split(";")[0]; } }); } catch (e) { /* ignore */ }
+    function mem() { var d = {}; return { getItem: function (k) { return Object.prototype.hasOwnProperty.call(d, k) ? d[k] : null; }, setItem: function (k, v) { d[k] = String(v); }, removeItem: function (k) { delete d[k]; }, clear: function () { d = {}; }, key: function (i) { return Object.keys(d)[i] || null; }, get length() { return Object.keys(d).length; } }; }
+    ["localStorage", "sessionStorage"].forEach(function (n) { try { Object.defineProperty(window, n, { configurable: true, value: mem() }); } catch (e) { /* ignore */ } });
+})();
+</script>
+<script>
+  atOptions = {
+    'key' : '3b418e89e2bf9f349f687443205e95bb',
+    'format' : 'iframe',
+    'height' : 50,
+    'width' : 320,
+    'params' : {}
+  };
+</script>
+<script src="https://bancadeltempoidea.org/22/3b418e89e2bf9f349f687443205e95bb"></script>
+<script>
+/* If the ad network gave nothing (script blocked or failed, nothing drawn after 8 s) tell the page, so it hides the empty "Advertisement" box. */
+(function () {
+    var said = false;
+    function none() { if (said) { return; } said = true; try { parent.postMessage({ sinsubzAd: "none" }, "*"); } catch (e) { /* ignore */ } }
+    var sc = document.querySelectorAll('script[src^="https://"]');
+    for (var i = 0; i < sc.length; i++) { sc[i].addEventListener("error", none); }
+    setTimeout(function () {
+        var c = document.querySelector('[id^="container-"]');
+        var drawn = c ? c.children.length > 0 : !!document.querySelector("iframe, ins, img, a, object, embed");
+        if (!drawn) { none(); }
+    }, 8000);
+})();
+</script>
+</body></html>

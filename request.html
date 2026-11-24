@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Request a Sinhala subtitle for any movie or TV series. Search the title, send the request, and we translate it.">
+    <meta name="theme-color" content="#080d1b">
+    <title>Request a Sinhala Subtitle - SinSubz</title>
+    <link rel="canonical" href="https://sinsubs.site/request.html">
+    <meta name="robots" content="index, follow">
+    <link rel="icon" href="/favicon.ico?v=1133" sizes="48x48">
+    <link rel="icon" href="/favicon.svg?v=1133" type="image/svg+xml" sizes="any">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="request.css">
+    <script>(function(){try{var t=localStorage.getItem("sinsubz-theme");if(t==="light"||t==="dark"){document.documentElement.setAttribute("data-theme",t);}}catch(e){}})();</script>
+</head>
+<body class="legal-page">
+<main class="legal-container">
+    <header class="legal-header">
+        <a href="index.html" class="back-home">← Back to SinSubz</a>
+        <div class="legal-logo"><img src="logo-128.png?v=1133" alt="SinSubz"></div>
+        <h1>Request a Subtitle</h1>
+        <p>Can't find a Sinhala subtitle? Ask for it.</p>
+    </header>
+    <article class="legal-content">
+        <p>Search the movie or TV series, pick it, and send the request. When we approve it, it is translated and its page is made. Titles that are already translated are shown to you straight away.</p>
+
+        <div class="cf-gate" id="rqGate">
+            <button type="button" class="cf-google" id="rqSignIn">Sign in (needed only to request on the website)</button>
+            <p class="cf-gate-note" id="rqGateNote"></p>
+        </div>
+
+        <div id="rqBox" hidden>
+            <div class="cf-who" id="rqWho"></div>
+            <div class="rq-search">
+                <input id="rqQ" type="search" maxlength="80" placeholder="Movie or TV series name..." autocomplete="off">
+                <button type="button" class="cf-btn" id="rqGo">Search</button>
+            </div>
+            <p class="rq-wa" style="margin:6px 0 0;font-size:13px;opacity:.75">We will e-mail you when the Sinhala subtitle is ready.</p>
+            <p class="cf-status" id="rqStatus" role="status" aria-live="polite"></p>
+            <div id="rqResults"></div>
+        </div>
+        <p class="rq-wa">Prefer WhatsApp? <a class="cf-btn" id="rqWa" href="https://wa.me/94774789096?text=Hi%20SinSubz%2C%20please%20add%20a%20Sinhala%20subtitle%20for%3A%20" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="20" height="20" fill="#08210f" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 1.8a8.2 8.2 0 1 1-4.2 15.3l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 0 1 12 3.8zM8.6 7.4c-.2 0-.5.1-.7.4-.3.3-1 1-1 2.4s1 2.8 1.2 3c.1.2 2 3.1 4.9 4.3 2.4 1 2.9.8 3.4.7.5 0 1.7-.7 1.9-1.4.2-.7.2-1.3.2-1.4-.1-.1-.3-.2-.6-.4l-1.9-.9c-.3-.1-.5-.1-.7.1l-.9 1.1c-.2.2-.3.2-.6.1-.3-.2-1.2-.4-2.2-1.4-.8-.8-1.4-1.700-1.500-2-.2-.3 0-.4.100-.6l.4-.5.3-.5v-.5l-.9-2.100c-.2-.5-.4-.5-.6-.5z"/></svg><span>Request on WhatsApp</span></a></p>
+    </article>
+</main>
+<script src="request.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,63 @@
+{
+  "name": "sinsubz-desktop",
+  "version": "1.1.29",
+  "description": "SinSubz - English to Sinhala subtitle translator (Windows desktop app)",
+  "author": "SinSubz",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "prepare:app": "node build-app.js",
+    "start": "node build-app.js && electron .",
+    "dist": "node build-app.js && electron-builder --win --publish never"
+  },
+  "dependencies": {
+    "ffmpeg-static": "^5.2.0"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.visal.sinsubz.desktop",
+    "productName": "SinSubz",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "export-video.js",
+      "app/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "artifactName": "SinSubz-Setup.exe"
+    },
+    "portable": {
+      "artifactName": "SinSubz-Portable.exe"
+    },
+    "asarUnpack": [
+      "node_modules/ffmpeg-static/**"
+    ]
+  }
+}

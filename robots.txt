@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin.html
+Disallow: /inbox.html
+
+Sitemap: https://sinsubs.site/sitemap.xml
+Sitemap: https://sinsubs.site/sitemap-titles.xml
