@@ -346,10 +346,13 @@ async function health(req, res) {
     const get = (url, init) => fetch(url, Object.assign({ signal: AbortSignal.timeout(7000) }, init || {}));
     const checks = [];
 
+    const keyNames = geminiKeyLabels();
     geminiKeys().forEach((key, i) => {
         checks.push(probe("Gemini key #" + (i + 1), async () => {
             const r = await get("https://generativelanguage.googleapis.com/v1beta/models?pageSize=1", { headers: { "x-goog-api-key": key } });
-            if (!r.ok) { throw new Error("HTTP " + r.status + (r.status === 400 || r.status === 403 ? " (key rejected)" : "")); }
+            // which Vercel variable + the last 4 characters, so the broken key is easy to find in Vercel / AI Studio
+            const who = (keyNames[i] ? keyNames[i].name : "key") + " …" + key.slice(-4);
+            if (!r.ok) { throw new Error("HTTP " + r.status + " " + who); }
         }));
     });
     if (!geminiKeys().length) { checks.push(Promise.resolve({ name: "Gemini keys", ok: false, ms: 0, note: "none set" })); }
