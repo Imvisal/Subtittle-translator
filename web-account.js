@@ -149,7 +149,7 @@
         NSTYLE = true;
         var st = document.createElement("style");
         st.textContent =
-            ".wa-nbadge{position:absolute;top:-5px;right:-5px;min-width:19px;height:19px;padding:0 5px;border-radius:99px;background:#ef3b4a;color:#fff;font:800 11px/19px system-ui,sans-serif;text-align:center;border:2px solid var(--bg,#0b0d1a);box-sizing:content-box}" +
+            ".wa-nbadge{position:absolute;top:-7px;right:-7px;z-index:2;min-width:19px;height:19px;padding:0 5px;border-radius:99px;background:#ef3b4a;color:#fff;font:800 11px/19px system-ui,sans-serif;text-align:center;border:2px solid var(--bg,#0b0d1a);box-sizing:content-box;box-shadow:0 2px 8px rgba(239,59,74,.55);pointer-events:none}.wa-nbadge[hidden]{display:none}" +
             ".wa-ncount{margin-left:auto;min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:#ef3b4a;color:#fff;font:800 11px/20px system-ui,sans-serif;text-align:center}" +
             ".wa-out:has(.wa-ncount){display:flex;align-items:center;gap:8px}" +
             ".nt-back{position:fixed;inset:0;z-index:99990;background:rgba(5,6,18,.65);backdrop-filter:blur(4px);display:flex;align-items:flex-start;justify-content:center;padding:70px 14px 20px}" +
