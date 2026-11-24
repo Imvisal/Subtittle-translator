@@ -998,7 +998,15 @@ async function action(req, res) {
             const until = from + days * 86400e3;
             await redis([["HSET", "u:prem", id, String(until)]]);
             premCache.delete(id);
-            return res.status(200).json({ ok: true, until: until });
+            // tell the member: in-app notification + e-mail (only when we know their address and e-mail is set up)
+            let mailed = false;
+            try {
+                await pushNotif(id, { type: "premium", title: "Premium extended 👑", body: "Your Premium plan is now active until " + new Date(until).toISOString().slice(0, 10) + "." }).catch(() => null);
+                const [infoRaw] = await redis([["HGET", "u:info", id]]);
+                const info = parse(infoRaw) || {};
+                if (info.e) { mailed = !!(await mailPremium({ email: info.e, name: info.n || "", until: until })); }
+            } catch (e) { /* the plan itself is already saved */ }
+            return res.status(200).json({ ok: true, until: until, mailed: mailed });
         }
         if (what === "planConfig") {
             await redis([["SET", "prem:cfg", JSON.stringify(cleanPlanCfg(body.config))]]);
