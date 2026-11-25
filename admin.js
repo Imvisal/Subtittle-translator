@@ -108,6 +108,29 @@
             body: JSON.stringify(Object.assign({ action: action, id: id }, extra || {}))
         }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { if (!r.ok) { throw new Error(d.error || "Failed"); } return d; }); });
     }
+    // Policy update e-mail: counts, then sends in batches of 50 until everybody has it (or Resend's limit stops it)
+    (function () {
+        var bs = document.getElementById("polSend"), bc = document.getElementById("polCount"), msg = document.getElementById("polMsg");
+        if (!bs || !bc || !msg) { return; }
+        var dv = document.getElementById("polVer"); if (dv && !dv.value) { dv.value = new Date().toISOString().slice(0, 10); }
+        function payload(dry) { return { what: document.getElementById("polWhat").value, ver: document.getElementById("polVer").value.trim(), note: document.getElementById("polNote").value, dry: !!dry }; }
+        function line(d) { return d.total + " members with an e-mail address: " + d.sent + " already sent, " + d.left + " waiting."; }
+        bc.addEventListener("click", function () {
+            bc.disabled = true; msg.textContent = "Counting...";
+            post("policyMail", "", payload(true)).then(function (d) { msg.textContent = line(d); }).catch(function (e) { msg.textContent = e.message; }).then(function () { bc.disabled = false; });
+        });
+        bs.addEventListener("click", function () {
+            if (!window.confirm("E-mail the policy update to every member? Members who already got this update name are skipped.")) { return; }
+            bs.disabled = bc.disabled = true;
+            (function next() {
+                msg.textContent = "Sending...";
+                post("policyMail", "", payload(false)).then(function (d) {
+                    msg.textContent = line(d) + (d.done ? " Finished." : " Sending the next batch...");
+                    if (!d.done && d.left > 0) { setTimeout(next, 1200); } else { bs.disabled = bc.disabled = false; }
+                }).catch(function (e) { msg.textContent = "Stopped: " + e.message + " Press Send again later to continue."; bs.disabled = bc.disabled = false; });
+            })();
+        });
+    })();
     function simpleList(host, rows, emptyText) {
         host.textContent = "";
         if (!rows.length) { host.appendChild(el("li", "empty", emptyText)); return; }

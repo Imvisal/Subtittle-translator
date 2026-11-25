@@ -342,6 +342,18 @@
             <p class="empty" id="anMsg"></p>
         </div>
 
+            <div class="card" id="polCard">
+                <h2>Policy update e-mail <span id="polState" class="tag"></span></h2>
+                <p class="muted" style="margin:0 0 10px">After you change the Privacy Policy or Terms page, e-mail every member whose address we have. Nobody gets it twice for the same update name, and it can be continued the next day if Resend's daily limit stops it (free plan: 100 mails a day).</p>
+                <div class="two">
+                    <div><label for="polWhat">What changed</label><select id="polWhat" style="width:100%"><option value="both">Privacy Policy and Terms</option><option value="privacy">Privacy Policy</option><option value="terms">Terms of Service</option></select></div>
+                    <div><label for="polVer">Update name (a date is fine)</label><input id="polVer" maxlength="40" placeholder="2026-11-25" style="width:100%"></div>
+                </div>
+                <label for="polNote">Short note for the members (optional)</label><textarea id="polNote" maxlength="600" rows="3" placeholder="e.g. We now explain how Premium payments and e-mails are handled." style="width:100%;padding:11px 13px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:inherit;font:inherit"></textarea>
+                <div class="row"><button class="ghost" id="polCount" type="button">Count the members</button><button id="polSend" type="button">Send the update e-mail</button></div>
+                <p class="empty" id="polMsg"></p>
+            </div>
+
             <div class="card">
                 <h2>Telegram channel</h2>
                 <p class="muted" style="margin:0 0 10px">New Sinhala subtitles are posted to your channel automatically (needs TG_BOT_TOKEN and TG_CHAT_ID in Vercel).</p>

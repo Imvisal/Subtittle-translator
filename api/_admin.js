@@ -1024,6 +1024,52 @@ async function action(req, res) {
             } catch (e) { /* the plan itself is already saved */ }
             return res.status(200).json({ ok: true, until: until, mailed: mailed });
         }
+        if (what === "policyMail") {
+            // "We updated our Privacy Policy / Terms": e-mail every member whose address we know. Safe to press again:
+            // each member is recorded per version (pol:sent:<ver>), so nobody gets it twice, and a run that stops
+            // (Resend's daily limit, a timeout) simply continues from where it stopped. dry:true only counts.
+            const ver = String(body.ver || "").replace(/[^A-Za-z0-9_.-]/g, "").slice(0, 40);
+            if (!ver) { return res.status(400).json({ error: "Give the update a name or date, e.g. 2026-11-25." }); }
+            const subj = body.what === "privacy" ? "privacy" : body.what === "terms" ? "terms" : "both";
+            const note = String(body.note || "").trim().slice(0, 600);
+            const [all, sentRaw] = await redis([["HGETALL", "u:info"], ["SMEMBERS", "pol:sent:" + ver]]);
+            const sent = new Set(sentRaw || []);
+            const todo = [];
+            let total = 0;
+            for (let i = 0; i + 1 < (all || []).length; i += 2) {
+                let info = null; try { info = JSON.parse(all[i + 1]); } catch (e) { /* skip */ }
+                const em = info && String(info.e || "").trim();
+                if (!em || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { continue; }
+                total++;
+                if (!sent.has(all[i])) { todo.push({ key: all[i], email: em, name: String(info.f || info.n || "").trim() }); }
+            }
+            if (body.dry) { return res.status(200).json({ ok: true, total: total, left: todo.length, sent: total - todo.length }); }
+            const key = String(process.env.RESEND_API_KEY || "").trim(), from = String(process.env.USER_MAIL_FROM || "").trim();
+            if (!key || !from) { return res.status(400).json({ error: "RESEND_API_KEY / USER_MAIL_FROM are not set on the server." }); }
+            const batch = todo.slice(0, 50);      // one Resend batch call = up to 100 mails; 50 keeps it inside the function time limit
+            if (!batch.length) { return res.status(200).json({ ok: true, total: total, left: 0, sent: total, done: true }); }
+            const what1 = subj === "privacy" ? "Privacy Policy" : subj === "terms" ? "Terms of Service" : "Privacy Policy and Terms of Service";
+            const links = (subj !== "terms" ? "Privacy Policy: https://sinsubs.site/privacy.html\n" : "") + (subj !== "privacy" ? "Terms of Service: https://sinsubs.site/terms.html\n" : "");
+            const subject = "We updated our " + what1;
+            const payload = batch.map(function (u) {
+                return { from: from, to: [u.email], subject: subject,
+                    text: "Hi" + (u.name ? " " + u.name : "") + ",\n\nWe have updated the SinSubz " + what1 + ".\n" + (note ? "\n" + note + "\n" : "") +
+                        "\nYou can read the new version here:\n" + links + "\nBy continuing to use SinSubz you agree to the updated version. If you have any questions, use the Contact page on the site.\n\n" +
+                        "You are receiving this because you have a SinSubz account.\n\nSinSubz" };
+            });
+            let ok = false, why = "";
+            try {
+                const ctl = new AbortController(); const timer = setTimeout(function () { ctl.abort(); }, 20000);
+                const r = await fetch("https://api.resend.com/emails/batch", { method: "POST", headers: { "Authorization": "Bearer " + key, "Content-Type": "application/json" }, body: JSON.stringify(payload), signal: ctl.signal });
+                clearTimeout(timer);
+                ok = r.ok;
+                if (!r.ok) { let m = ""; try { const j = await r.json(); m = String(j && (j.message || j.error) || ""); } catch (e) { /* ignore */ } why = "Resend answered " + r.status + (m ? ": " + m.slice(0, 200) : ""); }
+            } catch (e) { why = "Could not reach Resend (" + (e && e.name) + ")."; }
+            if (!ok) { return res.status(502).json({ error: why || "Could not send.", total: total, left: todo.length, sent: total - todo.length }); }
+            await redis([["SADD", "pol:sent:" + ver].concat(batch.map(function (u) { return u.key; })), ["EXPIRE", "pol:sent:" + ver, 400 * 86400], ["SET", "pol:last", JSON.stringify({ ver: ver, t: Date.now(), what: subj })]]);
+            const left = todo.length - batch.length;
+            return res.status(200).json({ ok: true, total: total, left: left, sent: total - left, done: left === 0 });
+        }
         if (what === "planConfig") {
             await redis([["SET", "prem:cfg", JSON.stringify(cleanPlanCfg(body.config))]]);
             return res.status(200).json({ ok: true });
