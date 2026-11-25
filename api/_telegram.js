@@ -21,7 +21,7 @@ async function call(method, body) {
     finally { clearTimeout(t); }
 }
 
-async function send(m, s, e, info) {
+async function send(m, s, e, info, head) {
     const tv = m.type === "tv";
     const url = SITE + (tv ? "/tv/" : "/film/") + (m.slug || m.id);
     info = info || {};
@@ -32,11 +32,11 @@ async function send(m, s, e, info) {
         (info.genres || []).length ? "🎭 " + esc(info.genres.join(", ")) : "",
         info.runtime ? "⏱ " + info.runtime + " min" : ""
     ].filter(Boolean);
-    const caption = "🎬 <b>" + esc(m.t) + (m.y ? " (" + esc(m.y) + ")" : "") + "</b>\n" +
+    const caption = head ? head + "\n\n⬇️ " + url : ("🎬 <b>" + esc(m.t) + (m.y ? " (" + esc(m.y) + ")" : "") + "</b>\n" +
         (tv ? "📺 TV series\n" : "🎥 Movie\n") +
         (facts.length ? facts.join("\n") + "\n" : "") +
         "\n✅ Sinhala subtitle ready" + (tv && s ? " — Season " + s + (e ? ", Episode " + e : "") : "") +
-        "\n\n⬇️ " + url;
+        "\n\n⬇️ " + url);
     const common = { chat_id: process.env.TG_CHAT_ID, parse_mode: "HTML" };
     const row = [{ text: "Download Sinhala subtitle", url }];
     if (/^tt\d+$/.test(m.id) && m.id !== "tt0000000") { row.push({ text: "IMDb", url: "https://www.imdb.com/title/" + m.id + "/" }); }
@@ -61,6 +61,43 @@ async function postNew(m, s, e) {
     } catch (err) { /* never breaks the caller */ }
 }
 
+// One summary post per (title, key) ever: used for "season complete" and "whole series complete".
+async function announce(tag, m, s, head) {
+    const key = "tg:" + tag;
+    const [ok] = await redis([["SET", key, "1", "EX", String(365 * 86400), "NX"]]);
+    if (ok !== "OK") { return; }
+    const r = await send(m, s, 0, null, head);
+    if (!r.ok) { await redis([["DEL", key]]); }
+}
+
+// Called after an episode is saved: when every episode of its TV season is ready, post a season summary;
+// when every season is ready, also post a whole-series summary. Season episode counts come from TMDB.
+async function postSeasonDone(m, s) {
+    try {
+        if (!ready() || !hasRedis() || !m || m.type !== "tv" || !m.id || !(Number(s) > 0) || !m.t) { return; }
+        const sn0 = Number(s);
+        const { tmdbRaw } = require("./_ready.js");
+        const found = await tmdbRaw("/find/" + m.id + "?external_source=imdb_id");
+        const pick = (found.tv_results || [])[0];
+        if (!pick) { return; }
+        const d = await tmdbRaw("/tv/" + pick.id);
+        const seasons = (d.seasons || []).filter(x => x.season_number >= 1 && x.episode_count > 0);
+        const have = {};
+        Object.values(m.eps || {}).forEach(x => { if (x && x.s) { have[x.s] = (have[x.s] || 0) + 1; } });
+        const done = n => { const sn = seasons.find(x => x.season_number === n); return !!sn && (have[n] || 0) >= sn.episode_count; };
+        if (!done(sn0)) { return; }
+        const season = seasons.find(x => x.season_number === sn0);
+        const title = "<b>" + esc(m.t) + "</b>" + (m.y ? " (" + esc(m.y) + ")" : "");
+        await announce("sd:" + m.id + ":" + sn0, m, sn0,
+            "✅ " + title + "\n📺 Season " + sn0 + " complete — all " + season.episode_count + " episodes have Sinhala subtitles");
+        if (seasons.every(x => done(x.season_number))) {
+            const total = seasons.reduce((a, x) => a + x.episode_count, 0);
+            await announce("sc:" + m.id, m, 0,
+                "🎉 " + title + "\n📺 Full series complete — " + seasons.length + " seasons, " + total + " episodes with Sinhala subtitles");
+        }
+    } catch (err) { /* never breaks the caller */ }
+}
+
 async function test(req, res) {
     if (!require("./_admin.js").isAdmin(req)) { return res.status(401).json({ error: "Admin key needed" }); }
     if (!ready()) { return res.status(200).json({ ok: false, error: "Set TG_BOT_TOKEN and TG_CHAT_ID in Vercel (then redeploy)." }); }
@@ -68,4 +105,4 @@ async function test(req, res) {
     return res.status(200).json({ ok: r.ok, error: r.ok ? "" : (r.desc || "Telegram refused it") });
 }
 
-module.exports = { postNew, test, ready };
+module.exports = { postNew, postSeasonDone, test, ready };

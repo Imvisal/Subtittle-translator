@@ -717,7 +717,8 @@ module.exports = async function ready(req, res) {
             await redis([["SET", srtKey(b.imdb, s, e), packed], ["HSET", "rdy:idx", b.imdb, JSON.stringify(m)]]);
             if (isNew) { await warmTitle(m, 14000); await require("./_push.js").notifyNewTitle(m); }
             if (isNew) { await require("./_requests.js").mailRequesters(m); }          // e-mail the visitors who requested this title
-            await require("./_telegram.js").postNew(m, type === "tv" ? s : 0, type === "tv" ? e : 0);          // Telegram channel: once per film / per TV season          // browser notification (at most one per 6 hours)
+            await require("./_telegram.js").postNew(m, type === "tv" ? s : 0, type === "tv" ? e : 0);
+            if (type === "tv") { await require("./_telegram.js").postSeasonDone(m, s); }          // season / whole-series summary when complete          // Telegram channel: once per film / per TV season          // browser notification (at most one per 6 hours)
             return res.status(200).json({ ok: true });
         }
 
@@ -729,6 +730,7 @@ module.exports = async function ready(req, res) {
 module.exports.pageHtml = pageHtml;
 // how many Ready Sinhala subtitles there are: a film counts 1, every ready episode of a series counts 1 (home page counter)
 module.exports.tmdbInfo = tmdbInfo;
+module.exports.tmdbRaw = tmdbRaw;
 module.exports.countReady = async function () {
     const list = await allTitles();
     return list.reduce((n, m) => n + (m.type === "tv" ? Object.keys(m.eps || {}).length : 1), 0);
