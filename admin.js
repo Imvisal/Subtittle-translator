@@ -477,6 +477,14 @@
                 setTimeout(runnerStatus, 4000);
             }).catch(function () { $("arMsg").textContent = "Could not start."; }).then(function () { f.disabled = false; });
         }); }
+        var w = $("arAll");
+        if (w) { w.addEventListener("click", function () {
+            w.disabled = true; $("arMsg").textContent = "Starting the whole-list run...";
+            runnerCall("startall").then(function (d) {
+                $("arMsg").textContent = d.started ? "Started: every film and series in the list (films first). It takes about a minute to begin; watch the Logs tab. It stops by itself after 60 minutes." : (d.error || "Could not start.");
+                setTimeout(runnerStatus, 4000);
+            }).catch(function () { $("arMsg").textContent = "Could not start."; }).then(function () { w.disabled = false; });
+        }); }
         b.addEventListener("click", function () {
             if (!window.confirm("Stop the auto translator?")) { return; }
             b.disabled = true; $("arMsg").textContent = "Stopping...";

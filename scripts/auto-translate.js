@@ -255,7 +255,11 @@ async function refillFilmsIfDue(n, meta) {
     { const first = all.filter(j => !j.queued || j.t.type === "movie"), rest = all.filter(j => j.queued && j.t.type !== "movie"); all = first.concat(rest); }
     if (process.env.LIST_ONLY === "1") { log("LIST_ONLY: would work on " + [...new Set(all.map(j => j.t.title))].join(", ")); return; }
     // the daytime run does the series; the separate films run does the films
-    all = all.filter(j => filmsOnly ? j.t.type !== "tv" : j.t.type === "tv");
+    // "Run whole list" (admin): series AND films in one run (the films stay first)
+    let runAll = false;
+    try { const fr = await api("/api/stats?cron=runner&act=flag", { headers: AK() }); runAll = !!(fr.json && fr.json.all); } catch (e) { /* normal run */ }
+    if (runAll) { log("Run whole list: series and films together."); }
+    else { all = all.filter(j => filmsOnly ? j.t.type !== "tv" : j.t.type === "tv"); }
     const todo = all.filter(j => !have.has(j.t.imdb + "|" + j.season + "|" + j.episode));
     log("Queue: " + todo.length + " episodes / films to do in " + new Set(todo.map(j => j.t.imdb)).size + " titles, this run does at most " + maxRun + ".");
     if (!todo.length) { return; }

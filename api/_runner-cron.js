@@ -30,7 +30,7 @@ module.exports = async function runnerCron(req, res) {
     const g = require("./_google");
 
     if (act === "flag") {
-        try { const [v] = await g.redis([["GET", "aq:stop"]]); return res.status(200).json({ stop: !!v }); } catch (e) { return res.status(200).json({ stop: false }); }
+        try { const [v, a] = await g.redis([["GET", "aq:stop"], ["GET", "aq:all"]]); return res.status(200).json({ stop: !!v, all: !!a }); } catch (e) { return res.status(200).json({ stop: false, all: false }); }
     }
 
     // the scheduled call (no act): also fill a few missing Sinhala story intros, so no title needs a visit to get one
@@ -72,15 +72,23 @@ module.exports = async function runnerCron(req, res) {
             if (r.status !== 204) { return res.status(502).json({ error: r.status === 404 ? "auto-films.yml is not in the runner repo yet" : "GitHub answered " + r.status }); }
             return res.status(200).json({ ok: true, started: true });
         }
+        if (act === "startall") {
+            if ((await active()).length) { return res.status(200).json({ ok: false, error: "A run is already going" }); }
+            // "Run whole list": the series run, but it also translates the films of the list (flag aq:all, read by the runner)
+            try { await g.redis([["DEL", "aq:stop"], ["SET", "aq:manual", "1", "EX", "3900"], ["SET", "aq:all", "1", "EX", "3900"]]); } catch (e) { /* ignore */ }
+            const r = await gh("/actions/workflows/auto-translate.yml/dispatches", { method: "POST", body: JSON.stringify({ ref: "main", inputs: { source: "manual" } }) });
+            if (r.status !== 204) { return res.status(502).json({ error: "GitHub answered " + r.status }); }
+            return res.status(200).json({ ok: true, started: true });
+        }
         if (act === "start") {
             if ((await active()).length) { return res.status(200).json({ ok: false, error: "A run is already going" }); }
-            try { await g.redis([["DEL", "aq:stop"], ["SET", "aq:manual", "1", "EX", "3900"]]); } catch (e) { /* ignore */ }   // "Run now": no quota limit for ~65 minutes
+            try { await g.redis([["DEL", "aq:stop", "aq:all"], ["SET", "aq:manual", "1", "EX", "3900"]]); } catch (e) { /* ignore */ }   // "Run now": no quota limit for ~65 minutes
             const r = await gh("/actions/workflows/auto-translate.yml/dispatches", { method: "POST", body: JSON.stringify({ ref: "main", inputs: { source: "manual" } }) });
             if (r.status !== 204) { return res.status(502).json({ error: "GitHub answered " + r.status }); }
             return res.status(200).json({ ok: true, started: true });
         }
 
-        try { await g.redis([["DEL", "aq:manual"]]); } catch (e) { /* ignore */ }      // a scheduled run keeps the normal limits
+        try { await g.redis([["DEL", "aq:manual", "aq:all"]]); } catch (e) { /* ignore */ }      // a scheduled run keeps the normal limits
         const r = await fetch("https://api.github.com/repos/" + repo + "/actions/workflows/auto-translate.yml/dispatches", {
             method: "POST",
             headers: { Authorization: "Bearer " + token, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", "User-Agent": "sinsubz-cron", "Content-Type": "application/json" },
