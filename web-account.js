@@ -108,7 +108,12 @@
         var bd = document.createElement("span");
         bd.id = "waBadge"; bd.className = "wa-nbadge"; bd.hidden = true;
         // inline styles so no other stylesheet can make the badge lose its red background
-        bd.style.cssText = "position:absolute;top:-5px;right:-5px;z-index:2;min-width:18px;height:18px;padding:0;border-radius:99px;background:#e11d48;color:#fff;font:800 10px/18px system-ui,sans-serif;text-align:center;border:2px solid #0b0d1a;box-sizing:content-box;box-shadow:0 3px 10px rgba(225,29,72,.6);pointer-events:none;";
+        bd.style.cssText = "position:absolute;top:-6px;right:-6px;z-index:2;min-width:20px;height:20px;padding:0;border-radius:99px;background:linear-gradient(135deg,#ff5468,#e11d48);color:#fff;font:800 11px/20px system-ui,sans-serif;text-align:center;border:2px solid #0b0d1a;box-sizing:content-box;box-shadow:0 0 0 1px rgba(255,255,255,.12) inset,0 3px 10px rgba(225,29,72,.55);pointer-events:none;animation:waBadgePulse 2.6s ease-out infinite;";
+        if (!document.getElementById("waBadgeCss")) {
+            var bs = document.createElement("style"); bs.id = "waBadgeCss";
+            bs.textContent = "@keyframes waBadgePulse{0%{box-shadow:0 0 0 0 rgba(225,29,72,.55),0 3px 10px rgba(225,29,72,.5)}70%,100%{box-shadow:0 0 0 9px rgba(225,29,72,0),0 3px 10px rgba(225,29,72,.5)}}@media (prefers-reduced-motion:reduce){#waBadge{animation:none!important}}";
+            document.head.appendChild(bs);
+        }
         av.appendChild(bd);
         applyUnread();
         document.getElementById("waNotif").addEventListener("click", function () { menu.hidden = true; openNotifications(); });
