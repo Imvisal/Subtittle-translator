@@ -93,19 +93,19 @@
             return '<section class="tp-card tp-dcard" id="tpEps"><h2>Sinhala subtitle</h2>' +
                 '<button type="button" class="tp-bigdl tp-dl" data-s="0" data-e="0"><span class="tp-di">\u2B07</span><b>Download Sinhala subtitle</b></button>' +
                 '<p class="tp-meta">' + (f0.n ? f0.n + ' lines \u00B7 ' : '') + 'free .srt \u00B7 you pick your video version next</p>' +
-                '<p class="tp-dcount" id="tpDlCount" hidden></p></section>';
+                dcountHtml() + '</section>';
         }
         var tabs = seasonKeys.length > 1 ? '<div class="tp-tabs" role="tablist">' + seasonKeys.map(function (k) {
             return '<button type="button" role="tab" class="tp-tab' + (k === cur ? " on" : "") + '" data-season="' + k + '">Season ' + k + '</button>';
         }).join("") + '</div>' : "";
         var list = (D.seasons[cur] || []).map(function (e) {
-            var left = '<span class="tp-en">E' + pad(e.e) + '</span><span class="tp-nm"><b>' + (e.name ? esc(e.name) : "Episode " + e.e) + '</b>' + (airText(e.air) ? "<small>" + airText(e.air) + "</small>" : "") + '</span>';
-            var right = e.ready ? '<button type="button" class="tp-dl" data-s="' + cur + '" data-e="' + e.e + '">⬇ Download</button>' : '<span class="tp-soon">Coming soon<a class="tp-up" href="' + uploadUrl(cur, e.e) + '">Have the English .srt? Translate it</a></span>';
+            var left = '<span class="tp-en">E' + pad(e.e) + '</span><span class="tp-nm"><b>' + (e.name ? esc(e.name) : "Episode " + e.e) + '</b>' + (airText(e.air) ? "<small>" + airText(e.air) + "</small>" : "") + (e.ready ? '<small class="tp-ecnt" data-ec="' + cur + 'x' + e.e + '">' + ecText(epCount(cur, e.e)) + '</small>' : '') + '</span>';
+            var right = e.ready ? '<button type="button" class="tp-dl" data-s="' + cur + '" data-e="' + e.e + '">' + DLI + '</button>' : '<span class="tp-soon">Coming soon<a class="tp-up" href="' + uploadUrl(cur, e.e) + '">Have the English .srt? Translate it</a></span>';
             return '<li class="tp-ep' + (e.ready ? " is-ready" : "") + '">' + left + right + '</li>';
         }).join("");
         var nReady = (D.seasons[cur] || []).filter(function (e) { return e.ready; }).length;
         var all = nReady > 1 ? '<button type="button" class="tp-season" id="tpSeasonDl">' + DLI + 'Download whole season ' + cur + ' <small>' + nReady + ' episodes, one .zip</small></button>' : "";
-        return '<section class="tp-card" id="tpEps"><h2>Episodes</h2>' + tabs + all + '<ul class="tp-eps">' + list + '</ul></section>';
+        return '<section class="tp-card" id="tpEps"><h2>Episodes</h2>' + tabs + all + '<ul class="tp-eps">' + list + '</ul>' + dcountHtml() + '</section>';
     }
 
     function startTrailer() {
@@ -127,6 +127,18 @@
     }
 
     var DLI = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>';
+    // download counts from /api/stats?ready=count: whole show (n) and per episode (eps["<season>x<episode>"])
+    var DLC = { n: 0, eps: {} };
+    function ecText(n) { return n > 0 ? n.toLocaleString("en-US") + (n === 1 ? " download" : " downloads") : ""; }
+    function epCount(s, e) { return Number(DLC.eps[s + "x" + e]) || 0; }
+    function dcountHtml() {
+        return '<p class="tp-dcount" id="tpDlCount"' + (DLC.n < 1 ? ' hidden' : '') + '><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg><b>' + DLC.n.toLocaleString("en-US") + '</b> downloads</p>';
+    }
+    function paintCounts() {
+        var t = document.getElementById("tpDlCount");
+        if (t) { t.outerHTML = dcountHtml(); }
+        document.querySelectorAll("[data-ec]").forEach(function (el) { el.textContent = ecText(Number(DLC.eps[el.getAttribute("data-ec")]) || 0); });
+    }
     function render() { root.innerHTML = hero() + castCard() + episodes() + watchCard(); }
     render();
     // the page HTML can be a few minutes old (cached) and the Sinhala intro is made on demand: ask once for it and show it when it arrives
@@ -142,14 +154,10 @@
         }).catch(function () { /* stays without */ });
     })();
     (function dlCount() {
-        var el = document.getElementById("tpDlCount");
-        if (!el) { return; }
         fetch("/api/stats?ready=count&id=" + encodeURIComponent(D.id)).then(function (r) { return r.json(); }).then(function (j) {
-            var n = Number(j && j.n) || 0;
-            if (n < 1) { return; }
-            el.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg><b>' + n.toLocaleString("en-US") + '</b> downloads';
-            el.hidden = false;
-        }).catch(function () { /* hidden */ });
+            DLC = { n: Number(j && j.n) || 0, eps: (j && j.eps) || {} };
+            paintCounts();
+        }).catch(function () { /* stays hidden */ });
     })();
 
     root.addEventListener("click", function (ev) {

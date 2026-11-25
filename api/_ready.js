@@ -585,7 +585,7 @@ module.exports = async function ready(req, res) {
             const s = num(p.s), e = num(p.e);
             const [packed, idx] = await redis([["GET", srtKey(p.id, s, e)], ["HGET", "rdy:idx", p.id]]);
             if (!packed) { return res.status(404).json({ error: "Not found" }); }
-            try { await redis([["HINCRBY", "rdy:dl", p.id, 1]]); } catch (x) { /* counting must never block the file */ }
+            try { await redis([["HINCRBY", "rdy:dl", p.id, 1], ["HINCRBY", "rdy:dle:" + p.id, s + "x" + e, 1]]); } catch (x) { /* counting must never block the file */ }
             const meta = parse(idx) || {};
             const ep = (meta.eps || {})[s + "x" + e] || {};
             const name = String(ep.f || (p.id + ".Sinhala.SinSubz.srt")).replace(/[^\w .()\-\[\]]+/g, "_");
@@ -599,9 +599,11 @@ module.exports = async function ready(req, res) {
         if (act === "count" && req.method === "GET") {
             const p = q(req);
             if (!imdbOk(p.id)) { return res.status(400).json({ error: "Bad id" }); }
-            const [n] = await redis([["HGET", "rdy:dl", p.id]]);
+            const [n, flat] = await redis([["HGET", "rdy:dl", p.id], ["HGETALL", "rdy:dle:" + p.id]]);
+            const eps = {};   // per episode: "<season>x<episode>" -> downloads
+            if (Array.isArray(flat)) { for (let i = 0; i + 1 < flat.length; i += 2) { eps[flat[i]] = Number(flat[i + 1]) || 0; } }
             res.setHeader("Cache-Control", "public, s-maxage=60");
-            return res.status(200).json({ n: Number(n) || 0 });
+            return res.status(200).json({ n: Number(n) || 0, eps });
         }
 
         if (act === "backfill" && req.method === "POST") { return backfill(req, res); }

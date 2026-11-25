@@ -142,6 +142,9 @@
 .tp-ep.is-ready:hover { background: rgba(131, 129, 247, .09); }
 .tp-en { width: 52px; padding: 9px 0; border-radius: 12px; }
 .tp-ep .tp-dl { height: 40px; padding: 0 18px; border-radius: 12px; }
+.tp-ep .tp-dl { display: inline-flex; align-items: center; gap: 7px; }
+.tp-ecnt { color: var(--muted); font-size: 12.5px; }
+.tp-ecnt:empty { display: none; }
 
 @media (max-width: 720px) {
     .tp-in { flex-direction: column; align-items: center; text-align: center; padding: 24px 18px 26px; }
