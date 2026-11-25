@@ -207,7 +207,24 @@
             : (list.length + " shown" + (DATA.totals.users > DATA.usersShown ? " (newest " + DATA.usersShown + " of " + fmt(DATA.totals.users) + ")" : ""));
     }
 
+    var mtFilled = false;
+    function renderMaint(m) {
+        $("mtState").textContent = m && m.on ? "ON" : "OFF";
+        $("mtState").style.background = m && m.on ? "var(--bad)" : "";
+        if (mtFilled || !m) { return; }
+        mtFilled = true; $("mtMsg").value = m.msg || "";
+    }
+    function mtSet(on) {
+        if (on && !window.confirm("Turn ON maintenance mode? Website visitors will see the maintenance page.")) { return; }
+        postAction({ action: "maintenance", enabled: on, message: $("mtMsg").value })
+            .then(function () { $("mtOut").textContent = on ? "Maintenance ON." : "Maintenance OFF."; $("mtState").textContent = on ? "ON" : "OFF"; $("mtState").style.background = on ? "var(--bad)" : ""; })
+            .catch(function (e) { $("mtOut").textContent = e.message; window.alert(e.message); });
+    }
+    $("mtOn").addEventListener("click", function () { mtSet(true); });
+    $("mtOff").addEventListener("click", function () { mtSet(false); });
+
     function render(d) {
+        renderMaint(d.maintenance);
         renderAnnouncement(d.announcement);
         renderPlan(d.plan);
         DATA = d;

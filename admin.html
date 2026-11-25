@@ -115,6 +115,7 @@
             <button type="button" class="tab" data-go="discover">Discover</button>
             <button type="button" class="tab" data-go="approve">Approve <span class="tabn" id="tabnApprove" hidden></span></button>
             <button type="button" class="tab" data-go="announce">Announcement</button>
+            <button type="button" class="tab" data-go="maint">Maintenance</button>
             <button type="button" class="tab" data-go="logs">Logs</button>
             <button type="button" class="tab" data-go="inbox">Messages</button>
         </nav>
@@ -346,6 +347,16 @@
                 <p class="muted" style="margin:0 0 10px">New Sinhala subtitles are posted to your channel automatically (needs TG_BOT_TOKEN and TG_CHAT_ID in Vercel).</p>
                 <div class="row"><button id="tgTest" type="button">Send a test post</button></div>
                 <p class="empty" id="tgMsg"></p>
+            </div>
+        </div>
+
+        <div class="tabpane" data-tab="maint" hidden>
+            <div class="card">
+                <h2>Maintenance mode <span id="mtState" class="tag"></span></h2>
+                <p class="muted" style="margin:0 0 10px">ON කළාම website එකට එන visitors ට "Under maintenance" page එක පෙනෙයි. මේ admin panel එක වැඩ කරනවා.</p>
+                <label for="mtMsg">Message (optional)</label><input id="mtMsg" maxlength="300" style="width:100%">
+                <div class="row"><button id="mtOn" type="button">Turn ON</button><button class="ghost" id="mtOff" type="button">Turn OFF</button></div>
+                <p class="empty" id="mtOut"></p>
             </div>
         </div>
 

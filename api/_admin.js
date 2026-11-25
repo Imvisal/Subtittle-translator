@@ -164,6 +164,8 @@ async function overview(req, res) {
         const PRI = cmds.length - 1;
         cmds.push(["GET", "an:cur"]);                                                                            // current announcement
         const ANI = cmds.length - 1;
+        cmds.push(["GET", "maint:cur"]);                                                                         // maintenance mode
+        const MTI = cmds.length - 1;
         cmds.push(["HGETALL", "q:" + pacificDay()]);                                                             // Gemini requests used today (Pacific day)
         const QI = cmds.length - 1;
 
@@ -258,6 +260,7 @@ async function overview(req, res) {
 
         return res.status(200).json({
             announcement: parse(r[ANI]),
+            maintenance: parse(r[MTI]),
             plan: (function () {
                 const reqs = Object.values(pairs(r[PLI + 1])).map(parse).filter(Boolean).sort((a, b) => b.t - a.t).slice(0, 30);
                 return { config: parse(r[PLI]) || { price: "", bank: "", enabled: false }, requests: reqs, pending: reqs.filter(x => x.status === "pending").length };
@@ -878,6 +881,19 @@ async function publicAnnouncement(req, res) {
     }
 }
 
+// GET /api/stats?maint=1 : website maintenance mode (never cached, so switching it on/off is instant).
+async function publicMaintenance(req, res) {
+    res.setHeader("Cache-Control", "no-store");
+    if (!hasRedis()) { return res.status(200).json({ on: false }); }
+    try {
+        const [raw] = await redis([["GET", "maint:cur"]]);
+        const m = parse(raw) || {};
+        return res.status(200).json({ on: !!m.on, msg: String(m.msg || "") });
+    } catch (e) {
+        return res.status(200).json({ on: false });
+    }
+}
+
 // ---------------------------------------------------------------- user notifications
 // List n:u:<uidKey> (newest first, max 30, kept 90 days): replies from the owner, Premium approved / rejected.
 // n:seen:<uidKey> = time the user last opened the list (everything newer is "unread").
@@ -1071,6 +1087,10 @@ async function action(req, res) {
             await redis([["SET", "an:cur", JSON.stringify(c.value)]]);
             return res.status(200).json({ ok: true });
         }
+        if (what === "maintenance") {
+            await redis([["SET", "maint:cur", JSON.stringify({ on: !!body.enabled, msg: clean(body.message, 300), t: Date.now() })]]);
+            return res.status(200).json({ ok: true });
+        }
         if (what === "announceStop") {
             const [raw] = await redis([["GET", "an:cur"]]);
             const cur = parse(raw);
@@ -1118,4 +1138,4 @@ async function premiumReminders() {
     } catch (e) { return 0; }
 }
 
-module.exports = { premiumReminders, isAdmin, adminGate, logEvent, logActivity, alerts, whoLabel, logs, notifications, pushNotif, quotaLeftPct, resetQuotaCache: function () { quotaLeftCache = { at: 0, day: "", pct: 100 }; }, notifyOwner, mailUser, planPublic, planSubmit, me, premiumUntil, authUser, loginRequired, checkDailyLimit, pacificDay, ping, overview, health, action, publicAnnouncement, cleanAnnouncement, dayKey, uidKeyOf };
+module.exports = { premiumReminders, isAdmin, adminGate, logEvent, logActivity, alerts, whoLabel, logs, notifications, publicMaintenance, pushNotif, quotaLeftPct, resetQuotaCache: function () { quotaLeftCache = { at: 0, day: "", pct: 100 }; }, notifyOwner, mailUser, planPublic, planSubmit, me, premiumUntil, authUser, loginRequired, checkDailyLimit, pacificDay, ping, overview, health, action, publicAnnouncement, cleanAnnouncement, dayKey, uidKeyOf };

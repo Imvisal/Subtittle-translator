@@ -96,6 +96,9 @@ module.exports = async function handler(req, res) {
     if (/(?:^|[?&])admin(?:=|&|$)/.test(String(req.url || "")) && req.method === "POST") {
         return require("./_admin.js").action(req, res);
     }
+    if (/(?:^|[?&])maint=1(?:&|$)/.test(String(req.url || "")) && req.method === "GET") {
+        return require("./_admin.js").publicMaintenance(req, res);
+    }
     if (/(?:^|[?&])announcement(?:=|&|$)/.test(String(req.url || "")) && req.method === "GET") {
         return require("./_admin.js").publicAnnouncement(req, res);
     }
