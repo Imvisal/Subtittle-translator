@@ -176,9 +176,9 @@ async function refillFilmsIfDue(n, meta) {
     const cand = await api("/api/stats?autoq=candidates&kind=movie", { headers: AK() });
     if (!cand.ok) { log("  film candidates failed: " + cand.status + " " + cand.text.slice(0, 120)); return false; }
     const picked = [];
-    // 4 recent releases + 1 older film (the server tags each candidate "new" / "old"); if one group runs short the other fills up
+    // recent releases only by default (the server tags each candidate "new" / "old"); if one group runs short the other fills up
     const all = ((cand.json && cand.json.items) || []);
-    const wantOld = n >= 2 ? 1 : 0, wantNew = n - wantOld;
+    const wantOld = process.env.FILM_OLD === "1" && n >= 2 ? 1 : 0, wantNew = n - wantOld;   // new releases only (FILM_OLD=1 brings back 1 older film a day)
     const noSinhala = async (c) => {
         let found = null;
         try { const r = await api("/api/sinhala-search?title=" + encodeURIComponent(c.title) + "&year=" + encodeURIComponent(c.year || "") + "&type=movie&_r=" + Date.now(), { headers: AK() }); if (r.ok && r.json) { found = !!r.json.found; } } catch (e) { /* unknown */ }
@@ -196,9 +196,9 @@ async function refillFilmsIfDue(n, meta) {
         }
     };
     await take(all.filter(c => c.group === "new"), wantNew, "new release");
-    await take(all.filter(c => c.group !== "new"), wantOld, "older film");
+    if (wantOld) { await take(all.filter(c => c.group !== "new"), wantOld, "older film"); }
     if (picked.length < n) { await take(all.filter(c => c.group === "new"), n, "new release"); }       // one group ran short: fill up
-    if (picked.length < n) { await take(all.filter(c => c.group !== "new"), n, "older film"); }
+    if (wantOld && picked.length < n) { await take(all.filter(c => c.group !== "new"), n, "older film"); }
     if (picked.length) { const r = await post("/api/stats?autoq=add", { items: picked }); log("  added " + ((r.json && r.json.added) || 0) + " films" + ((r.json && r.json.pruned) ? " (" + r.json.pruned + " finished ones removed from the full list)" : "") + ", list size " + ((r.json && r.json.size) || "?")); }
     else { log("  no new film found today."); }
     await post("/api/stats?autoq=meta", { lastFilmRefill: true });
