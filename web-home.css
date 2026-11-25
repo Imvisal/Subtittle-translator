@@ -266,3 +266,6 @@ html #searchBtn {
     html #searchBtn { height: 56px; font-size: 16px; }
     html .search-input-wrap > i { left: 15px; }
 }
+
+/* website: How it works / About leave the top menu (About stays in the footer) */
+.header-nav a.app-nav-only{display:none!important}
