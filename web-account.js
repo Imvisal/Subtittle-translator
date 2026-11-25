@@ -108,7 +108,7 @@
         var bd = document.createElement("span");
         bd.id = "waBadge"; bd.className = "wa-nbadge"; bd.hidden = true;
         // inline styles so no other stylesheet can make the badge lose its red background
-        bd.style.cssText = "position:absolute;top:-5px;right:-5px;z-index:2;min-width:18px;height:18px;padding:0 4px;border-radius:99px;background:#e11d48;color:#fff;font:800 10px/18px system-ui,sans-serif;text-align:center;border:2px solid #0b0d1a;box-sizing:content-box;box-shadow:0 3px 10px rgba(225,29,72,.6);pointer-events:none;";
+        bd.style.cssText = "position:absolute;top:-5px;right:-5px;z-index:2;min-width:18px;height:18px;padding:0;border-radius:99px;background:#e11d48;color:#fff;font:800 10px/18px system-ui,sans-serif;text-align:center;border:2px solid #0b0d1a;box-sizing:content-box;box-shadow:0 3px 10px rgba(225,29,72,.6);pointer-events:none;";
         av.appendChild(bd);
         applyUnread();
         document.getElementById("waNotif").addEventListener("click", function () { menu.hidden = true; openNotifications(); });
@@ -140,7 +140,7 @@
         var b = document.getElementById("waBadge");
         var c = document.getElementById("waNcount");
         var txt = notifUnread > 9 ? "9+" : String(notifUnread);
-        if (b) { b.textContent = txt; b.hidden = !notifUnread; }
+        if (b) { b.textContent = txt; b.hidden = !notifUnread; b.style.padding = txt.length > 1 ? "0 4px" : "0"; }
         if (c) { c.textContent = txt; c.hidden = !notifUnread; }
         var av = document.getElementById("waAv");
         if (av) { av.setAttribute("aria-label", notifUnread ? "Account menu, " + notifUnread + " new notifications" : "Account menu"); }
