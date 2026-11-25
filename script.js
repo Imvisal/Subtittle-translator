@@ -6919,16 +6919,19 @@ window.__sinsubzPremiumInfo = async function (mode) {
 })();
 
 
-// Header "Movies" / "TV Series" links: open that category under the search box and scroll to it
+// "Pick" link from the Movies / TV Series pages: /?pick=tt123&t=Title&y=2014&ty=movie|series&p=<poster>
 (function () {
-    document.addEventListener("click", function (e) {
-        var a = e.target.closest ? e.target.closest("[data-nav-cat]") : null;
-        if (!a) { return; }
-        var chip = document.querySelector('.category-chip[data-category="' + a.getAttribute("data-nav-cat") + '"]');
-        if (!chip) { return; }
-        e.preventDefault();
-        chip.click();
-        var box = document.querySelector(".category-chips");
-        if (box && box.scrollIntoView) { box.scrollIntoView({ behavior: "smooth", block: "start" }); }
-    });
+    try {
+        const p = new URLSearchParams(location.search);
+        const id = p.get("pick");
+        if (!/^tt\d{5,10}$/.test(id || "")) { return; }
+        const item = { imdbID: id, title: (p.get("t") || "").slice(0, 150), year: (p.get("y") || "").slice(0, 4),
+            poster: /^https:\/\//.test(p.get("p") || "") ? p.get("p") : "", type: p.get("ty") === "series" ? "series" : "movie" };
+        window.addEventListener("load", function () {
+            setTimeout(function () {
+                try { history.replaceState(null, "", location.pathname); } catch (e) { /* ignore */ }
+                selectSearchResult(item);
+            }, 400);
+        });
+    } catch (e) { /* ignore */ }
 })();

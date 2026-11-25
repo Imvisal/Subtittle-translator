@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Browse TV Series by category and get Sinhala subtitles. Popular, top rated, new and by genre.">
+<meta name="theme-color" content="#080d1b">
+<title>TV Series - Sinhala Subtitles | SinSubz</title>
+<link rel="canonical" href="https://sinsubs.site/tv.html">
+<meta name="robots" content="index, follow">
+<link rel="icon" href="/favicon.ico?v=1133" sizes="48x48">
+<link rel="icon" href="/favicon.svg?v=1133" type="image/svg+xml" sizes="any">
+<link rel="stylesheet" href="/vendor/fa/css/all.min.css">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="browse.css">
+<script>(function(){try{var t=localStorage.getItem("sinsubz-theme");if(t==="light"||t==="dark"){document.documentElement.setAttribute("data-theme",t);}}catch(e){}})();</script>
+</head>
+<body>
+<div class="bz-wrap" id="bz" data-kind="tv">
+  <div class="bz-top">
+    <a href="index.html" class="back-home">← SinSubz</a>
+    <nav class="bz-nav" aria-label="Browse">
+      <a href="movies.html">Movies</a>
+      <a href="tv.html" class="on">TV Series</a>
+    </nav>
+  </div>
+  <h1>TV series with Sinhala subtitles</h1>
+  <p class="bz-sub">Choose a category, then pick a title. Green = Sinhala subtitle ready.</p>
+  <div class="bz-chips" id="bzLists" role="group" aria-label="List"></div>
+  <div class="bz-chips bz-genres" id="bzGenres" role="group" aria-label="Genre"></div>
+  <div class="bz-grid" id="bzGrid"></div>
+  <p class="bz-msg" id="bzMsg" role="status" aria-live="polite"></p>
+  <button type="button" class="bz-more" id="bzMore" hidden>Show more</button>
+</div>
+<script src="browse.js" defer></script>
+</body>
+</html>

@@ -145,6 +145,7 @@ module.exports = async function handler(req, res) {
             "&page=1";
 
         let entries = [];
+        let browseMode = false;
 
         // TRENDING = a mix of movies + TV series + anime
         if (category === "trending") {
@@ -206,6 +207,25 @@ module.exports = async function handler(req, res) {
             entries = await tvList(ANIME_PATH, true);
         }
 
+        // BROWSE (movies.html / tv.html): ?category=browse&kind=movie|tv&list=popular|top|new&genre=<id>&page=<1-20>
+        else if (category === "browse") {
+            const kind = req.query.kind === "tv" ? "tv" : "movie";
+            const list = ["popular", "top", "new"].includes(req.query.list) ? req.query.list : "popular";
+            const genre = /^\d{1,6}$/.test(String(req.query.genre || "")) ? req.query.genre : "";
+            const pg = Math.min(20, Math.max(1, parseInt(req.query.page, 10) || 1));
+            const today = new Date().toISOString().slice(0, 10);
+            const back = new Date(Date.now() - 120 * 86400000).toISOString().slice(0, 10);
+            const dateKey = kind === "tv" ? "first_air_date" : "primary_release_date";
+            let q = "/discover/" + kind + "?include_adult=false&page=" + pg;
+            if (list === "top") { q += "&sort_by=vote_average.desc&vote_count.gte=1500"; }
+            else if (list === "new") { q += "&sort_by=popularity.desc&" + dateKey + ".gte=" + back + "&" + dateKey + ".lte=" + today; }
+            else { q += "&sort_by=popularity.desc"; }
+            if (genre) { q += "&with_genres=" + genre; }
+            if (kind === "tv") { q += "&without_genres=16"; }
+            entries = kind === "tv" ? await tvList(q) : await movieList(q);
+            browseMode = true;
+        }
+
         else {
             return res.status(400).json({
                 error: "Invalid category",
@@ -213,7 +233,8 @@ module.exports = async function handler(req, res) {
                     "trending",
                     "movie",
                     "tv",
-                    "anime"
+                    "anime",
+                    "browse"
                 ]
             });
         }
@@ -222,9 +243,9 @@ module.exports = async function handler(req, res) {
         // IMDb IDs (all in parallel), keep the first 10 that have one
         // --------------------------------
         const normalized = await Promise.all(
-            entries.slice(0, 16).map(normalizeItem)
+            entries.slice(0, browseMode ? 20 : 16).map(normalizeItem)
         );
-        const results = normalized.filter(n => n.imdbID).slice(0, TOTAL);
+        const results = normalized.filter(n => n.imdbID).slice(0, browseMode ? 20 : TOTAL);
 
         res.setHeader("Cache-Control", "s-maxage=1800, stale-while-revalidate=86400");
 
