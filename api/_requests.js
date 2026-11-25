@@ -10,6 +10,7 @@ const { hasRedis, redis, clean, verifyGoogleUser, overLimit } = require("./_goog
 
 const MAX_PENDING = 300;
 const DAILY_PER_USER = 5;
+const DAILY_PER_PREMIUM = 15;       // Premium members may send more requests a day, and each of their requests counts 3x (the owner sees the most wanted first)
 const parse = s => { try { return JSON.parse(s); } catch (e) { return null; } };
 const imdbOk = v => /^tt\d{5,10}$/.test(String(v || ""));
 const q = req => { try { return Object.fromEntries(new URL(req.url, "http://x").searchParams); } catch (e) { return {}; } };
@@ -31,7 +32,8 @@ module.exports = async function (req, res) {
         for (let i = 0; i < flat.length; i += 2) { const m = parse(flat[i + 1]); if (m) { items.push(m); } }
         if (items.length) {
             const counts = await redis(items.map(m => ["SCARD", "rq:u:" + m.imdb]));
-            items.forEach((m, i) => { m.votes = Number(counts[i]) || 1; });
+            const prem = await redis(items.map(m => ["SCARD", "rq:pr:" + m.imdb]));
+            items.forEach((m, i) => { m.premium = Number(prem[i]) || 0; m.votes = (Number(counts[i]) || 1) + 2 * m.premium; });
         }
         items.sort((a, b) => b.votes - a.votes || (a.at || 0) - (b.at || 0));
         return res.status(200).json({ items });
@@ -41,7 +43,7 @@ module.exports = async function (req, res) {
         if (!A.isAdmin(req)) { return res.status(401).json({ error: "Admin key needed" }); }
         const b = await body(req);
         if (!imdbOk(b.imdb)) { return res.status(400).json({ error: "Bad id" }); }
-        await redis([["HDEL", "rq:p", b.imdb], ["DEL", "rq:u:" + b.imdb]]);
+        await redis([["HDEL", "rq:p", b.imdb], ["DEL", "rq:u:" + b.imdb], ["DEL", "rq:pr:" + b.imdb]]);
         return res.status(200).json({ ok: true });
     }
 
@@ -49,7 +51,10 @@ module.exports = async function (req, res) {
         const who = /^Bearer\s+/i.test(String(req.headers.authorization || "")) ? await verifyGoogleUser(req).catch(() => null) : null;
         if (!who) { return res.status(401).json({ error: "Please sign in with Google first." }); }
         const uk = A.uidKeyOf(who.uid);
-        if (await overLimit("rqu", uk, DAILY_PER_USER, 86400)) { return res.status(429).json({ error: "You can send " + DAILY_PER_USER + " requests a day. Try again tomorrow." }); }
+        let isPrem = false;
+        try { isPrem = (await A.premiumUntil(uk)) > Date.now(); } catch (e) { isPrem = false; }
+        const dailyMax = isPrem ? DAILY_PER_PREMIUM : DAILY_PER_USER;
+        if (await overLimit("rqu", uk, dailyMax, 86400)) { return res.status(429).json({ error: "You can send " + dailyMax + " requests a day. Try again tomorrow." + (isPrem ? "" : " (Premium members can send " + DAILY_PER_PREMIUM + " a day.)") }); }
         const b = await body(req);
         if (!imdbOk(b.imdb)) { return res.status(400).json({ error: "Pick a title from the search results." }); }
         const [inReady, rawList, have] = await redis([["HEXISTS", "rdy:idx", b.imdb], ["GET", "aq:list"], ["HEXISTS", "rq:p", b.imdb]]);
@@ -63,6 +68,7 @@ module.exports = async function (req, res) {
             await redis([["HSETNX", "rq:p", b.imdb, JSON.stringify(rec)]]);
         }
         const added = Number((await redis([["SADD", "rq:u:" + b.imdb, uk], ["EXPIRE", "rq:u:" + b.imdb, 90 * 86400]]))[0]);
+        if (isPrem) { await redis([["SADD", "rq:pr:" + b.imdb, uk], ["EXPIRE", "rq:pr:" + b.imdb, 90 * 86400]]); }
         // remember the e-mail so we can tell the person when the Sinhala subtitle is ready (kept 120 days, never shown anywhere)
         if (who.email) { await redis([["HSET", "rq:m:" + b.imdb, uk, who.email], ["EXPIRE", "rq:m:" + b.imdb, 120 * 86400]]); }
         return res.status(200).json({ status: added ? "sent" : "again" });

@@ -713,7 +713,7 @@
                 if (it.poster) { var im = document.createElement("img"); im.src = it.poster; im.alt = ""; im.width = 40; im.style.borderRadius = "6px"; left.appendChild(im); }
                 var tx = el("div", "", "");
                 tx.appendChild(el("b", "", it.title + (it.year ? " (" + it.year + ")" : "")));
-                tx.appendChild(el("div", "muted", (it.type === "movie" ? "Film" : "TV series") + " · " + it.votes + (it.votes === 1 ? " request" : " requests")));
+                tx.appendChild(el("div", "muted", (it.type === "movie" ? "Film" : "TV series") + " · " + it.votes + (it.votes === 1 ? " request" : " requests") + (it.premium ? " · ⭐ " + it.premium + " Premium" : "")));
                 left.appendChild(tx); row.appendChild(left);
                 var acts = el("div", "", ""); acts.style.cssText = "display:flex;gap:6px";
                 var ok = el("button", "btn", "Approve"), no = el("button", "btn ghost", "Reject"); ok.type = no.type = "button";

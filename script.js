@@ -6832,8 +6832,8 @@ window.__sinsubzPremiumInfo = async function (mode) {
         perk('<b>' + pm + ' films</b> a day <span style="opacity:.6">(free: ' + fm + ')</span>') +
         perk('<b>' + pe + ' TV episodes</b> a day <span style="opacity:.6">(free: ' + fe + ')</span>') +
         perk('<b>Priority</b> when the AI is busy') +
+        perk('<b>Your title requests go first</b> (15 a day)') +
         perk('<b>Priority support</b>') +
-        perk('<b>No ads</b> in the app') +
         perk('<b>Premium badge</b> on your comments') +
         perk('Supports SinSubz to keep growing') + '</div>' +
         (offer.price ? '<div style="text-align:center;font-size:18px;font-weight:800;margin:14px 0 0;color:#ffd75e">' + esc(offer.price) + '</div>' : '') +
