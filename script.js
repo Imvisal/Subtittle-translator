@@ -6917,3 +6917,18 @@ window.__sinsubzPremiumInfo = async function (mode) {
         });
     } catch (e) { /* ignore */ }
 })();
+
+
+// Header "Movies" / "TV Series" links: open that category under the search box and scroll to it
+(function () {
+    document.addEventListener("click", function (e) {
+        var a = e.target.closest ? e.target.closest("[data-nav-cat]") : null;
+        if (!a) { return; }
+        var chip = document.querySelector('.category-chip[data-category="' + a.getAttribute("data-nav-cat") + '"]');
+        if (!chip) { return; }
+        e.preventDefault();
+        chip.click();
+        var box = document.querySelector(".category-chips");
+        if (box && box.scrollIntoView) { box.scrollIntoView({ behavior: "smooth", block: "start" }); }
+    });
+})();
