@@ -6067,7 +6067,7 @@ async function loadCategory(category) {
 let readyListP = null;
 
 async function mixWithReady(category, results) {
-    const fallback = results.slice(0, 10);
+    const fallback = results.slice(0, category === "trending" ? 18 : 10);
     if (category !== "trending" && category !== "movie" && category !== "tv") { return fallback; }
     try {
         if (!readyListP) {
@@ -6086,7 +6086,9 @@ async function mixWithReady(category, results) {
         const fresh = results.filter(function (r) { return !byId[r.imdbID] && !r.anime; });
         if (category === "trending") {
             const hot = results.filter(function (r) { return byId[r.imdbID]; }).map(function (r) { return asCard(byId[r.imdbID]); });
-            return hot.concat(results.filter(function (r) { return !byId[r.imdbID]; })).slice(0, Math.max(10, hot.length));
+            const pool = hot.concat(results.filter(function (r) { return !byId[r.imdbID]; })).slice(0, Math.max(18, hot.length));
+            for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = pool[i]; pool[i] = pool[j]; pool[j] = t; }   // random order each visit
+            return pool;
         }
         const want = category === "tv" ? "tv" : "movie";
         const mine = list.filter(function (x) { return want === "tv" ? x.type === "tv" : x.type !== "tv"; }).sort(newest).slice(0, 7).map(asCard);
@@ -6378,6 +6380,20 @@ function renderCategoryResults(
     }
 
     show(1, false);
+
+    // website: the popular posters change by themselves (pauses while the mouse is over them or the tab is hidden)
+    if (totalPages > 1 && document.querySelector(".home-find") && !(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) {
+        let hover = false;
+        container.addEventListener("mouseenter", function () { hover = true; });
+        container.addEventListener("mouseleave", function () { hover = false; });
+        container.addEventListener("focusin", function () { hover = true; });
+        container.addEventListener("focusout", function () { hover = false; });
+        const timer = setInterval(function () {
+            if (!stage.isConnected) { clearInterval(timer); return; }
+            if (hover || document.hidden) { return; }
+            goTo((page + 1) % totalPages);
+        }, 5000);
+    }
 
 }
 

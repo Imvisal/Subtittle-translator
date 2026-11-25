@@ -164,13 +164,13 @@ module.exports = async function handler(req, res) {
 
             // movie, tv, anime, movie, tv, anime ...
             const buckets = [
-                movies.slice(0, 6),
-                tv.slice(0, 6),
-                anime.slice(0, 6)
+                movies.slice(0, 7),
+                tv.slice(0, 7),
+                anime.slice(0, 7)
             ];
 
             const mixed = [];
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < 7; i++) {
                 buckets.forEach(list => {
                     if (list[i]) mixed.push(list[i]);
                 });
@@ -243,9 +243,9 @@ module.exports = async function handler(req, res) {
         // IMDb IDs (all in parallel), keep the first 10 that have one
         // --------------------------------
         const normalized = await Promise.all(
-            entries.slice(0, browseMode ? 20 : 16).map(normalizeItem)
+            entries.slice(0, browseMode ? 20 : category === "trending" ? 20 : 16).map(normalizeItem)
         );
-        const results = normalized.filter(n => n.imdbID).slice(0, browseMode ? 20 : TOTAL);
+        const results = normalized.filter(n => n.imdbID).slice(0, browseMode ? 20 : category === "trending" ? 18 : TOTAL);
 
         res.setHeader("Cache-Control", "s-maxage=1800, stale-while-revalidate=86400");
 

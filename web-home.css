@@ -269,3 +269,25 @@ html #searchBtn {
 
 /* website: How it works / About leave the top menu (About stays in the footer) */
 .header-nav a.app-nav-only{display:none!important}
+
+/* ---------- website: only "Trending" is left of the chips; it becomes a section title with a fire icon ---------- */
+html .category-chip[data-category="movie"],
+html .category-chip[data-category="tv"],
+html .category-chip[data-category="anime"] { display: none; }
+html .category-chips { justify-content: flex-start; margin: 26px 0 16px; }
+html .category-chip[data-category="trending"] {
+    pointer-events: none; cursor: default;
+    padding: 0; min-height: 0; background: transparent; border: 0; box-shadow: none;
+    color: var(--text, #f2f3f8); font-size: clamp(22px, 3vw, 30px); font-weight: 800; letter-spacing: -.02em;
+    display: inline-flex; align-items: center; gap: 12px;
+}
+html .category-chip[data-category="trending"] i {
+    margin: 0; display: inline-flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; border-radius: 12px; font-size: 20px; opacity: 1; color: #fff;
+    background: linear-gradient(135deg, #ff8a3d, #ff3d5a); box-shadow: 0 8px 22px -8px rgba(255, 90, 60, .7);
+}
+html .category-chip[data-category="trending"]::after {
+    content: ""; display: block; width: 48px; height: 4px; border-radius: 4px; margin-left: 6px;
+    background: linear-gradient(90deg, #ff8a3d, transparent);
+}
+@media (max-width: 760px) { html .category-chip[data-category="trending"] { font-size: 22px; } html .category-chip[data-category="trending"] i { width: 34px; height: 34px; font-size: 17px; } }
