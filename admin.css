@@ -89,3 +89,22 @@ tbody tr:last-child td { border-bottom: 0; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 .tag:empty { display: none; }
+
+/* Maintenance tab */
+.mt-h { font-weight: 800; font-size: 14px; letter-spacing: .02em; margin: 20px 0 8px; color: var(--text, #eceaff); }
+.mt-h .muted { font-weight: 500; }
+.mt-opts { display: grid; gap: 10px; }
+.mt-opt { display: flex; align-items: flex-start; gap: 12px; padding: 13px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); cursor: pointer; transition: border-color .2s, background .2s; }
+.mt-opt:hover { border-color: var(--acc); }
+.mt-opt:has(input:checked) { border-color: var(--acc); background: rgba(124, 108, 255, .12); }
+.mt-opt input { flex: 0 0 auto; width: 18px !important; min-width: 18px; height: 18px; margin: 2px 0 0 !important; padding: 0; accent-color: var(--acc); }
+.mt-opt span { display: block; min-width: 0; }
+.mt-opt b { display: block; font-size: 15px; }
+.mt-opt small { display: block; margin-top: 3px; opacity: .72; line-height: 1.45; font-size: 13px; }
+.mt-msg { width: 100%; box-sizing: border-box; }
+.mt-presets { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.mt-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+.mt-grid label { display: block; font-size: 13px; opacity: .8; margin-bottom: 6px; }
+.mt-grid select { width: 100%; box-sizing: border-box; }
+.mt-grid small { display: block; margin-top: 6px; font-size: 12px; }
+.mt-btns { margin-top: 20px; gap: 10px; }
