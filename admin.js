@@ -231,20 +231,45 @@
     }
 
     var mtFilled = false;
+    function mtFmt(t) { try { return new Date(t).toLocaleString(); } catch (e) { return ""; } }
+    function mtStatus(m) {
+        // same rules as the server (api/_admin.js maintState)
+        var mode = m && (m.mode || (m.on ? "full" : "off")) || "off";
+        if (mode !== "translate" && mode !== "full") { mode = "off"; }
+        var now = Date.now(), from = Number(m && m.from) || 0, until = Number(m && m.until) || 0;
+        if (mode !== "off" && until && now >= until) { return { mode: "off", text: "OFF (it ended by itself at " + mtFmt(until) + ")" }; }
+        if (mode !== "off" && from && now < from) { return { mode: "soon", text: "Starts at " + mtFmt(from) + " (" + (mode === "full" ? "whole website" : "translating only") + ")" }; }
+        if (mode === "off") { return { mode: "off", text: "OFF - everything works." }; }
+        return { mode: mode, text: (mode === "full" ? "ON - whole website is in maintenance" : "ON - translating is paused, the rest works") + (m.auto ? " (switched on by itself: the Gemini keys were rejected)" : "") + (until ? ". Ends at " + mtFmt(until) + "." : ". Stays on until you turn it off.") };
+    }
     function renderMaint(m) {
-        $("mtState").textContent = m && m.on ? "ON" : "OFF";
-        $("mtState").style.background = m && m.on ? "var(--bad)" : "";
+        var st = mtStatus(m);
+        $("mtState").textContent = st.mode === "off" ? "OFF" : st.mode === "soon" ? "SCHEDULED" : st.mode === "full" ? "ON - WEBSITE" : "ON - TRANSLATING";
+        $("mtState").style.background = st.mode === "off" ? "" : "var(--bad)";
+        $("mtNow").textContent = st.text;
         if (mtFilled || !m) { return; }
-        mtFilled = true; $("mtMsg").value = m.msg || "";
+        mtFilled = true;
+        $("mtMsg").value = m.msg || "";
+        $("mtAuto").checked = m.autoPause !== false;
+        var mode = m.mode || (m.on ? "full" : "translate");
+        var r = document.querySelector('input[name="mtMode"][value="' + (mode === "full" ? "full" : "translate") + '"]');
+        if (r) { r.checked = true; }
     }
     function mtSet(on) {
-        if (on && !window.confirm("Turn ON maintenance mode? Website visitors will see the maintenance page.")) { return; }
-        postAction({ action: "maintenance", enabled: on, message: $("mtMsg").value })
-            .then(function () { $("mtOut").textContent = on ? "Maintenance ON." : "Maintenance OFF."; $("mtState").textContent = on ? "ON" : "OFF"; $("mtState").style.background = on ? "var(--bad)" : ""; })
+        var mode = (document.querySelector('input[name="mtMode"]:checked') || {}).value || "translate";
+        if (on && mode === "full" && !window.confirm("Turn ON maintenance for the WHOLE website? Visitors will see the maintenance page.")) { return; }
+        postAction({ action: "maintenance", mode: on ? mode : "off", message: $("mtMsg").value, minutes: Number($("mtMin").value) || 0, delay: Number($("mtDelay").value) || 0, autoPause: $("mtAuto").checked })
+            .then(function () {
+                var m = { mode: on ? mode : "off", msg: $("mtMsg").value, from: on && Number($("mtDelay").value) ? Date.now() + Number($("mtDelay").value) * 60000 : 0, autoPause: $("mtAuto").checked };
+                m.until = on && Number($("mtMin").value) ? (m.from || Date.now()) + Number($("mtMin").value) * 60000 : 0;
+                mtFilled = true; renderMaint(m);
+                $("mtOut").textContent = on ? "Saved. Maintenance is set." : "Maintenance OFF.";
+            })
             .catch(function (e) { $("mtOut").textContent = e.message; window.alert(e.message); });
     }
     $("mtOn").addEventListener("click", function () { mtSet(true); });
     $("mtOff").addEventListener("click", function () { mtSet(false); });
+    Array.prototype.forEach.call(document.querySelectorAll(".mtPreset"), function (b) { b.addEventListener("click", function () { $("mtMsg").value = b.getAttribute("data-m"); }); });
 
     function render(d) {
         renderMaint(d.maintenance);

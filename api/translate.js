@@ -561,6 +561,18 @@ module.exports = async function handler(req, res) {
             });
         }
 
+        // ---- maintenance: translating is paused (by the owner, or by itself when every Gemini key is rejected) ----
+        // browsing, search and downloads are other endpoints and keep working. The auto-runner is stopped by this too.
+        {
+            const ms = await require("./_admin.js").maintState();
+            if (ms.mode !== "off") {
+                return res.status(503).json({
+                    error: ms.msg || "Translation is paused for a short maintenance. You can still search, browse and download the ready Sinhala subtitles. Please try again a little later.",
+                    code: "MAINTENANCE", until: ms.until || 0, auto: !!ms.auto
+                });
+            }
+        }
+
         // ---- abuse protection (best effort, per warm serverless instance) ----
         // the owner's scheduled runner (GitHub Actions, scripts/auto-translate.js) sends the admin key
         const isRunner = require("./_admin.js").isAdmin(req);
@@ -904,6 +916,10 @@ ${JSON.stringify(inputItems)}
             let generated = forceMt
                 ? { error: "forced", status: 429, code: "QUOTA_EXHAUSTED" }
                 : await generateWithFallback(buildPrompt(pending), premiumReq);
+
+            if (generated && generated.code === "KEY_REJECTED") {      // every key is dead: after a few of these translating pauses by itself (maintenance)
+                try { await require("./_admin.js").maintAutoTrip(generated.detail); } catch (e) { /* ignore */ }
+            }
 
             // every Gemini key is out of its DAILY quota (or the owner forces the fallback to test it): use the backup
             // translator instead of telling the person "limit reached". It is dressed up as a Gemini reply so the checks below still run.

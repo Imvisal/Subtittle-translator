@@ -364,9 +364,32 @@
 
         <div class="tabpane" data-tab="maint" hidden>
             <div class="card">
-                <h2>Maintenance mode <span id="mtState" class="tag"></span></h2>
-                <p class="muted" style="margin:0 0 10px">ON කළාම website එකට එන visitors ට "Under maintenance" page එක පෙනෙයි. මේ admin panel එක වැඩ කරනවා.</p>
-                <label for="mtMsg">Message (optional)</label><input id="mtMsg" maxlength="300" style="width:100%">
+                <h2>Maintenance <span id="mtState" class="tag"></span></h2>
+                <p class="muted" id="mtNow" style="margin:0 0 12px"></p>
+
+                <label>What should stop?</label>
+                <div class="row" style="flex-direction:column;align-items:stretch;gap:8px;margin:6px 0 12px">
+                    <label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer"><input type="radio" name="mtMode" value="translate" checked style="margin-top:4px"><span><b>Only translating</b> &mdash; visitors can still search, browse, open Ready pages and download. Only the translate button is paused, with a message. (the auto-runner stops too)</span></label>
+                    <label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer"><input type="radio" name="mtMode" value="full" style="margin-top:4px"><span><b>Whole website</b> &mdash; visitors see the "Under maintenance" page. This admin panel keeps working.</span></label>
+                </div>
+
+                <label for="mtMsg">Message for visitors (optional, English)</label>
+                <input id="mtMsg" maxlength="300" style="width:100%" placeholder="Leave empty for the standard message">
+                <div class="row" style="flex-wrap:wrap;gap:6px;margin:6px 0 12px">
+                    <button class="ghost mtPreset" type="button" data-m="Our translator is being fixed. Browsing and downloading ready subtitles still work. Back soon!">Translator fix</button>
+                    <button class="ghost mtPreset" type="button" data-m="Daily translation capacity is used up. Browsing and downloads work. Translation opens again tomorrow.">Capacity used</button>
+                    <button class="ghost mtPreset" type="button" data-m="SinSubz is being updated. Please come back in a little while.">Site update</button>
+                </div>
+
+                <div class="row" style="flex-wrap:wrap;gap:14px;align-items:flex-end">
+                    <div><label for="mtMin">Switch OFF by itself after</label>
+                        <select id="mtMin"><option value="0">Never (I turn it off)</option><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="60" selected>1 hour</option><option value="180">3 hours</option><option value="360">6 hours</option><option value="1440">24 hours</option></select></div>
+                    <div><label for="mtDelay">Start</label>
+                        <select id="mtDelay"><option value="0" selected>Now</option><option value="10">In 10 minutes (warning banner first)</option><option value="30">In 30 minutes (warning banner first)</option><option value="60">In 1 hour (warning banner first)</option></select></div>
+                </div>
+
+                <label style="display:flex;gap:10px;align-items:flex-start;margin:14px 0;cursor:pointer"><input type="checkbox" id="mtAuto" checked style="margin-top:4px"><span><b>Pause translating by itself when the Gemini keys stop working</b> (all keys deleted / blocked). It pauses for 15 minutes, tries again, and sends you one e-mail.</span></label>
+
                 <div class="row"><button id="mtOn" type="button">Turn ON</button><button class="ghost" id="mtOff" type="button">Turn OFF</button></div>
                 <p class="empty" id="mtOut"></p>
             </div>

@@ -3594,7 +3594,7 @@ async function translateSubtitleChunksImpl(
                     // daily limit reached on every key/model: retrying will not help
                     if (data.code === "QUOTA_EXHAUSTED") {
                         apiError.geminiQuota = true;     // wait a little first, see below
-                    } else if (data.code === "DAILY_LIMIT" || data.code === "PREMIUM_PRIORITY" || data.code === "LOGIN_REQUIRED" || data.code === "RUNNER_RESERVE") {
+                    } else if (data.code === "DAILY_LIMIT" || data.code === "PREMIUM_PRIORITY" || data.code === "LOGIN_REQUIRED" || data.code === "RUNNER_RESERVE" || data.code === "MAINTENANCE") {
                         apiError.quotaExhausted = true;
                     }
                     if (data.code === "RATE_LIMITED") apiError.rateLimited = true;

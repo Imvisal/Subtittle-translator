@@ -881,17 +881,64 @@ async function publicAnnouncement(req, res) {
     }
 }
 
-// GET /api/stats?maint=1 : website maintenance mode (never cached, so switching it on/off is instant).
+// ---------------------------------------------------------------- maintenance
+// Redis maint:cur = JSON { mode: "off" | "translate" | "full", msg, from, until, auto, autoPause, t }
+//   translate = only translating is paused (browsing, search, downloads, ready pages keep working)
+//   full      = visitors see the "Under maintenance" page (the admin panel keeps working)
+//   from  = start time (ms, 0 = now; a heads-up banner is shown before it), until = end time (ms, 0 = until switched off by hand)
+//   auto  = it was switched on by the system because every Gemini key was rejected (it ends by itself, see maintAutoTrip)
+//   autoPause = false when the owner does not want that automatic switch (default on)
+const DEFAULT_TR_MSG = "Translation is paused for a short maintenance. You can still search, browse and download the ready Sinhala subtitles. Please try translating again a little later.";
+let mtCache = { at: 0, v: null };
+async function maintState() {
+    if (mtCache.v && Date.now() - mtCache.at < 8000) { return mtCache.v; }
+    let m = {};
+    try { if (hasRedis()) { const [raw] = await redis([["GET", "maint:cur"]]); m = parse(raw) || {}; } } catch (e) { m = {}; }
+    const now = Date.now();
+    let mode = m.mode || (m.on ? "full" : "off");
+    if (mode !== "translate" && mode !== "full") { mode = "off"; }
+    const from = Number(m.from) || 0, until = Number(m.until) || 0;
+    let soon = 0, soonMode = "";
+    if (mode !== "off") {
+        if (until && now >= until) { mode = "off"; }
+        else if (from && now < from) { soon = from; soonMode = mode; mode = "off"; }
+    }
+    const v = { mode, on: mode === "full", msg: String(m.msg || ""), until: mode === "off" ? 0 : until, soon, soonMode, auto: !!m.auto && mode !== "off", autoPause: m.autoPause !== false };
+    mtCache = { at: now, v };
+    return v;
+}
+function resetMaintCache() { mtCache = { at: 0, v: null }; }
+
+// GET /api/stats?maint=1 : what visitors need to know (never cached, so switching it on/off is instant)
 async function publicMaintenance(req, res) {
     res.setHeader("Cache-Control", "no-store");
-    if (!hasRedis()) { return res.status(200).json({ on: false }); }
+    if (!hasRedis()) { return res.status(200).json({ on: false, mode: "off" }); }
     try {
-        const [raw] = await redis([["GET", "maint:cur"]]);
-        const m = parse(raw) || {};
-        return res.status(200).json({ on: !!m.on, msg: String(m.msg || "") });
+        const v = await maintState();
+        return res.status(200).json({ on: v.on, mode: v.mode, msg: v.msg || (v.mode === "translate" ? DEFAULT_TR_MSG : ""), until: v.until, soon: v.soon, soonMode: v.soonMode, auto: v.auto });
     } catch (e) {
-        return res.status(200).json({ on: false });
+        return res.status(200).json({ on: false, mode: "off" });
     }
+}
+
+// Called by api/translate.js when every Gemini key was rejected (deleted / blocked / billing). Three such failures within
+// 2 minutes switch "translation paused" on for 15 minutes; after that translating is tried again by itself, and if the keys are
+// still bad the next failures switch it on again. The owner gets one e-mail (at most one per 6 hours).
+async function maintAutoTrip(detail) {
+    if (!hasRedis()) { return; }
+    if (!/api key|service account|billing|disabled|deleted|permission/i.test(String(detail || ""))) { return; }
+    const cur = await maintState();
+    if (cur.mode !== "off" || cur.soon || cur.autoPause === false) { return; }
+    const [n] = await redis([["INCR", "maint:kr"], ["EXPIRE", "maint:kr", 120]]);
+    if (Number(n) < 3) { return; }
+    const now = Date.now();
+    await redis([["SET", "maint:cur", JSON.stringify({ mode: "translate", msg: "", from: 0, until: now + 15 * 60000, auto: true, autoPause: true, t: now })], ["DEL", "maint:kr"]]);
+    resetMaintCache();
+    try { await logEvent({ type: "gemini", lvl: "error", msg: "All Gemini keys were rejected -> translation paused automatically for 15 minutes (" + String(detail || "").slice(0, 100) + ")" }); } catch (e) { /* ignore */ }
+    try {
+        const [first] = await redis([["SET", "maint:mail", "1", "EX", 6 * 3600, "NX"]]);
+        if (first) { await notifyOwner("SinSubz: translation paused automatically", "Every Gemini API key was rejected, so translating was paused for 15 minutes (browsing and downloads still work).\n\nGoogle said: " + String(detail || "").slice(0, 300) + "\n\nFix the keys in the admin panel (Health table), then open the Maintenance tab and press Turn OFF."); }
+    } catch (e) { /* ignore */ }
 }
 
 // ---------------------------------------------------------------- user notifications
@@ -1134,7 +1181,16 @@ async function action(req, res) {
             return res.status(200).json({ ok: true });
         }
         if (what === "maintenance") {
-            await redis([["SET", "maint:cur", JSON.stringify({ on: !!body.enabled, msg: clean(body.message, 300), t: Date.now() })]]);
+            let mode = String(body.mode || (body.enabled ? "full" : "off"));
+            if (mode !== "translate" && mode !== "full") { mode = "off"; }
+            const now = Date.now();
+            const mins = Math.max(0, Math.min(14 * 1440, Math.floor(Number(body.minutes) || 0)));      // 0 = until switched off by hand
+            const delay = Math.max(0, Math.min(1440, Math.floor(Number(body.delay) || 0)));            // minutes until it starts (heads-up banner first)
+            const from = mode === "off" || !delay ? 0 : now + delay * 60000;
+            const until = mode === "off" || !mins ? 0 : (from || now) + mins * 60000;
+            const rec = { mode, msg: clean(body.message, 300), from, until, auto: false, autoPause: body.autoPause !== false, t: now };
+            await redis([["SET", "maint:cur", JSON.stringify(rec)], ["DEL", "maint:kr"]]);
+            resetMaintCache();
             return res.status(200).json({ ok: true });
         }
         if (what === "announceStop") {
@@ -1184,4 +1240,4 @@ async function premiumReminders() {
     } catch (e) { return 0; }
 }
 
-module.exports = { premiumReminders, isAdmin, adminGate, logEvent, logActivity, alerts, whoLabel, logs, notifications, publicMaintenance, pushNotif, quotaLeftPct, resetQuotaCache: function () { quotaLeftCache = { at: 0, day: "", pct: 100 }; }, notifyOwner, mailUser, planPublic, planSubmit, me, premiumUntil, authUser, loginRequired, checkDailyLimit, pacificDay, ping, overview, health, action, publicAnnouncement, cleanAnnouncement, dayKey, uidKeyOf };
+module.exports = { premiumReminders, isAdmin, adminGate, logEvent, logActivity, alerts, whoLabel, logs, notifications, publicMaintenance, maintState, maintAutoTrip, pushNotif, quotaLeftPct, resetQuotaCache: function () { quotaLeftCache = { at: 0, day: "", pct: 100 }; }, notifyOwner, mailUser, planPublic, planSubmit, me, premiumUntil, authUser, loginRequired, checkDailyLimit, pacificDay, ping, overview, health, action, publicAnnouncement, cleanAnnouncement, dayKey, uidKeyOf };
