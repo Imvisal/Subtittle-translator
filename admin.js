@@ -920,8 +920,8 @@
             })();
         }
         ba.addEventListener("click", function () {
-            var items = (window.__spItems || []).slice();
-            if (!items.length) { out.textContent = "Nothing waiting."; return; }
+            var items = (window.__spItems || []).filter(function (x) { return !x.unsorted; });      // the ones that still need a category are approved one by one
+            if (!items.length) { out.textContent = "Nothing waiting that can be approved in bulk."; return; }
             var unsure = items.filter(function (x) { return x.maybe; });
             if (!window.confirm("Approve all " + items.length + " suggested translations? Each one gets its own film / TV page.")) { return; }
             if (unsure.length && !window.confirm(unsure.length + " of them are NOT SURE (the name did not match exactly).\n\nOK = approve those too\nCancel = approve only the sure ones and leave the " + unsure.length + " for you to check")) {
@@ -949,8 +949,49 @@
             items.forEach(function (it) {
                 var row = el("div", "", ""); row.style.cssText = "padding:10px 0;border-top:1px solid var(--line)";
                 row.appendChild(el("div", "", "").appendChild(el("b", "", it.title + (it.year ? " (" + it.year + ")" : "") + (it.type === "tv" ? "  S" + it.s + "E" + it.e : ""))).parentNode);
-                row.appendChild(el("div", "muted", it.imdb + " \u00B7 " + it.lines + " lines \u00B7 by " + it.by + (it.maybe ? " \u00B7 NOT SURE: " + (it.filename || "") : "")));
+                row.appendChild(el("div", "muted", (it.unsorted ? "no title yet" : it.imdb) + " \u00B7 " + it.lines + " lines \u00B7 by " + it.by + (it.maybe ? " \u00B7 NOT SURE: " + (it.filename || "") : "")));
                 if (it.sample) { row.appendChild(el("div", "muted", it.sample)); }
+                var chosen = null;
+                if (it.unsorted) {
+                    // the site could not tell which film this is: pick the category (Movies / TV series) and the title here
+                    var tvSel = it.type === "tv";
+                    var box = el("div", "", ""); box.style.cssText = "margin-top:8px;display:flex;flex-direction:column;gap:8px";
+                    box.appendChild(el("div", "muted", "Needs a category: " + (it.filename || it.title)));
+                    var tabs = el("div", "row", ""); tabs.style.cssText = "gap:8px";
+                    var tM = el("button", "ghost", "Movies"), tT = el("button", "ghost", "TV series"); tM.type = tT.type = "button";
+                    tabs.appendChild(tM); tabs.appendChild(tT); box.appendChild(tabs);
+                    var qrow = el("div", "row", ""); qrow.style.cssText = "gap:8px";
+                    var qi = el("input"); qi.type = "search"; qi.value = it.title; qi.style.cssText = "flex:1;min-width:0;padding:9px 11px;border-radius:10px;border:1px solid var(--line);background:transparent;color:inherit;font:inherit";
+                    var go = el("button", "ghost", "Search"); go.type = "button"; qrow.appendChild(qi); qrow.appendChild(go); box.appendChild(qrow);
+                    var seRow = el("div", "row", ""); seRow.style.cssText = "gap:8px";
+                    var si = el("input"); si.type = "number"; si.placeholder = "Season"; si.value = it.s || ""; var ei = el("input"); ei.type = "number"; ei.placeholder = "Episode"; ei.value = it.e || "";
+                    [si, ei].forEach(function (i) { i.style.cssText = "width:110px;padding:9px 11px;border-radius:10px;border:1px solid var(--line);background:transparent;color:inherit;font:inherit"; seRow.appendChild(i); });
+                    box.appendChild(seRow);
+                    var res = el("div", "", ""); box.appendChild(res);
+                    var picked = el("div", "muted", "Nothing chosen yet."); box.appendChild(picked);
+                    function paintTabs() { tM.className = tvSel ? "ghost" : "btn"; tT.className = tvSel ? "btn" : "ghost"; seRow.style.display = tvSel ? "" : "none"; }
+                    tM.addEventListener("click", function () { tvSel = false; chosen = null; picked.textContent = "Nothing chosen yet."; paintTabs(); doSearch(); });
+                    tT.addEventListener("click", function () { tvSel = true; chosen = null; picked.textContent = "Nothing chosen yet."; paintTabs(); doSearch(); });
+                    function doSearch() {
+                        var qv = qi.value.trim(); if (qv.length < 2) { return; }
+                        res.textContent = "Searching...";
+                        fetch("/api/search?query=" + encodeURIComponent(qv)).then(function (r) { return r.json(); }).then(function (d) {
+                            res.textContent = "";
+                            var rs = ((d && d.results) || []).filter(function (x) { return (x.type === "series") === tvSel; }).slice(0, 6);
+                            if (!rs.length) { res.appendChild(el("div", "muted", "Nothing found in " + (tvSel ? "TV series" : "Movies") + ". Try another name.")); return; }
+                            rs.forEach(function (x) {
+                                var b = el("button", "ghost", x.title + (x.year ? " (" + x.year + ")" : "")); b.type = "button"; b.style.cssText = "display:block;width:100%;text-align:left;margin-top:4px";
+                                b.addEventListener("click", function () { chosen = x; picked.textContent = "Chosen: " + x.title + (x.year ? " (" + x.year + ")" : ""); });
+                                res.appendChild(b);
+                            });
+                        }).catch(function () { res.textContent = "Could not search."; });
+                    }
+                    go.addEventListener("click", doSearch);
+                    qi.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); doSearch(); } });
+                    paintTabs(); doSearch();
+                    row.appendChild(box);
+                    it.__pick = function () { return chosen ? { imdb: chosen.imdbID, title: chosen.title, year: chosen.year, poster: chosen.poster, type: tvSel ? "tv" : "movie", season: tvSel ? Number(si.value) : 0, episode: tvSel ? Number(ei.value) : 0 } : null; };
+                }
                 var act = el("div", "row", ""); act.style.cssText = "gap:8px;margin-top:8px";
                 var ok = el("button", "btn", "Approve"), no = el("button", "ghost", "Reject");
                 ok.type = "button"; no.type = "button";
@@ -959,11 +1000,15 @@
                     fetch("/api/stats?ready=pdel", { method: "POST", headers: { "x-admin-key": KEY, "Content-Type": "application/json" }, body: JSON.stringify({ id: it.id }) }).then(loadSuggested);
                 });
                 ok.addEventListener("click", function () {
+                    var pk = it.unsorted && it.__pick ? it.__pick() : null;
+                    if (it.unsorted && !pk) { window.alert("Pick the film or series first (search, then tap the right title)."); return; }
+                    if (pk && pk.type === "tv" && !(pk.season && pk.episode)) { window.alert("Enter the season and episode number."); return; }
                     ok.disabled = no.disabled = true; ok.textContent = "Working...";
                     fetch("/api/stats?ready=pending&id=" + it.id, { headers: { "x-admin-key": KEY }, cache: "no-store" }).then(function (r) { return r.json(); }).then(function (full) {
                         if (!full || !full.srt) { throw new Error((full && full.error) || "Could not read it"); }
-                        return fetch("/api/stats?ready=put", { method: "POST", headers: { "x-admin-key": KEY, "Content-Type": "application/json" },
-                            body: JSON.stringify({ imdb: full.imdb, title: full.title, year: full.year, poster: full.poster, type: full.type, season: full.s, episode: full.e, srt: full.srt, filename: full.filename }) });
+                        var body = pk ? { imdb: pk.imdb, title: pk.title, year: pk.year, poster: pk.poster, type: pk.type, season: pk.season, episode: pk.episode, srt: full.srt, filename: full.filename }
+                            : { imdb: full.imdb, title: full.title, year: full.year, poster: full.poster, type: full.type, season: full.s, episode: full.e, srt: full.srt, filename: full.filename };
+                        return fetch("/api/stats?ready=put", { method: "POST", headers: { "x-admin-key": KEY, "Content-Type": "application/json" }, body: JSON.stringify(body) });
                     }).then(function (r) { if (!r.ok) { throw new Error("Could not add it (" + r.status + ")"); } return fetch("/api/stats?ready=pdel", { method: "POST", headers: { "x-admin-key": KEY, "Content-Type": "application/json" }, body: JSON.stringify({ id: it.id }) }); })
                         .then(function () { loadSuggested(); loadReady(); })
                         .catch(function (e) { ok.disabled = no.disabled = false; ok.textContent = "Approve"; window.alert(e.message); });

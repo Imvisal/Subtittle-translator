@@ -614,7 +614,8 @@ module.exports = async function ready(req, res) {
             const who = await verifyGoogleUser(req).catch(() => null);
             if (!who) { return res.status(401).json({ error: "Please sign in with Google first." }); }
             const b = req.body && typeof req.body === "object" ? req.body : {};
-            if (!imdbOk(b.imdb)) { return res.status(400).json({ error: "Pick the film or series first." }); }
+            const unsorted = b.unsorted === true;      // the site could not tell which film this is: the owner picks it in the admin panel
+            if (!unsorted && !imdbOk(b.imdb)) { return res.status(400).json({ error: "Pick the film or series first." }); }
             const srt = String(b.srt || "");
             if (srt.length < 400 || srt.length > MAX_SRT || srt.indexOf("-->") < 0) { return res.status(400).json({ error: "That subtitle file is not valid." }); }
             const cues = (srt.match(/-->/g) || []).length;
@@ -622,17 +623,17 @@ module.exports = async function ready(req, res) {
             if (cues < 20 || letters < cues * 3) { return res.status(400).json({ error: "This does not look like a finished Sinhala subtitle." }); }
             const type = b.type === "tv" ? "tv" : "movie";
             const s = type === "tv" ? num(b.season) : 0, e = type === "tv" ? num(b.episode) : 0;
-            if (type === "tv" && !(s && e)) { return res.status(400).json({ error: "Enter the season and episode number." }); }
+            if (type === "tv" && !(s && e) && !unsorted) { return res.status(400).json({ error: "Enter the season and episode number." }); }
             const title = clean(b.title, 100);
             if (!title) { return res.status(400).json({ error: "Missing title." }); }
             const uk = sha(String(who.uid)).toString("hex").slice(0, 24);
             if (await overLimit("rdysub", uk, 6, 86400)) { return res.status(429).json({ error: "You sent enough for today. Please try again tomorrow." }); }
-            const dup = (await redis([["EXISTS", "rdy:pk:" + b.imdb + ":" + s + ":" + e]]))[0];
+            const dup = unsorted ? 0 : (await redis([["EXISTS", "rdy:pk:" + b.imdb + ":" + s + ":" + e]]))[0];
             if (Number(dup) === 1) { return res.status(200).json({ ok: true, dup: true }); }
             const id = require("crypto").randomBytes(7).toString("hex");
-            const item = { id, t: Date.now(), imdb: b.imdb, title, year: clean(b.year, 8), poster: https(b.poster) || "", type, s, e, lines: cues, by: clean(who.name, 60) || "Google user", maybe: b.maybe === true,
+            const item = { id, t: Date.now(), imdb: unsorted ? "" : b.imdb, unsorted: unsorted, title, year: clean(b.year, 8), poster: https(b.poster) || "", type, s, e, lines: cues, by: clean(who.name, 60) || "Google user", maybe: b.maybe === true,
                 filename: clean(b.filename, 140), srt: zlib.gzipSync(Buffer.from(srt, "utf8")).toString("base64") };
-            await redis([["SET", "rdy:pend:" + id, JSON.stringify(item), "EX", 30 * 86400], ["LPUSH", "rdy:pendl", id], ["LTRIM", "rdy:pendl", 0, 199], ["SET", "rdy:pk:" + b.imdb + ":" + s + ":" + e, "1", "EX", 30 * 86400]]);
+            await redis([["SET", "rdy:pend:" + id, JSON.stringify(item), "EX", 30 * 86400], ["LPUSH", "rdy:pendl", id], ["LTRIM", "rdy:pendl", 0, 199]].concat(unsorted ? [] : [["SET", "rdy:pk:" + b.imdb + ":" + s + ":" + e, "1", "EX", 30 * 86400]]));
             try { await require("./_admin.js").logActivity("translate", "Suggested for Ready: " + title + (type === "tv" ? " S" + s + "E" + e : "")); } catch (x) { /* ignore */ }
             return res.status(200).json({ ok: true });
         }
@@ -651,7 +652,7 @@ module.exports = async function ready(req, res) {
             const out = rows.map(parse).filter(Boolean).map(it => {
                 let sample = "";
                 try { sample = zlib.gunzipSync(Buffer.from(it.srt, "base64")).toString("utf8").split(/\r?\n/).filter(l => /[\u0D80-\u0DFF]/.test(l)).slice(0, 3).join(" / ").slice(0, 160); } catch (x) { /* ignore */ }
-                return { id: it.id, t: it.t, imdb: it.imdb, title: it.title, year: it.year, type: it.type, s: it.s, e: it.e, lines: it.lines, by: it.by, maybe: !!it.maybe, filename: it.filename, sample };
+                return { id: it.id, t: it.t, imdb: it.imdb, unsorted: !!it.unsorted, title: it.title, year: it.year, type: it.type, s: it.s, e: it.e, lines: it.lines, by: it.by, maybe: !!it.maybe, filename: it.filename, sample };
             });
             return res.status(200).json({ items: out });
         }

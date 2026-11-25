@@ -30,8 +30,14 @@
                     .then(function (r) { return r.ok; });
             }
             if (pre && pre.item && pre.item.imdbID) { window.__sinsubzUploadFor = null; return send(pre.item, !!pre.season, pre.season, pre.episode, false); }
-            if (g.q.length < 2) { return false; }
             var tv = !!(g.s && g.e);
+            // the name is unclear or nothing matched: still send it, the owner picks the category (Movie / TV series) and the title in the admin panel
+            function unsorted() {
+                return fetch("/api/stats?ready=submit", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + tk },
+                    body: JSON.stringify({ unsorted: true, title: (g.q || String(filename || label || "Unknown").replace(/\.srt$/i, "")).slice(0, 100), year: g.y, type: tv ? "tv" : "movie", season: g.s, episode: g.e, srt: srt, filename: filename, maybe: true }) })
+                    .then(function (r) { return r.ok; });
+            }
+            if (g.q.length < 2) { return unsorted(); }
             return fetch("/api/search?query=" + encodeURIComponent(g.q)).then(function (r) { return r.json(); }).then(function (d) {
                 var rs = ((d && d.results) || []).filter(function (it) { return (it.type === "series") === tv; });
                 var hit = null;
@@ -42,8 +48,8 @@
                 });
                 var maybe = false;
                 if (!hit && rs.length) { hit = rs[0]; maybe = true; }      // best guess, flagged "not sure" for the owner
-                return hit ? send(hit, tv, g.s, g.e, maybe) : false;
-            });
+                return hit ? send(hit, tv, g.s, g.e, maybe) : unsorted();
+            }).catch(function () { return unsorted(); });
         }).catch(function () { return false; });
     }
 
