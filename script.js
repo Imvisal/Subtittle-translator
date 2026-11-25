@@ -2358,7 +2358,7 @@ async function searchSubtitles(
             if (searchStatus) {
 
                 searchStatus.textContent =
-                    "No English subtitles found.";
+                    "No subtitles found.";
 
             }
 
@@ -2385,7 +2385,9 @@ async function searchSubtitles(
         if (searchStatus) {
 
             searchStatus.textContent =
-                `${results.length} English subtitles found`;
+                results.some(function (r) { return r && r.fallback; })
+                    ? `No English subtitle, but ${results.length} in ${results[0].languageName || "another language"} found. It can be translated to Sinhala too.`
+                    : `${results.length} English subtitles found`;
 
         }
 
@@ -2607,8 +2609,9 @@ async function displaySubtitleResults(
 
 
                         const release =
-                            subtitle.release ||
-                            "Unknown release";
+                            (subtitle.fallback && subtitle.languageName ? "[" + subtitle.languageName + "] " : "") +
+                            (subtitle.release ||
+                            "Unknown release");
 
 
                         const fps =

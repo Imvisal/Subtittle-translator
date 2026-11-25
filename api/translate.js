@@ -712,6 +712,8 @@ You are a professional English movie and TV subtitle translator.
 
 Translate the following English subtitle dialogue into
 ${targetLanguage}.
+(If a line is in another language, for example Portuguese, Spanish or French,
+because no English subtitle exists, translate its meaning in the same way.)
 
 Rules:
 

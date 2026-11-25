@@ -1,5 +1,11 @@
+// When a film / episode has NO English subtitle on SubDL, other languages are tried (Gemini translates them to Sinhala just as well:
+// a Brazilian Portuguese file gave a good Sinhala result). English is always preferred; this runs only when English gave nothing.
+const FALLBACK_LANGS = ["BR_PT", "PT", "ES", "FR", "DE", "IT", "NL", "TR", "ID", "AR", "PL", "RU"];
+const LANG_NAME = { BR_PT: "Portuguese (Brazil)", PT: "Portuguese", ES: "Spanish", FR: "French", DE: "German", IT: "Italian", NL: "Dutch", TR: "Turkish", ID: "Indonesian", AR: "Arabic", PL: "Polish", RU: "Russian" };
+
 module.exports = async function handler(req, res) {
-    if (req.method === "GET" && await require("./_guard.js").guard(req, res, { kind: "sub", perMin: 40, perHour: 400, cache: 600 })) { return; }
+    const isFallback = req.__subFallback === true;
+    if (!isFallback && req.method === "GET" && await require("./_guard.js").guard(req, res, { kind: "sub", perMin: 40, perHour: 400, cache: 600 })) { return; }
 
     try {
 
@@ -99,10 +105,10 @@ module.exports = async function handler(req, res) {
         );
 
 
-        // English subtitles
+        // English subtitles (the fallback pass asks for the other languages instead)
         url.searchParams.set(
             "languages",
-            "EN"
+            isFallback ? FALLBACK_LANGS.join(",") : "EN"
         );
 
 
@@ -309,6 +315,7 @@ module.exports = async function handler(req, res) {
                         // ----------------------------------------
 
                         if (
+                            !isFallback &&
                             file.language &&
                             String(
                                 file.language
@@ -446,7 +453,7 @@ module.exports = async function handler(req, res) {
 
                             fileName:
                                 file.name ||
-                                "English.srt",
+                                (isFallback ? "Subtitle.srt" : "English.srt"),
 
                             release:
                                 file.release_name ||
@@ -454,8 +461,16 @@ module.exports = async function handler(req, res) {
                                 "",
 
                             language:
-                                file.language ||
-                                "EN",
+                                (isFallback ? (sub.language || file.language) : file.language) ||
+                                (isFallback ? "" : "EN"),
+
+                            fallback:
+                                isFallback,
+
+                            languageName:
+                                isFallback
+                                    ? (LANG_NAME[String(sub.language || file.language || "").toUpperCase().replace(/-/g, "_")] || String(sub.language || file.language || "Other language"))
+                                    : "English",
 
                             fps:
                                 sub.fps ||
@@ -524,11 +539,24 @@ module.exports = async function handler(req, res) {
         // RESPONSE
         // ==================================================
 
+        if (!unique.length && !isFallback) {
+            // no English at all: try the other languages once (the answer then says fallback:true and which language)
+            req.__subFallback = true;
+            return handler(req, res);
+        }
+        if (isFallback) {
+            const rank = function (r) { const i = FALLBACK_LANGS.indexOf(String(r.language || "").toUpperCase().replace(/-/g, "_")); return i < 0 ? 99 : i; };
+            unique.sort(function (a, b) { return rank(a) - rank(b); });
+        }
+
         if (!unique.length) { res.setHeader("Cache-Control", "no-store"); }     // an empty answer may be a hiccup: never keep it in the CDN
 
         return res.status(200).json({
 
             success: true,
+
+            fallback:
+                isFallback && unique.length > 0,
 
             total:
                 unique.length,
