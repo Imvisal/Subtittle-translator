@@ -2176,8 +2176,9 @@ function showEpisodeSelector(item) {
                 id="findSubtitleBtn"
                 class="select-title-btn"
             >
-                Find English Subtitle
+                Get Sinhala Subtitle
             </button>
+            <p class="find-note" style="margin:8px 2px 0;font-size:12.5px;opacity:.65;text-align:center">We find the English subtitle and translate it to Sinhala for you.</p>
 
         </div>
 
