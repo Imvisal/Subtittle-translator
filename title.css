@@ -240,3 +240,10 @@
 .tp-dcount { width: fit-content; margin: 18px auto 0; padding: 9px 18px 9px 14px; border-radius: 99px; background: linear-gradient(135deg, rgba(95,240,216,.14), rgba(124,155,255,.14)); border: 1px solid rgba(95,240,216,.28); color: var(--text-2); font-weight: 600; box-shadow: 0 8px 22px -14px rgba(95,240,216,.6); }
 .tp-dcount svg { color: #5ff0d8; }
 .tp-dcount b { font-size: 18px; font-weight: 800; background: linear-gradient(135deg, #5ff0d8, #7c9bff); -webkit-background-clip: text; background-clip: text; color: transparent; letter-spacing: .2px; }
+
+/* download count next to the "ready" badge in the hero */
+.tp-badges { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.tp-hdl { display: inline-flex; align-items: center; gap: 7px; padding: 7px 14px; border-radius: 99px; background: rgba(95,240,216,.14); border: 1px solid rgba(95,240,216,.32); color: #d9fff8; font-size: 13.5px; font-weight: 600; }
+.tp-hdl[hidden] { display: none; }
+.tp-hdl svg { color: #5ff0d8; }
+.tp-hdl b { font-size: 15px; font-weight: 800; color: #5ff0d8; }

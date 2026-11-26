@@ -61,7 +61,7 @@
             (D.overview ? '<p class="tp-over">' + esc(D.overview) + '</p>' : "") +
             (D.si ? '<p class="tp-si" lang="si">' + esc(D.si) + '</p>' : "") +
             (D.by && D.by.length ? '<p class="tp-by"><span>' + (isTv ? "Created by" : "Directed by") + '</span> ' + D.by.map(esc).join(", ") + '</p>' : "") +
-            '<div class="tp-badge">' + (isTv ? n + " Sinhala subtitle" + (n === 1 ? "" : "s") + " ready" : "Sinhala subtitle ready") + '</div>' +
+            '<div class="tp-badges"><div class="tp-badge">' + (isTv ? n + " Sinhala subtitle" + (n === 1 ? "" : "s") + " ready" : "Sinhala subtitle ready") + '</div>' + heroDl() + '</div>' +
             '<div class="tp-actions">' + actions + '</div>' +
             '</div></div></section>';
     }
@@ -134,12 +134,17 @@
     var DLC = { n: 0, eps: {} };
     function ecText(n) { return n > 0 ? n.toLocaleString("en-US") + (n === 1 ? " download" : " downloads") : ""; }
     function epCount(s, e) { return Number(DLC.eps[s + "x" + e]) || 0; }
+    function heroDl() {
+        return '<div class="tp-hdl" id="tpHeroDl"' + (DLC.n < 1 ? ' hidden' : '') + '>' + DLI + '<b>' + DLC.n.toLocaleString("en-US") + '</b> downloads</div>';
+    }
     function dcountHtml() {
         return '<p class="tp-dcount" id="tpDlCount"' + (DLC.n < 1 ? ' hidden' : '') + '><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg><b>' + DLC.n.toLocaleString("en-US") + '</b> downloads</p>';
     }
     function paintCounts() {
         var t = document.getElementById("tpDlCount");
         if (t) { t.outerHTML = dcountHtml(); }
+        var h = document.getElementById("tpHeroDl");
+        if (h) { h.outerHTML = heroDl(); }
         document.querySelectorAll("[data-ec]").forEach(function (el) { el.textContent = ecText(Number(DLC.eps[el.getAttribute("data-ec")]) || 0); });
     }
     function render() { root.innerHTML = hero() + castCard() + episodes() + watchCard(); }
