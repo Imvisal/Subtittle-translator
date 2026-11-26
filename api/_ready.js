@@ -598,7 +598,9 @@ module.exports = async function ready(req, res) {
             } catch (x) { /* counting must never block the file */ }
             const ep = (meta.eps || {})[s + "x" + e] || {};
             const name = String(ep.f || (p.id + ".Sinhala.SinSubz.srt")).replace(/[^\w .()\-\[\]]+/g, "_");
-            const text = zlib.gunzipSync(Buffer.from(packed, "base64")).toString("utf8");
+            // files saved before the credit text changed get the current credit when they are downloaded (the stored copy stays as it is)
+            const text = zlib.gunzipSync(Buffer.from(packed, "base64")).toString("utf8")
+                .replace(/Sinhala subtitles by SinSubz(\r?\n)<font color="#FFFF00">Sinsubs\.site<\/font>/g, (m, nl) => "Sinhala subtitles by SinSubz" + nl + 'අලුත්ම Movies සහ TV series වල සිංහල උපසිරැසි සඳහා – <font color="#FFFF00">Sinsubs.site</font>');
             res.setHeader("Content-Type", "application/x-subrip; charset=utf-8");
             res.setHeader("Content-Disposition", 'attachment; filename="' + name + '"');
             res.setHeader("Cache-Control", "no-store");
