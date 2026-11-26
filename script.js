@@ -3644,7 +3644,7 @@ async function translateSubtitleChunksImpl(
                     if (left > 0) {
                         const sec = Math.ceil(left / 1000);
                         updateTranslationStatus(
-                            "The AI is very busy. Waiting and trying again (" + Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0") + " left)..."
+                            "The AI has hit its daily capacity right now. Still retrying automatically (" + Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0") + " left)..."
                         );
                         await sleep(Math.min(20000, left));
                         attempt--;          // this wait does not use up one of the 3 normal tries
