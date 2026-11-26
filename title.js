@@ -95,8 +95,11 @@
                 '<p class="tp-meta">' + (f0.n ? f0.n + ' lines \u00B7 ' : '') + 'free .srt \u00B7 you pick your video version next</p>' +
                 dcountHtml() + '</section>';
         }
-        var tabs = seasonKeys.length > 1 ? '<div class="tp-tabs" role="tablist">' + seasonKeys.map(function (k) {
-            return '<button type="button" role="tab" class="tp-tab' + (k === cur ? " on" : "") + '" data-season="' + k + '">Season ' + k + '</button>';
+        var tabs = seasonKeys.length > 1 ? '<div class="tp-tabs tp-stabs" role="tablist">' + seasonKeys.map(function (k, i) {
+            var n = (D.seasons[k] || []).length, img = D.backdrop || D.poster || "";
+            return '<button type="button" role="tab" class="tp-tab tp-stab' + (k === cur ? " on" : "") + '" data-season="' + k + '">' +
+                (img ? '<img src="' + esc(img) + '" alt="" loading="lazy" referrerpolicy="no-referrer" style="object-position:' + ((i * 23) % 100) + '% 30%">' : "") +
+                '<span><b>Season ' + k + '</b><small>' + n + ' episode' + (n === 1 ? "" : "s") + '</small></span></button>';
         }).join("") + '</div>' : "";
         var list = (D.seasons[cur] || []).map(function (e) {
             var left = '<span class="tp-en">E' + pad(e.e) + '</span><span class="tp-nm"><b>' + (e.name ? esc(e.name) : "Episode " + e.e) + '</b>' + (airText(e.air) ? "<small>" + airText(e.air) + "</small>" : "") + (e.ready ? '<small class="tp-ecnt" data-ec="' + cur + 'x' + e.e + '">' + ecText(epCount(cur, e.e)) + '</small>' : '') + '</span>';

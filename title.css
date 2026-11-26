@@ -222,3 +222,12 @@
 .tp-mc { flex: none; width: 112px; text-decoration: none; color: inherit; scroll-snap-align: start; }
 .tp-mc img { display: block; width: 112px; height: 168px; object-fit: cover; border-radius: 12px; background: rgba(255, 255, 255, .06); box-shadow: 0 8px 20px -10px rgba(0, 0, 0, .7); }
 .tp-mc span { display: block; margin-top: 7px; font-size: 12.5px; font-weight: 700; line-height: 1.3; }
+
+/* season cards: banner picture + name, in one scrolling row (not stacked) */
+.tp-stabs { gap: 10px; }
+.tp-stab { position: relative; overflow: hidden; width: 168px; height: 84px; padding: 0; border-radius: 14px; text-align: left; display: flex; align-items: flex-end; border: 2px solid transparent; }
+.tp-stab img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(.55) saturate(1.1); transition: filter .2s; }
+.tp-stab span { position: relative; padding: 10px 12px; display: flex; flex-direction: column; line-height: 1.2; color: #fff; text-shadow: 0 1px 6px rgba(0,0,0,.7); }
+.tp-stab small { font-weight: 600; font-size: 12px; opacity: .85; }
+.tp-stab.on { background: var(--surface); color: #fff; border-color: #9a98ff; }
+.tp-stab.on img { filter: brightness(.8); }
