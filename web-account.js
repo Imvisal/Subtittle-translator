@@ -339,7 +339,7 @@
             m[1].onAuthStateChanged(auth, function (u) {
                 var first = !user && !!u;
                 user = u ? { uid: u.uid, displayName: u.displayName || "", email: u.email || "", photoURL: u.photoURL || "" } : null;
-                if (user) { lsSet(K.flag, "1"); } else { lsDel(K.flag); }
+                if (user) { lsSet(K.flag, "1"); } else { lsDel(K.flag); window.__sinsubzMarkPremium(false); }       // signed out: no leftover Premium state
                 render();
                 readyDone();
                 if (user) { loadProfileBits(); refreshUnread(); startNotifPolling(); }
