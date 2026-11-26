@@ -1214,7 +1214,7 @@ and the existing /api/search, /api/subtitles and
 
         // parsed[] and subs[] are in the same order unless the file
         // was unsorted, so rebuild from subs (sorted) to stay safe
-        const out = subs.map(function (sub, i) {
+        let out = subs.map(function (sub, i) {
 
             const ns = mapTime(sub.s, i);
             const ne = Math.max(ns + 50, mapTime(sub.e, i));
@@ -1226,6 +1226,15 @@ and the existing /api/search, /api/subtitles and
             };
 
         });
+
+        // The SinSubz credit is not dialogue: it must not move with the sync. Take the old credit cues out and
+        // put the credit back at the start / end of the shifted file.
+        if (typeof addSinSubzCredit === "function") {
+            const hadCredit = out.some(function (c) { return /Sinsubs\.site/i.test(c.text); });
+            if (hadCredit) {
+                out = addSinSubzCredit(out.filter(function (c) { return !/Sinsubs\.site/i.test(c.text); }));
+            }
+        }
 
         return buildSRT(out);
 
