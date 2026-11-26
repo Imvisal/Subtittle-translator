@@ -392,3 +392,8 @@ html .search-row #searchBtn {
 @media (max-width: 380px) { .top-header .brand-title { font-size: 17px; } }
 
 .is-premium .m-premium { display: none !important; }
+
+/* Premium is for people who are not Premium yet; the header never wraps its labels */
+.is-premium .header-nav a[href="premium.html"], .is-premium .m-premium { display: none !important; }
+.header-nav a, .nav-cats-btn { white-space: nowrap; }
+@media (max-width: 1440px) and (min-width: 721px) { .top-header .brand-subtitle { display: none; } }
