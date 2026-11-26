@@ -7017,3 +7017,14 @@ window.__sinsubzPremiumInfo = async function (mode) {
         });
     } catch (e) { /* ignore */ }
 })();
+
+// header "Categories" menu: hover opens it by CSS; this makes click / tap / Esc work too
+(function () {
+    var box = document.getElementById("navCats");
+    if (!box) { return; }
+    var btn = box.querySelector(".nav-cats-btn");
+    function set(on) { box.classList.toggle("open", on); btn.setAttribute("aria-expanded", on ? "true" : "false"); }
+    btn.addEventListener("click", function (e) { e.stopPropagation(); set(!box.classList.contains("open")); });
+    document.addEventListener("click", function (e) { if (!box.contains(e.target)) { set(false); } });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") { set(false); } });
+})();

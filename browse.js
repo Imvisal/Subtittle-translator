@@ -13,6 +13,11 @@
     var elLists = document.getElementById("bzLists"), elGenres = document.getElementById("bzGenres"),
         elGrid = document.getElementById("bzGrid"), elMore = document.getElementById("bzMore"), elMsg = document.getElementById("bzMsg");
     var readyP = null;
+    try {                                                   // opened from the header menu: ?genre=28&list=new
+        var qs = new URLSearchParams(location.search), g = qs.get("genre"), l = qs.get("list");
+        if (g && GENRES.some(function (x) { return x[0] === g; })) { st.genre = g; }
+        if (l && LISTS.some(function (x) { return x[0] === l; })) { st.list = l; }
+    } catch (e) { /* ignore */ }
 
     function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
     function getReady() {
