@@ -28,10 +28,13 @@ const imdbOk = v => /^tt\d{5,10}$/.test(String(v || ""));
 const q = req => { try { return Object.fromEntries(new URL(req.url, "http://x").searchParams); } catch (e) { return {}; } };
 // Some ready files (imported from saved translations) have no SinSubz credit. Add the usual one when it is missing:
 // at the start (only when the first line comes after >= 3.4 s of quiet) and after the last line. Same text and rules as the site.
-const CREDIT = 'Sinhala subtitles by SinSubz\n<font color="#FFFF00">Sinsubs.site</font>';
+const CREDIT = 'Sinhala subtitles by SinSubz\nඅලුත්ම Movies සහ TV series වල සිංහල උපසිරැසි සඳහා – <font color="#FFFF00">Sinsubs.site</font>';
 function withCredit(srt) {
     try {
-        if (/Sinsubs\.site/i.test(srt)) { return srt; }
+        // files saved with the older credit wording get the current one
+        const swapped = String(srt).replace(/Sinhala subtitles by SinSubz(\r?\n)<font color="#FFFF00">Sinsubs\.site<\/font>/g, (m, nl) => CREDIT.replace(/\n/g, nl));
+        if (/Sinsubs\.site/i.test(swapped)) { return swapped; }
+        srt = swapped;
         const txt = String(srt).replace(/^\uFEFF/, "").replace(/\r\n/g, "\n");
         const re = /(\d+):(\d\d):(\d\d)[,.](\d{1,3})\s*-->\s*(\d+):(\d\d):(\d\d)[,.](\d{1,3})/;
         const blocks = txt.split(/\n{2,}/).map(b => b.trim()).filter(Boolean);
