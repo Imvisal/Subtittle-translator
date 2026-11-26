@@ -7028,3 +7028,20 @@ window.__sinsubzPremiumInfo = async function (mode) {
     document.addEventListener("click", function (e) { if (!box.contains(e.target)) { set(false); } });
     document.addEventListener("keydown", function (e) { if (e.key === "Escape") { set(false); } });
 })();
+
+// phone menu (hamburger, top left)
+(function () {
+    var b = document.getElementById("mBurger"), d = document.getElementById("mDrawer"), s = document.getElementById("mScrim");
+    if (!b || !d || !s) { return; }
+    var acc = d.querySelector(".m-acc"), sub = d.querySelector(".m-sub");
+    function open(on) {
+        d.classList.toggle("open", on); s.hidden = !on; b.setAttribute("aria-expanded", on ? "true" : "false"); d.setAttribute("aria-hidden", on ? "false" : "true");
+        document.documentElement.style.overflow = on ? "hidden" : "";
+    }
+    b.addEventListener("click", function () { open(true); });
+    s.addEventListener("click", function () { open(false); });
+    document.getElementById("mClose").addEventListener("click", function () { open(false); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") { open(false); } });
+    acc.addEventListener("click", function () { var on = acc.getAttribute("aria-expanded") !== "true"; acc.setAttribute("aria-expanded", on ? "true" : "false"); sub.hidden = !on; });
+    d.addEventListener("click", function (e) { var a = e.target.closest && e.target.closest("a"); if (a) { open(false); } });
+})();

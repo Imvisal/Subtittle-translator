@@ -69,7 +69,7 @@
 
     <!-- Main CSS -->
     <link rel="stylesheet" href="style.css">
-    <!--WEBONLY--><link rel="stylesheet" href="download.css"><link rel="stylesheet" href="comments.css"><link rel="stylesheet" href="ready.css"><link rel="stylesheet" href="web-polish.css"><link rel="stylesheet" href="web-home.css?v=3"><!--/WEBONLY-->
+    <!--WEBONLY--><link rel="stylesheet" href="download.css"><link rel="stylesheet" href="comments.css"><link rel="stylesheet" href="ready.css"><link rel="stylesheet" href="web-polish.css"><link rel="stylesheet" href="web-home.css?v=4"><!--/WEBONLY-->
 
     <!-- Apply the saved theme before first paint (no flash) -->
     <script>
@@ -115,7 +115,24 @@
          HEADER
     ========================================== -->
 
+<!--WEBONLY--><div class="m-scrim" id="mScrim" hidden></div>
+    <aside class="m-drawer" id="mDrawer" aria-label="Menu" aria-hidden="true">
+        <div class="m-drawer-head"><span class="brand-title">Sin<span>Subz</span></span><button type="button" class="m-x" id="mClose" aria-label="Close menu"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
+        <a href="movies.html"><i class="fa-solid fa-film" aria-hidden="true"></i>Movies</a>
+        <a href="tv.html"><i class="fa-solid fa-tv" aria-hidden="true"></i>TV Series</a>
+        <a href="request.html"><i class="fa-solid fa-circle-plus" aria-hidden="true"></i>Request</a>
+        <button type="button" class="m-acc" aria-expanded="false"><i class="fa-solid fa-layer-group" aria-hidden="true"></i>Categories<i class="fa-solid fa-plus m-plus" aria-hidden="true"></i></button>
+        <div class="m-sub" hidden>
+            <div class="m-sub-quick"><a href="movies.html?list=new">New movies</a><a href="movies.html?list=top">Top rated</a><a href="tv.html?list=new">New series</a><a href="movies.html?list=ready">Sinhala ready</a></div>
+            <h4>Movies</h4><div class="m-genres"><a href="movies.html?genre=28">Action</a><a href="movies.html?genre=12">Adventure</a><a href="movies.html?genre=35">Comedy</a><a href="movies.html?genre=80">Crime</a><a href="movies.html?genre=99">Documentary</a><a href="movies.html?genre=18">Drama</a><a href="movies.html?genre=10751">Family</a><a href="movies.html?genre=14">Fantasy</a><a href="movies.html?genre=27">Horror</a><a href="movies.html?genre=9648">Mystery</a><a href="movies.html?genre=10749">Romance</a><a href="movies.html?genre=878">Sci-Fi</a><a href="movies.html?genre=53">Thriller</a><a href="movies.html?genre=10752">War</a></div>
+            <h4>TV Series</h4><div class="m-genres"><a href="tv.html?genre=10759">Action &amp; Adventure</a><a href="tv.html?genre=35">Comedy</a><a href="tv.html?genre=80">Crime</a><a href="tv.html?genre=99">Documentary</a><a href="tv.html?genre=18">Drama</a><a href="tv.html?genre=10751">Family</a><a href="tv.html?genre=9648">Mystery</a><a href="tv.html?genre=10765">Sci-Fi &amp; Fantasy</a><a href="tv.html?genre=10768">War &amp; Politics</a><a href="tv.html?genre=37">Western</a></div>
+        </div>
+        <a href="#plans" class="m-premium"><i class="fa-solid fa-crown" aria-hidden="true"></i>Premium</a>
+        <a href="contact.html" class="m-small"><i class="fa-solid fa-envelope" aria-hidden="true"></i>Contact</a>
+    </aside><!--/WEBONLY-->
     <header class="top-header" id="topHeader">
+
+        <!--WEBONLY--><button type="button" class="m-burger" id="mBurger" aria-label="Open menu" aria-expanded="false" aria-controls="mDrawer"><i class="fa-solid fa-bars" aria-hidden="true"></i></button><!--/WEBONLY-->
 
         <a class="brand" href="index.html" aria-label="SinSubz home">
 
