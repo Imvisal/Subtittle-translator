@@ -4427,7 +4427,7 @@ function parseSRT(srt) {
 
 // SinSubz credit: one short cue at the start and one at the end of every translated subtitle.
 // They only go into a gap with no dialogue and never touch the timing of any other cue.
-const SINSUBZ_CREDIT = "Sinhala subtitles by SinSubz\nඅලුත්ම Movies සහ TV series වල සිංහල උපසිරැසි සඳහා – <font color=\"#FFFF00\">Sinsubs.site</font>";
+const SINSUBZ_CREDIT = "Sinhala Subtitles by SinSubz\nඅලුත්ම Movies සහ TV series වල සිංහල උපසිරැසි සඳහා – <font color=\"#FFFF00\">Sinsubs.site</font>";
 
 function addSinSubzCredit(subs) {
 
