@@ -33,7 +33,7 @@
             var b = document.createElement("button");
             b.type = "button"; b.className = "bz-chip" + (a[0] === cur ? " on" : ""); b.textContent = a[1];
             b.setAttribute("aria-pressed", a[0] === cur ? "true" : "false");
-            b.addEventListener("click", function () { onPick(a[0]); });
+            b.addEventListener("click", function () { if (searching) { stopSearch(); st.busy = false; } onPick(a[0]); });
             box.appendChild(b);
         });
     }
@@ -75,6 +75,26 @@
         } catch (e) { msg("Could not load. Please try again."); }
         st.busy = false;
     }
+    var elQ = document.getElementById("bzQ"), elClear = document.getElementById("bzClear"), searching = "";
+    async function runSearch(q) {
+        searching = q; st.busy = true; elGrid.innerHTML = ""; elMore.hidden = true; msg("Searching…");
+        try {
+            var ready = await getReady(), byId = {}; ready.forEach(function (x) { if (x && x.id) { byId[x.id] = x; } });
+            var r = await fetch("/api/search?query=" + encodeURIComponent(q)), d = await r.json();
+            if (searching !== q) { return; }
+            var hits = (d.results || []).filter(function (x) { return KIND === "tv" ? x.type === "series" : x.type === "movie"; });
+            hits.forEach(function (it) { elGrid.appendChild(card(it, byId[it.imdbID])); });
+            msg(hits.length ? "" : "Nothing found for \u201c" + q + "\u201d. Try another name.");
+        } catch (e) { msg("Search failed. Please try again."); }
+        st.busy = false;
+    }
+    function stopSearch() { searching = ""; elQ.value = ""; elClear.hidden = true; }
+    document.getElementById("bzSearch").addEventListener("submit", function (e) {
+        e.preventDefault(); var q = elQ.value.trim(); if (!q) { return; }
+        elClear.hidden = false; runSearch(q);
+    });
+    elQ.addEventListener("input", function () { elClear.hidden = !elQ.value; });
+    elClear.addEventListener("click", function () { stopSearch(); st.busy = false; load(true); elQ.focus(); });
     function draw() {
         chips(elLists, LISTS, st.list, function (v) { st.list = v; draw(); load(true); });
         elGenres.hidden = st.list === "ready";
