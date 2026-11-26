@@ -108,7 +108,8 @@ async function ping(req, res) {
             p: /^https:\/\//i.test(who.photo || "") ? String(who.photo).slice(0, 300) : (old.p || ""),
             f: old.f || now,
             l: now,
-            pl: platform
+            pl: platform,
+            pv: who.prov || old.pv || ""
         };
         await redis([["HSET", "u:info", key, JSON.stringify(rec)]]);
         return res.status(204).end();
@@ -187,7 +188,7 @@ async function overview(req, res) {
         const prem = pairs(r[PRI]);
         const users = Object.keys(info).map(k => {
             const u = parse(info[k]) || {};
-            return { id: k.slice(0, 8), k: k, blocked: blocked.has(k), name: u.n || "", email: u.e || "", photo: u.p || "", first: u.f || 0, last: u.l || 0, platform: u.pl || "web", translated: Number(tc[k]) || 0, premium: Number(prem[k]) > Date.now() ? Number(prem[k]) : 0 };
+            return { id: k.slice(0, 8), k: k, blocked: blocked.has(k), name: u.n || "", email: u.e || "", photo: u.p || "", first: u.f || 0, last: u.l || 0, platform: u.pl || "web", prov: u.pv || "", translated: Number(tc[k]) || 0, premium: Number(prem[k]) > Date.now() ? Number(prem[k]) : 0 };
         }).sort((a, b) => b.last - a.last);
 
         const platforms = { web: 0, android: 0, windows: 0 };

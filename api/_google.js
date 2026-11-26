@@ -57,6 +57,7 @@ async function verifyGoogleUser(req) {
         name: u.displayName || "",
         photo: u.photoUrl || "",
         email,
+        prov: provs.indexOf("password") !== -1 && provs.length === 1 ? "email" : provs.indexOf("facebook.com") !== -1 ? "facebook" : provs.indexOf("google.com") !== -1 ? "google" : (provs.indexOf("password") !== -1 ? "email" : ""),
         owner: !!email && email === OWNER_EMAIL && u.emailVerified === true
     };
 }
