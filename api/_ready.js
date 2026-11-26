@@ -26,6 +26,35 @@ const https = u => { const s = String(u || ""); return /^https:\/\/[^\s"'<>]{4,4
 const num = v => (/^\d{1,4}$/.test(String(v == null ? "" : v)) ? Number(v) : 0);
 const imdbOk = v => /^tt\d{5,10}$/.test(String(v || ""));
 const q = req => { try { return Object.fromEntries(new URL(req.url, "http://x").searchParams); } catch (e) { return {}; } };
+// Some ready files (imported from saved translations) have no SinSubz credit. Add the usual one when it is missing:
+// at the start (only when the first line comes after >= 3.4 s of quiet) and after the last line. Same text and rules as the site.
+const CREDIT = 'Sinhala subtitles by SinSubz\n<font color="#FFFF00">Sinsubs.site</font>';
+function withCredit(srt) {
+    try {
+        if (/Sinsubs\.site/i.test(srt)) { return srt; }
+        const txt = String(srt).replace(/^\uFEFF/, "").replace(/\r\n/g, "\n");
+        const re = /(\d+):(\d\d):(\d\d)[,.](\d{1,3})\s*-->\s*(\d+):(\d\d):(\d\d)[,.](\d{1,3})/;
+        const blocks = txt.split(/\n{2,}/).map(b => b.trim()).filter(Boolean);
+        const cues = [];
+        let first = Infinity, last = 0;
+        for (const b of blocks) {
+            const lines = b.split("\n");
+            const i = lines.findIndex(l => re.test(l));
+            if (i < 0) { continue; }
+            const m = re.exec(lines[i]);
+            const t = (h, mi, se, ms) => (+h) * 3600 + (+mi) * 60 + (+se) + (+String(ms).padEnd(3, "0")) / 1000;
+            first = Math.min(first, t(m[1], m[2], m[3], m[4]));
+            last = Math.max(last, t(m[5], m[6], m[7], m[8]));
+            cues.push({ ts: lines[i].trim(), text: lines.slice(i + 1).join("\n") });
+        }
+        if (!cues.length || !isFinite(first)) { return srt; }
+        const clock = sec => { const ms = Math.max(0, Math.round(sec * 1000)); const p = (n, w) => String(n).padStart(w, "0"); return p(Math.floor(ms / 3600000), 2) + ":" + p(Math.floor((ms % 3600000) / 60000), 2) + ":" + p(Math.floor((ms % 60000) / 1000), 2) + "," + p(ms % 1000, 3); };
+        if (first >= 3.4) { cues.unshift({ ts: clock(0.4) + " --> " + clock(0.4 + Math.min(4, first - 0.9)), text: CREDIT }); }
+        cues.push({ ts: clock(last + 1) + " --> " + clock(last + 5), text: CREDIT });
+        return cues.map((c, i) => (i + 1) + "\n" + c.ts + "\n" + c.text).join("\n\n") + "\n";
+    } catch (e) { return srt; }
+}
+
 const srtKey = (id, s, e) => "rdy:srt:" + id + ":" + s + ":" + e;
 
 const slugify = t => String(t || "").toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/&/g, " and ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60).replace(/-+$/, "") || "title";
@@ -598,7 +627,7 @@ module.exports = async function ready(req, res) {
             } catch (x) { /* counting must never block the file */ }
             const ep = (meta.eps || {})[s + "x" + e] || {};
             const name = String(ep.f || (p.id + ".Sinhala.SinSubz.srt")).replace(/[^\w .()\-\[\]]+/g, "_");
-            const text = zlib.gunzipSync(Buffer.from(packed, "base64")).toString("utf8");
+            const text = withCredit(zlib.gunzipSync(Buffer.from(packed, "base64")).toString("utf8"));
             res.setHeader("Content-Type", "application/x-subrip; charset=utf-8");
             res.setHeader("Content-Disposition", 'attachment; filename="' + name + '"');
             res.setHeader("Cache-Control", "no-store");
