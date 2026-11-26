@@ -290,6 +290,54 @@ function today() {
 
 const lastProbe = new Map();   // "<key>|<model>" -> time of the last forced re-probe of a cooling key
 
+function cleanGlossary(m) {
+    const out = {};
+    if (!m || typeof m !== "object") { return out; }
+    Object.keys(m).slice(0, 40).forEach(k => {
+        const v = String(m[k] || "").replace(/[\r\n"]+/g, " ").trim();
+        if (/^[\p{L}'’ .-]{2,30}$/u.test(k) && v && v.length <= 40) { out[k] = v; }
+    });
+    return out;
+}
+
+// Sinhala spellings for the character names of a title. Cached in Redis per title (gl:<title>), so one tiny AI call
+// covers the whole file AND every later episode of the same show.
+async function glossaryFor(req, isRunner) {
+    try {
+        const names = (Array.isArray(req.body.names) ? req.body.names : []).map(n => String(n || "").trim())
+            .filter(n => /^[\p{L}'’ .-]{2,30}$/u.test(n)).slice(0, 30);
+        const title = String(req.body.title || "").replace(/[\r\n]+/g, " ").slice(0, 150).trim();
+        if (!names.length || !title) { return {}; }
+        const G = require("./_google");
+        if (!G.hasRedis()) { return {}; }
+        const adm = require("./_admin.js");
+        if (!isRunner) {
+            const who = await adm.authUser(req);
+            if (!who || !who.uid) { return {}; }
+            if (await G.overLimit("gl", adm.uidKeyOf(who.uid), 40, 3600)) { return {}; }
+        }
+        const key = "gl:" + title.toLowerCase().replace(/[^a-z0-9\u0D80-\u0DFF]+/g, "-").replace(/^-|-$/g, "").slice(0, 80);
+        const [flat] = await G.redis([["HGETALL", key]]);
+        const map = {};
+        for (let i = 0; flat && i + 1 < flat.length; i += 2) { map[flat[i]] = flat[i + 1]; }
+        const missing = names.filter(n => !map[n]);
+        if (missing.length) {
+            const prompt = `Write these character / place names from the film or TV show "${title}" in Sinhala letters, the way a careful Sri Lankan subtitle translator spells them (simple, common spelling, one spelling per name).
+Return ONLY JSON like {"Name":"සිංහල"} with exactly these keys: ${JSON.stringify(missing)}`;
+            const g = await generateWithFallback(prompt, false);
+            const text = g && g.data && g.data.candidates && g.data.candidates[0] && g.data.candidates[0].content && g.data.candidates[0].content.parts && g.data.candidates[0].content.parts[0] && g.data.candidates[0].content.parts[0].text;
+            const mt = /\{[\s\S]*\}/.exec(String(text || ""));
+            if (mt) {
+                const got = cleanGlossary(JSON.parse(mt[0]));
+                const cmds = [];
+                Object.keys(got).forEach(k => { if (missing.includes(k) && /[\u0D80-\u0DFF]/.test(got[k])) { map[k] = got[k]; cmds.push(["HSET", key, k, got[k]]); } });
+                if (cmds.length) { cmds.push(["EXPIRE", key, 180 * 86400]); await G.redis(cmds); }
+            }
+        }
+        return cleanGlossary(map);
+    } catch (e) { return {}; }
+}
+
 async function generateWithFallback(prompt, premium) {
     const trail = [];
     const out = await generateInner(prompt, trail, premium);
@@ -599,6 +647,12 @@ module.exports = async function handler(req, res) {
             });
         }
 
+        // ---- name list: one fixed Sinhala spelling per character name, shared by every part of the file (and by every episode of a show) ----
+        if (req.body && req.body.glossary === true) {
+            return res.status(200).json({ map: await glossaryFor(req, isRunner) });
+        }
+        const glossaryMap = cleanGlossary(req.body && req.body.glossaryMap);
+
         const { subtitles, language = "si", style = "natural" } =
             req.body || {};
 
@@ -876,7 +930,7 @@ SUBTITLE READABILITY & ENGLISH WORDS:
 - Return ONLY valid JSON.
 - Do not use markdown.
 
-${title ? "TITLE OF THE FILM / SHOW: " + title + "\n(Use it to understand genre, setting, slang and character names. Do not translate or output it.)\n" : ""}${(ctxBefore.length || ctxAfter.length) ? `CONTEXT ONLY - do NOT translate or return these lines. They show who is speaking and the mood around the lines you must translate. Keep the same pronouns and name spellings as the flow of this conversation:
+${Object.keys(glossaryMap).length ? "NAME SPELLINGS - write these names with EXACTLY these Sinhala spellings in every line, never another spelling:\n" + Object.keys(glossaryMap).map(k => "  " + k + " -> " + glossaryMap[k]).join("\n") + "\n" : ""}${title ? "TITLE OF THE FILM / SHOW: " + title + "\n(Use it to understand genre, setting, slang and character names. Do not translate or output it.)\n" : ""}${(ctxBefore.length || ctxAfter.length) ? `CONTEXT ONLY - do NOT translate or return these lines. They show who is speaking and the mood around the lines you must translate. Keep the same pronouns and name spellings as the flow of this conversation:
 LINES JUST BEFORE: ${JSON.stringify(ctxBefore)}
 LINES JUST AFTER: ${JSON.stringify(ctxAfter)}
 ` : ""}

@@ -3491,6 +3491,7 @@ async function translateSubtitleChunksImpl(
 ) {
 
     subtitles = dropBracketCues(subtitles);
+    try { subtitles = stripCreditCues(subtitles); } catch (e) { /* keep the cues as they are */ }
 
     // translating needs a Google account (website + Android app; the Windows app has no sign-in yet).
     // Nothing opens by itself: a message explains it and the person presses the button.
@@ -3507,6 +3508,20 @@ async function translateSubtitleChunksImpl(
     }
 
     const CHUNK_SIZE = 40;
+
+    // character names get ONE Sinhala spelling for the whole file (asked once, kept per title on the server)
+    let glossaryMap = {};
+    try {
+        const names = detectNames(subtitles, 25);
+        if (names.length && meta && meta.title) {
+            const gh = { "Content-Type": "application/json" };
+            try { gh["x-sinsubz-device"] = getDeviceId(); } catch (e) { /* ignore */ }
+            try { const tk = window.__sinsubzIdToken ? await window.__sinsubzIdToken() : ""; if (tk) { gh.Authorization = "Bearer " + tk; } } catch (e) { /* ignore */ }
+            const gr = await fetch("/api/translate", { method: "POST", headers: gh, body: JSON.stringify({ glossary: true, names: names, title: String(meta.title) }) });
+            const gd = gr.ok ? await gr.json().catch(() => ({})) : {};
+            if (gd && gd.map && typeof gd.map === "object") { glossaryMap = gd.map; }
+        }
+    } catch (e) { /* the translation works without the name list */ }
 
     // How many chunks are translated at the same time.
     // The server spreads them over all Gemini keys.
@@ -3573,6 +3588,7 @@ async function translateSubtitleChunksImpl(
                             title: (meta && meta.title) || "",
                             job: String((meta && (meta.job || meta.title)) || uploadedFileName || ""),
                             chunk: chunkNumber, chunks: totalChunks,
+                            glossaryMap: glossaryMap,
                             context: getChunkContext(subtitles, chunkStart, chunk.length)
                         })
                     }
@@ -3823,6 +3839,52 @@ async function translateSubtitleChunksImpl(
 // Neighbouring ORIGINAL lines (not translated, only read) so the model
 // keeps the same pronouns / names across chunk borders.
 // ========================================================
+
+// ========================================================
+// SOURCE CLEAN-UP + NAME LIST (no AI)
+//  stripCreditCues: the subtitle author's own credit lines ("Tradução: ...", "Synced by ...", site names) are not dialogue
+//  detectNames:     proper names that repeat in the source, so every part of the file gets the same Sinhala spelling
+// ========================================================
+function stripCreditCues(subs) {
+    const list = Array.isArray(subs) ? subs : [];
+    if (list.length < 8) { return list; }
+    const KEY = /(addic7ed|opensubtitles|subdl|yify|yts\b|podnapisi|subscene|synced?\b|resync|sync(hronized)? (and|&) correct|corrected by|subtitles? (by|from)|captions? by|translated by|translation by|ripped by|encoded by|www\.|\.(com|net|org|site|io)\b|tradu[cç][aã]o|legenda(s|do|ção)?\b|revis[aã]o|traducci[oó]n|subt[ií]tulos|sous-titres|[uü]bersetzung|untertitel|sottotitoli|traduzione)/i;
+    const secs = ts => { const m = /(\d+):(\d+):(\d+)[,.](\d+)/.exec(String(ts || "")); return m ? (+m[1]) * 3600 + (+m[2]) * 60 + (+m[3]) + (+m[4]) / 1000 : 0; };
+    const lastIdx = list.length - 1;
+    const drop = new Set();
+    for (let i = 0; i < list.length; i++) {
+        const edge = i < 3 || i >= lastIdx - 5;
+        if (!edge) { continue; }
+        const t = String((list[i] && list[i].text) || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+        if (KEY.test(t)) { drop.add(i); }
+    }
+    // after the keyword lines, bare names at the very end ("João Felipe da Costa") are credits too: 2-4 capitalised words, no punctuation,
+    // in the last 4 cues and after a long silence (or right after a credit line)
+    for (let i = Math.max(1, lastIdx - 3); i <= lastIdx; i++) {
+        if (drop.has(i)) { continue; }
+        const t = String((list[i] && list[i].text) || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+        const words = t.split(" ");
+        const nameLike = words.length >= 2 && words.length <= 5 && words.every(w => /^(\p{Lu}[\p{L}'’.-]*|d[aeo]s?|de|del|van|von|la|le|y)$/u.test(w)) && !/[?!,:;]/.test(t);
+        if (!nameLike) { continue; }
+        const gap = secs(list[i].timestamp) - secs(String((list[i - 1] && list[i - 1].timestamp) || "").split("-->")[1]);
+        if (gap >= 45 || drop.has(i - 1)) { drop.add(i); }
+    }
+    return drop.size ? list.filter((_, i) => !drop.has(i)) : list;
+}
+
+function detectNames(subs, max) {
+    const text = (Array.isArray(subs) ? subs : []).map(s => String((s && s.text) || "").replace(/<[^>]+>/g, " ")).join("\n");
+    if (!text) { return []; }
+    const COMMON = new Set("The This That These Those There Then They Their What When Where Which While Who Why How And But For Not You Your Yours Are Was Were Have Has Had Can Could Would Should Will Just Now Yes Yeah Okay Oh Hey Hello Come Look Let Don Didn Isn Wasn Won Doesn Mr Mrs Ms Dr Sir Miss God Mom Dad Mama Papa Please Thank Thanks Sorry Well Right Good Fine Here Our Out All One Two Monday Tuesday Wednesday Thursday Friday Saturday Sunday January February March April May June July August September October November December".split(" "));
+    const mid = {}, low = {};
+    // a word counts as a name when it is capitalised in the MIDDLE of a sentence and never shows up in lower case
+    const re = /(^|[^.!?\n\p{L}'’-]\s?)(\p{Lu}[\p{L}'’-]{2,})(?![\p{L}])/gu;
+    let m;
+    while ((m = re.exec(text))) { const w = m[2]; if (!COMMON.has(w)) { mid[w] = (mid[w] || 0) + 1; } }
+    (text.match(/\p{Ll}[\p{L}'’-]{2,}/gu) || []).forEach(w => { low[w] = 1; });
+    return Object.keys(mid).filter(w => mid[w] >= 2 && !low[w.toLowerCase()] && !low[w]).sort((a, b) => mid[b] - mid[a]).slice(0, max || 25);
+}
+
 
 function getChunkContext(all, start, length) {
 
