@@ -587,8 +587,15 @@ module.exports = async function ready(req, res) {
             const s = num(p.s), e = num(p.e);
             const [packed, idx] = await redis([["GET", srtKey(p.id, s, e)], ["HGET", "rdy:idx", p.id]]);
             if (!packed) { return res.status(404).json({ error: "Not found" }); }
-            try { await redis([["HINCRBY", "rdy:dl", p.id, 1], ["HINCRBY", "rdy:dle:" + p.id, s + "x" + e, 1]]); } catch (x) { /* counting must never block the file */ }
             const meta = parse(idx) || {};
+            try {
+                const day = new Date(Date.now() + 5.5 * 3600e3).toISOString().slice(0, 10);   // Sri Lanka day
+                const who = String(dlUser.name || (dlUser.email || "").split("@")[0] || "visitor").slice(0, 40);
+                await redis([["HINCRBY", "rdy:dl", p.id, 1], ["HINCRBY", "rdy:dle:" + p.id, s + "x" + e, 1],
+                    ["INCR", "rdy:dlday:" + day], ["EXPIRE", "rdy:dlday:" + day, 40 * 86400],
+                    ["LPUSH", "rdy:dllog", JSON.stringify({ t: Date.now(), id: p.id, n: String(meta.t || p.id).slice(0, 80), y: meta.type === "tv" ? 1 : 0, s, e, u: who })],
+                    ["LTRIM", "rdy:dllog", 0, 199]]);
+            } catch (x) { /* counting must never block the file */ }
             const ep = (meta.eps || {})[s + "x" + e] || {};
             const name = String(ep.f || (p.id + ".Sinhala.SinSubz.srt")).replace(/[^\w .()\-\[\]]+/g, "_");
             const text = zlib.gunzipSync(Buffer.from(packed, "base64")).toString("utf8");
@@ -596,6 +603,21 @@ module.exports = async function ready(req, res) {
             res.setHeader("Content-Disposition", 'attachment; filename="' + name + '"');
             res.setHeader("Cache-Control", "no-store");
             return res.status(200).send("﻿" + text);
+        }
+
+        if (act === "dlstats" && req.method === "GET") {
+            res.setHeader("Cache-Control", "no-store");
+            if (!isAdmin(req)) { return res.status(401).json({ error: "Unauthorized" }); }
+            const days = [];
+            for (let i = 0; i < 7; i++) { days.push(new Date(Date.now() + 5.5 * 3600e3 - i * 86400e3).toISOString().slice(0, 10)); }
+            const [flat, log, idx] = (await redis([["HGETALL", "rdy:dl"], ["LRANGE", "rdy:dllog", 0, 59], ["HGETALL", "rdy:idx"]]));
+            const per = await redis(days.map(d => ["GET", "rdy:dlday:" + d]));
+            const names = {};
+            for (let i = 0; idx && i + 1 < idx.length; i += 2) { const m = parse(idx[i + 1]); if (m) { names[idx[i]] = m.t; } }
+            const top = []; let total = 0;
+            for (let i = 0; flat && i + 1 < flat.length; i += 2) { const n = Number(flat[i + 1]) || 0; total += n; top.push({ id: flat[i], n: names[flat[i]] || flat[i], c: n }); }
+            top.sort((a, b) => b.c - a.c);
+            return res.status(200).json({ total, today: Number(per[0]) || 0, week: per.reduce((a, v) => a + (Number(v) || 0), 0), days: days.map((d, i) => ({ d, c: Number(per[i]) || 0 })), top: top.slice(0, 10), recent: (log || []).map(parse).filter(Boolean) });
         }
 
         if (act === "count" && req.method === "GET") {

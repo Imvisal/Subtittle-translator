@@ -434,6 +434,26 @@
         });
     }
 
+    function loadSubDl() {
+        fetch("/api/stats?ready=dlstats", { headers: { "x-admin-key": KEY }, cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
+            var sum = $("sdlSum"), top = $("sdlTop"), rec = $("sdlRecent");
+            if (!sum || !d || d.error) { return; }
+            sum.textContent = top.textContent = rec.textContent = "";
+            [["Today", d.today], ["Last 7 days", d.week], ["All time", d.total]].forEach(function (x) {
+                var li = el("li"); li.appendChild(el("span", "", x[0])); li.appendChild(el("span", "", fmt(x[1]))); sum.appendChild(li);
+            });
+            (d.top || []).forEach(function (x) { var li = el("li"); li.appendChild(el("span", "", x.n)); li.appendChild(el("span", "", fmt(x.c))); top.appendChild(li); });
+            if (!(d.top || []).length) { top.appendChild(el("li", "empty", "No downloads yet.")); }
+            (d.recent || []).slice(0, 30).forEach(function (x) {
+                var li = el("li"), ep = x.y ? " S" + String(x.s).padStart(2, "0") + "E" + String(x.e).padStart(2, "0") : "";
+                li.appendChild(el("span", "", x.n + ep + " \u00b7 " + x.u));
+                li.appendChild(el("span", "", new Date(x.t).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })));
+                rec.appendChild(li);
+            });
+            if (!(d.recent || []).length) { rec.appendChild(el("li", "empty", "Downloads from now on will show here.")); }
+        }).catch(function () { /* ignore */ });
+    }
+
     // ---- tabs (the last one is remembered in this browser) ----
     function openTab(name) {
         var found = false;
@@ -1168,7 +1188,7 @@
                 show(true);
                 $("sub").textContent = "Updated " + new Date().toLocaleTimeString();
                 render(res.d);
-                fetch("/api/stats?downloads=1", { cache: "no-store" }).then(function (r) { return r.json(); }).then(renderDownloads).catch(function () { renderDownloads(null); });
+                loadSubDl(); fetch("/api/stats?downloads=1", { cache: "no-store" }).then(function (r) { return r.json(); }).then(renderDownloads).catch(function () { renderDownloads(null); });
             })
             .catch(function () { $("err").textContent = "Network problem. Try again."; });
     }
