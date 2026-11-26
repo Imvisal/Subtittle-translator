@@ -251,7 +251,7 @@
                     '<button type="button" class="tp-x" aria-label="Close">\u2715</button>' +
                     '<div class="tp-mt">Premium needed</div>' +
                     '<p class="tp-mp" style="margin:10px 0 14px">Downloading a whole season as one .zip is a <b>Premium</b> feature. You can still download every episode one by one for free.<br><span lang="si">මුළු season එකම එකවර download කරන්න Premium ඕන. episode එක එක නම් නොමිලේ download කරන්න පුළුවන්.</span></p>' +
-                    '<a class="tp-opt tp-opt-a" href="/#plans" style="justify-content:center"><span class="tp-ot"><b>See Premium plans</b></span></a></div>';
+                    '<a class="tp-opt tp-opt-a" href="/premium.html" style="justify-content:center"><span class="tp-ot"><b>See Premium plans</b></span></a></div>';
                 function close() { ov.remove(); }
                 ov.addEventListener("click", function (e) { if (e.target === ov || (e.target.closest && e.target.closest(".tp-x"))) { close(); } });
                 document.body.appendChild(ov);

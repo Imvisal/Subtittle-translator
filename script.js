@@ -7046,9 +7046,5 @@ window.__sinsubzPremiumInfo = async function (mode) {
     d.addEventListener("click", function (e) {
         var a = e.target.closest && e.target.closest("a"); if (!a) { return; }
         open(false);
-        if (a.id === "mPremium") {                                   // close the menu first, then glide to the plans
-            e.preventDefault();
-            setTimeout(function () { var p = document.getElementById("plans"); if (p) { p.scrollIntoView({ behavior: "smooth", block: "start" }); } }, 260);
-        }
     });
 })();
