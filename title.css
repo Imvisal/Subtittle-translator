@@ -235,3 +235,8 @@
 .tp-stab.on { border-color: #9a98ff; box-shadow: 0 0 0 3px rgba(154,152,255,.28), 0 10px 26px rgba(131,129,247,.35); background: #14172b; color: #fff; }
 .tp-stab.on img { filter: brightness(1); }
 @media (max-width: 520px) { .tp-stab { width: 108px; } }
+
+/* download counter: a small pill with a glowing number */
+.tp-dcount { width: fit-content; margin: 18px auto 0; padding: 9px 18px 9px 14px; border-radius: 99px; background: linear-gradient(135deg, rgba(95,240,216,.14), rgba(124,155,255,.14)); border: 1px solid rgba(95,240,216,.28); color: var(--text-2); font-weight: 600; box-shadow: 0 8px 22px -14px rgba(95,240,216,.6); }
+.tp-dcount svg { color: #5ff0d8; }
+.tp-dcount b { font-size: 18px; font-weight: 800; background: linear-gradient(135deg, #5ff0d8, #7c9bff); -webkit-background-clip: text; background-clip: text; color: transparent; letter-spacing: .2px; }
