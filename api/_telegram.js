@@ -93,7 +93,8 @@ async function postSeasonDone(m, s) {
         if (!done(sn0)) { return; }
         const season = seasons.find(x => x.season_number === sn0);
         const title = "<b>" + esc(m.t) + "</b>" + (m.y ? " (" + esc(m.y) + ")" : "");
-        await announce("sd:" + m.id + ":" + sn0, m, sn0,
+        const sm = season.poster_path ? Object.assign({}, m, { p: "https://image.tmdb.org/t/p/w500" + season.poster_path }) : m;   // that season's own poster
+        await announce("sd:" + m.id + ":" + sn0, sm, sn0,
             "✅ " + title + "\n📺 Season " + sn0 + " complete — all " + season.episode_count + " episodes have Sinhala subtitles");
         if (seasons.every(x => done(x.season_number))) {
             const total = seasons.reduce((a, x) => a + x.episode_count, 0);
