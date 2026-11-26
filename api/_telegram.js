@@ -141,6 +141,41 @@ async function hook(req, res) {
         const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
         const m = body.message || body.edited_message;
         const group = groupRef(), channel = channelRef();
+        const inChannel = async uid => { const r = await tg("getChatMember", { chat_id: channel, user_id: uid }); if (!r.ok) { return null; } const st = r.result.status; return /^(creator|administrator|member)$/.test(st) || (st === "restricted" && !!r.result.is_member); };
+        const FULL = { can_send_messages: true, can_send_audios: true, can_send_documents: true, can_send_photos: true, can_send_videos: true, can_send_video_notes: true, can_send_voice_notes: true, can_send_polls: true, can_send_other_messages: true, can_add_web_page_previews: true };
+        const link = /^@/.test(channel) ? "https://t.me/" + channel.slice(1) : "";
+
+        // 1) the "I have joined" button: open the chat for that person once they are in the channel
+        const cq = body.callback_query;
+        if (cq && /^chk:\d+$/.test(String(cq.data || "")) && group && channel) {
+            const want = Number(String(cq.data).slice(4));
+            if (cq.from.id !== want) { await tg("answerCallbackQuery", { callback_query_id: cq.id, text: "This button is for the new member." }); return res.status(200).json({ ok: true }); }
+            const ok = await inChannel(want);
+            if (ok === false) { await tg("answerCallbackQuery", { callback_query_id: cq.id, text: "Join the channel first, then press this button.", show_alert: true }); return res.status(200).json({ ok: true }); }
+            await tg("restrictChatMember", { chat_id: cq.message.chat.id, user_id: want, permissions: FULL });
+            await tg("answerCallbackQuery", { callback_query_id: cq.id, text: "✅ Done! You can chat now." });
+            await tg("deleteMessage", { chat_id: cq.message.chat.id, message_id: cq.message.message_id });
+            return res.status(200).json({ ok: true });
+        }
+
+        // 2) somebody just joined the group: no chat permission until they have joined the channel
+        if (m && m.new_chat_members && group && channel && /group/.test(String(m.chat && m.chat.type))) {
+            if (groupNumericId === null) { const g = await tg("getChat", { chat_id: group }); groupNumericId = g.ok ? String(g.result.id) : ""; }
+            if (groupNumericId && String(m.chat.id) === groupNumericId) {
+                for (const u of m.new_chat_members) {
+                    if (u.is_bot) { continue; }
+                    if ((await inChannel(u.id)) !== false) { continue; }
+                    await tg("restrictChatMember", { chat_id: m.chat.id, user_id: u.id, permissions: { can_send_messages: false } });
+                    const name = esc([u.first_name, u.last_name].filter(Boolean).join(" ") || "friend");
+                    const rows = [];
+                    if (link) { rows.push([{ text: "📢 Join the channel", url: link }]); }
+                    rows.push([{ text: "✅ I have joined", callback_data: "chk:" + u.id }]);
+                    await tg("sendMessage", { chat_id: m.chat.id, parse_mode: "HTML", reply_markup: { inline_keyboard: rows },
+                        text: "👋 Welcome <a href=\"tg://user?id=" + u.id + "\">" + name + "</a>!\nChat කරන්න කලින් අපේ channel එකට join වෙන්න, ඊට පස්සේ පහළ \"I have joined\" ඔබන්න. එතකොට chat කරන්න පුළුවන්. 🙏" });
+                }
+            }
+            return res.status(200).json({ ok: true });
+        }
         if (!m || !m.from || !group || !channel || m.from.is_bot || m.sender_chat || m.new_chat_members || m.left_chat_member) { return res.status(200).json({ ok: true }); }
         if (!/group/.test(String(m.chat && m.chat.type))) { return res.status(200).json({ ok: true }); }
         if (groupNumericId === null) { const g = await tg("getChat", { chat_id: group }); groupNumericId = g.ok ? String(g.result.id) : ""; }
@@ -178,7 +213,7 @@ async function sethook(req, res) {
     if (!process.env.TG_BOT_TOKEN) { return res.status(200).json({ ok: false, error: "TG_BOT_TOKEN is not set." }); }
     const off = /(?:^|[?&])off=1(?:&|$)/.test(String(req.url || ""));
     const r = off ? await tg("deleteWebhook", { drop_pending_updates: true })
-        : await tg("setWebhook", { url: SITE + "/api/stats?tg=hook", secret_token: hookSecret(), allowed_updates: ["message", "edited_message"], drop_pending_updates: true });
+        : await tg("setWebhook", { url: SITE + "/api/stats?tg=hook", secret_token: hookSecret(), allowed_updates: ["message", "edited_message", "callback_query"], drop_pending_updates: true });
     let note = "";
     if (!off && r.ok) {
         const c = channelRef();
