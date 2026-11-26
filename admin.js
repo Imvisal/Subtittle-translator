@@ -804,6 +804,15 @@
             }).catch(function (e) { msg.textContent = "Could not read the file: " + e.message; });
         });
     })();
+    [["tgHookOn", "sethook"], ["tgHookOff", "sethook&off=1"]].forEach(function (x) {
+        var b = $(x[0]); if (!b) { return; }
+        b.addEventListener("click", function () {
+            var m = $("tgMsg"); m.textContent = "Working...";
+            fetch("/api/stats?tg=" + x[1], { method: "POST", headers: { "x-admin-key": KEY } }).then(function (r) { return r.json(); })
+                .then(function (d) { m.textContent = d.ok ? (x[0] === "tgHookOn" ? "Rule is ON. " : "Rule is OFF. ") + (d.error || "") : (d.error || "Failed"); })
+                .catch(function () { m.textContent = "Failed"; });
+        });
+    });
     if ($("tgTest")) {
         $("tgTest").addEventListener("click", function () {
             var m = $("tgMsg"); m.textContent = "Sending...";

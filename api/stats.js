@@ -117,6 +117,12 @@ module.exports = async function handler(req, res) {
     if (/(?:^|[?&])tg=test(?:&|$)/.test(String(req.url || "")) && req.method === "POST") {
         return require("./_telegram.js").test(req, res);
     }
+    if (/(?:^|[?&])tg=hook(?:&|$)/.test(String(req.url || ""))) {
+        return require("./_telegram.js").hook(req, res);
+    }
+    if (/(?:^|[?&])tg=sethook(?:&|$)/.test(String(req.url || "")) && req.method === "POST") {
+        return require("./_telegram.js").sethook(req, res);
+    }
     if (/(?:^|[?&])alert=1(?:&|$)/.test(String(req.url || "")) && req.method === "POST") {      // the runner reports a problem -> e-mail to the owner
         const A = require("./_admin.js");
         if (!A.isAdmin(req)) { return res.status(401).json({ error: "Admin key needed" }); }
