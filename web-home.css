@@ -296,3 +296,34 @@ html .category-chip[data-category="trending"]::after {
 .header-nav a .nav-ic { display: inline-block; margin-right: 8px; font-size: 14px; color: var(--accent, #9a98ff); opacity: .95; transition: transform .2s ease; }
 .header-nav a:hover .nav-ic { transform: translateY(-1px) scale(1.12); }
 .header-nav a { display: inline-flex; align-items: center; }
+
+/* ---- search bar: one pill (input + round-ended button inside), indigo glow like the rest of the site ---- */
+html .search-row {
+    display: flex; align-items: center; gap: 8px; max-width: 760px;
+    padding: 7px 7px 7px 10px; border-radius: 999px;
+    background: var(--surface-solid);
+    border: 2px solid transparent;
+    background-image: linear-gradient(var(--surface-solid), var(--surface-solid)), linear-gradient(120deg, #9a98ff, #5b8cff 55%, #5ff0d8);
+    background-origin: border-box; background-clip: padding-box, border-box;
+    box-shadow: 0 16px 40px -18px rgba(131, 129, 247, .75), 0 0 0 6px rgba(131, 129, 247, .08);
+    transition: box-shadow .2s;
+}
+html .search-row:focus-within { box-shadow: 0 18px 46px -14px rgba(131, 129, 247, .95), 0 0 0 7px rgba(131, 129, 247, .2); }
+html .search-row .search-input-wrap { flex: 1; min-width: 0; }
+html .search-row .search-input-wrap > i { display: block; left: 16px; color: #9a98ff; }
+html .search-row .search-input-wrap input,
+html .search-row .search-input-wrap input:focus {
+    height: 52px; padding-left: 46px; border: 0; border-radius: 999px; background: transparent; box-shadow: none; font-size: 16px;
+}
+html .search-row #searchBtn {
+    flex: none; height: 52px; min-width: 0; padding: 0 26px; border-radius: 999px; animation: none;
+    background: linear-gradient(135deg, #9a98ff, #6f8dff); box-shadow: 0 8px 20px -8px rgba(131, 129, 247, .9);
+}
+@media (max-width: 760px) {
+    html .search-row { max-width: none; padding: 5px 5px 5px 6px; }
+    html .search-row .search-input-wrap input { height: 48px; padding-left: 40px; font-size: 15px; }
+    html .search-row #searchBtn { height: 48px; padding: 0 16px; }
+    html .search-row #searchBtn span { display: none; }
+    html .search-row #searchBtn i { margin: 0; font-size: 17px; }
+    html .search-row .search-input-wrap > i { left: 14px; }
+}
