@@ -1283,7 +1283,12 @@ and the existing /api/search, /api/subtitles and
         // preview of three lines spread through the file
         clear(previewBox);
 
-        const picks = [0, Math.floor(subs.length / 2), subs.length - 1]
+        // (the SinSubz credit cues at the start / end are not dialogue: show real lines in the preview)
+        const isCredit = function (i) { return /Sinsubs\.site/i.test(subs[i].text); };
+        let from = 0, to = subs.length - 1;
+        while (from < to && isCredit(from)) { from++; }
+        while (to > from && isCredit(to)) { to--; }
+        const picks = [from, from + Math.floor((to - from) / 2), to]
             .filter(function (v, i, a) { return a.indexOf(v) === i; });
 
         picks.forEach(function (i) {
@@ -1304,7 +1309,7 @@ and the existing /api/search, /api/subtitles and
 
             const tx = document.createElement("div");
             tx.className = "txt";
-            tx.textContent = subs[i].text.slice(0, 120);
+            tx.textContent = subs[i].text.replace(/<[^>]+>/g, "").slice(0, 160);
 
             row.appendChild(t);
             row.appendChild(tx);
