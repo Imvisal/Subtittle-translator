@@ -194,7 +194,7 @@ async function sinhalaSummary(title, year, type, overview, bulk) {
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 400 } }),
                     signal: AbortSignal.timeout(bulk ? 5000 : 6000)
                 });
-                if (!r.ok) { sumErr = "Gemini " + r.status + " (" + model + ")"; if (r.status === 429 || r.status === 503 || r.status === 404) { continue; } return ""; }
+                if (!r.ok) { sumErr = "Gemini " + r.status + " (" + model + ")"; if (r.status === 429 || r.status === 503 || r.status === 404 || r.status === 400 || r.status === 401 || r.status === 403) { continue; } return ""; }       // a dead / limited key: try the next one (then the Cloudflare writer)
                 const j = await r.json();
                 const t = String((((j.candidates || [])[0] || {}).content || {}).parts ? j.candidates[0].content.parts.map(x => x.text || "").join("") : "").replace(/[*_`#>"]+/g, "").replace(/\s+/g, " ").trim();
                 if (t.length > 30 && /[\u0D80-\u0DFF]/.test(t)) { return t.slice(0, 600); }
