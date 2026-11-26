@@ -1,7 +1,7 @@
 // When a film / episode has NO English subtitle on SubDL, other languages are tried (Gemini translates them to Sinhala just as well:
 // a Brazilian Portuguese file gave a good Sinhala result). English is always preferred; this runs only when English gave nothing.
-const FALLBACK_LANGS = ["BR_PT", "PT", "ES", "FR", "DE", "IT", "NL", "TR", "ID", "AR", "PL", "RU"];
-const LANG_NAME = { BR_PT: "Portuguese (Brazil)", PT: "Portuguese", ES: "Spanish", FR: "French", DE: "German", IT: "Italian", NL: "Dutch", TR: "Turkish", ID: "Indonesian", AR: "Arabic", PL: "Polish", RU: "Russian" };
+const FALLBACK_LANGS = ["BR_PT", "PT", "ES", "FR", "DE", "IT", "NL", "TR", "ID", "AR", "PL", "RU", "RO", "EL", "CS", "HU", "SV", "DA", "NO", "FI", "HE", "FA", "HI", "VI", "TH", "KO", "JA", "ZH", "BG", "HR", "SR", "UK"];
+const LANG_NAME = { BR_PT: "Portuguese (Brazil)", PT: "Portuguese", ES: "Spanish", FR: "French", DE: "German", IT: "Italian", NL: "Dutch", TR: "Turkish", ID: "Indonesian", AR: "Arabic", PL: "Polish", RU: "Russian", RO: "Romanian", EL: "Greek", CS: "Czech", HU: "Hungarian", SV: "Swedish", DA: "Danish", NO: "Norwegian", FI: "Finnish", HE: "Hebrew", FA: "Persian", HI: "Hindi", VI: "Vietnamese", TH: "Thai", KO: "Korean", JA: "Japanese", ZH: "Chinese", BG: "Bulgarian", HR: "Croatian", SR: "Serbian", UK: "Ukrainian" };
 
 module.exports = async function handler(req, res) {
     const isFallback = req.__subFallback === true;
