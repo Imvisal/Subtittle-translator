@@ -47,7 +47,7 @@ async function tmdbInfo(m, opts) {
     const seasons = [...new Set(Object.values(m.eps || {}).map(x => x.s).filter(Boolean))].sort((a, b) => a - b);
     const ck = "rdy:tmdb:" + m.id;
     const cached = parse((await redis([["GET", ck]]))[0]);
-    if (cached && cached.cast !== undefined && seasons.every(n => cached.seasons && cached.seasons[n])) {
+    if (cached && cached.cast !== undefined && seasons.every(n => cached.seasons && cached.seasons[n] && cached.sp && n in cached.sp)) {
         // only the Sinhala intro is missing (new feature, or Gemini failed earlier): make just that, retry at most once an hour
         if (cached.overview && !cached.si && ((opts && opts.force) || Date.now() - (cached.siTry || 0) > 600 * 1000)) {
             cached.siTry = Date.now();
@@ -108,9 +108,11 @@ async function tmdbInfo(m, opts) {
             } catch (e) { /* retry later */ }
         }
         if (m.type === "tv") {
+            info.sp = {};
             for (const n of seasons) {
                 try {
                     const sd = await get("/tv/" + pick.id + "/season/" + n);
+                    info.sp[n] = sd.poster_path ? "https://image.tmdb.org/t/p/w500" + sd.poster_path : ((sd.episodes || []).find(e => e.still_path) ? "https://image.tmdb.org/t/p/w500" + (sd.episodes || []).find(e => e.still_path).still_path : "");
                     info.seasons[n] = (sd.episodes || []).map(e => ({ e: e.episode_number, name: String(e.name || "").slice(0, 120), air: String(e.air_date || ""), min: e.runtime || 0 }));
                 } catch (err) { info.seasons[n] = []; }
             }
@@ -421,7 +423,7 @@ async function titleData(slug) {
     const more = list.filter(x => x.id !== m.id && x.p).map(x => ({ x, score: (x.g || []).filter(g => mg.has(g)).length * 2 + (x.type === m.type ? 1 : 0), ts: tsOf(x) }))
         .sort((a, b) => b.score - a.score || b.ts - a.ts).slice(0, 12)
         .map(o => ({ slug: o.x.slug, title: o.x.t, year: o.x.y, poster: o.x.p, type: o.x.type }));
-    return { more, wp, id: m.id, slug: m.slug, title: m.t, year: m.y, poster: m.p, type: m.type, overview: info.overview, trailer: info.trailer || "", backdrop: info.backdrop || "", cast: info.cast || [], by: info.by || [], imdb: info.imdb || "", votes: info.votes || "", rt: info.rt || "", mc: info.mc || "", rated: info.rated || "", si: info.si || "", tagline: info.tagline, genres: info.genres, rating: info.rating, runtime: info.runtime, seasons, url: pageUrl(m) };
+    return { more, wp, id: m.id, slug: m.slug, title: m.t, year: m.y, poster: m.p, type: m.type, overview: info.overview, trailer: info.trailer || "", backdrop: info.backdrop || "", sp: info.sp || {}, cast: info.cast || [], by: info.by || [], imdb: info.imdb || "", votes: info.votes || "", rt: info.rt || "", mc: info.mc || "", rated: info.rated || "", si: info.si || "", tagline: info.tagline, genres: info.genres, rating: info.rating, runtime: info.runtime, seasons, url: pageUrl(m) };
 }
 
 function pageHtml(d) {
@@ -486,7 +488,7 @@ function pageHtml(d) {
         '<body class="tp-page"><div class="tp-wrap"><nav class="tp-crumb" aria-label="Breadcrumb"><a href="/">SinSubz</a> › <a href="/#readyTitles">' + crumbName + '</a> › <span>' + esc(d.title) + '</span></nav><div id="tp"><noscript>' + noscript + "</noscript></div>" + seoBlock + moreHtml +
         '<section class="comments-section tp-comments" id="comments"><div class="cm-wrap" id="commentsRoot" hidden data-imdb="' + esc(d.id) + '" data-film="' + esc(d.title) + '"></div></section>' +
         '<p class="tp-foot">Subtitles made by SinSubz. Only the subtitle is provided, not the video.</p></div>' +
-        '<script type="application/json" id="tp-data">' + seed + '</script><script src="/title.js?v=2"></script><script src="/comments.js" defer></script><script src="/aads.js" defer></script><script src="/ad300.js" defer></script><script src="/popunder.js" defer></script><script src="/push.js" defer></script></body></html>';
+        '<script type="application/json" id="tp-data">' + seed + '</script><script src="/title.js?v=3"></script><script src="/comments.js" defer></script><script src="/aads.js" defer></script><script src="/ad300.js" defer></script><script src="/popunder.js" defer></script><script src="/push.js" defer></script></body></html>';
 }
 
 function isAdmin(req) { return require("./_admin.js").isAdmin(req); }
