@@ -16,6 +16,10 @@
   },
   "scripts": {
     "build:www": "node scripts/build-www.js",
-    "cap:sync": "node scripts/build-www.js && cap sync android"
+    "cap:sync": "node scripts/build-www.js && cap sync android",
+    "vercel-build": "node scripts/minify.js"
+  },
+  "devDependencies": {
+    "esbuild": "0.24.2"
   }
 }
