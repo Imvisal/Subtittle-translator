@@ -223,11 +223,15 @@
 .tp-mc img { display: block; width: 112px; height: 168px; object-fit: cover; border-radius: 12px; background: rgba(255, 255, 255, .06); box-shadow: 0 8px 20px -10px rgba(0, 0, 0, .7); }
 .tp-mc span { display: block; margin-top: 7px; font-size: 12.5px; font-weight: 700; line-height: 1.3; }
 
-/* season cards: banner picture + name, in one scrolling row (not stacked) */
-.tp-stabs { gap: 10px; }
-.tp-stab { position: relative; overflow: hidden; width: 168px; height: 84px; padding: 0; border-radius: 14px; text-align: left; display: flex; align-items: flex-end; border: 2px solid transparent; }
-.tp-stab img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(.55) saturate(1.1); transition: filter .2s; }
-.tp-stab span { position: relative; padding: 10px 12px; display: flex; flex-direction: column; line-height: 1.2; color: #fff; text-shadow: 0 1px 6px rgba(0,0,0,.7); }
-.tp-stab small { font-weight: 600; font-size: 12px; opacity: .85; }
-.tp-stab.on { background: var(--surface); color: #fff; border-color: #9a98ff; }
-.tp-stab.on img { filter: brightness(.8); }
+/* season cards: full poster per season, scrolling row, picked one glows */
+.tp-stabs { gap: 14px; padding: 6px 4px 16px; scroll-snap-type: x proximity; }
+.tp-stab { position: relative; overflow: hidden; flex: none; width: 128px; aspect-ratio: 2 / 3; height: auto; padding: 0; border-radius: 14px; text-align: left; display: flex; align-items: flex-end; border: 2px solid transparent; background: #14172b; scroll-snap-align: start; transition: transform .18s, box-shadow .18s, border-color .18s; box-shadow: 0 6px 18px rgba(0,0,0,.45); }
+.tp-stab:hover { transform: translateY(-3px); }
+.tp-stab img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(.7); transition: filter .2s; }
+.tp-stab::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(8,10,24,.92) 0%, rgba(8,10,24,.35) 38%, transparent 62%); pointer-events: none; }
+.tp-stab span { position: relative; z-index: 1; padding: 10px 11px; display: flex; flex-direction: column; line-height: 1.25; color: #fff; }
+.tp-stab b { font-size: 15px; }
+.tp-stab small { font-weight: 600; font-size: 12px; opacity: .8; }
+.tp-stab.on { border-color: #9a98ff; box-shadow: 0 0 0 3px rgba(154,152,255,.28), 0 10px 26px rgba(131,129,247,.35); background: #14172b; color: #fff; }
+.tp-stab.on img { filter: brightness(1); }
+@media (max-width: 520px) { .tp-stab { width: 108px; } }
