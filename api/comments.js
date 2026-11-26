@@ -155,6 +155,17 @@ module.exports = async function handler(req, res) {
                 const n = Number((await redis([["LLEN", "cm:r:" + parent]]))[0]) || 0;
                 if (n >= MAX_REPLIES) return res.status(400).json({ error: "This conversation is full." });
                 await redis([["RPUSH", "cm:r:" + parent, JSON.stringify(item)]]);
+                try {         // tell the person who wrote the comment (not when they answer themselves)
+                    const parentItem = JSON.parse(p);
+                    if (parentItem && parentItem.uid && String(parentItem.uid) !== String(who.uid)) {
+                        await require("./_admin.js").pushNotif(uidKey(parentItem.uid), {
+                            type: "reply",
+                            title: (item.owner ? "SinSubz replied to your comment" : clean(item.name, 40) + " replied to your comment"),
+                            body: clean(item.text, 140),
+                            quote: clean(parentItem.text, 90)
+                        });
+                    }
+                } catch (e) { /* the reply is saved anyway */ }
                 await require("./_admin.js").logActivity("comment", "Reply: " + String(item.text || item.t || item.body || "").slice(0, 70));
                 return res.status(200).json({ ok: true, comment: publicView(item, who, await premiumSet([item])) });
             }
