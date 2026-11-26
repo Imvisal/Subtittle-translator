@@ -6897,6 +6897,7 @@ window.__sinsubzPremiumInfo = async function (mode) {
         perk('<b>' + pm + ' films</b> a day <span style="opacity:.6">(free: ' + fm + ')</span>') +
         perk('<b>' + pe + ' TV episodes</b> a day <span style="opacity:.6">(free: ' + fe + ')</span>') +
         perk('<b>Priority</b> when the AI is busy') +
+        perk('<b>Download a whole season</b> as one .zip') +
         perk('<b>Your title requests go first</b> (15 a day)') +
         perk('<b>Priority support</b>') +
         perk('<b>Premium badge</b> on your comments') +

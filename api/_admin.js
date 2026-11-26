@@ -488,7 +488,7 @@ function mailPremium(rq) {
     const day = new Date(rq.until).toISOString().slice(0, 10);
     return mailUser(rq.email, "Your SinSubz Premium is active",
         "Hi" + (rq.name ? " " + rq.name : "") + ",\n\nThank you! Your payment was confirmed and your SinSubz Premium is now active until " + day + ".\n" +
-        "More translations a day, priority when the AI is busy, and your title requests go first. Just sign in on https://sinsubs.site with the same account.\n\n" +
+        "More translations a day, priority when the AI is busy, whole-season .zip downloads, and your title requests go first. Just sign in on https://sinsubs.site with the same account.\n\n" +
         "If anything looks wrong, use the Contact page on the site.\n\nSinSubz");
 }
 
