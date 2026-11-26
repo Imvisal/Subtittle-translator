@@ -4118,3 +4118,7 @@ html.tm-open, html.tm-open body { overflow: hidden; }
 
 /* category badge: text label in the app; the website swaps it for a subtitle icon (see web-home.css) */
 .category-type-badge .cb-ic, .category-type-badge .cb-sr { display: none; }
+
+/* dropdown lists of <select> boxes: readable text in both themes (the list is drawn by the browser, a see-through background turned it white) */
+select option, select optgroup { background-color: #14172b; color: #f2f3fa; }
+html[data-theme="light"] select option, html[data-theme="light"] select optgroup { background-color: #ffffff; color: #1a1d33; }
