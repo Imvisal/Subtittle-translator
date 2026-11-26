@@ -37,15 +37,20 @@ async function send(m, s, e, info, head) {
         (facts.length ? facts.join("\n") + "\n" : "") +
         "\n✅ Sinhala subtitle ready" + (tv && s ? " — Season " + s + (e ? ", Episode " + e : "") : "") +
         "\n\n⬇️ " + url);
-    const common = { chat_id: process.env.TG_CHAT_ID, parse_mode: "HTML" };
+    const ids = String(process.env.TG_CHAT_ID || "").split(",").map(x => x.trim()).filter(Boolean);   // group and channel: TG_CHAT_ID=-100123...,@my_channel
     const row = [{ text: "Download Sinhala subtitle", url }];
     if (/^tt\d+$/.test(m.id) && m.id !== "tt0000000") { row.push({ text: "IMDb", url: "https://www.imdb.com/title/" + m.id + "/" }); }
     const markup = { inline_keyboard: [row] };
-    if (/^https:\/\/image\.tmdb\.org\//.test(m.p || "")) {
-        const r = await call("sendPhoto", Object.assign({}, common, { photo: m.p, caption, reply_markup: markup }));
-        if (r.ok) { return r; }
-    }
-    return call("sendMessage", Object.assign({}, common, { text: caption, reply_markup: markup, disable_web_page_preview: false }));
+    const one = async id => {
+        const common = { chat_id: id, parse_mode: "HTML" };
+        if (/^https:\/\/image\.tmdb\.org\//.test(m.p || "")) {
+            const r = await call("sendPhoto", Object.assign({}, common, { photo: m.p, caption, reply_markup: markup }));
+            if (r.ok) { return r; }
+        }
+        return call("sendMessage", Object.assign({}, common, { text: caption, reply_markup: markup, disable_web_page_preview: false }));
+    };
+    const all = await Promise.all(ids.map(one));
+    return all.find(r => r.ok) || all[0] || { ok: false, desc: "no chat id" };      // ok when at least one chat got it
 }
 
 async function postNew(m, s, e) {
