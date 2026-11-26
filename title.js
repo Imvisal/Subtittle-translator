@@ -93,7 +93,7 @@
             return '<section class="tp-card tp-dcard" id="tpEps"><h2>Sinhala subtitle</h2>' +
                 '<button type="button" class="tp-bigdl tp-dl" data-s="0" data-e="0"><span class="tp-di">\u2B07</span><b>Download Sinhala subtitle</b></button>' +
                 '<p class="tp-meta">' + (f0.n ? f0.n + ' lines \u00B7 ' : '') + 'free .srt \u00B7 you pick your video version next</p>' +
-                dcountHtml() + '</section>';
+                '</section>';
         }
         var tabs = seasonKeys.length > 1 ? '<div class="tp-tabs tp-stabs" role="tablist">' + seasonKeys.map(function (k, i) {
             var n = (D.seasons[k] || []).length, img = (D.sp && D.sp[k]) || D.backdrop || D.poster || "";
@@ -108,7 +108,7 @@
         }).join("");
         var nReady = (D.seasons[cur] || []).filter(function (e) { return e.ready; }).length;
         var all = nReady > 1 ? '<button type="button" class="tp-season" id="tpSeasonDl">' + DLI + 'Download whole season ' + cur + ' <small>' + nReady + ' episodes, one .zip</small></button>' : "";
-        return '<section class="tp-card" id="tpEps"><h2>Episodes</h2>' + tabs + all + '<ul class="tp-eps">' + list + '</ul>' + dcountHtml() + '</section>';
+        return '<section class="tp-card" id="tpEps"><h2>Episodes</h2>' + tabs + all + '<ul class="tp-eps">' + list + '</ul></section>';
     }
 
     function startTrailer() {
