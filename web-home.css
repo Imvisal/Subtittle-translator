@@ -374,3 +374,19 @@ html .search-row #searchBtn {
     .m-drawer .m-premium > i:first-child { color: #2a1c00; }
     .m-drawer .m-small { font-size: 14.5px; font-weight: 600; color: var(--text-2); border-bottom: 0; }
 }
+
+/* phone header with the hamburger: everything fits in one row (Sign in becomes a round icon button) */
+@media (max-width: 720px) {
+    .top-header { gap: 8px; padding: 0 10px; }
+    .m-burger { width: 40px; height: 40px; margin-right: 2px; }
+    .top-header .brand { gap: 8px; min-width: 0; flex: 0 1 auto; }
+    .top-header .brand-logo { width: 40px; height: 40px; flex: none; }
+    .top-header .brand-title { font-size: 19px; }
+    .top-header .header-actions { gap: 8px; margin-left: auto; flex: none; }
+    .top-header .theme-toggle { width: 64px; }
+    .top-header .theme-toggle::before { transform: translateX(30px); }
+    html[data-theme="light"] .top-header .theme-toggle::before { transform: translateX(0); }
+    .wa-btn { width: 40px; padding: 0; justify-content: center; }
+    .wa-btn .wa-txt { display: none; }
+}
+@media (max-width: 380px) { .top-header .brand-title { font-size: 17px; } .top-header .theme-toggle { width: 58px; } .top-header .theme-toggle::before { transform: translateX(26px); } }
