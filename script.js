@@ -4427,7 +4427,7 @@ function parseSRT(srt) {
 
 // SinSubz credit: one short cue at the start and one at the end of every translated subtitle.
 // They only go into a gap with no dialogue and never touch the timing of any other cue.
-const SINSUBZ_CREDIT = "Sinhala subtitles by SinSubz\nඅලුත්ම Movies සහ TV series වල සිංහල උපසිරැසි සඳහා – <font color=\"#FFFF00\">Sinsubs.site</font>";
+const SINSUBZ_CREDIT = "Sinhala subtitles by SinSubz\n<font color=\"#FFFF00\">Sinsubs.site</font>";
 
 function addSinSubzCredit(subs) {
 
@@ -4444,7 +4444,7 @@ function addSinSubzCredit(subs) {
             p(Math.floor((ms % 60000) / 1000), 2) + "," + p(ms % 1000, 3);
     };
 
-    const list = (subs || []).filter(s => s && s.text && s.text.indexOf(SINSUBZ_CREDIT) === -1 && !/Sinsubs\.site/i.test(s.text));   // also drops the older credit wording
+    const list = (subs || []).filter(s => s && s.text && s.text.indexOf(SINSUBZ_CREDIT) === -1);
 
     let first = Infinity, last = 0;
 
