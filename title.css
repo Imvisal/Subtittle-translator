@@ -247,3 +247,8 @@
 .tp-hdl[hidden] { display: none; }
 .tp-hdl svg { color: #5ff0d8; }
 .tp-hdl b { font-size: 15px; font-weight: 800; color: #5ff0d8; }
+
+/* whole-season download is Premium: locked look for free members */
+.tp-season .tp-prem { display: inline-flex; align-items: center; gap: 6px; margin-left: 8px; padding: 3px 10px; border-radius: 999px; background: rgba(255,255,255,.22); font-size: 12px; font-weight: 800; letter-spacing: .02em; }
+.tp-season.is-locked { background: linear-gradient(135deg,#4a4f75,#3a3e5c); }
+.tp-season.is-locked small { margin-left: auto; }

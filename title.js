@@ -107,7 +107,7 @@
             return '<li class="tp-ep' + (e.ready ? " is-ready" : "") + '">' + left + right + '</li>';
         }).join("");
         var nReady = (D.seasons[cur] || []).filter(function (e) { return e.ready; }).length;
-        var all = nReady > 1 ? '<button type="button" class="tp-season" id="tpSeasonDl">' + DLI + 'Download whole season ' + cur + ' <small>' + nReady + ' episodes, one .zip</small></button>' : "";
+        var all = nReady > 1 ? '<button type="button" class="tp-season' + (isPrem ? "" : " is-locked") + '" id="tpSeasonDl">' + DLI + 'Download whole season ' + cur + ' <small>' + nReady + ' episodes, one .zip</small>' + (isPrem ? "" : '<span class="tp-prem"><svg class="tp-lk" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg> Premium</span>') + '</button>' : "";
         return '<section class="tp-card" id="tpEps"><h2>Episodes</h2>' + tabs + all + '<ul class="tp-eps">' + list + '</ul></section>';
     }
 
@@ -174,7 +174,7 @@
         var t = ev.target.closest && ev.target.closest(".tp-tab");
         if (t) { cur = Number(t.getAttribute("data-season")); try { sessionStorage.setItem("tp-season-" + D.id, String(cur)); } catch (e) { /* ignore */ } render(); return; }
         var sd = ev.target.closest && ev.target.closest("#tpSeasonDl");
-        if (sd) { seasonZip(sd); return; }
+        if (sd) { seasonGate(sd); return; }
         var b = ev.target.closest && ev.target.closest(".tp-dl");
         if (b) { ask(Number(b.getAttribute("data-s")), Number(b.getAttribute("data-e"))); }
     });
@@ -227,6 +227,41 @@
         var end = []; w32(end, 0x06054b50); w16(end, 0); w16(end, 0); w16(end, files.length); w16(end, files.length); w32(end, csize); w32(end, off); w16(end, 0);
         return new Blob(parts.concat(central, [new Uint8Array(end)]), { type: "application/zip" });
     }
+    // "Download whole season" is a Premium feature: free members see a lock and a short note (single episodes stay free)
+    var isPrem = false;
+    function checkPremium(then) {
+        tokenNow().then(function (tk) {
+            if (!tk) { return null; }
+            return fetch("/api/stats?me=1", { headers: { Authorization: "Bearer " + tk }, cache: "no-store" }).then(function (r) { return r.json(); });
+        }).then(function (d) {
+            var p = !!(d && d.signedIn && d.premium);
+            if (p !== isPrem) { isPrem = p; try { render(); } catch (e) { /* ignore */ } }
+        }).catch(function () { /* ignore */ }).then(function () { if (then) { then(isPrem); } });
+    }
+    function seasonGate(btn) {
+        if (isPrem) { seasonZip(btn); return; }
+        tokenNow().then(function (tk) {
+            if (!tk) { return Promise.resolve(window.__sinsubzSignIn ? window.__sinsubzSignIn() : null).catch(function () { /* closed */ }); }
+        }).then(function () {
+            checkPremium(function (ok) {
+                if (ok) { var b = document.getElementById("tpSeasonDl"); if (b) { seasonZip(b); } return; }
+                var ov = document.createElement("div");
+                ov.className = "tp-ov";
+                ov.innerHTML = '<div class="tp-modal" role="dialog" aria-modal="true" aria-label="Premium needed">' +
+                    '<button type="button" class="tp-x" aria-label="Close">\u2715</button>' +
+                    '<div class="tp-mt">Premium needed</div>' +
+                    '<p class="tp-mp" style="margin:10px 0 14px">Downloading a whole season as one .zip is a <b>Premium</b> feature. You can still download every episode one by one for free.<br><span lang="si">මුළු season එකම එකවර download කරන්න Premium ඕන. episode එක එක නම් නොමිලේ download කරන්න පුළුවන්.</span></p>' +
+                    '<a class="tp-opt tp-opt-a" href="/#plans" style="justify-content:center"><span class="tp-ot"><b>See Premium plans</b></span></a></div>';
+                function close() { ov.remove(); }
+                ov.addEventListener("click", function (e) { if (e.target === ov || (e.target.closest && e.target.closest(".tp-x"))) { close(); } });
+                document.body.appendChild(ov);
+            });
+        });
+    }
+    checkPremium();
+    // the account scripts can finish signing in after the page loaded: look again a little later
+    setTimeout(checkPremium, 1500); setTimeout(checkPremium, 4500);
+
     function seasonZip(btn) {
         var eps = (D.seasons[cur] || []).filter(function (e) { return e.ready; });
         if (!eps.length || btn.disabled) { return; }
