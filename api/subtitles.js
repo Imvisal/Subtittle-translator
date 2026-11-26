@@ -331,19 +331,22 @@ module.exports = async function handler(req, res) {
                         // TV episode filter
                         // ----------------------------------------
 
+                        // SubDL often leaves file.episode empty: then read it from the file name (S01E06, 1x06, E06),
+                        // and a pack whose files carry no episode number at all is accepted only when it holds a single file
                         if (
                             type === "episode" &&
                             episode
                         ) {
 
-                            if (
-                                Number(
-                                    file.episode
-                                ) !==
-                                Number(
-                                    episode
-                                )
-                            ) {
+                            let fe = Number(file.episode) || 0;
+
+                            if (!fe) {
+                                const nm = String(file.name || "") + " " + String(file.release_name || sub.release_name || "");
+                                const m = nm.match(/s\d{1,2}[\s._-]*e(\d{1,3})/i) || nm.match(/\b\d{1,2}x(\d{2,3})\b/i) || nm.match(/(?:^|[^a-z0-9])e(?:p(?:isode)?)?[\s._-]?(\d{1,3})(?![a-z0-9])/i);
+                                if (m) { fe = Number(m[1]) || 0; }
+                            }
+
+                            if (fe ? fe !== Number(episode) : sub.unpack_files.length !== 1) {
 
                                 return;
 
