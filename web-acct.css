@@ -68,3 +68,12 @@ html[data-theme="light"] .wa-menu { background: #fff; color: #1c1b33; border-col
 .tp-hnav i { color: #8f86ff; }
 @media (max-width: 640px) { .tp-brand b { display: none; } .tp-hnav a { padding: 8px 9px; } .tp-hnav a span { font-size: 13px; } .tp-hnav i { display: none; } }
 .tp-hdr .wa-avatar { width: 38px; height: 38px; }
+
+/* phone: film/TV page header = logo + theme switch + account only (desktop unchanged) */
+.tp-tt { display: none; }
+@media (max-width: 640px) {
+    .tp-hdr .tp-hnav { display: none; }
+    .tp-hdr .tp-tt { display: flex; margin-left: auto; width: 78px; height: 38px; flex: none; }
+    .tp-hdr .tp-tt::before { top: 3px; transform: translateX(36px); }
+    html[data-theme="light"] .tp-hdr .tp-tt::before { transform: translateX(0); }
+}

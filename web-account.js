@@ -516,6 +516,13 @@
     }
 
     var tg = document.getElementById("themeToggle");
+    if (tg && tg.classList.contains("tp-tt")) {       // film/TV pages have no script.js, so the switch works itself
+        tg.addEventListener("click", function () {
+            var next = currentTheme() === "light" ? "dark" : "light";
+            document.documentElement.setAttribute("data-theme", next);
+            lsSet(K.theme, next);
+        });
+    }
     if (tg) { tg.addEventListener("click", schedulePush); }
     var langEl = document.getElementById("language");
     if (langEl) {
