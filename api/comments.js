@@ -69,16 +69,27 @@ module.exports = async function handler(req, res) {
             }
 
             const tId = /^tt\d{5,10}$/.test(String(q.t || "")) ? String(q.t) : "";
-            const LIST = tId ? "cm:t:" + tId : "cm:ids";           // one title's own comments, or the home list
-            const total = Number((await redis([["LLEN", LIST]]))[0]) || 0;
-            if (!total || offset >= total) return res.status(200).json({ enabled: true, total, comments: [] });
-
-            let from, to;
-            if (sort === "new") { from = offset; to = offset + limit - 1; }
-            else { from = Math.max(0, total - offset - limit); to = total - offset - 1; }
-
-            let ids = (await redis([["LRANGE", LIST, from, to]]))[0] || [];
-            if (sort === "old") ids = ids.reverse();
+            let total, ids;
+            if (tId) {                                              // one title's own comments
+                const LIST = "cm:t:" + tId;
+                total = Number((await redis([["LLEN", LIST]]))[0]) || 0;
+                if (!total || offset >= total) return res.status(200).json({ enabled: true, total, comments: [] });
+                let from, to;
+                if (sort === "new") { from = offset; to = offset + limit - 1; }
+                else { from = Math.max(0, total - offset - limit); to = total - offset - 1; }
+                ids = (await redis([["LRANGE", LIST, from, to]]))[0] || [];
+                if (sort === "old") ids = ids.reverse();
+            } else {                                                // the home list: general comments only (not the ones written on film / TV pages)
+                const every = (await redis([["LRANGE", "cm:ids", 0, -1]]))[0] || [];
+                let kept = [];
+                if (every.length) {
+                    const vals = (await redis([["MGET", ...every.map(id => "cm:c:" + id)]]))[0] || [];
+                    kept = every.filter((id, i) => { const c = parse(vals[i]); return c && !c.imdb; });
+                }
+                total = kept.length;
+                if (!total || offset >= total) return res.status(200).json({ enabled: true, total, comments: [] });
+                ids = (sort === "new" ? kept : kept.slice().reverse()).slice(offset, offset + limit);
+            }
             if (!ids.length) return res.status(200).json({ enabled: true, total, comments: [] });
 
             const rows = await redis([
@@ -172,9 +183,8 @@ module.exports = async function handler(req, res) {
             }
 
             await redis([
-                ["SET", "cm:c:" + item.id, JSON.stringify(item)],
-                ["LPUSH", "cm:ids", item.id]
-            ].concat(imdb ? [["LPUSH", "cm:t:" + imdb, item.id], ["LTRIM", "cm:t:" + imdb, 0, MAX_COMMENTS - 1]] : []));
+                ["SET", "cm:c:" + item.id, JSON.stringify(item)]
+            ].concat(imdb ? [] : [["LPUSH", "cm:ids", item.id]]).concat(imdb ? [["LPUSH", "cm:t:" + imdb, item.id], ["LTRIM", "cm:t:" + imdb, 0, MAX_COMMENTS - 1]] : []));
             await require("./_admin.js").logActivity("comment", "Comment: " + String(item.text || item.t || item.body || "").slice(0, 70));
 
             // keep the newest 100 only; drop the rest with their replies
