@@ -64,6 +64,8 @@
         .who div { min-width:0; } .who small { display:block; color:var(--muted); overflow:hidden; text-overflow:ellipsis; }
         .tag { font-size:11.5px; padding:2px 8px; border-radius:99px; border:1px solid var(--line); color:var(--muted); }
         .tbl { overflow-x:auto; }
+        .tbl-top { overflow-x:auto; overflow-y:hidden; height:14px; margin:0 0 4px; }
+        .tbl-top > div { height:1px; }
         .list { list-style:none; margin:0; padding:0; font-size:14px; }
         .list li { display:flex; justify-content:space-between; gap:12px; padding:7px 0; border-bottom:1px solid var(--line); }
         .list li span:last-child { color:var(--muted); font-size:12.5px; white-space:nowrap; }
@@ -454,5 +456,20 @@
     </div>
 </main>
 <script src="admin.js"></script>
+<script>
+(function () {
+    // a second horizontal scrollbar ABOVE each wide table, kept in sync with the one below
+    Array.prototype.forEach.call(document.querySelectorAll(".tbl"), function (w) {
+        var top = document.createElement("div"), inner = document.createElement("div"), lock = false;
+        top.className = "tbl-top"; top.appendChild(inner); w.parentNode.insertBefore(top, w);
+        function size() { inner.style.width = w.scrollWidth + "px"; top.style.display = w.scrollWidth > w.clientWidth + 2 ? "" : "none"; }
+        top.addEventListener("scroll", function () { if (lock) { lock = false; return; } lock = true; w.scrollLeft = top.scrollLeft; });
+        w.addEventListener("scroll", function () { if (lock) { lock = false; return; } lock = true; top.scrollLeft = w.scrollLeft; });
+        if (window.ResizeObserver) { var ro = new ResizeObserver(size); ro.observe(w); if (w.firstElementChild) { ro.observe(w.firstElementChild); } }
+        window.addEventListener("resize", size); size();
+    });
+})();
+</script>
+
 </body>
 </html>
