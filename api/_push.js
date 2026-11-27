@@ -77,7 +77,7 @@ async function notifyNewTitle(m) {
         if (!hasRedis() || !vapidReady()) { return; }
         const [ok] = await redis([["SET", "push:last", "1", "EX", "21600", "NX"]]);
         if (ok !== "OK") { return; }
-        const slug = m.slug || m.id;
+        const slug = m.slug ? m.slug + "-sinhala-subtitles" : m.id;
         await broadcast({ title: "New Sinhala subtitle ready", body: (m.t || "") + (m.y ? " (" + m.y + ")" : "") + " - download it now", url: (m.type === "tv" ? "/tv/" : "/film/") + slug }, 6000);
     } catch (e) { /* never breaks the caller */ }
 }

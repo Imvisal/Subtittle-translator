@@ -63,7 +63,11 @@ const srtKey = (id, s, e) => "rdy:srt:" + id + ":" + s + ":" + e;
 const slugify = t => String(t || "").toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/&/g, " and ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60).replace(/-+$/, "") || "title";
 const esc = t => String(t == null ? "" : t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const SITE = "https://sinsubs.site";
-const pageUrl = m => SITE + (m.type === "tv" ? "/tv/" : "/film/") + m.slug;
+// Public addresses end with -sinhala-subtitles (/film/steps-2026-sinhala-subtitles): the words people search for are in the URL.
+// The old address (/film/steps-2026) still works and sends a 301 to the new one.
+const SUF = "-sinhala-subtitles";
+const pub = s => String(s || "") + SUF;
+const pageUrl = m => SITE + (m.type === "tv" ? "/tv/" : "/film/") + pub(m.slug);
 
 async function allTitles() {
     const [flat] = await redis([["HGETALL", "rdy:idx"]]);
@@ -502,7 +506,7 @@ function pageHtml(d) {
         "<p>Download " + esc(d.title) + " Sinhala sub for free. SinSubz makes natural spoken Sinhala subtitles (.srt) that fit your video. " +
         esc(d.title) + " සිංහල උපසිරැසි නොමිලේ ඩවුන්ලෝඩ් කරගන්න.</p>" + faqHtml + "</section>";
     const moreHtml = (d.more && d.more.length) ? '<section class="tp-card tp-more"><h2>Similar Sinhala subtitles <span lang="si" style="font-weight:600;opacity:.7">· සමාන උපසිරැසි</span></h2><div class="tp-mrow">' + d.more.map(x =>
-        '<a class="tp-mc" href="/' + (x.type === "tv" ? "tv" : "film") + "/" + esc(x.slug) + '"><img src="' + esc(x.poster) + '" alt="' + esc(x.title) + ' Sinhala subtitles" loading="lazy" width="120" height="180"><span>' + esc(x.title) + (x.year ? " (" + esc(x.year) + ")" : "") + "</span></a>").join("") + "</div></section>" : "";
+        '<a class="tp-mc" href="/' + (x.type === "tv" ? "tv" : "film") + "/" + esc(pub(x.slug)) + '"><img src="' + esc(x.poster) + '" alt="' + esc(x.title) + ' Sinhala subtitles" loading="lazy" width="120" height="180"><span>' + esc(x.title) + (x.year ? " (" + esc(x.year) + ")" : "") + "</span></a>").join("") + "</div></section>" : "";
     const seed = JSON.stringify(d).replace(/</g, "\\u003c");
     const noscript = (d.overview ? "<h1>" + esc(d.title) + " Sinhala Subtitles</h1><p>" + esc(d.overview) + "</p>" + (d.si ? "<p>" + esc(d.si) + "</p>" : "") : "") + (!isTv ? '<p><a href="/api/stats?ready=get&amp;id=' + esc(d.id) + '&amp;s=0&amp;e=0">Download ' + esc(d.title) + " Sinhala subtitle (.srt)</a></p>" : "") + (!isTv ? "" : Object.keys(d.seasons).map(n => "<h3>Season " + esc(n) + "</h3><ul>" + d.seasons[n].filter(e => e.ready).map(e =>
         '<li><a href="/api/stats?ready=get&amp;id=' + esc(d.id) + "&amp;s=" + esc(n) + "&amp;e=" + esc(e.e) + '">S' + String(n).padStart(2, "0") + "E" + String(e.e).padStart(2, "0") + (e.name ? " " + esc(e.name) : "") + " Sinhala subtitle (.srt)</a></li>").join("") + "</ul>").join(""));
@@ -545,7 +549,7 @@ module.exports = async function ready(req, res) {
                 const eps = Object.values(m.eps || {}).map(x => ({ s: x.s, e: x.e, n: x.n, ts: x.ts }))
                     .sort((a, b) => a.s - b.s || a.e - b.e);
                 if (!rt[m.id] && needRt.length < 4) { needRt.push(m); }
-                items.push({ id: m.id, slug: m.slug || slugify(m.t), t: m.t, y: m.y, p: m.p, g: m.g || [], r: rt[m.id] || "", type: m.type, eps, ts: Math.max(0, ...eps.map(x => x.ts || 0)) });
+                items.push({ id: m.id, slug: pub(m.slug || slugify(m.t)), t: m.t, y: m.y, p: m.p, g: m.g || [], r: rt[m.id] || "", type: m.type, eps, ts: Math.max(0, ...eps.map(x => x.ts || 0)) });
             }
             // titles saved before genres existed: look up a few per request (TMDB), remember them, so the filter fills itself
             if (need.length && process.env.TMDB_API_KEY) {
@@ -575,7 +579,10 @@ module.exports = async function ready(req, res) {
         }
 
         if ((act === "page" || act === "title") && req.method === "GET") {
-            const slug = String(q(req).slug || "").toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 80);
+            let slug = String(q(req).slug || "").toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 100);
+            const hadSuf = slug.length > SUF.length && slug.slice(-SUF.length) === SUF;
+            if (hadSuf) { slug = slug.slice(0, -SUF.length); }
+            slug = slug.slice(0, 80);
             let d = null;
             try { d = slug ? await titleData(slug) : null; }
             catch (e) {
@@ -589,7 +596,12 @@ module.exports = async function ready(req, res) {
                 // a near-miss address (cut-off, or with/without the year) goes to the one title it clearly means
                 const base = slug.replace(/-(19|20)\d\d$/, "");
                 const near = (await allTitles()).filter(x => x.slug && (x.slug.indexOf(base) === 0 || base.indexOf(x.slug) === 0 || x.slug.replace(/-(19|20)\d\d$/, "") === base));
-                if (near.length === 1) { res.setHeader("Location", (near[0].type === "tv" ? "/tv/" : "/film/") + near[0].slug); return res.status(301).end(); }
+                if (near.length === 1) { res.setHeader("Location", (near[0].type === "tv" ? "/tv/" : "/film/") + pub(near[0].slug)); return res.status(301).end(); }
+            }
+            if (d && act === "page" && !hadSuf) {
+                // old address (without -sinhala-subtitles, or by IMDb id): one permanent address per title
+                res.setHeader("Location", (d.type === "tv" ? "/tv/" : "/film/") + pub(d.slug));
+                return res.status(301).end();
             }
             if (!d) {
                 if (act === "title") { return res.status(404).json({ error: "Not found" }); }

@@ -85,7 +85,7 @@ module.exports.mailRequesters = async function (m) {
         if (!flat.length) { return 0; }
         await redis([["DEL", key]]);
         const A = require("./_admin.js");
-        const url = "https://sinsubs.site" + (m.type === "tv" ? "/tv/" : "/film/") + (m.slug || m.id);
+        const url = "https://sinsubs.site" + (m.type === "tv" ? "/tv/" : "/film/") + (m.slug ? m.slug + "-sinhala-subtitles" : m.id);
         let n = 0;
         for (let i = 1; i < flat.length && n < 40; i += 2) {
             const ok = await A.mailUser(flat[i], "Your Sinhala subtitle is ready: " + (m.t || "your request"),

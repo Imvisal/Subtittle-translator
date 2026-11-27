@@ -23,7 +23,7 @@ async function call(method, body) {
 
 async function send(m, s, e, info, head) {
     const tv = m.type === "tv";
-    const url = SITE + (tv ? "/tv/" : "/film/") + (m.slug || m.id);
+    const url = SITE + (tv ? "/tv/" : "/film/") + (m.slug ? m.slug + "-sinhala-subtitles" : m.id);
     info = info || {};
     const rating = info.imdb ? "IMDb " + info.imdb + "/10" : (info.rating ? "TMDB " + info.rating + "/10" : "");
     const facts = [
