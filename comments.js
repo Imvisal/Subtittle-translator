@@ -147,6 +147,43 @@
         return line;
     }
 
+    // ------------------------------------------------------------ replies to your comments (the bell is not on title pages)
+    function notifCall(method, body) {
+        return token().then(function (tk) {
+            if (!tk) { return null; }
+            return fetch("/api/stats?notif=1", {
+                method: method, cache: "no-store",
+                headers: { Authorization: "Bearer " + tk, "Content-Type": "application/json" },
+                body: body ? JSON.stringify(body) : undefined
+            }).then(function (r) { return r.json(); });
+        }).catch(function () { return null; });
+    }
+    function replyStrip() {
+        var strip = el("div", "cm-notif");
+        strip.hidden = true;
+        notifCall("GET").then(function (d) {
+            if (!d || !d.signedIn) { return; }
+            var fresh = (d.items || []).filter(function (i) { return i.type === "reply" && i.t > (d.seen || 0); });
+            if (!fresh.length) { return; }
+            strip.hidden = false;
+            var h = el("div", "cm-notif-h", "\uD83D\uDD14 " + fresh.length + " new " + (fresh.length > 1 ? "replies" : "reply") + " to your comments");
+            strip.appendChild(h);
+            fresh.slice(0, 3).forEach(function (i) {
+                var r = el("div", "cm-notif-i");
+                r.appendChild(el("b", "", i.title || "New reply"));
+                r.appendChild(el("span", "", " \u2014 " + (i.body || "")));
+                strip.appendChild(r);
+            });
+            var ok = el("button", "cm-notif-x", "Mark as read");
+            ok.type = "button";
+            ok.addEventListener("click", function () {
+                notifCall("POST", { action: "seen" }).then(function () { strip.hidden = true; });
+            });
+            strip.appendChild(ok);
+        });
+        return strip;
+    }
+
     // ------------------------------------------------------------ composer (used by the section and the popup)
     function composer(opts) {
         var box = el("div", "cm-compose");
@@ -162,6 +199,7 @@
                 box.appendChild(note);
                 return;
             }
+            if (!opts.reply) { box.appendChild(replyStrip()); }
             var ta = el("textarea");
             ta.rows = opts.reply ? 2 : 3;
             ta.maxLength = 600;

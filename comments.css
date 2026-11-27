@@ -92,3 +92,10 @@
 }
 
 .cm-av-pic { object-fit: cover; background: none; }
+
+/* new replies to the signed-in user's comments */
+.cm-notif { margin: 0 0 12px; padding: 10px 12px; border-radius: 12px; background: rgba(143,134,255,.14); border: 1px solid rgba(143,134,255,.4); font-size: 13.5px; line-height: 1.5; }
+.cm-notif[hidden] { display: none; }
+.cm-notif-h { font-weight: 700; margin-bottom: 4px; }
+.cm-notif-i { opacity: .92; word-break: break-word; }
+.cm-notif-x { margin-top: 6px; background: none; border: 0; padding: 2px 0; color: inherit; font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; }
