@@ -128,7 +128,11 @@
             forgot.addEventListener("click", function () {
                 var em = mail.value.trim();
                 if (!em) { say("Type your email above first."); return; }
-                M.sendPasswordResetEmail(auth, em).then(function () { say("If that email has an account, a reset link is on its way.", true); }).catch(function (e) { say(nice(e)); });
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { say("That email address is not valid."); return; }
+                forgot.disabled = true; say("Sending\u2026", true);
+                M.sendPasswordResetEmail(auth, em).then(function () { say("If that email has an account, a reset link is on its way. Check Spam / Promotions too. (If you signed up with Google, there is no password: use the Google button.)", true); })
+                    .catch(function (e) { var c = String((e && e.code) || ""); say(/user-not-found/.test(c) ? "No account with that email." : (/invalid-email|too-many|network/.test(c) ? nice(e) : "Could not send the email (" + (c || "error") + "). Please try again.")); })
+                    .then(function () { forgot.disabled = false; });
             });
             [mail, pass, nameI].forEach(function (i) { i.addEventListener("keydown", function (ev) { if (ev.key === "Enter") { go.click(); } }); });
 
