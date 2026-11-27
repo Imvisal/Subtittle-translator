@@ -303,7 +303,7 @@
 
         // new accounts + where they use it
         chart($("chartN"), d.daily, "newUsers");
-        (function () { var n = (d.users || []).filter(function (u) { return u.prov === "email"; }).length, b = $("emailUsers"); if (b) { b.textContent = fmt(n); } })();
+        (function () { var n = (d.users || []).filter(function (u) { return u.prov === "email"; }).length, b = $("emailUsers"), b2 = $("emailUsers2"); if (b) { b.textContent = fmt(n); } if (b2) { b2.textContent = fmt(n); } })();
         var pl = $("platforms"); pl.textContent = "";
         var pmax = Math.max(1, d.platforms.web || 0, d.platforms.android || 0, d.platforms.windows || 0);
         [["Web", d.platforms.web], ["Android", d.platforms.android], ["Windows", d.platforms.windows]].forEach(function (x) {
