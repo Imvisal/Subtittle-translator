@@ -91,14 +91,14 @@
                 eye.innerHTML = show ? EYE_OFF : EYE; eye.setAttribute("aria-label", show ? "Hide password" : "Show password"); pass.focus();
             });
             pw.appendChild(pass); pw.appendChild(eye);
-            box.appendChild(nameI); box.appendChild(mail); box.appendChild(pw); box.appendChild(go); box.appendChild(forgot); box.appendChild(msg);
+            box.appendChild(nameI); box.appendChild(mail); box.appendChild(pw); box.appendChild(go); box.appendChild(msg); box.appendChild(forgot);
             function setMode(m) {
                 mode = m; tIn.className = m === "in" ? "on" : ""; tUp.className = m === "up" ? "on" : "";
                 nameI.hidden = m !== "up"; go.textContent = m === "up" ? "Create account" : "Sign in"; forgot.hidden = m === "up";
                 pass.autocomplete = m === "up" ? "new-password" : "current-password"; msg.textContent = ""; msg.className = "lg-msg";
             }
             tIn.addEventListener("click", function () { setMode("in"); }); tUp.addEventListener("click", function () { setMode("up"); });
-            function say(t, ok) { msg.textContent = t; msg.className = "lg-msg" + (ok ? " ok" : ""); }
+            function say(t, ok) { msg.textContent = t; msg.className = "lg-msg" + (ok ? " ok" : ""); try { msg.scrollIntoView({ block: "nearest" }); } catch (e) { /* ignore */ } }
 
             go.addEventListener("click", function () {
                 var em = mail.value.trim(), pw = pass.value;
