@@ -98,6 +98,11 @@
             im.src = pic; im.alt = ""; im.className = "cm-av cm-av-pic";
             return im;
         }
+        if (/^https:\/\/[a-z0-9-]+\.googleusercontent\.com\/[^\s"<>]{1,400}$/i.test(pic || "")) {
+            var gi = document.createElement("img");
+            gi.src = pic; gi.alt = ""; gi.className = "cm-av cm-av-pic"; gi.referrerPolicy = "no-referrer"; gi.loading = "lazy";
+            return gi;
+        }
         var h = 0;
         for (var i = 0; i < n.length; i++) { h = (h * 31 + n.charCodeAt(i)) >>> 0; }
         var a = el("span", "cm-av", n.charAt(0).toUpperCase());

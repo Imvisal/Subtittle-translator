@@ -39,7 +39,7 @@ function publicView(c, who, prem) {
     const mine = !!who && c.uid === who.uid;
     const prof = (prem && prem.profiles && prem.profiles[uidKey(c.uid)]) || {};
     return {
-        id: c.id, t: c.t, name: prof.n || c.name, pic: prof.p || "", text: c.text,
+        id: c.id, t: c.t, name: prof.n || c.name, pic: prof.p || (/^https:\/\/[a-z0-9-]+\.googleusercontent\.com\/[^\s"<>]{1,400}$/i.test(c.ph || "") ? c.ph : ""), text: c.text,
         owner: !!c.owner, film: c.film || "", premium: !!(prem && prem.has(uidKey(c.uid))),
         mine, can: mine || !!(who && who.owner)
     };
@@ -145,6 +145,7 @@ module.exports = async function handler(req, res) {
                 name: clean(who.name, 60) || "Google user",
                 text,
                 owner: who.owner,
+                ph: /^https:\/\/[a-z0-9-]+\.googleusercontent\.com\/[^\s"<>]{1,400}$/i.test(who.photo || "") ? who.photo : "",
                 film: parent ? "" : film,
                 imdb: parent ? "" : imdb
             };
