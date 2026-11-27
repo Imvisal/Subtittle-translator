@@ -936,6 +936,22 @@
                 txt.appendChild(el("div", "muted", (film ? (it.done ? "translated" : "not translated yet") : it.done + " / " + it.total + " episodes") + (it.skipped ? " · " + it.skipped + " waiting for an English subtitle" : "") + " · from " + (it.src || "?")));
                 txt.style.flex = "1 1 160px";
                 row.appendChild(txt);
+                if (aqTab === "w") {
+                    var rb = el("button", "btn", "Run");
+                    rb.type = "button"; rb.title = "Translate only this one now";
+                    rb.addEventListener("click", function () {
+                        if (!window.confirm("Translate only \u201c" + it.title + "\u201d now?")) { return; }
+                        rb.disabled = true; rb.textContent = "Starting...";
+                        fetch("/api/stats?cron=runner&act=startone&imdb=" + encodeURIComponent(it.imdb), { method: "POST", headers: { "x-admin-key": KEY }, cache: "no-store" })
+                            .then(function (r) { return r.json().catch(function () { return {}; }); })
+                            .then(function (d) {
+                                rb.textContent = d.ok ? "Started \u2713" : (d.error || "Failed");
+                                if (d.ok) { runnerStatus(); }
+                                setTimeout(function () { rb.disabled = false; rb.textContent = "Run"; }, d.ok ? 4000 : 3500);
+                            }).catch(function () { rb.textContent = "Failed"; setTimeout(function () { rb.disabled = false; rb.textContent = "Run"; }, 3000); });
+                    });
+                    row.appendChild(rb);
+                }
                 var b = el("button", "btn ghost", "Remove");
                 b.type = "button";
                 b.addEventListener("click", function () {
