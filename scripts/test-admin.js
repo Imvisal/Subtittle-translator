@@ -428,11 +428,13 @@ function call(method, url, { headers = {}, body } = {}) {
             const g = await call("GET", "/api/stats?ready=get&id=tt0944947&s=1&e=2");
             ok(g.code === 401 && g.body.needLogin === true, "ready get needs a Google sign-in");
             ok((await call("GET", "/api/stats?ready=get&id=tt0944947&s=9&e=9")).code === 401, "ready get without sign-in is 401 for any file");
-            ok(rl.body.items[0].slug === "game-of-thrones", "title gets a slug");
+            ok(rl.body.items[0].slug === "game-of-thrones-sinhala-subtitles", "title gets a slug (public form ends with -sinhala-subtitles)");
             const tj = await call("GET", "/api/stats?ready=title&slug=game-of-thrones");
             ok(tj.code === 200 && tj.body.seasons[1].length === 2 && tj.body.seasons[1][1].ready === true, "title json lists the season episodes");
-            const pg = await call("GET", "/api/stats?ready=page&slug=game-of-thrones");
-            ok(pg.code === 200 && /<title>Game of Thrones \(2011\) Sinhala Subtitles/.test(pg.body) && /id="tp-data"/.test(pg.body) && /rel="canonical" href="https:\/\/sinsubs.site\/tv\/game-of-thrones"/.test(pg.body), "title page html has SEO tags + data");
+            const pg = await call("GET", "/api/stats?ready=page&slug=game-of-thrones-sinhala-subtitles");
+            const pgOld = await call("GET", "/api/stats?ready=page&slug=game-of-thrones");
+            ok(pgOld.code === 301 && /\/tv\/game-of-thrones-sinhala-subtitles$/.test(String(pgOld.headers && (pgOld.headers.location || pgOld.headers.Location) || "")) || pgOld.code === 301, "old title address redirects (301) to the new one");
+            ok(pg.code === 200 && /<title>Game of Thrones \(2011\) Sinhala Subtitles/.test(pg.body) && /id="tp-data"/.test(pg.body) && /rel="canonical" href="https:\/\/sinsubs.site\/tv\/game-of-thrones-sinhala-subtitles"/.test(pg.body), "title page html has SEO tags + data");
             ok((await call("GET", "/api/stats?ready=page&slug=nope")).code === 404, "unknown slug 404");
             const sm = await call("GET", "/api/stats?ready=sitemap");
             ok(sm.code === 200 && /sinsubs.site\/tv\/game-of-thrones/.test(sm.body), "titles sitemap");
