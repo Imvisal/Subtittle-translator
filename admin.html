@@ -38,6 +38,15 @@
         .lg-warn td:nth-child(2) { color:#f5c451; font-weight:700; }
         .lg-info td:nth-child(2) { color:var(--good, #5eead4); }
         .tabpane[hidden] { display:none; }
+        @media (min-width:900px) {
+            main { max-width:1320px; }
+            #panel:not([hidden]) { display:grid; grid-template-columns:210px minmax(0,1fr); column-gap:22px; align-items:start; }
+            #panel > .tabpane { grid-column:2; }
+            #panel > .tabbar { grid-column:1; grid-row:1 / span 40; position:sticky; top:14px; flex-direction:column; overflow:visible; gap:4px; padding:10px; margin:0; border:1px solid var(--line); border-radius:14px; background:var(--card); max-height:calc(100vh - 28px); overflow-y:auto; }
+            .tabbar .tab { text-align:left; border-radius:10px; border-color:transparent; padding:10px 14px; width:100%; }
+            .tabbar .tab:hover:not(.on) { background:rgba(127,127,127,.12); color:var(--text); }
+            .tabbar .tabn { float:right; margin-top:1px; }
+        }
         .two { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
         @media (max-width:760px) { .two { grid-template-columns:1fr; } }
         .chart { display:flex; align-items:flex-end; gap:4px; height:130px; }
@@ -133,7 +142,7 @@
 
         <div class="two">
             <div class="card"><h2>New accounts per day</h2><div class="chart" id="chartN"></div></div>
-            <div class="card"><h2>Where people use it (signed-in accounts)</h2><div class="bars" id="platforms"></div><p style="margin:14px 0 0;color:var(--muted)">\u2709 Email sign-ups (verified): <b id="emailUsers" style="color:var(--text)">0</b></p></div>
+            <div class="card"><h2>Where people use it (signed-in accounts)</h2><div class="bars" id="platforms"></div><p style="margin:14px 0 0;color:var(--muted)">✉ Email sign-ups (verified): <b id="emailUsers" style="color:var(--text)">0</b></p></div>
         </div>
 
         <div class="two">
