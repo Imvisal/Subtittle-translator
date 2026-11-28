@@ -83,29 +83,46 @@ async function collect(day) {
         gem: { ok: Number(h.ok) || 0, quota: Number(h.quota) || 0, busy: Number(h.busy) || 0, json: Number(h.json) || 0, other: Number(h.other) || 0, exhausted },
         mails: Number(c.mail) || 0, mailList: (r[5] || []).slice(0, 5),
         autoFilms: Number(c.autoFilm) || 0, autoEps: Number(c.autoEp) || 0, autoFilmTitles: Number(r[6]) || 0, autoSeries: Number(r[7]) || 0,
-        maintAuto: Number(c.maintAuto) || 0, maintNow: maint && maint.mode && maint.mode !== "off" ? maint.mode : "",
+        maintAuto: Number(c.maintAuto) || 0, maintNow: maint && maint.mode && maint.mode !== "off" && (!maint.until || maint.until > Date.now()) && (!maint.from || maint.from <= Date.now()) ? maint.mode : "",
         comments: Number(c.comment) || 0, messages: Number(c.message) || 0, premium: Number(c.premium) || 0, requests: Number(c.request) || 0
     };
 }
 
-function format(d) {
-    const L = [];
-    L.push("📊 <b>SinSubz " + (d.partial ? "– today so far" : "daily summary") + "</b> · " + d.day);
-    L.push("");
-    L.push("⬇️ <b>Downloads:</b> " + d.downloads + (d.topDl.length ? "\n" + d.topDl.map(x => "   • " + esc(x[0]) + " ×" + x[1]).join("\n") : ""));
-    L.push("🌐 <b>Translations:</b> " + d.translated + "  ·  🔁 Sync: " + d.synced + (d.libHit + d.libMiss ? "  ·  ♻️ reused lines: " + Math.round(100 * d.libHit / Math.max(1, d.libHit + d.libMiss)) + "%" : ""));
-    L.push("");
-    L.push("👥 <b>Users:</b> " + d.active + " active · <b>" + d.fresh + " new</b> (✉️ e-mail " + d.email + ", Google " + d.google + (d.other ? ", other " + d.other : "") + ") · " + d.total + " in total");
-    L.push("");
-    L.push("🤖 <b>Auto runner added:</b> " + d.autoFilms + " film" + (d.autoFilms === 1 ? "" : "s") + ", " + d.autoEps + " episode" + (d.autoEps === 1 ? "" : "s") + (d.autoSeries ? " (" + d.autoSeries + " series)" : ""));
-    L.push("");
+function format(d, auto) {
+    const L = [], bar = "━━━━━━━━━━━━━━━";
+    const pct = d.libHit + d.libMiss ? Math.round(100 * d.libHit / Math.max(1, d.libHit + d.libMiss)) + "%" : "-";
     const gk = d.gem;
-    L.push("🔑 <b>Gemini:</b> " + gk.ok + " ok · " + gk.quota + " quota (429) · " + gk.busy + " busy · " + gk.json + " bad-json · " + gk.other + " other");
-    if (d.partial) { L.push("   keys out of quota now: " + gk.exhausted); }
-    L.push("✉️ <b>Mails sent to you:</b> " + d.mails + (d.mailList.length ? "\n" + d.mailList.map(s => "   • " + esc(s)).join("\n") : ""));
-    L.push("🛠 <b>Auto maintenance (translation paused):</b> " + d.maintAuto + (d.maintNow ? "  ⚠️ ON now: " + esc(d.maintNow) : ""));
+    const label = d.partial ? (auto ? "until 10 PM" : "so far today") : "full day";
+    L.push("📊 <b>SinSubz daily summary</b>");
+    L.push("📅 " + d.day + "  <i>(" + label + ")</i>");
+    L.push(bar);
+    L.push("⬇️ <b>DOWNLOADS</b>");
+    L.push("• Total: <b>" + d.downloads + "</b>");
+    d.topDl.forEach((x, i) => L.push("   " + (i + 1) + ". " + esc(x[0]) + " ×" + x[1]));
     L.push("");
-    L.push("💬 Comments " + d.comments + " · ✉️ Messages " + d.messages + " · 👑 Premium " + d.premium + " · 🎯 Requests " + d.requests);
+    L.push("🌐 <b>TRANSLATIONS</b>");
+    L.push("• Translated: <b>" + d.translated + "</b>   • Sync: <b>" + d.synced + "</b>   • Reused lines: <b>" + pct + "</b>");
+    L.push(bar);
+    L.push("👥 <b>USERS</b>");
+    L.push("• Active: <b>" + d.active + "</b>   • New: <b>" + d.fresh + "</b>   • Total: <b>" + d.total + "</b>");
+    L.push("• New by sign-up: ✉️ e-mail <b>" + d.email + "</b> · Google <b>" + d.google + "</b>" + (d.other ? " · other <b>" + d.other + "</b>" : ""));
+    L.push(bar);
+    L.push("🤖 <b>AUTO RUNNER (added today)</b>");
+    L.push("• Films: <b>" + d.autoFilms + "</b>   • TV episodes: <b>" + d.autoEps + "</b>" + (d.autoSeries ? "  (" + d.autoSeries + " series)" : ""));
+    L.push(bar);
+    L.push("🔑 <b>GEMINI</b>");
+    L.push("• OK: <b>" + gk.ok + "</b>   • Quota (429): <b>" + gk.quota + "</b>   • Busy: <b>" + gk.busy + "</b>");
+    L.push("• Bad JSON: <b>" + gk.json + "</b>   • Other errors: <b>" + gk.other + "</b>");
+    if (d.partial) { L.push("• Keys out of quota right now: <b>" + gk.exhausted + "</b>"); }
+    L.push(bar);
+    L.push("⚙️ <b>SYSTEM</b>");
+    L.push("• Mails sent to you: <b>" + d.mails + "</b>");
+    d.mailList.forEach(x => L.push("   – " + esc(x)));
+    L.push("• Auto maintenance (pauses): <b>" + d.maintAuto + "</b>");
+    L.push("• Maintenance mode now: " + (d.maintNow ? "⚠️ <b>ON (" + esc(d.maintNow) + ")</b>" : "off ✅"));
+    L.push(bar);
+    L.push("💬 <b>COMMUNITY</b>");
+    L.push("• Comments <b>" + d.comments + "</b>   • Messages <b>" + d.messages + "</b>   • Premium <b>" + d.premium + "</b>   • Requests <b>" + d.requests + "</b>");
     return L.join("\n");
 }
 
@@ -151,7 +168,13 @@ async function adminAct(req, res, act) {
     }
     const chat = await ownerChat();
     if (!chat) { return res.status(200).json({ ok: false, error: "No private chat yet. Press \"Link my Telegram\" first (or set TG_ADMIN_CHAT in Vercel)." }); }
-    const r = await tgSend(chat, format(await collect(slDay(0))));
+    const auto = /[?&]auto=1(?:&|$)/.test(String(req.url || ""));
+    if (auto) {                                                   // the 10 PM call from GitHub Actions: once a day; the next morning's cron then skips yesterday
+        const [first] = await g.redis([["SET", "sum:sent:" + slDay(0), "1", "NX", "EX", 3 * 86400]]);
+        if (first !== "OK") { return res.status(200).json({ ok: true, error: "Already sent today." }); }
+    }
+    const r = await tgSend(chat, format(await collect(slDay(0)), auto));
+    if (auto && !r.ok) { await g.redis([["DEL", "sum:sent:" + slDay(0)]]); }
     return res.status(200).json({ ok: !!r.ok, error: r.ok ? "" : (r.description || "Telegram refused it (send /start to the bot first)") });
 }
 
