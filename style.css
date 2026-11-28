@@ -4146,3 +4146,40 @@ html[data-theme="light"] select option, html[data-theme="light"] select optgroup
 #downloadBtn:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.06); }
 #translateBtn:active:not(:disabled),
 #downloadBtn:active:not(:disabled) { transform: scale(0.985); }
+
+/* Upload box: obvious drag & drop target + nicer button */
+.upload-section { padding-top: 34px; padding-bottom: 34px; }
+.upload-section .up-drag { display: none; }
+@media (hover: hover) and (pointer: fine) {
+    .upload-section .up-drag { display: inline; }
+    .upload-section .up-tap { display: none; }
+}
+.upload-section .up-or { position: relative; z-index: 2; display: flex; align-items: center; justify-content: center; gap: 12px; margin: 14px auto 0; max-width: 260px; color: var(--muted); font-size: 13px; }
+.upload-section .up-or::before,
+.upload-section .up-or::after { content: ""; flex: 1; height: 1px; background: var(--line-strong); }
+@media (hover: none), (pointer: coarse) { .upload-section .up-or { display: none; } }
+.upload-section label.upload-btn,
+.upload-section .upload-btn {
+    margin-top: 12px;
+    min-height: 58px;
+    padding: 0 30px;
+    border-radius: 16px;
+    font-size: 16px;
+    font-weight: 800;
+    color: #0b0d1f;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: linear-gradient(135deg, #a9a3ff 0%, #7a6dff 55%, #6a5af0 100%);
+    box-shadow: 0 12px 30px rgba(122, 109, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    text-shadow: none;
+}
+.upload-section .upload-btn:hover { transform: translateY(-2px); filter: brightness(1.06); }
+.upload-section .upload-icon { box-shadow: 0 10px 30px rgba(143, 134, 255, 0.25); }
+.upload-section.drag-over { border-style: solid; border-color: #8f86ff; background: rgba(143, 134, 255, 0.14); box-shadow: 0 0 0 6px rgba(143, 134, 255, 0.18), 0 20px 60px rgba(122, 109, 255, 0.35); }
+.upload-section.drag-over > * { opacity: 0.08; transition: opacity 0.2s; }
+.upload-section.drag-over::after {
+    content: "Drop your subtitle file here";
+    position: absolute; inset: 0; z-index: 5;
+    display: grid; place-items: center;
+    font-family: var(--font-display); font-size: 22px; font-weight: 800; color: #fff;
+    pointer-events: none;
+}
