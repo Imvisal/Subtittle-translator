@@ -209,7 +209,8 @@ module.exports = async function handler(req, res) {
 
         // BROWSE (movies.html / tv.html): ?category=browse&kind=movie|tv&list=popular|top|new&genre=<id>&page=<1-20>
         else if (category === "browse") {
-            const kind = req.query.kind === "tv" ? "tv" : "movie";
+            const isAnimeBrowse = req.query.kind === "anime";                       // anime.html: Japanese animation, series (fmt=tv) or films (fmt=movie)
+            const kind = isAnimeBrowse ? (req.query.fmt === "movie" ? "movie" : "tv") : (req.query.kind === "tv" ? "tv" : "movie");
             const list = ["popular", "top", "new"].includes(req.query.list) ? req.query.list : "popular";
             const genre = /^\d{1,6}$/.test(String(req.query.genre || "")) ? req.query.genre : "";
             const pg = Math.min(20, Math.max(1, parseInt(req.query.page, 10) || 1));
@@ -220,8 +221,11 @@ module.exports = async function handler(req, res) {
             if (list === "top") { q += "&sort_by=vote_average.desc&vote_count.gte=1500"; }
             else if (list === "new") { q += "&sort_by=popularity.desc&" + dateKey + ".gte=" + back + "&" + dateKey + ".lte=" + today; }
             else { q += "&sort_by=popularity.desc"; }
-            if (genre) { q += "&with_genres=" + genre; }
-            if (kind === "tv") { q += "&without_genres=16"; }
+            if (isAnimeBrowse) { q += "&with_original_language=ja&with_genres=16" + (genre ? "," + genre : ""); }
+            else {
+                if (genre) { q += "&with_genres=" + genre; }
+                if (kind === "tv") { q += "&without_genres=16"; }
+            }
             entries = kind === "tv" ? await tvList(q) : await movieList(q);
             browseMode = true;
         }

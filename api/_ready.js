@@ -274,7 +274,7 @@ async function registerFilm(imdb, opts) {
         const title = clean(mv.title || mv.original_title, 100);
         if (!title) { return "notfilm"; }
         const year = String(mv.release_date || "").slice(0, 4);
-        const m = { id: imdb, t: title, y: year, type: "movie", p: mv.poster_path ? "https://image.tmdb.org/t/p/w342" + mv.poster_path : "", g: genreNames(mv.genre_ids), gt: 1, eps: {} };
+        const m = { id: imdb, t: title, y: year, type: "movie", p: mv.poster_path ? "https://image.tmdb.org/t/p/w342" + mv.poster_path : "", g: genreNames(mv.genre_ids), gt: 1, ol: mv.original_language || "", eps: {} };
         const taken = new Set((await allTitles()).filter(x => x.id !== imdb).map(x => x.slug));
         let sl = slugify(m.t);
         if (taken.has(sl) && m.y) { sl = slugify(m.t + " " + m.y); }
@@ -518,10 +518,10 @@ function pageHtml(d) {
         '<link rel="icon" href="/favicon.ico?v=1133" sizes="48x48"><link rel="icon" href="/favicon.svg?v=1133" type="image/svg+xml" sizes="any"><link rel="apple-touch-icon" href="/apple-touch-icon.png?v=1133">' +
         '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
         '<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">' +
-        '<link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/title.css?v=6"><link rel="stylesheet" href="/comments.css"><link rel="stylesheet" href="/vendor/fa/css/all.min.css"><link rel="stylesheet" href="/web-acct.css?v=2">' +
+        '<link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/title.css?v=6"><link rel="stylesheet" href="/comments.css"><link rel="stylesheet" href="/vendor/fa/css/all.min.css"><link rel="stylesheet" href="/web-acct.css?v=3">' +
         '<script>try{var t=localStorage.getItem("sinsubz-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>' +
         '<script type="application/ld+json">' + JSON.stringify(ld).replace(/</g, "\\u003c") + "</script>" + "</head>" +
-        '<body class="tp-page"><header class="tp-hdr"><a class="tp-brand" href="/" aria-label="SinSubz home"><img src="/logo-128.png?v=1133" alt="" width="34" height="34"><b>Sin<span>Subz</span></b></a><nav class="tp-hnav" aria-label="Main"><a href="/movies.html"><i class="fa-solid fa-film" aria-hidden="true"></i><span>Movies</span></a><a href="/tv.html"><i class="fa-solid fa-tv" aria-hidden="true"></i><span>TV Series</span></a><a href="/request.html"><i class="fa-solid fa-circle-plus" aria-hidden="true"></i><span>Request</span></a><a href="/contact.html"><i class="fa-solid fa-envelope" aria-hidden="true"></i><span>Contact</span></a></nav><button id="themeToggle" class="theme-toggle tp-tt" type="button" aria-label="Toggle theme"><span class="theme-sun"><i class="fa-solid fa-sun"></i></span><span class="theme-moon"><i class="fa-solid fa-moon"></i></span></button><div class="web-acct" id="webAcct"></div></header><div class="tp-wrap"><nav class="tp-crumb" aria-label="Breadcrumb"><a href="/">SinSubz</a> › <a href="/#readyTitles">' + crumbName + '</a> › <span>' + esc(d.title) + '</span></nav><div id="tp"><noscript>' + noscript + "</noscript></div>" + seoBlock + moreHtml +
+        '<body class="tp-page"><header class="tp-hdr"><a class="tp-brand" href="/" aria-label="SinSubz home"><img src="/logo-128.png?v=1133" alt="" width="34" height="34"><b>Sin<span>Subz</span></b></a><nav class="tp-hnav" aria-label="Main"><a href="/movies.html"><i class="fa-solid fa-film" aria-hidden="true"></i><span>Movies</span></a><a href="/tv.html"><i class="fa-solid fa-tv" aria-hidden="true"></i><span>TV Series</span></a><a href="/anime.html"><i class="fa-solid fa-dragon" aria-hidden="true"></i><span>Anime</span></a><a href="/contact.html"><i class="fa-solid fa-envelope" aria-hidden="true"></i><span>Contact</span></a></nav><button id="themeToggle" class="theme-toggle tp-tt" type="button" aria-label="Toggle theme"><span class="theme-sun"><i class="fa-solid fa-sun"></i></span><span class="theme-moon"><i class="fa-solid fa-moon"></i></span></button><div class="web-acct" id="webAcct"></div></header><div class="tp-wrap"><nav class="tp-crumb" aria-label="Breadcrumb"><a href="/">SinSubz</a> › <a href="/#readyTitles">' + crumbName + '</a> › <span>' + esc(d.title) + '</span></nav><div id="tp"><noscript>' + noscript + "</noscript></div>" + seoBlock + moreHtml +
         '<section class="comments-section tp-comments" id="comments"><div class="cm-wrap" id="commentsRoot" hidden data-imdb="' + esc(d.id) + '" data-film="' + esc(d.title) + '"></div></section>' +
         '<p class="tp-foot">Subtitles made by SinSubz. Only the subtitle is provided, not the video.</p></div>' +
         '<script type="application/json" id="tp-data">' + seed + '</script><script src="/title.js?v=7"></script><script src="/web-account.js" defer></script><script src="/comments.js" defer></script><script src="/aads.js" defer></script><script src="/ad300.js" defer></script><script src="/popunder.js" defer></script><script src="/push.js" defer></script></body></html>';
@@ -545,11 +545,11 @@ module.exports = async function ready(req, res) {
             for (let i = 0; flat && i < flat.length; i += 2) {
                 const m = parse(flat[i + 1]);
                 if (!m) { continue; }
-                if (!m.gt && need.length < 6) { need.push(m); }
+                if ((!m.gt || m.ol === undefined) && need.length < 6) { need.push(m); }
                 const eps = Object.values(m.eps || {}).map(x => ({ s: x.s, e: x.e, n: x.n, ts: x.ts }))
                     .sort((a, b) => a.s - b.s || a.e - b.e);
                 if (!rt[m.id] && needRt.length < 4) { needRt.push(m); }
-                items.push({ id: m.id, slug: pub(m.slug || slugify(m.t)), t: m.t, y: m.y, p: m.p, g: m.g || [], r: rt[m.id] || "", type: m.type, eps, ts: Math.max(0, ...eps.map(x => x.ts || 0)) });
+                items.push({ id: m.id, slug: pub(m.slug || slugify(m.t)), t: m.t, y: m.y, p: m.p, g: m.g || [], r: rt[m.id] || "", ol: m.ol, type: m.type, eps, ts: Math.max(0, ...eps.map(x => x.ts || 0)) });
             }
             // titles saved before genres existed: look up a few per request (TMDB), remember them, so the filter fills itself
             if (need.length && process.env.TMDB_API_KEY) {
@@ -558,9 +558,9 @@ module.exports = async function ready(req, res) {
                         const f = await tmdbRaw("/find/" + m.id + "?external_source=imdb_id");
                         const hit = (m.type === "tv" ? (f.tv_results || [])[0] : (f.movie_results || [])[0]);
                         const g = hit ? genreNames(hit.genre_ids) : [];
-                        m.g = g; m.gt = 1;
+                        m.g = g; m.gt = 1; m.ol = hit ? (hit.original_language || "") : "";
                         await redis([["HSET", "rdy:idx", m.id, JSON.stringify(m)]]);
-                        const it = items.find(x => x.id === m.id); if (it) { it.g = g; }
+                        const it = items.find(x => x.id === m.id); if (it) { it.g = g; it.ol = m.ol; }
                     } catch (e) { /* try again next time */ }
                 }));
             }

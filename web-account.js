@@ -99,6 +99,7 @@
             '<div class="wa-plan" id="waPlan" hidden></div>' +
             '<button type="button" class="wa-out" id="waNotif"><i class="fa-solid fa-bell"></i> Notifications <span class="wa-ncount" id="waNcount" hidden></span></button>' +
             '<a class="wa-out" href="profile.html" style="text-decoration:none"><i class="fa-solid fa-user"></i> My profile &amp; downloads</a>' +
+            '<a class="wa-out" href="request.html" style="text-decoration:none"><i class="fa-solid fa-circle-plus"></i> Request a subtitle</a>' +
             (prof.premium ? '' : '<button type="button" class="wa-out" id="waPrem"><i class="fa-solid fa-crown" style="color:#f5b316"></i> Go Premium</button>') +
             '<button type="button" class="wa-out" id="waOut"><i class="fa-solid fa-right-from-bracket"></i> Sign out</button>' +
             '</div>';
