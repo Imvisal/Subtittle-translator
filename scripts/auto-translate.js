@@ -84,7 +84,7 @@ async function translateInPage(job) {
     }
     if (!list.length) { return { skip: "no English subtitle on SubDL" }; }
 
-    let subs = null, release = "", dlFailed = 0, tried = 0, why = "", rate429 = false;
+    let subs = null, release = "", via = "", dlFailed = 0, tried = 0, why = "", rate429 = false;
     const seenUrl = new Set();
     for (const cand of list.slice(0, 20)) {          // not only the first few: go on down the results until one file is usable
         const u0 = cand.downloadUrl || cand.url || cand.download_url;
@@ -104,7 +104,7 @@ async function translateInPage(job) {
             for (let i = 0; i < bin.length; i++) { bytes[i] = bin.charCodeAt(i); }
             if (isZipFile(bytes)) { continue; }
             const parsed = parseSRT(decodeSubtitleBytes(bytes));
-            if (parsed.length >= (isTv ? 150 : 400)) { subs = parsed; release = String(cand.release || cand.fileName || ""); break; }
+            if (parsed.length >= (isTv ? 150 : 400)) { subs = parsed; release = String(cand.release || cand.fileName || ""); if (cand.fallback || d.fallback) { via = String(cand.languageName || cand.language || "another language"); } break; }
         } catch (e) { dlFailed++; why = String(e && e.message || e).slice(0, 80); /* try the next file */ }
     }
     // every download failed (SubDL busy / throttling us): that says nothing about the episode, try again later
@@ -116,7 +116,7 @@ async function translateInPage(job) {
         { title: job.title + (job.year ? " (" + job.year + ")" : "") });
     const srt = buildSRT(addSinSubzCredit(typeof applyWordNotes === "function" ? applyWordNotes(translated) : translated));
     const base = getSubtitleBaseName(item, job.season, job.episode);
-    return { srt, count: translated.length, filename: base + ".Sinhala.SinSubz.srt", release };
+    return { srt, count: translated.length, filename: base + ".Sinhala.SinSubz.srt", release, via };
 }
 
 // "Stop" button in the admin panel sets a flag in Redis; checked between episodes and while waiting
@@ -327,7 +327,7 @@ async function refillFilmsIfDue(n, meta) {
             noSub[id] = 0; noSubAll = 0; noSubSeries.clear();
             const put = await post("/api/stats?ready=put", { imdb: id, title: job.t.title, year: job.t.year, poster: job.t.poster, type: job.t.type === "tv" ? "tv" : "movie", season: job.season, episode: job.episode, filename: out.filename, srt: out.srt, count: out.count, release: out.release });
             if (!put.ok) { throw new Error("store failed " + put.status + " " + put.text.slice(0, 120)); }
-            log("  done: " + out.count + " lines");
+            log("  done: " + out.count + " lines" + (out.via ? " (translated from " + out.via + ": no English subtitle was available)" : ""));
             done++; failsInRow = 0;
         } catch (e) {
             const msg = String(e && e.message || e);
