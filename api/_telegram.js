@@ -176,6 +176,18 @@ async function hook(req, res) {
             }
             return res.status(200).json({ ok: true });
         }
+        // private chat with the bot: "/link 123456" (code from the admin panel) saves this chat for the daily summary
+        if (m && m.from && !m.from.is_bot && m.chat && m.chat.type === "private" && hasRedis()) {
+            const mm = String(m.text || "").match(/^\/link(?:@\w+)?\s+(\d{6})\s*$/);
+            if (mm) {
+                const [code] = await redis([["GET", "tg:claim"]]);
+                if (code && String(code) === mm[1]) {
+                    await redis([["SET", "tg:admin", String(m.chat.id)], ["DEL", "tg:claim"]]);
+                    await tg("sendMessage", { chat_id: m.chat.id, text: "✅ Linked. The daily SinSubz summary will come to this chat." });
+                } else { await tg("sendMessage", { chat_id: m.chat.id, text: "That code is wrong or expired. Press \"Link my Telegram\" in the admin panel again." }); }
+            }
+            return res.status(200).json({ ok: true });
+        }
         if (!m || !m.from || !group || !channel || m.from.is_bot || m.sender_chat || m.new_chat_members || m.left_chat_member) { return res.status(200).json({ ok: true }); }
         if (!/group/.test(String(m.chat && m.chat.type))) { return res.status(200).json({ ok: true }); }
         if (groupNumericId === null) { const g = await tg("getChat", { chat_id: group }); groupNumericId = g.ok ? String(g.result.id) : ""; }

@@ -822,6 +822,18 @@
         });
     }
 
+    [["tgLink", "link"], ["tgSummary", "summary"]].forEach(function (x) {
+        var b = $(x[0]); if (!b) { return; }
+        b.addEventListener("click", function () {
+            var m = $("tgLinkMsg"); m.textContent = "Working...";
+            fetch("/api/stats?cron=runner&act=" + x[1], { method: "POST", headers: { "x-admin-key": KEY } }).then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (x[1] === "link") { m.textContent = d.ok ? "Open a PRIVATE chat with @" + (d.bot || "your bot") + " and send:  /link " + d.code + "   (valid 10 minutes; needs the join-channel rule ON)" + (d.linked ? "  - a chat is already linked, this replaces it." : "") : (d.error || "Failed"); }
+                    else { m.textContent = d.ok ? "Sent. Check Telegram." : (d.error || "Failed"); }
+                }).catch(function () { m.textContent = "Failed"; });
+        });
+    });
+
     function loadSubdl() {
         if (!KEY || !($("sdBars") || $("sdBars2"))) { return; }
         fetch("/api/stats?autoq=subdl", { headers: { "x-admin-key": KEY }, cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {

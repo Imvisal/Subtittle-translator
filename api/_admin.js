@@ -510,6 +510,7 @@ async function notifyOwner(subject, text) {
         });
         clearTimeout(timer);
         if (!r.ok) { console.warn("notifyOwner: Resend answered " + r.status); }
+        else { try { await require("./_daily.js").bumpMail(subject); } catch (e) { /* the daily summary counts the mails */ } }
         return r.ok;
     } catch (e) {
         console.warn("notifyOwner failed: " + (e && e.name));
@@ -935,6 +936,7 @@ async function maintAutoTrip(detail) {
     const now = Date.now();
     await redis([["SET", "maint:cur", JSON.stringify({ mode: "translate", msg: "", from: 0, until: now + 15 * 60000, auto: true, autoPause: true, t: now })], ["DEL", "maint:kr"]]);
     resetMaintCache();
+    try { await require("./_daily.js").bump("maintAuto"); } catch (e) { /* counted for the daily summary */ }
     try { await logEvent({ type: "gemini", lvl: "error", msg: "All Gemini keys were rejected -> translation paused automatically for 15 minutes (" + String(detail || "").slice(0, 100) + ")" }); } catch (e) { /* ignore */ }
     try {
         const [first] = await redis([["SET", "maint:mail", "1", "EX", 6 * 3600, "NX"]]);
@@ -980,7 +982,7 @@ async function logActivity(type, msg) {
     try {
         if (!hasRedis()) { return; }
         const rec = { t: Date.now(), k: String(type || "").slice(0, 12), m: String(msg || "").replace(/[\u0000-\u001F\u007F]/g, " ").trim().slice(0, 120) };
-        await Promise.race([redis([["LPUSH", "act:ev", JSON.stringify(rec)], ["LTRIM", "act:ev", 0, 99], ["EXPIRE", "act:ev", 30 * 86400]]), new Promise(r => setTimeout(r, 1200))]);
+        await Promise.race([redis([["LPUSH", "act:ev", JSON.stringify(rec)], ["LTRIM", "act:ev", 0, 99], ["EXPIRE", "act:ev", 30 * 86400], ["HINCRBY", "sum:d:" + dayKey(0), rec.k || "x", 1], ["EXPIRE", "sum:d:" + dayKey(0), 40 * 86400]]), new Promise(r => setTimeout(r, 1200))]);
     } catch (e) { /* never break a request */ }
 }
 // GET  /api/stats?alerts=1                 -> { owner, unread, items, seen }   (Google sign-in of the owner account only)

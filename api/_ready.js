@@ -779,6 +779,7 @@ module.exports = async function ready(req, res) {
             }
             m.p = https(b.poster) || m.p || "";
             m.eps = m.eps || {};
+            const wasNewEp = !m.eps[s + "x" + e];
             m.eps[s + "x" + e] = {
                 s, e, f: clean(b.filename, 140).replace(/[\\/:*?"<>|]+/g, "_") || (title + ".Sinhala.SinSubz.srt"),
                 r: clean(b.release, 120),
@@ -786,6 +787,7 @@ module.exports = async function ready(req, res) {
             };
             const packed = zlib.gzipSync(Buffer.from(srt, "utf8")).toString("base64");
             await redis([["SET", srtKey(b.imdb, s, e), packed], ["HSET", "rdy:idx", b.imdb, JSON.stringify(m)]]);
+            try { await require("./_daily.js").bumpAuto(b.imdb, type, wasNewEp); } catch (x) { /* a counter never blocks the save */ }
             if (isNew) { await warmTitle(m, 14000); await require("./_push.js").notifyNewTitle(m); }
             if (isNew) { await require("./_requests.js").mailRequesters(m); }          // e-mail the visitors who requested this title
             await require("./_telegram.js").postNew(m, type === "tv" ? s : 0, type === "tv" ? e : 0);

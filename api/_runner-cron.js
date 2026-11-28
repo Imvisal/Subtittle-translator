@@ -29,13 +29,16 @@ module.exports = async function runnerCron(req, res) {
     if (act && !adminOk) { return res.status(401).json({ error: "Unauthorized" }); }
     const g = require("./_google");
 
+    if (act === "summary" || act === "link") { return require("./_daily.js").adminAct(req, res, act); }
+
     if (act === "flag") {
         try { const [v, a, o] = await g.redis([["GET", "aq:stop"], ["GET", "aq:all"], ["GET", "aq:only"]]); return res.status(200).json({ stop: !!v, all: !!a, only: o || "" }); } catch (e) { return res.status(200).json({ stop: false, all: false, only: "" }); }
     }
 
     // the scheduled call (no act): also fill a few missing Sinhala story intros, so no title needs a visit to get one
     if (!act) { try { await require("./_ready.js").fillMissingIntros(6, 12000); } catch (e) { /* never blocks the runner */ } }
-    if (!act) { try { await require("./_admin.js").premiumReminders(); } catch (e) { /* never blocks the runner */ } }     // "Premium ends soon" e-mails
+    if (!act) { try { await require("./_admin.js").premiumReminders(); } catch (e) { /* never blocks the runner */ } }
+    if (!act) { try { await require("./_daily.js").sendIfDue(); } catch (e) { /* the daily Telegram summary never blocks the runner */ } }     // "Premium ends soon" e-mails
 
     if (!token) { return res.status(503).json({ error: "GITHUB_DISPATCH_TOKEN is not set" }); }
     const repo = /^[\w.-]+\/[\w.-]+$/.test(process.env.GITHUB_REPO || "") ? process.env.GITHUB_REPO : "visalhmg123-cell/sinsubz-runner1";

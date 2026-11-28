@@ -71,6 +71,7 @@ module.exports = async function (req, res) {
         if (isPrem) { await redis([["SADD", "rq:pr:" + b.imdb, uk], ["EXPIRE", "rq:pr:" + b.imdb, 90 * 86400]]); }
         // remember the e-mail so we can tell the person when the Sinhala subtitle is ready (kept 120 days, never shown anywhere)
         if (who.email) { await redis([["HSET", "rq:m:" + b.imdb, uk, who.email], ["EXPIRE", "rq:m:" + b.imdb, 120 * 86400]]); }
+        if (added) { try { await require("./_daily.js").bump("request"); } catch (e) { /* ignore */ } }
         return res.status(200).json({ status: added ? "sent" : "again" });
     }
     return res.status(404).json({ error: "Not found" });
