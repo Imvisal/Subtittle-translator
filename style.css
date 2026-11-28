@@ -4122,3 +4122,27 @@ html.tm-open, html.tm-open body { overflow: hidden; }
 /* dropdown lists of <select> boxes: readable text in both themes (the list is drawn by the browser, a see-through background turned it white) */
 select option, select optgroup { background-color: #14172b; color: #f2f3fa; }
 html[data-theme="light"] select option, html[data-theme="light"] select optgroup { background-color: #ffffff; color: #1a1d33; }
+
+/* Translate / Download buttons: stay vivid (like Sync) even before they can be used */
+#translateBtn,
+#downloadBtn {
+    min-height: 58px;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    transition: transform 0.2s var(--ease), box-shadow 0.2s ease, opacity 0.2s ease;
+}
+#translateBtn { background: linear-gradient(135deg, #a9a3ff 0%, #7a6dff 55%, #6a5af0 100%); color: #0b0d1f; box-shadow: 0 12px 30px rgba(122, 109, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
+#downloadBtn  { background: linear-gradient(135deg, #5cf0d6 0%, #2fc9c0 55%, #2b9fd0 100%); color: #04231f; box-shadow: 0 12px 30px rgba(54, 224, 200, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
+#translateBtn:disabled,
+#downloadBtn:disabled {
+    opacity: 0.72;
+    filter: saturate(0.9);
+    cursor: not-allowed;
+}
+#translateBtn:disabled { box-shadow: 0 8px 22px rgba(122, 109, 255, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.3); }
+#downloadBtn:disabled  { box-shadow: 0 8px 22px rgba(54, 224, 200, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.3); }
+#translateBtn:hover:not(:disabled),
+#downloadBtn:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.06); }
+#translateBtn:active:not(:disabled),
+#downloadBtn:active:not(:disabled) { transform: scale(0.985); }
